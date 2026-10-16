@@ -47,6 +47,7 @@ HOP = 80                 # 10 ms frames
 SMOOTH_H = 7             # +-7 frames (150 ms) for local gains / explained energy
 LAMBDA_JOINT = 3.0
 LAMBDA_SINGLE = 8.0
+LAMBDA_ASYM = 9.0         # both tracks switch on the same frame by different amounts
 CHUNK_FR = 2000          # Viterbi chunk (20 s) for local candidate sets
 CAND_CTX_S = 12.0        # candidates from anchors within +-12 s of a chunk
 
@@ -239,6 +240,40 @@ class FrameModel:
         sl = slice(f0 - g0, f1 - g0)
         return FX[sl], XX[sl], FXs[sl], XXs[sl]
 
+    def pair_cost(self, offsL, offsP, f0, f1):
+        """1 - fraction of final energy explained by a joint 2-regressor LS fit
+        (Leon@oL, Pei@oP) over a 150 ms window. The cross term absorbs mic bleed, so a silent
+        track cannot gain evidence by matching the other host's bleed."""
+        p = SMOOTH_H
+        g0, g1 = max(f0 - p, 0), min(f1 + p, self.nfr)
+        n = (g1 - g0) * HOP
+        f = self.F[g0 * HOP:g0 * HOP + n]
+        xl = [shifted(self.tracks[0], g0 * HOP + o, n) for o in offsL]
+        xp = [shifted(self.tracks[1], g0 * HOP + o, n) for o in offsP]
+        FL = np.stack([box(frame_sums(f, x)) for x in xl])
+        LL = np.stack([box(frame_sums(x, x)) for x in xl])
+        FP = np.stack([box(frame_sums(f, x)) for x in xp])
+        PP = np.stack([box(frame_sums(x, x)) for x in xp])
+        nf = FL.shape[1]
+        XLr = np.stack([x[:nf * HOP].reshape(nf, HOP) for x in xl]).astype(np.float64)
+        XPr = np.stack([x[:nf * HOP].reshape(nf, HOP) for x in xp]).astype(np.float64)
+        LP = np.einsum('ifh,jfh->ijf', XLr, XPr)
+        LP = np.apply_along_axis(box, 2, LP) if LP.size else LP
+        sl = slice(f0 - g0, f1 - g0)
+        FL, LL, FP, PP, LP = FL[:, sl], LL[:, sl], FP[:, sl], PP[:, sl], LP[:, :, sl]
+        FF = self.FFs[f0:f1] + self.floorF
+        a, b = FL[:, None, :], FP[None, :, :]
+        la, pb = LL[:, None, :], PP[None, :, :]
+        det = la * pb - LP ** 2
+        eps = 1e-6 * (la * pb) + 1e-20
+        num = pb * a ** 2 - 2 * LP * a * b + la * b ** 2
+        e2 = num / ((det + eps) * FF)
+        # single-regressor fallbacks (when one track is ~silent the 2x2 system is ill-posed)
+        eL = np.clip(a, 0, None) ** 2 / (la * FF + 1e-20)
+        eP = np.clip(b, 0, None) ** 2 / (pb * FF + 1e-20)
+        e = np.where(det > 1e-3 * la * pb, e2, np.maximum(eL, eP))
+        return 1.0 - np.clip(e, 0.0, 1.0)
+
     def explained(self, ti, off, f0, f1):
         FX, XX, FXs, XXs = self.track_feats(ti, off, f0, f1)
         e = np.clip(FXs, 0, None) ** 2 / (XXs * (self.FFs[f0:f1] + self.floorF) + 1e-20)
@@ -279,78 +314,114 @@ def local_sets(cands, nfr):
 
 
 # ----------------------------------------------------------------------------- viterbi
+def _groups(D):
+    """group flat pair indices by inter-track offset value D (KLxKP ints)."""
+    flat = D.ravel()
+    order = np.argsort(flat, kind='stable')
+    vals = flat[order]
+    starts = np.flatnonzero(np.concatenate([[True], vals[1:] != vals[:-1]]))
+    counts = np.diff(np.concatenate([starts, [len(vals)]]))
+    inv = np.empty(len(flat), np.int64)
+    inv[order] = np.repeat(np.arange(len(starts)), counts)
+    return dict(order=order, starts=starts, counts=counts, inv=inv, keys=vals[starts])
+
+
+def _group_min(S, g):
+    vals = S.ravel()[g['order']]
+    gm = np.minimum.reduceat(vals, g['starts'])
+    eq = vals == np.repeat(gm, g['counts'])
+    pos = np.where(eq, np.arange(len(vals)), len(vals))
+    first = np.minimum.reduceat(pos, g['starts'])
+    return gm, g['order'][first]
+
+
 def joint_viterbi(fm, candL, candP, setsL, setsP):
+    """Viterbi over (Leon offset, Pei offset) pairs.
+
+    Transitions: stay (0); Leon-only change (LAMBDA_SINGLE); Pei-only change (LAMBDA_SINGLE);
+    joint cut = both change by the same amount, i.e. inter-track offset preserved (LAMBDA_JOINT);
+    anything else = both change on the same frame by different amounts (LAMBDA_ASYM)."""
     nfr = fm.nfr
     nch = len(setsL)
     BIG = 1e18
     S = None
     prevL = prevP = None
-    back = []      # per chunk: (sL, sP, codes[nf,KL,KP], colarg[nf,KP], rowarg[nf,KL], garg[nf])
-    explL_all = {}
-    explP_all = {}
+    prevD = None
+    back = []
     for k in range(nch):
         f0, f1 = k * CHUNK_FR, min((k + 1) * CHUNK_FR, nfr)
         sL = setsL[k] or (prevL if prevL else [0])
         sP = setsP[k] or (prevP if prevP else [0])
-        EL = np.stack([fm.explained(0, candL[i][0], f0, f1)[0] for i in sL])   # KL x nf
-        EP = np.stack([fm.explained(1, candP[j][0], f0, f1)[0] for j in sP])
-        for ii, i in enumerate(sL):
-            explL_all[(k, i)] = EL[ii]
-        for jj, j in enumerate(sP):
-            explP_all[(k, j)] = EP[jj]
+        oLv = np.array([candL[i][0] for i in sL], np.int64)
+        oPv = np.array([candP[j][0] for j in sP], np.int64)
+        D = oLv[:, None] - oPv[None, :]
+        G = _groups(D)
+        COST = fm.pair_cost(list(oLv), list(oPv), f0, f1)  # KL x KP x nf
         KL, KP, nf = len(sL), len(sP), f1 - f0
         codes = np.zeros((nf, KL, KP), np.int8)
         colarg = np.zeros((nf, KP), np.int32)
         rowarg = np.zeros((nf, KL), np.int32)
-        garg = np.zeros((nf, 2), np.int32)
+        jarg = np.zeros((nf, KL * KP), np.int64)     # joint predecessor (flat old index) per new pair
+        aarg = np.zeros(nf, np.int64)
+        back_map = (np.arange(KL), np.arange(KP))
         for fi in range(nf):
-            cost = 1.0 - np.minimum(EL[:, fi][:, None] + EP[:, fi][None, :], 1.0)
+            cost = COST[:, :, fi]
             if S is None:
                 S = cost.copy()
-                codes[fi] = 0
-                prevL, prevP = sL, sP
+                prevL, prevP, prevD = sL, sP, D
                 continue
             if fi == 0:
-                # map previous chunk's state space into this one
                 mapL = np.array([prevL.index(i) if i in prevL else -1 for i in sL])
                 mapP = np.array([prevP.index(j) if j in prevP else -1 for j in sP])
+                Gold = _groups(prevD)
+                keypos = {int(v): q for q, v in enumerate(Gold['keys'])}
+                new2old_group = np.array([keypos.get(int(v), -1) for v in D.ravel()])
+                back_map = (mapL, mapP)
             else:
                 mapL = np.arange(KL)
                 mapP = np.arange(KP)
-            colmin_old = S.min(0); colarg_old = S.argmin(0)      # per old P column: best old L
-            rowmin_old = S.min(1); rowarg_old = S.argmin(1)      # per old L row: best old P
+                Gold = G
+                new2old_group = G['inv']
+            KPo = S.shape[1]
+            colmin_old = S.min(0); colarg_old = S.argmin(0)
+            rowmin_old = S.min(1); rowarg_old = S.argmin(1)
             g = int(np.argmin(S)); gmin = S.flat[g]
-            gi, gj = divmod(g, S.shape[1])
+            gm, garg = _group_min(S, Gold)
             stay = np.full((KL, KP), BIG)
             vl, vp = mapL >= 0, mapP >= 0
             if vl.any() and vp.any():
                 stay[np.ix_(vl, vp)] = S[np.ix_(mapL[vl], mapP[vp])]
-            chL = np.full((KL, KP), BIG)          # L changes, P stays
+            chL = np.full((KL, KP), BIG)
             if vp.any():
                 chL[:, vp] = (colmin_old[mapP[vp]] + LAMBDA_SINGLE)[None, :]
-            chP = np.full((KL, KP), BIG)          # P changes, L stays
+            chP = np.full((KL, KP), BIG)
             if vl.any():
                 chP[vl, :] = (rowmin_old[mapL[vl]] + LAMBDA_SINGLE)[:, None]
-            both = gmin + LAMBDA_JOINT
-            allc = np.stack([stay, chL, chP, np.full((KL, KP), both)])
+            ok = new2old_group >= 0
+            jt = np.full(KL * KP, BIG)
+            jt[ok] = gm[new2old_group[ok]] + LAMBDA_JOINT
+            jarg[fi, ok] = garg[new2old_group[ok]]
+            anyc = np.full((KL, KP), gmin + LAMBDA_ASYM)
+            allc = np.stack([stay, chL, chP, jt.reshape(KL, KP), anyc])
             code = np.argmin(allc, 0)
             S = allc.min(0) + cost
             S -= S.min()
             codes[fi] = code
             colarg[fi, vp] = colarg_old[mapP[vp]]
             rowarg[fi, vl] = rowarg_old[mapL[vl]]
-            garg[fi] = (gi, gj)
+            aarg[fi] = g
             if fi == 0:
-                back_map = (mapL, mapP)
-        back.append((sL, sP, codes, colarg, rowarg, garg, back_map if k > 0 else (np.arange(KL), np.arange(KP))))
-        prevL, prevP = sL, sP
-        log('viterbi chunk %d/%d KL=%d KP=%d' % (k + 1, nch, KL, KP))
-    # backtrack
+                kpo0 = KPo
+        back.append((sL, sP, codes, colarg, rowarg, jarg, aarg, back_map, kpo0 if k > 0 else KP))
+        prevL, prevP, prevD = sL, sP, D
+        if (k + 1) % 20 == 0 or k + 1 == nch:
+            log('viterbi chunk %d/%d KL=%d KP=%d' % (k + 1, nch, KL, KP))
     pathL = np.zeros(nfr, np.int32)
     pathP = np.zeros(nfr, np.int32)
     i, j = np.unravel_index(int(np.argmin(S)), S.shape)
     for k in range(nch - 1, -1, -1):
-        sL, sP, codes, colarg, rowarg, garg, (mapL0, mapP0) = back[k]
+        sL, sP, codes, colarg, rowarg, jarg, aarg, (mapL0, mapP0), kpo0 = back[k]
+        KP = len(sP)
         f0 = k * CHUNK_FR
         for fi in range(codes.shape[0] - 1, -1, -1):
             pathL[f0 + fi] = sL[i]
@@ -360,14 +431,17 @@ def joint_viterbi(fm, candL, candP, setsL, setsP):
             c = codes[fi, i, j]
             mL = mapL0 if fi == 0 else np.arange(len(sL))
             mP = mapP0 if fi == 0 else np.arange(len(sP))
+            kpo = kpo0 if fi == 0 else KP
             if c == 0:
                 ni, nj = mL[i], mP[j]
             elif c == 1:
                 ni, nj = colarg[fi, j], mP[j]
             elif c == 2:
                 ni, nj = mL[i], rowarg[fi, i]
+            elif c == 3:
+                ni, nj = divmod(int(jarg[fi, i * KP + j]), kpo)
             else:
-                ni, nj = garg[fi]
+                ni, nj = divmod(int(aarg[fi]), kpo)
             i, j = int(ni), int(nj)
     return pathL, pathP
 
@@ -529,8 +603,16 @@ def main():
 def write_json(result, path):
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, 'w') as fh:
-        json.dump(result, fh, indent=1, ensure_ascii=False)
+        json.dump(result, fh, indent=1, ensure_ascii=False, default=_np_default)
     log('wrote', path)
+
+
+def _np_default(o):
+    if isinstance(o, np.generic):
+        return o.item()
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    raise TypeError(type(o))
 
 
 
@@ -614,25 +696,44 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
     for s in sw[0]:
         best, bd = None, None
         for k, p in enumerate(sw[1]):
-            if k in usedP or abs(p['jump'] - s['jump']) > 3:
+            if k in usedP:
                 continue
-            d = abs(p['pos'] - s['pos'])
-            overlap = p['lo'] <= s['hi'] and s['lo'] <= p['hi']
-            if d <= 0.6 * SR or overlap:
-                if bd is None or d < bd:
+            # the Viterbi emits a joint cut as both tracks switching on the same frame
+            d = abs(p['f'] - s['f'])
+            same_jump = abs(p['jump'] - s['jump']) <= 3
+            if (same_jump and d <= 2) or d == 0:
+                if bd is None or d < bd or (d == bd and same_jump):
                     best, bd = k, d
         if best is None:
             events.append(dict(kind='single', track=0, sw=[s]))
         else:
             usedP.add(best)
-            events.append(dict(kind='joint', track=None, sw=[s, sw[1][best]]))
+            p = sw[1][best]
+            kind = 'joint' if abs(p['jump'] - s['jump']) <= 3 else 'asym'
+            events.append(dict(kind=kind, track=None, sw=[s, p]))
     for k, p in enumerate(sw[1]):
         if k not in usedP:
             events.append(dict(kind='single', track=1, sw=[p]))
 
+    # chosen sample position per switch (joint: the better-heard track's refined position), then
+    # clamp so each track's switches stay in Viterbi frame order
+    for e in events:
+        if e['kind'] in ('joint', 'asym'):
+            a_, b_ = e['sw']
+            best = a_ if (a_['hi'] - a_['lo']) <= (b_['hi'] - b_['lo']) else b_
+            a_['cpos'] = b_['cpos'] = best['pos']
+        else:
+            e['sw'][0]['cpos'] = e['sw'][0]['pos']
+    for ti in (0, 1):
+        lst = sw[ti]
+        for k, x in enumerate(lst):
+            lo_ = lst[k - 1]['cpos'] + 1 if k > 0 else 1
+            hi_ = lst[k + 1]['f'] * HOP - 1 if k + 1 < len(lst) else len(F) - 1
+            x['cpos'] = int(min(max(x['cpos'], lo_), max(hi_, lo_)))
+
     ev_out = []
     for e in events:
-        if e['kind'] == 'joint':
+        if e['kind'] in ('joint', 'asym'):
             s, p = e['sw']
             ws, wp = s['hi'] - s['lo'], p['hi'] - p['lo']
             # position: from the track that is heard around the cut (narrower ambiguity)
@@ -640,10 +741,11 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
             lo, hi = max(s['lo'], p['lo']), min(s['hi'], p['hi'])
             if hi <= lo:
                 lo, hi = b['lo'], b['hi']
-            pos = min(max(b['pos'], lo), hi)
+            pos = s['cpos']
             jump = b['jump']
-            rec = dict(kind='joint', tracks=names[:], final_pos=Ts(pos), ambiguity=[Ts(lo), Ts(hi)],
+            rec = dict(kind=e['kind'], tracks=names[:], final_pos=Ts(pos), ambiguity=[Ts(lo), Ts(hi)],
                        ambiguity_ms=round((hi - lo) / SR * 1000, 1), jump_s=Ts(jump),
+                       jump_by_track={names[0]: Ts(s['jump']), names[1]: Ts(p['jump'])},
                        pos_disagreement_ms=round(abs(s['pos'] - p['pos']) / SR * 1000, 1),
                        raw_leon=[Ts(pos + s['o1']), Ts(pos + s['o2'])], raw_pei=[Ts(pos + p['o1']), Ts(pos + p['o2'])],
                        evidence_s={names[0]: [round(s['ev_before'], 2), round(s['ev_after'], 2)],
@@ -651,37 +753,116 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
         else:
             s = e['sw'][0]
             nm = names[e['track']]
-            rec = dict(kind='single', tracks=[nm], final_pos=Ts(s['pos']), ambiguity=[Ts(s['lo']), Ts(s['hi'])],
+            rec = dict(kind='single', tracks=[nm], final_pos=Ts(s['cpos']), ambiguity=[Ts(s['lo']), Ts(s['hi'])],
                        ambiguity_ms=round((s['hi'] - s['lo']) / SR * 1000, 1), jump_s=Ts(s['jump']),
-                       raw=[Ts(s['pos'] + s['o1']), Ts(s['pos'] + s['o2'])],
+                       raw=[Ts(s['cpos'] + s['o1']), Ts(s['cpos'] + s['o2'])],
                        evidence_s={nm: [round(s['ev_before'], 2), round(s['ev_after'], 2)]})
-        rec['type'] = 'cut' if rec['jump_s'] > 0 else 'backward_jump'
+        if rec['kind'] == 'asym':
+            js = list(rec['jump_by_track'].values())
+            rec['jump_s'] = min(js)
+            rec['type'] = 'cut' if min(js) > 0 else 'backward_jump'
+        else:
+            rec['type'] = 'cut' if rec['jump_s'] > 0 else 'backward_jump'
         evs = [v for pair in rec['evidence_s'].values() for v in pair]
         heard = [min(v) for v in rec['evidence_s'].values()]
         rec['confidence'] = 'high' if max(heard) >= 0.3 else ('medium' if max(evs) >= 0.3 else 'low')
-        rec['ambiguity_capped'] = rec['ambiguity_ms'] >= 490
+        rec['ambiguity_capped'] = bool(rec['ambiguity_ms'] >= 490)
         ev_out.append(rec)
     ev_out.sort(key=lambda r: r['final_pos'])
 
+    # heard-bounds: the edit must lie between the last frame where the switching track(s) are
+    # heard at the old offset and the first frame where they are heard at the new one. For a track
+    # that is silent around its edit (clean / gated mic) this interval can be seconds long.
+    EXs = {names[0]: EL, names[1]: EP}
+
+    def heard_bounds(track, pos_s):
+        EX = EXs[track]
+        f = int(pos_s * SR) // HOP
+        lo = max(f - 6000, 0)
+        before = np.flatnonzero(EX[lo:f] > EVID_THR)
+        after = np.flatnonzero(EX[f:f + 6000] > EVID_THR)
+        b0 = (lo + before[-1] + 1) if len(before) else lo
+        b1 = (f + after[0]) if len(after) else min(f + 6000, nfr)
+        return b0, b1
+
+    for r in ev_out:
+        bs = [heard_bounds(t, r['final_pos']) for t in r['tracks']]
+        b0, b1 = max(b[0] for b in bs), min(b[1] for b in bs)
+        if b1 < b0:
+            b0, b1 = min(b[0] for b in bs), max(b[1] for b in bs)
+        r['heard_bounds'] = [Tf(b0), Tf(b1)]
+        r['heard_bounds_width_s'] = round(Tf(b1) - Tf(b0), 3)
+
+    # staggered pairs: a single-track cut on one track and one of similar length on the other
+    # track nearby = "the same cut made separately on each track" (changes the inter-track offset)
+    singles = [r for r in ev_out if r['kind'] == 'single' and r['type'] == 'cut']
+    usedS = set()
+    stagger = []
+    for i, r in enumerate(singles):
+        if i in usedS or r['tracks'] != [names[0]]:
+            continue
+        best = None
+        for j, q in enumerate(singles):
+            if j in usedS or q['tracks'] != [names[1]]:
+                continue
+            dj = abs(q['jump_s'] - r['jump_s'])
+            dp = abs(q['final_pos'] - r['final_pos'])
+            if dp <= 20 and dj <= max(1.0, 0.1 * r['jump_s']):
+                if best is None or dp < best[1]:
+                    best = (j, dp)
+        if best is not None:
+            usedS.update((i, best[0]))
+            q = singles[best[0]]
+            stagger.append(dict(leon_pos=r['final_pos'], pei_pos=q['final_pos'], leon_jump=r['jump_s'], pei_jump=q['jump_s'],
+                                pos_gap_s=round(q['final_pos'] - r['final_pos'], 3),
+                                delta_change_s=round(q['jump_s'] - r['jump_s'], 4)))
+    for i, r in enumerate(singles):
+        r['staggered_pair'] = i in usedS
+
     # ---------------- segments: constant (oL, oP) spans between refined boundaries / inserts
-    cuts = {0: [], 1: []}
-    for e, r in zip(events, [None] * len(events)):
-        pass
-    for e in events:
-        if e['kind'] == 'joint':
-            s, p = e['sw']
-            ws, wp = s['hi'] - s['lo'], p['hi'] - p['lo']
-            b = s if ws <= wp else p
-            pos = b['pos']
-            cuts[0].append((pos, s['o2']))
-            cuts[1].append((pos, p['o2']))
+    # verification: a track's jump is "verified" when that track is heard within 3 s on both sides
+    for r in ev_out:
+        ver = {t: bool(min(v) >= 0.3) for t, v in r['evidence_s'].items()}
+        r['verified_tracks'] = [t for t, ok_ in ver.items() if ok_]
+        r['verified'] = bool(any(ver.values())) if r['kind'] == 'joint' else bool(all(ver.values()))
+
+    # character of each forward cut: how much of the removed raw audio was speech (per track),
+    # and how long the pause is in the final around the cut point
+    def act_mask(X):
+        e = frame_sums(X, X)
+        floor_ = np.percentile(e[e > 0], 15) if (e > 0).any() else 1e-12
+        return box(e, 2) / 5 > floor_ * 100        # ~20 dB above the track's noise floor
+    actR = {names[0]: act_mask(L), names[1]: act_mask(P)}
+    fe = box(fm.FF, 2) / 5
+    thr_sp = np.percentile(fm.FF[fm.FF > 0], 50) / 100.0      # 20 dB under median frame energy
+    fsil = fe < thr_sp
+    for r in ev_out:
+        if r['type'] != 'cut':
+            continue
+        spans = {}
+        if r['kind'] == 'single':
+            spans[r['tracks'][0]] = r['raw']
         else:
-            s = e['sw'][0]
-            cuts[e['track']].append((s['pos'], s['o2']))
+            spans[names[0]] = r['raw_leon']; spans[names[1]] = r['raw_pei']
+        sp = {}
+        for t, (a, b) in spans.items():
+            fa, fb = int(a * 100), int(b * 100)
+            sp[t] = round(float(actR[t][fa:fb].mean()), 3) if fb > fa else 0.0
+        r['removed_speech_frac'] = sp
+        f = int(r['final_pos'] * 100)
+        lo = f
+        while lo > 0 and fsil[lo - 1] and f - lo < 1000:
+            lo -= 1
+        hi = f
+        while hi < nfr - 1 and fsil[hi] and hi - f < 1000:
+            hi += 1
+        r['final_pause_at_cut_s'] = round((hi - lo) / 100, 2)
+
+    cuts = {ti: [(x['cpos'], x['o2']) for x in sw[ti]] for ti in (0, 1)}
 
     def tsegs(ti, oX):
         out, start, cur = [], 0, int(oX[0])
-        for pos, o2 in sorted(cuts[ti]):
+        for pos, o2 in cuts[ti]:
             out.append((start, pos, cur))
             start, cur = pos, o2
         out.append((start, len(F), cur))
@@ -808,6 +989,26 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
         d['dur'] = round(d['final'][1] - d['final'][0], 3)
         d['both_heard_s'] = round(d['both_heard_s'], 2)
 
+    # ---------------- evidenced inter-track offset: measured only where both tracks are heard
+    # inside the same constant-offset segment; a change of it = at least one single-track edit,
+    # located somewhere between the two measurements.
+    meas = []
+    for sg in raw_segs:
+        if sg['evidence_s'][names[0]] >= 0.2 and sg['evidence_s'][names[1]] >= 0.2:
+            meas.append((sg['final_start'], sg['final_end'], sg['pei_minus_leon_s']))
+    druns = []
+    for a, b, d in meas:
+        if druns and abs(druns[-1]['pei_minus_leon_s'] - d) < 0.0015:
+            druns[-1]['last_measured'] = b; druns[-1]['n'] += 1
+        else:
+            druns.append(dict(first_measured=a, last_measured=b, pei_minus_leon_s=d, n=1))
+    dchanges = []
+    for x, y in zip(druns[:-1], druns[1:]):
+        dchanges.append(dict(between=[x['last_measured'], y['first_measured']],
+                             width_s=round(y['first_measured'] - x['last_measured'], 3),
+                             delta_from=x['pei_minus_leon_s'], delta_to=y['pei_minus_leon_s'],
+                             change_s=round(y['pei_minus_leon_s'] - x['pei_minus_leon_s'], 4)))
+
     # ---------------- muted spans: raw track speaks at its mapped position but is not heard in final
     muted = []
     for ti, (X, oX, EX) in enumerate(((L, offL, EL), (P, offP, EP))):
@@ -822,9 +1023,17 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
         mm = active & (box(EX) / (2 * SMOOTH_H + 1) < 0.03) & ~ins_frames
         for a, b, v in runs_of(mm.astype(np.int32)):
             if v and b - a >= 15:
+                # verified = the track is heard at the SAME offset shortly before and after, so the
+                # timeline was kept and only this track's audio was removed / silenced
+                EO = EP if ti == 0 else EL
+                pre = np.flatnonzero(EX[max(a - 300, 0):a] > EVID_THR)
+                post = np.flatnonzero(EX[b:b + 300] > EVID_THR)
+                same = bool(len(pre) and len(post) and oX[max(a - 300, 0) + pre[-1]] == oX[a] == oX[b + post[0]])
                 muted.append(dict(track=names[ti], final=[Tf(a), Tf(b)], dur=Tf(b - a),
                                   raw=[Ts(a * HOP + int(oX[a])), Ts(b * HOP + int(oX[a]))],
-                                  raw_level_db_above_floor=round(float(10 * np.log10(np.median(xs[a:b]) / noise)), 1)))
+                                  raw_level_db_above_floor=round(float(10 * np.log10(np.median(xs[a:b]) / noise)), 1),
+                                  same_offset_heard_both_sides=same,
+                                  other_track_heard_frac=round(float(np.mean(EO[a:b] > EVID_THR)), 2)))
 
     # ---------------- validation
     val = validate(F, L, P, raw_segs, fm, GL, GP, EL, EP, ins_frames)
@@ -852,6 +1061,10 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
                                     total_s=round(sum(r['jump_s'] for r in cuts_s if r['tracks'] == [nm]), 3),
                                     high_conf=sum(1 for r in cuts_s if r['tracks'] == [nm] and r['confidence'] == 'high'))
                            for nm in names},
+        asym_cuts=dict(count=sum(1 for r in ev_out if r['kind'] == 'asym'),
+                       abs_track_diff_s_median=round(float(np.median([abs(r['jump_by_track'][names[0]] - r['jump_by_track'][names[1]])
+                                                                     for r in ev_out if r['kind'] == 'asym'] or [np.nan])), 3)),
+        cut_character=_cut_character(ev_out, names),
         backward_jumps=dict(count=len(back), joint=sum(1 for r in back if r['kind'] == 'joint'),
                             single=sum(1 for r in back if r['kind'] == 'single'),
                             high_conf=sum(1 for r in back if r['confidence'] == 'high')),
@@ -859,11 +1072,34 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
             median=float(np.median([r['ambiguity_ms'] for r in ev_out])) if ev_out else None,
             p90=float(np.percentile([r['ambiguity_ms'] for r in ev_out], 90)) if ev_out else None,
             joint_high_conf_median=float(np.median([r['ambiguity_ms'] for r in ev_out if r['kind'] == 'joint' and r['confidence'] == 'high'] or [np.nan]))),
+        n_events=dict(joint=sum(1 for r in ev_out if r['kind'] == 'joint'), asym=sum(1 for r in ev_out if r['kind'] == 'asym'),
+                      single=sum(1 for r in ev_out if r['kind'] == 'single')),
         joint_pos_disagreement_ms_median=float(np.median([r['pos_disagreement_ms'] for r in ev_out if r['kind'] == 'joint'] or [np.nan])),
         desync=dict(n_runs=len(desync), in_sync_s=round(sum(d['dur'] for d in desync if abs(d['pei_minus_leon_s']) < 1e-3), 1),
                     out_of_sync_s=round(sum(d['dur'] for d in desync if abs(d['pei_minus_leon_s']) >= 1e-3), 1)),
         muted_spans={nm: dict(count=sum(1 for m in muted if m['track'] == nm),
                               total_s=round(sum(m['dur'] for m in muted if m['track'] == nm), 2)) for nm in names},
+        evidenced_offset=dict(runs=len(druns), changes=len(dchanges),
+                              abs_change_s_median=round(float(np.median([abs(c['change_s']) for c in dchanges])), 3) if dchanges else None,
+                              abs_change_s_p90=round(float(np.percentile([abs(c['change_s']) for c in dchanges], 90)), 3) if dchanges else None,
+                              value_range_s=[min(r['pei_minus_leon_s'] for r in druns), max(r['pei_minus_leon_s'] for r in druns)] if druns else None,
+                              time_weighted_abs_s_median=None),
+        verified_events=dict(joint=sum(1 for r in ev_out if r['kind'] == 'joint' and r['verified']),
+                             asym=sum(1 for r in ev_out if r['kind'] == 'asym' and r['verified']),
+                             single=sum(1 for r in ev_out if r['kind'] == 'single' and r['verified']),
+                             backward=sum(1 for r in ev_out if r['type'] == 'backward_jump' and r['verified'])),
+        muted_verified={nm: dict(count=sum(1 for m in muted if m['track'] == nm and m['same_offset_heard_both_sides']),
+                                 total_s=round(sum(m['dur'] for m in muted if m['track'] == nm and m['same_offset_heard_both_sides']), 2),
+                                 while_other_heard=sum(1 for m in muted if m['track'] == nm and m['same_offset_heard_both_sides'] and m['other_track_heard_frac'] > 0.5))
+                        for nm in names},
+        staggered_pairs=dict(count=len(stagger),
+                             abs_delta_change_s_median=round(float(np.median([abs(x['delta_change_s']) for x in stagger])), 3) if stagger else None,
+                             pos_gap_s_median=round(float(np.median([abs(x['pos_gap_s']) for x in stagger])), 3) if stagger else None),
+        heard_bounds_width_s=dict(
+            joint_median=round(float(np.median([r['heard_bounds_width_s'] for r in ev_out if r['kind'] == 'joint'] or [np.nan])), 3),
+            single_median=round(float(np.median([r['heard_bounds_width_s'] for r in ev_out if r['kind'] == 'single'] or [np.nan])), 3),
+            joint_under_50ms=sum(1 for r in ev_out if r['kind'] == 'joint' and r['heard_bounds_width_s'] <= 0.05),
+            single_under_50ms=sum(1 for r in ev_out if r['kind'] == 'single' and r['heard_bounds_width_s'] <= 0.05)),
         segment_confidence={c: sum(1 for s in raw_segs if s['confidence'] == c) for c in ('high', 'medium', 'low')},
         segment_confidence_s={c: round(sum(s['dur'] for s in raw_segs if s['confidence'] == c), 1) for c in ('high', 'medium', 'low')},
         median_gain={names[0]: float(np.median(GL[EL > 0.7])), names[1]: float(np.median(GP[EP > 0.7]))},
@@ -878,8 +1114,26 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
                                'track_confidence "inferred" = track silent there, offset carried by continuity.')),
         stats=stats, validation=val, segments=segs, edit_events=ev_out,
         removed_raw={'both_tracks': rem_both, names[0]: remL, names[1]: remP},
-        inserts=inserts, desync_runs=desync, muted_track_spans=muted,
+        inserts=inserts, desync_runs=desync, muted_track_spans=muted, staggered_pairs=stagger,
+        evidenced_offset_runs=druns, evidenced_offset_changes=dchanges,
     )
+
+
+def _cut_character(ev_out, names):
+    cuts = [r for r in ev_out if r['type'] == 'cut' and 'removed_speech_frac' in r]
+    def frac(r):
+        return max(r['removed_speech_frac'].values())
+    pause = [r for r in cuts if frac(r) < 0.1]
+    content = [r for r in cuts if frac(r) >= 0.5]
+    mixed = [r for r in cuts if 0.1 <= frac(r) < 0.5]
+    js = lambda rs: [r['jump_s'] for r in rs]
+    out = {}
+    for nm, rs in (('pause_only', pause), ('mixed', mixed), ('mostly_speech', content)):
+        v = js(rs)
+        out[nm] = dict(count=len(rs), total_s=round(sum(v), 2), median_s=round(float(np.median(v)), 3) if v else None,
+                       final_pause_at_cut_median_s=round(float(np.median([r['final_pause_at_cut_s'] for r in rs])), 2) if rs else None)
+    out['definition'] = 'max over tracks of the fraction of removed raw frames >20 dB above that track noise floor: <0.1 pause_only, >=0.5 mostly_speech'
+    return out
 
 
 def validate(F, L, P, raw_segs, fm, GL, GP, EL, EP, ins_frames):

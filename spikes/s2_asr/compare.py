@@ -305,7 +305,7 @@ def main():
     leon_text = {k[0]: norm(runs[k]["text"]) for k in runs if k[1] == "Leon"}
     print(f"Pei noise floor {fp:.1f} dB; frames classed as Pei speech/energy: {sp.mean():.0%}\n")
     print("| run | chars | chars timed in low-energy frames | segs with compression_ratio>2.4 | max identical segment (≥4 chars) | "
-          "chars also in Leon's transcript (≥4-gram, bleed proxy) |")
+          "chars also in Leon's Paraformer transcript (≥4-gram; bleed proxy, confounded by genuine echoing) |")
     print("|---|---|---|---|---|---|")
     for (name, tr), d in sorted(runs.items()):
         if tr != "Pei":
@@ -320,7 +320,7 @@ def main():
         cr = sum(1 for s in d["segments"] if s.get("compression_ratio", 0) > 2.4)
         segtexts = [norm(s["text"]) for s in d["segments"] if len(norm(s["text"])) >= 4]
         maxrep = max((segtexts.count(s) for s in set(segtexts)), default=0)
-        lt = leon_text.get(name, "")
+        lt = leon_text.get("paraformer", "")  # Leon's words as heard on Leon's own mic
         covered = np.zeros(len(t), bool)
         for i in range(len(t) - 3):
             if t[i:i + 4] in lt:
