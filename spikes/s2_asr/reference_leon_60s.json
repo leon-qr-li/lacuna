@@ -1,0 +1,23 @@
+{
+ "note": "Best-effort CONSENSUS reference for Leon_900_1200.wav 240-300 s (= 1140-1200 s of the raw track). Built by aligning Paraformer, SenseVoice and faster-whisper (turbo/large-v3, with and without filler prompt) outputs and taking the majority/most specific reading; disagreements resolved toward the reading that appears in >=2 independent model families. NOT listened to by a human. Times are approximate (Paraformer CIF char starts). Items are the disfluencies the product must preserve; 'match' is the string an engine's text within t±tol seconds must contain.",
+ "window": [240, 300],
+ "text": "下就抓住别人了然后backroom就更viral了对吧更更internet就是互联网属性更高一点儿因为它本身就是互联网的产物嘛对所以就这两点让我觉得它不是那种好莱坞传统叙事的人物啊plot啊剧情啊conflict它不是那样就是说哦我看这部电影之前我基本知道就是说那个那个hook是什么他吸引我去看然后整个电影就是围绕这个hook来展开的像嗯待会儿可以在就现在就可以聊这两个电影的一些就感受我是特别喜欢obsession是因为嗯他即使是给我一种网感但他的人物是立住了就剧情是是符合我的预期的不是它不是符合我预期就是它的剧情基本上是一个完整的featurefilm能给我的就是满足感的一个deliver",
+ "uncertain": [
+  "282.9 他即使是(是)给我: whisper has an extra 是 (即使是/是给我); Paraformer & SenseVoice have one",
+  "266.5 就说 vs 就是说: Paraformer 就说; SenseVoice and Whisper 就是说",
+  "295.8 (你)能给我的: SenseVoice only has 你",
+  "244.7 viral: Paraformer heard 'verue'"
+ ],
+ "items": [
+  {"id": "D1", "type": "repetition", "match": "更更", "t": 246.0, "tol": 1.0},
+  {"id": "D2", "type": "discourse-marker", "match": "就是说", "t": 262.5, "tol": 1.0},
+  {"id": "D3", "type": "filler", "match": "哦", "t": 263.1, "tol": 0.8},
+  {"id": "D4", "type": "repetition", "match": "那个那个", "t": 267.0, "tol": 1.0},
+  {"id": "D5", "type": "filler", "match": "嗯", "t": 274.4, "tol": 0.8},
+  {"id": "D6", "type": "false-start", "match": "在就现在", "t": 275.9, "tol": 1.0},
+  {"id": "D7", "type": "filler", "match": "就感受", "t": 278.1, "tol": 1.0},
+  {"id": "D8", "type": "filler", "match": "嗯", "t": 281.6, "tol": 0.8},
+  {"id": "D9", "type": "repetition", "match": "是是", "t": 288.5, "tol": 1.0},
+  {"id": "D10", "type": "self-correction", "match": "不是它不是", "t": 291.6, "tol": 1.0}
+ ]
+}
