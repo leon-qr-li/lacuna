@@ -22,7 +22,7 @@
   },
   "compare": {
    "duration_s": 240.0,
-   "wall_s_incl_compare": 4.22,
+   "wall_s_incl_compare": 2.64,
    "peak": 2.274,
    "limited_samples": 20712,
    "correlation": {
@@ -90,7 +90,7 @@
      "delta_ratio_median": 0.59,
      "delta_ratio_p95": 1.76,
      "hf_ratio_median": 1.23,
-     "hf_ratio_p95": 8138954.41,
+     "hf_ratio_p95": 134.74,
      "worst": [
       {
        "track": "Leon",
@@ -113,7 +113,7 @@
        "t": 6826239,
        "kind": "in",
        "delta_ratio": 1.826,
-       "hf_ratio": 2210588156.077,
+       "hf_ratio": 2512.032,
        "click": false
       }
      ]
@@ -159,8 +159,8 @@
      "clicks": 28,
      "delta_ratio_median": 2.14,
      "delta_ratio_p95": 13.79,
-     "hf_ratio_median": 9.73,
-     "hf_ratio_p95": 59228203.19,
+     "hf_ratio_median": 8.9,
+     "hf_ratio_p95": 751.99,
      "worst": [
       {
        "track": "Leon",
@@ -227,11 +227,11 @@
  },
  "full_render": {
   "audio_s": 3616.8,
-  "wall_s": 42.87,
-  "x_realtime": 84.4,
-  "peak_rss_mb": 545.4,
+  "wall_s": 17.74,
+  "x_realtime": 203.9,
+  "peak_rss_mb": 123.4,
   "limited_samples": 164272,
-  "build_edl_s": 0.18,
+  "build_edl_s": 0.17,
   "ops": 176,
   "clips": {
    "Leon": 495,
@@ -240,7 +240,7 @@
  },
  "full_compare": {
   "duration_s": 3616.83,
-  "wall_s_incl_compare": 54.36,
+  "wall_s_incl_compare": 102.54,
   "peak": 2.423,
   "limited_samples": 164272,
   "correlation": {
@@ -299,24 +299,24 @@
  },
  "preview_latency": {
   "cold": {
-   "median_s": 0.37,
-   "max_s": 0.43
+   "median_s": 0.061,
+   "max_s": 0.092
   },
   "warm": {
-   "median_s": 0.077,
-   "max_s": 0.133
+   "median_s": 0.002,
+   "max_s": 0.004
   },
   "local_edit": {
-   "median_s": 0.224,
-   "max_s": 0.266
+   "median_s": 0.043,
+   "max_s": 0.052
   },
   "upstream_edit": {
-   "median_s": 0.368,
-   "max_s": 0.379
+   "median_s": 0.069,
+   "max_s": 0.073
   },
   "ab_pair": {
-   "median_s": 0.616,
-   "max_s": 0.662
+   "median_s": 0.088,
+   "max_s": 0.1
   }
  },
  "edl_json_bytes_full": 292378

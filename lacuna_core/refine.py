@@ -48,3 +48,28 @@ def snap_cut_media(pool: SourcePool, media_ids: Sequence[str], sample: int, sr: 
     a = sample - r
     sigs = [pool.read(m, a, sample + r + 1) for m in media_ids]
     return a + snap_cut(sigs, r, sr, **kw)
+
+
+def frame_db(x: np.ndarray, sr: int, frame_ms: float = 10.0) -> np.ndarray:
+    """Per-frame RMS level in dBFS (non-overlapping frames)."""
+    w = max(1, int(frame_ms * sr / 1000))
+    n = len(x) // w
+    e = np.mean(np.asarray(x[:n * w], dtype=np.float64).reshape(n, w) ** 2, axis=1)
+    return 10 * np.log10(e + 1e-12)
+
+
+def quietest_span(x: np.ndarray, sr: int, dur_s: float = 1.5, frame_ms: float = 10.0) -> tuple[int, int]:
+    """[start, end) of the lowest-energy stretch of `x` that is not digital silence: a
+    candidate room-tone source for gap filling."""
+    db = frame_db(x, sr, frame_ms)
+    w = max(1, int(frame_ms * sr / 1000))
+    k = max(1, int(dur_s * 1000 / frame_ms))
+    valid = (db > -100).astype(float)
+    cs = np.concatenate([[0.0], np.cumsum(np.where(db > -100, db, 0.0))])
+    cv = np.concatenate([[0.0], np.cumsum(valid)])
+    if len(db) < k:
+        raise ValueError("signal shorter than requested span")
+    mean = (cs[k:] - cs[:-k]) / k
+    full = (cv[k:] - cv[:-k]) == k
+    i = int(np.argmin(np.where(full, mean, np.inf)))
+    return i * w, (i + k) * w

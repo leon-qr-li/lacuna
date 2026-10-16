@@ -1,0 +1,131 @@
+[
+ {
+  "pause_raw_s": [
+   942.71,
+   944.17
+  ],
+  "pause_s": 1.46,
+  "cut_raw_s": [
+   942.9046,
+   943.975
+  ],
+  "new_pause_s": 0.39,
+  "name": "01_pause_tighten",
+  "before_raw_s": [
+   938.21,
+   948.67
+  ],
+  "preview_latency_s": 0.034,
+  "seams": [
+   {
+    "track": "Leon",
+    "t": 41582091,
+    "kind": "join",
+    "delta_ratio": 0.941,
+    "hf_ratio": 5.642,
+    "click": false
+   },
+   {
+    "track": "Pei",
+    "t": 41582091,
+    "kind": "join",
+    "delta_ratio": 0.941,
+    "hf_ratio": 5.642,
+    "click": false
+   }
+  ],
+  "clicks": 0
+ },
+ {
+  "asr_text": "嗯嗯",
+  "pei_raw_s": [
+   1048.448,
+   1048.841
+  ],
+  "moved_by_s": 1.742,
+  "leon_pause_raw_s": [
+   1050.11,
+   1050.67
+  ],
+  "name": "02_interjection_slip",
+  "before_raw_s": [
+   1043.94,
+   1054.85
+  ],
+  "preview_latency_s": 0.052,
+  "seams": [
+   {
+    "track": "Pei",
+    "t": 46236560,
+    "kind": "out",
+    "delta_ratio": 0.721,
+    "hf_ratio": 0.878,
+    "click": false
+   },
+   {
+    "track": "Pei",
+    "t": 46253901,
+    "kind": "in",
+    "delta_ratio": 0.387,
+    "hf_ratio": 0.578,
+    "click": false
+   },
+   {
+    "track": "Pei",
+    "t": 46313379,
+    "kind": "join",
+    "delta_ratio": 0.111,
+    "hf_ratio": 0.67,
+    "click": false
+   },
+   {
+    "track": "Pei",
+    "t": 46330720,
+    "kind": "join",
+    "delta_ratio": 0.495,
+    "hf_ratio": 0.768,
+    "click": false
+   }
+  ],
+  "clicks": 0
+ },
+ {
+  "leon_raw_s": [
+   635.94,
+   636.427
+  ],
+  "s4_map_raw_s": [
+   635.9356,
+   636.3556
+  ],
+  "final_s": [
+   538.91,
+   539.33
+  ],
+  "name": "03_single_track_delete",
+  "before_raw_s": [
+   631.436,
+   640.856
+  ],
+  "preview_latency_s": 0.063,
+  "seams": [
+   {
+    "track": "Leon",
+    "t": 28044967,
+    "kind": "out",
+    "delta_ratio": 1.137,
+    "hf_ratio": 1.281,
+    "click": false
+   },
+   {
+    "track": "Leon",
+    "t": 28066413,
+    "kind": "in",
+    "delta_ratio": 0.264,
+    "hf_ratio": 0.53,
+    "click": false
+   }
+  ],
+  "clicks": 0
+ }
+]

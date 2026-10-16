@@ -1,7 +1,6 @@
 import hashlib
 
 import numpy as np
-import pytest
 import soundfile as sf
 
 from lacuna_core import (AddDuck, CutRange, LiftRange, RenderSettings, RenderStats, Renderer,

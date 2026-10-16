@@ -142,3 +142,13 @@ def test_cache_key_soundness_under_random_edits(tone_media, noise_media, pool_of
                 assert np.array_equal(seen[key], y)
             seen[key] = y
     assert len(seen) > 100
+
+
+def test_quietest_span_skips_digital_silence():
+    from lacuna_core import quietest_span
+    rng = np.random.default_rng(3)
+    x = 0.2 * rng.standard_normal(10 * SR)
+    x[:2 * SR] = 0.0                         # digital silence: not room tone
+    x[6 * SR:8 * SR] *= 0.01                 # real quiet floor
+    a, b = quietest_span(x, SR, dur_s=1.0)
+    assert 6 * SR <= a and b <= 8 * SR and b - a == SR
