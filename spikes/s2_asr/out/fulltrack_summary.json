@@ -1,0 +1,189 @@
+{
+ "paraformer_Leon_full": {
+  "audio_s": 4411.932,
+  "wall_s": 339.88,
+  "rtf": 0.077,
+  "peak_rss_mb": 687.7,
+  "chars": 13005,
+  "vad_segments": 564,
+  "fillers": {
+   "嗯": 166,
+   "呃": 22,
+   "啊": 189,
+   "哦": 15,
+   "诶": 0,
+   "那个": 119,
+   "就是": 317,
+   "然后": 97
+  }
+ },
+ "paraformer_Pei_full": {
+  "audio_s": 4412.034,
+  "wall_s": 151.82,
+  "rtf": 0.0344,
+  "peak_rss_mb": 742.5,
+  "chars": 8247,
+  "vad_segments": 526,
+  "fillers": {
+   "嗯": 313,
+   "呃": 40,
+   "啊": 47,
+   "哦": 38,
+   "诶": 0,
+   "那个": 34,
+   "就是": 146,
+   "然后": 46
+  }
+ },
+ "sensevoice_Leon_full": {
+  "audio_s": 4411.932,
+  "wall_s": 427.34,
+  "rtf": 0.0969,
+  "peak_rss_mb": 736.1,
+  "chars": 12797,
+  "vad_segments": 564,
+  "fillers": {
+   "嗯": 155,
+   "呃": 25,
+   "啊": 174,
+   "哦": 9,
+   "诶": 0,
+   "那个": 118,
+   "就是": 296,
+   "然后": 97
+  },
+  "event_tags": {
+   "Speech": 558,
+   "Cough": 1,
+   "Laughter": 5
+  },
+  "emotion_tags": {
+   "EMO_UNKNOWN": 59,
+   "HAPPY": 134,
+   "NEUTRAL": 348,
+   "ANGRY": 20,
+   "SURPRISED": 1,
+   "DISGUSTED": 2
+  },
+  "non_speech_event_segments": [
+   {
+    "start": 171.44,
+    "end": 181.116,
+    "event": "Cough",
+    "text": "但还好就是我反而觉得第一次旅旅就是第一次这旅途跟公司一块儿去 summer fe 我挺开我挺开心的还"
+   },
+   {
+    "start": 709.392,
+    "end": 715.228,
+    "event": "Laughter",
+    "text": "我说这我熟这不卤煮吗这这这我熟啊这"
+   },
+   {
+    "start": 1660.528,
+    "end": 1661.916,
+    "event": "Laughter",
+    "text": "呵哈哈哈哈"
+   },
+   {
+    "start": 2439.792,
+    "end": 2441.052,
+    "event": "Laughter",
+    "text": "哼吼哼"
+   },
+   {
+    "start": 3495.12,
+    "end": 3497.628,
+    "event": "Laughter",
+    "text": "对"
+   },
+   {
+    "start": 3636.112,
+    "end": 3637.724,
+    "event": "Laughter",
+    "text": "都死了"
+   }
+  ]
+ },
+ "sensevoice_Pei_full": {
+  "audio_s": 4412.034,
+  "wall_s": 265.39,
+  "rtf": 0.0602,
+  "peak_rss_mb": 847.8,
+  "chars": 8159,
+  "vad_segments": 526,
+  "fillers": {
+   "嗯": 303,
+   "呃": 45,
+   "啊": 36,
+   "哦": 36,
+   "诶": 0,
+   "那个": 33,
+   "就是": 144,
+   "然后": 48
+  },
+  "event_tags": {
+   "Speech": 518,
+   "Breath": 2,
+   "Laughter": 6
+  },
+  "emotion_tags": {
+   "NEUTRAL": 274,
+   "HAPPY": 78,
+   "EMO_UNKNOWN": 159,
+   "DISGUSTED": 6,
+   "SURPRISED": 4,
+   "SAD": 4,
+   "ANGRY": 1
+  },
+  "non_speech_event_segments": [
+   {
+    "start": 890.992,
+    "end": 891.74,
+    "event": "Breath",
+    "text": "哼哼"
+   },
+   {
+    "start": 1729.296,
+    "end": 1731.26,
+    "event": "Laughter",
+    "text": "嗯"
+   },
+   {
+    "start": 2054.768,
+    "end": 2057.052,
+    "event": "Laughter",
+    "text": "哦真了"
+   },
+   {
+    "start": 2452.08,
+    "end": 2454.14,
+    "event": "Laughter",
+    "text": ""
+   },
+   {
+    "start": 2472.304,
+    "end": 2473.628,
+    "event": "Laughter",
+    "text": "哼"
+   },
+   {
+    "start": 3105.168,
+    "end": 3106.332,
+    "event": "Laughter",
+    "text": "哼哼"
+   },
+   {
+    "start": 3203.92,
+    "end": 3204.796,
+    "event": "Breath",
+    "text": "啊"
+   },
+   {
+    "start": 4012.336,
+    "end": 4015.612,
+    "event": "Laughter",
+    "text": "ok"
+   }
+  ]
+ }
+}

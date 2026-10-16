@@ -1,0 +1,843 @@
+{
+ "stats": {
+  "fw_large-v3_vad_fillers|Leon": {
+   "chars": 1208,
+   "fillers": {
+    "嗯": 2,
+    "呃": 2,
+    "啊": 7,
+    "哦": 1,
+    "诶": 0,
+    "那个": 2,
+    "就是": 25,
+    "然后": 5
+   },
+   "repeats": [
+    "是不是不",
+    "那那",
+    "跑跑",
+    "泛泛",
+    "愿愿",
+    "好好",
+    "更更",
+    "那个那个",
+    "是是"
+   ],
+   "rtf": 1.757,
+   "peak_rss_mb": 4759.8,
+   "load_s": 17.36,
+   "hallucinations": []
+  },
+  "fw_large-v3_vad_none|Leon": {
+   "chars": 1195,
+   "fillers": {
+    "嗯": 1,
+    "呃": 2,
+    "啊": 7,
+    "哦": 1,
+    "诶": 0,
+    "那个": 2,
+    "就是": 25,
+    "然后": 5
+   },
+   "repeats": [
+    "跑跑",
+    "泛泛",
+    "就是就是",
+    "愿愿",
+    "那个那个",
+    "是是"
+   ],
+   "rtf": 1.9454,
+   "peak_rss_mb": 4713.7,
+   "load_s": 22.86,
+   "hallucinations": []
+  },
+  "fw_turbo_novad_none|Leon": {
+   "chars": 1203,
+   "fillers": {
+    "嗯": 1,
+    "呃": 0,
+    "啊": 3,
+    "哦": 0,
+    "诶": 0,
+    "那个": 1,
+    "就是": 24,
+    "然后": 5
+   },
+   "repeats": [
+    "不是算过不是算过",
+    "泛泛",
+    "痴迷痴迷",
+    "愿愿"
+   ],
+   "rtf": 0.7164,
+   "peak_rss_mb": 2206.6,
+   "load_s": 4.08,
+   "hallucinations": []
+  },
+  "fw_turbo_vad_fillers|Leon": {
+   "chars": 1330,
+   "fillers": {
+    "嗯": 0,
+    "呃": 2,
+    "啊": 3,
+    "哦": 0,
+    "诶": 0,
+    "那个": 1,
+    "就是": 28,
+    "然后": 6
+   },
+   "repeats": [
+    "就是就是",
+    "是不是不",
+    "那那",
+    "在在",
+    "是不是不",
+    "那那",
+    "泛泛",
+    "愿愿",
+    "是是",
+    "是是",
+    "点点"
+   ],
+   "rtf": 0.9732,
+   "peak_rss_mb": 2224.1,
+   "load_s": 7.0,
+   "hallucinations": [
+    "请不吝点赞 订阅 转发 打赏支持明镜与点点栏目"
+   ]
+  },
+  "fw_turbo_vad_none|Leon": {
+   "chars": 1172,
+   "fillers": {
+    "嗯": 0,
+    "呃": 0,
+    "啊": 0,
+    "哦": 0,
+    "诶": 0,
+    "那个": 1,
+    "就是": 23,
+    "然后": 5
+   },
+   "repeats": [
+    "不是算过不是算过",
+    "泛泛",
+    "愿愿",
+    "更更"
+   ],
+   "rtf": 0.7262,
+   "peak_rss_mb": 2205.2,
+   "load_s": 10.99,
+   "hallucinations": []
+  },
+  "paraformer|Leon": {
+   "chars": 1235,
+   "fillers": {
+    "嗯": 12,
+    "呃": 2,
+    "啊": 16,
+    "哦": 1,
+    "诶": 0,
+    "那个": 2,
+    "就是": 24,
+    "然后": 5
+   },
+   "repeats": [
+    "不是不是",
+    "那那",
+    "跑跑",
+    "会会",
+    "泛泛",
+    "愿愿",
+    "更更",
+    "那个那个",
+    "是是"
+   ],
+   "rtf": 0.1114,
+   "peak_rss_mb": 412.3,
+   "load_s": 2.48,
+   "hallucinations": []
+  },
+  "paraformer_punct|Leon": {
+   "chars": 1235,
+   "fillers": {
+    "嗯": 12,
+    "呃": 2,
+    "啊": 16,
+    "哦": 1,
+    "诶": 0,
+    "那个": 2,
+    "就是": 24,
+    "然后": 5
+   },
+   "repeats": [
+    "不是不是",
+    "那那",
+    "跑跑",
+    "会会",
+    "泛泛",
+    "愿愿",
+    "更更",
+    "那个那个",
+    "是是"
+   ],
+   "rtf": 0.1236,
+   "peak_rss_mb": 488.3,
+   "load_s": 3.47,
+   "hallucinations": []
+  },
+  "sensevoice|Leon": {
+   "chars": 1201,
+   "fillers": {
+    "嗯": 14,
+    "呃": 2,
+    "啊": 12,
+    "哦": 2,
+    "诶": 0,
+    "那个": 2,
+    "就是": 24,
+    "然后": 5
+   },
+   "repeats": [
+    "不是不是",
+    "那那",
+    "泛泛",
+    "愿愿",
+    "更更",
+    "那个那个",
+    "是是"
+   ],
+   "rtf": 0.1189,
+   "peak_rss_mb": 408.3,
+   "load_s": 2.32,
+   "hallucinations": [],
+   "events": {
+    "Speech": 62
+   }
+  },
+  "sensevoice_itn|Leon": {
+   "chars": 1226,
+   "fillers": {
+    "嗯": 14,
+    "呃": 2,
+    "啊": 12,
+    "哦": 2,
+    "诶": 0,
+    "那个": 2,
+    "就是": 23,
+    "然后": 5
+   },
+   "repeats": [
+    "不是不是",
+    "那那",
+    "泛泛",
+    "愿愿",
+    "更更",
+    "那个那个",
+    "是是"
+   ],
+   "rtf": 0.1186,
+   "peak_rss_mb": 408.3,
+   "load_s": 2.35,
+   "hallucinations": [],
+   "events": {
+    "Speech": 62
+   }
+  },
+  "fw_large-v3_novad_none|Pei": {
+   "chars": 206,
+   "fillers": {
+    "嗯": 28,
+    "呃": 0,
+    "啊": 3,
+    "哦": 0,
+    "诶": 0,
+    "那个": 0,
+    "就是": 1,
+    "然后": 0
+   },
+   "repeats": [
+    "嗖嗖",
+    "嗯嗯嗯嗯",
+    "嗯嗯嗯嗯",
+    "嗯嗯嗯嗯",
+    "嗯嗯嗯嗯嗯嗯嗯嗯",
+    "嗯嗯嗯嗯"
+   ],
+   "rtf": 2.5605,
+   "peak_rss_mb": 6264.1,
+   "load_s": 11.72,
+   "hallucinations": []
+  },
+  "fw_large-v3_vad_none|Pei": {
+   "chars": 178,
+   "fillers": {
+    "嗯": 0,
+    "呃": 0,
+    "啊": 2,
+    "哦": 0,
+    "诶": 0,
+    "那个": 0,
+    "就是": 1,
+    "然后": 0
+   },
+   "repeats": [
+    "还还",
+    "嗖嗖"
+   ],
+   "rtf": 1.1196,
+   "peak_rss_mb": 6168.8,
+   "load_s": 11.91,
+   "hallucinations": []
+  },
+  "fw_turbo_novad_none|Pei": {
+   "chars": 206,
+   "fillers": {
+    "嗯": 48,
+    "呃": 0,
+    "啊": 2,
+    "哦": 0,
+    "诶": 0,
+    "那个": 0,
+    "就是": 1,
+    "然后": 0
+   },
+   "repeats": [
+    "嗯嗯嗯嗯",
+    "搜搜",
+    "嗯嗯嗯嗯嗯嗯",
+    "嗯嗯嗯嗯嗯嗯嗯嗯",
+    "嗯嗯嗯嗯嗯嗯嗯嗯",
+    "嗯嗯嗯嗯嗯嗯嗯嗯",
+    "嗯嗯嗯嗯嗯嗯嗯嗯"
+   ],
+   "rtf": 0.6807,
+   "peak_rss_mb": 2202.6,
+   "load_s": 4.8,
+   "hallucinations": []
+  },
+  "fw_turbo_vad_fillers|Pei": {
+   "chars": 186,
+   "fillers": {
+    "嗯": 10,
+    "呃": 0,
+    "啊": 2,
+    "哦": 0,
+    "诶": 0,
+    "那个": 0,
+    "就是": 1,
+    "然后": 0
+   },
+   "repeats": [
+    "搜搜",
+    "嗯嗯嗯嗯"
+   ],
+   "rtf": 0.1784,
+   "peak_rss_mb": 2139.1,
+   "load_s": 3.95,
+   "hallucinations": []
+  },
+  "fw_turbo_vad_none|Pei": {
+   "chars": 176,
+   "fillers": {
+    "嗯": 0,
+    "呃": 0,
+    "啊": 2,
+    "哦": 0,
+    "诶": 0,
+    "那个": 0,
+    "就是": 1,
+    "然后": 0
+   },
+   "repeats": [
+    "搜搜"
+   ],
+   "rtf": 0.085,
+   "peak_rss_mb": 2079.7,
+   "load_s": 4.24,
+   "hallucinations": []
+  },
+  "paraformer|Pei": {
+   "chars": 213,
+   "fillers": {
+    "嗯": 29,
+    "呃": 0,
+    "啊": 1,
+    "哦": 1,
+    "诶": 0,
+    "那个": 0,
+    "就是": 1,
+    "然后": 0
+   },
+   "repeats": [
+    "还还",
+    "嗯嗯嗯嗯",
+    "飕飕",
+    "嗯嗯嗯嗯嗯嗯",
+    "嗯嗯嗯嗯嗯嗯嗯嗯",
+    "热热"
+   ],
+   "rtf": 0.0246,
+   "peak_rss_mb": 421.7,
+   "load_s": 2.49,
+   "hallucinations": []
+  },
+  "sensevoice|Pei": {
+   "chars": 212,
+   "fillers": {
+    "嗯": 29,
+    "呃": 0,
+    "啊": 2,
+    "哦": 0,
+    "诶": 0,
+    "那个": 0,
+    "就是": 1,
+    "然后": 0
+   },
+   "repeats": [
+    "嗯嗯嗯嗯",
+    "飕飕",
+    "嗯嗯嗯嗯嗯嗯",
+    "嗯嗯嗯嗯嗯嗯嗯嗯",
+    "认认"
+   ],
+   "rtf": 0.0299,
+   "peak_rss_mb": 399.9,
+   "load_s": 2.3,
+   "hallucinations": [],
+   "events": {
+    "Speech": 39
+   }
+  }
+ },
+ "pairwise": {
+  "fw_large-v3_vad_fillers~fw_large-v3_vad_none": 0.049,
+  "fw_large-v3_vad_fillers~fw_turbo_vad_fillers": 0.162,
+  "fw_large-v3_vad_fillers~fw_turbo_vad_none": 0.081,
+  "fw_large-v3_vad_fillers~paraformer": 0.091,
+  "fw_large-v3_vad_fillers~paraformer_punct": 0.091,
+  "fw_large-v3_vad_fillers~sensevoice": 0.113,
+  "fw_large-v3_vad_fillers~sensevoice_itn": 0.09,
+  "fw_large-v3_vad_none~fw_large-v3_vad_fillers": 0.049,
+  "fw_large-v3_vad_none~fw_turbo_vad_fillers": 0.161,
+  "fw_large-v3_vad_none~fw_turbo_vad_none": 0.068,
+  "fw_large-v3_vad_none~paraformer": 0.1,
+  "fw_large-v3_vad_none~paraformer_punct": 0.1,
+  "fw_large-v3_vad_none~sensevoice": 0.125,
+  "fw_large-v3_vad_none~sensevoice_itn": 0.102,
+  "fw_turbo_vad_fillers~fw_large-v3_vad_fillers": 0.162,
+  "fw_turbo_vad_fillers~fw_large-v3_vad_none": 0.161,
+  "fw_turbo_vad_fillers~fw_turbo_vad_none": 0.165,
+  "fw_turbo_vad_fillers~paraformer": 0.208,
+  "fw_turbo_vad_fillers~paraformer_punct": 0.208,
+  "fw_turbo_vad_fillers~sensevoice": 0.223,
+  "fw_turbo_vad_fillers~sensevoice_itn": 0.202,
+  "fw_turbo_vad_none~fw_large-v3_vad_fillers": 0.081,
+  "fw_turbo_vad_none~fw_large-v3_vad_none": 0.068,
+  "fw_turbo_vad_none~fw_turbo_vad_fillers": 0.165,
+  "fw_turbo_vad_none~paraformer": 0.115,
+  "fw_turbo_vad_none~paraformer_punct": 0.115,
+  "fw_turbo_vad_none~sensevoice": 0.135,
+  "fw_turbo_vad_none~sensevoice_itn": 0.111,
+  "paraformer~fw_large-v3_vad_fillers": 0.091,
+  "paraformer~fw_large-v3_vad_none": 0.1,
+  "paraformer~fw_turbo_vad_fillers": 0.208,
+  "paraformer~fw_turbo_vad_none": 0.115,
+  "paraformer~paraformer_punct": 0.0,
+  "paraformer~sensevoice": 0.072,
+  "paraformer~sensevoice_itn": 0.057,
+  "paraformer_punct~fw_large-v3_vad_fillers": 0.091,
+  "paraformer_punct~fw_large-v3_vad_none": 0.1,
+  "paraformer_punct~fw_turbo_vad_fillers": 0.208,
+  "paraformer_punct~fw_turbo_vad_none": 0.115,
+  "paraformer_punct~paraformer": 0.0,
+  "paraformer_punct~sensevoice": 0.072,
+  "paraformer_punct~sensevoice_itn": 0.057,
+  "sensevoice~fw_large-v3_vad_fillers": 0.113,
+  "sensevoice~fw_large-v3_vad_none": 0.125,
+  "sensevoice~fw_turbo_vad_fillers": 0.223,
+  "sensevoice~fw_turbo_vad_none": 0.135,
+  "sensevoice~paraformer": 0.072,
+  "sensevoice~paraformer_punct": 0.072,
+  "sensevoice~sensevoice_itn": 0.051,
+  "sensevoice_itn~fw_large-v3_vad_fillers": 0.09,
+  "sensevoice_itn~fw_large-v3_vad_none": 0.102,
+  "sensevoice_itn~fw_turbo_vad_fillers": 0.202,
+  "sensevoice_itn~fw_turbo_vad_none": 0.111,
+  "sensevoice_itn~paraformer": 0.057,
+  "sensevoice_itn~paraformer_punct": 0.057,
+  "sensevoice_itn~sensevoice": 0.051
+ },
+ "timestamps": {
+  "fw_large-v3_vad_fillers": {
+   "onset_err": {
+    "n": 102,
+    "median_signed_ms": 50.0,
+    "median_abs_ms": 80.0,
+    "p90_abs_ms": 349.0,
+    "within_50ms": 0.3,
+    "within_100ms": 0.62
+   },
+   "offset_err": {
+    "n": 104,
+    "median_signed_ms": -140.0,
+    "median_abs_ms": 190.0,
+    "p90_abs_ms": 364.0,
+    "within_50ms": 0.09,
+    "within_100ms": 0.22
+   },
+   "onset_late_gt30ms": 0.63,
+   "offset_early_gt30ms": 0.83,
+   "coverage_onsets": 0.78,
+   "start_rel_db_median": -6.7,
+   "start_in_valley_frac": 0.33
+  },
+  "fw_large-v3_vad_none": {
+   "onset_err": {
+    "n": 100,
+    "median_signed_ms": 50.0,
+    "median_abs_ms": 80.0,
+    "p90_abs_ms": 380.0,
+    "within_50ms": 0.32,
+    "within_100ms": 0.55
+   },
+   "offset_err": {
+    "n": 104,
+    "median_signed_ms": -140.0,
+    "median_abs_ms": 190.0,
+    "p90_abs_ms": 350.0,
+    "within_50ms": 0.05,
+    "within_100ms": 0.21
+   },
+   "onset_late_gt30ms": 0.69,
+   "offset_early_gt30ms": 0.81,
+   "coverage_onsets": 0.77,
+   "start_rel_db_median": -6.8,
+   "start_in_valley_frac": 0.33
+  },
+  "fw_turbo_vad_fillers": {
+   "onset_err": {
+    "n": 104,
+    "median_signed_ms": 130.0,
+    "median_abs_ms": 140.0,
+    "p90_abs_ms": 414.0,
+    "within_50ms": 0.07,
+    "within_100ms": 0.29
+   },
+   "offset_err": {
+    "n": 98,
+    "median_signed_ms": -90.0,
+    "median_abs_ms": 140.0,
+    "p90_abs_ms": 353.0,
+    "within_50ms": 0.22,
+    "within_100ms": 0.43
+   },
+   "onset_late_gt30ms": 0.87,
+   "offset_early_gt30ms": 0.73,
+   "coverage_onsets": 0.8,
+   "start_rel_db_median": -6.1,
+   "start_in_valley_frac": 0.28
+  },
+  "fw_turbo_vad_none": {
+   "onset_err": {
+    "n": 101,
+    "median_signed_ms": 130.0,
+    "median_abs_ms": 140.0,
+    "p90_abs_ms": 410.0,
+    "within_50ms": 0.07,
+    "within_100ms": 0.26
+   },
+   "offset_err": {
+    "n": 98,
+    "median_signed_ms": -120.0,
+    "median_abs_ms": 150.0,
+    "p90_abs_ms": 353.0,
+    "within_50ms": 0.16,
+    "within_100ms": 0.38
+   },
+   "onset_late_gt30ms": 0.84,
+   "offset_early_gt30ms": 0.74,
+   "coverage_onsets": 0.78,
+   "start_rel_db_median": -6.0,
+   "start_in_valley_frac": 0.28
+  },
+  "paraformer": {
+   "onset_err": {
+    "n": 102,
+    "median_signed_ms": 23.0,
+    "median_abs_ms": 47.0,
+    "p90_abs_ms": 333.0,
+    "within_50ms": 0.51,
+    "within_100ms": 0.75
+   },
+   "offset_err": {
+    "n": 116,
+    "median_signed_ms": -104.0,
+    "median_abs_ms": 196.0,
+    "p90_abs_ms": 287.0,
+    "within_50ms": 0.06,
+    "within_100ms": 0.13
+   },
+   "onset_late_gt30ms": 0.46,
+   "offset_early_gt30ms": 0.59,
+   "coverage_onsets": 0.78,
+   "start_rel_db_median": -9.4,
+   "start_in_valley_frac": 0.46
+  },
+  "paraformer_punct": {
+   "onset_err": {
+    "n": 102,
+    "median_signed_ms": 23.0,
+    "median_abs_ms": 47.0,
+    "p90_abs_ms": 333.0,
+    "within_50ms": 0.51,
+    "within_100ms": 0.75
+   },
+   "offset_err": {
+    "n": 116,
+    "median_signed_ms": -104.0,
+    "median_abs_ms": 196.0,
+    "p90_abs_ms": 287.0,
+    "within_50ms": 0.06,
+    "within_100ms": 0.13
+   },
+   "onset_late_gt30ms": 0.46,
+   "offset_early_gt30ms": 0.59,
+   "coverage_onsets": 0.78,
+   "start_rel_db_median": -9.4,
+   "start_in_valley_frac": 0.46
+  },
+  "sensevoice": {
+   "onset_err": {
+    "n": 102,
+    "median_signed_ms": 5.0,
+    "median_abs_ms": 84.0,
+    "p90_abs_ms": 325.0,
+    "within_50ms": 0.32,
+    "within_100ms": 0.59
+   },
+   "offset_err": {
+    "n": 116,
+    "median_signed_ms": -93.0,
+    "median_abs_ms": 186.0,
+    "p90_abs_ms": 286.0,
+    "within_50ms": 0.09,
+    "within_100ms": 0.21
+   },
+   "onset_late_gt30ms": 0.39,
+   "offset_early_gt30ms": 0.59,
+   "coverage_onsets": 0.78,
+   "start_rel_db_median": -9.4,
+   "start_in_valley_frac": 0.47
+  },
+  "sensevoice_itn": {
+   "onset_err": {
+    "n": 114,
+    "median_signed_ms": 6.0,
+    "median_abs_ms": 84.0,
+    "p90_abs_ms": 319.0,
+    "within_50ms": 0.33,
+    "within_100ms": 0.59
+   },
+   "offset_err": {
+    "n": 120,
+    "median_signed_ms": -3.0,
+    "median_abs_ms": 170.0,
+    "p90_abs_ms": 287.0,
+    "within_50ms": 0.14,
+    "within_100ms": 0.28
+   },
+   "onset_late_gt30ms": 0.39,
+   "offset_early_gt30ms": 0.47,
+   "coverage_onsets": 0.88,
+   "start_rel_db_median": -8.9,
+   "start_in_valley_frac": 0.44
+  },
+  "_baseline_random": {
+   "start_rel_db_median": -7.1,
+   "start_in_valley_frac": 0.34
+  }
+ },
+ "silence": {
+  "fw_large-v3_novad_none": {
+   "chars": 206,
+   "low_energy_chars": 4,
+   "high_cr_segs": 0,
+   "max_identical_segment_repeats": 1,
+   "chars_in_leon": 32
+  },
+  "fw_large-v3_vad_none": {
+   "chars": 178,
+   "low_energy_chars": 3,
+   "high_cr_segs": 0,
+   "max_identical_segment_repeats": 1,
+   "chars_in_leon": 32
+  },
+  "fw_turbo_novad_none": {
+   "chars": 206,
+   "low_energy_chars": 16,
+   "high_cr_segs": 0,
+   "max_identical_segment_repeats": 1,
+   "chars_in_leon": 25
+  },
+  "fw_turbo_vad_fillers": {
+   "chars": 186,
+   "low_energy_chars": 3,
+   "high_cr_segs": 0,
+   "max_identical_segment_repeats": 1,
+   "chars_in_leon": 29
+  },
+  "fw_turbo_vad_none": {
+   "chars": 176,
+   "low_energy_chars": 1,
+   "high_cr_segs": 0,
+   "max_identical_segment_repeats": 1,
+   "chars_in_leon": 29
+  },
+  "paraformer": {
+   "chars": 213,
+   "low_energy_chars": 3,
+   "high_cr_segs": 0,
+   "max_identical_segment_repeats": 1,
+   "chars_in_leon": 32
+  },
+  "sensevoice": {
+   "chars": 212,
+   "low_energy_chars": 2,
+   "high_cr_segs": 0,
+   "max_identical_segment_repeats": 1,
+   "chars_in_leon": 32
+  }
+ },
+ "ref": {
+  "fw_large-v3_vad_fillers": {
+   "hits": [
+    true,
+    true,
+    true,
+    true,
+    false,
+    false,
+    true,
+    true,
+    true,
+    false
+   ],
+   "recall": 0.7,
+   "cer": 0.064
+  },
+  "fw_large-v3_vad_none": {
+   "hits": [
+    false,
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true
+   ],
+   "recall": 0.5,
+   "cer": 0.067
+  },
+  "fw_turbo_vad_fillers": {
+   "hits": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    true
+   ],
+   "recall": 0.3,
+   "cer": 0.144
+  },
+  "fw_turbo_vad_none": {
+   "hits": [
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    true
+   ],
+   "recall": 0.4,
+   "cer": 0.074
+  },
+  "paraformer": {
+   "hits": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "recall": 1.0,
+   "cer": 0.013
+  },
+  "paraformer_punct": {
+   "hits": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "recall": 1.0,
+   "cer": 0.013
+  },
+  "sensevoice": {
+   "hits": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "recall": 1.0,
+   "cer": 0.037
+  },
+  "sensevoice_itn": {
+   "hits": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+   ],
+   "recall": 1.0,
+   "cer": 0.023
+  }
+ }
+}

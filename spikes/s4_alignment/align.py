@@ -679,6 +679,11 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
     for ti, (X, Y, oX, oY, gX, gY, EX) in tr.items():
         for f in np.flatnonzero(np.diff(oX)) + 1:
             if ins_frames[max(f - 2, 0):f + 2].all():
+                # offset change hidden under non-raw material: keep it for offset continuity,
+                # but it is not an observable edit event
+                sw[ti].append(dict(f=int(f), pos=int(f) * HOP, cpos=int(f) * HOP, lo=int(f) * HOP, hi=int(f) * HOP,
+                                   o1=int(oX[f - 1]), o2=int(oX[f]), jump=int(oX[f]) - int(oX[f - 1]), gain=0.0,
+                                   ev_before=0.0, ev_after=0.0, in_insert=True))
                 continue
             o1, o2 = int(oX[f - 1]), int(oX[f])
             w1 = slice(max(f - 30, 0), f)
@@ -693,9 +698,10 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
     # ---------------- pair L/P switches with the same jump into joint events
     events = []
     usedP = set()
-    for s in sw[0]:
+    swe = {ti: [x for x in sw[ti] if not x.get('in_insert')] for ti in (0, 1)}
+    for s in swe[0]:
         best, bd = None, None
-        for k, p in enumerate(sw[1]):
+        for k, p in enumerate(swe[1]):
             if k in usedP:
                 continue
             # the Viterbi emits a joint cut as both tracks switching on the same frame
@@ -708,10 +714,10 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
             events.append(dict(kind='single', track=0, sw=[s]))
         else:
             usedP.add(best)
-            p = sw[1][best]
+            p = swe[1][best]
             kind = 'joint' if abs(p['jump'] - s['jump']) <= 3 else 'asym'
             events.append(dict(kind=kind, track=None, sw=[s, p]))
-    for k, p in enumerate(sw[1]):
+    for k, p in enumerate(swe[1]):
         if k not in usedP:
             events.append(dict(kind='single', track=1, sw=[p]))
 
@@ -834,7 +840,7 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
         return box(e, 2) / 5 > floor_ * 100        # ~20 dB above the track's noise floor
     actR = {names[0]: act_mask(L), names[1]: act_mask(P)}
     fe = box(fm.FF, 2) / 5
-    thr_sp = np.percentile(fm.FF[fm.FF > 0], 50) / 100.0      # 20 dB under median frame energy
+    thr_sp = np.sqrt(np.percentile(fe, 20) * np.percentile(fe, 80))   # halfway (in dB) between pause and speech level
     fsil = fe < thr_sp
     for r in ev_out:
         if r['type'] != 'cut':
@@ -874,7 +880,9 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
         for a, b, _ in TS[ti]:
             edges.update((a, b))
     for a, b in ins:
-        edges.update((a * HOP, min(b * HOP, len(F))))
+        edges.update((a * HOP, len(F) if b >= nfr - 1 else min(b * HOP, len(F))))
+        if b >= nfr - 1:
+            edges.discard(b * HOP)
     edges = sorted(edges)
 
     def off_at(ti, pos):
@@ -969,8 +977,9 @@ def analyse(F, L, P, fm, offL, offP, EL, EP, GL, GP, args, S):
                 j += 1
         return out
 
-    usedL = merge([tuple(s['leon_src']) for s in raw_segs])
-    usedP = merge([tuple(s['pei_src']) for s in raw_segs])
+    clip_ = lambda iv: [(max(a, 0.0), min(b, raw_len / SR)) for a, b in iv if min(b, raw_len / SR) > max(a, 0.0)]
+    usedL = merge(clip_([tuple(s['leon_src']) for s in raw_segs]))
+    usedP = merge(clip_([tuple(s['pei_src']) for s in raw_segs]))
     remL = complement(usedL, raw_len / SR)
     remP = complement(usedP, raw_len / SR)
     rem_both = intersect(remL, remP)

@@ -16,6 +16,10 @@ P0 → P1。方向已确认（D23 API 额度路径、D24 MVP 收窄）。
 2. ✅ GitHub 仓库 https://github.com/leon-qr-li/lacuna 已就绪，docs 与 Handoff 已迁入 main（2026-10-16）。仓库是今后的权威来源；`/mnt/project-files/lacuna/` 为镜像 / 素材区。
 3. 搭档 Mac 型号未知（不急）。
 
+## Spike results (2026-10-16)
+- S2 ASR：`spikes/s2_asr/REPORT.md` → Paraformer 推荐（D30）。
+- S4 对齐：`spikes/s4_alignment/REPORT.md` → 470 处剪辑、两轨大量独立编辑（D31）。
+
 ## Next action
 - S4：EP001 raw→final 完整对齐图（保留/删除/移动/插入音乐），作为评测地面真值。
 - 仓库就绪后：迁入 docs，建骨架 + CI 矩阵（ubuntu/windows/macos）。

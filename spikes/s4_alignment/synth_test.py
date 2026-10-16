@@ -32,8 +32,14 @@ def main():
     ap.add_argument('--raw-start', type=float, default=1000.0)
     ap.add_argument('--raw-len', type=float, default=480.0)
     ap.add_argument('--cache-dir')
+    ap.add_argument('--rescore', action='store_true',
+                    help='reuse the existing synth_final.mp3/truth and cached Viterbi paths; rerun analysis + scoring only')
     args = ap.parse_args()
     os.makedirs(args.work, exist_ok=True)
+    if args.rescore:
+        mp3 = os.path.join(args.work, 'synth_final.mp3')
+        truth = json.load(open(os.path.join(args.work, 'synth_truth.json')))
+        return run_and_score(args, mp3, truth, analyse_only=True)
     rng = np.random.default_rng(args.seed)
     info = sf.info(args.leon)
     sr = info.samplerate
@@ -190,12 +196,17 @@ def main():
                  insert=[ins_at_s, ins_at_s + ins_dur], bed=[bed_s, bed_s + bed_d],
                  switches=dict(Leon=swL, Pei=swP), segments=dict(Leon=segL, Pei=segP))
     json.dump(truth, open(os.path.join(args.work, 'synth_truth.json'), 'w'), indent=1, default=float)
+    run_and_score(args, mp3, truth)
 
+
+def run_and_score(args, mp3, truth, analyse_only=False):
     out = os.path.join(args.work, 'synth_alignment.json')
     cmd = [sys.executable, '-I', os.path.join(HERE, 'align.py'), '--leon', args.leon, '--pei', args.pei,
            '--final', mp3, '--out', out, '--no-insert-probe']
     if args.cache_dir:
         cmd += ['--cache-dir', args.cache_dir]
+    if analyse_only:
+        cmd += ['--analyse-only']
     subprocess.run(cmd, check=True)
     score = score_alignment(json.load(open(out)), truth)
     json.dump(score, open(os.path.join(args.work, 'synth_score.json'), 'w'), indent=1, default=float)
@@ -244,6 +255,29 @@ def score_alignment(res, truth):
                            within_20ms=int(np.sum(e <= 20)), within_5ms=int(np.sum(e <= 5)),
                            truth_inside_heard_bounds=sum(1 for m in matched if m.get('in_heard_bounds')), truth_inside_reported_ambiguity=sum(1 for m in matched if m.get('in_ambiguity')))
         details[tr] = dict(matched=matched, false_positives=fp)
+    # offset correctness over time: fraction of raw-derived final time where the detected
+    # per-track offset equals the true one (within 1 ms)
+    for tr, key in (('Leon', 'offset_leon'), ('Pei', 'offset_pei')):
+        tsegs = truth['segments'][tr]
+        dsegs = [x for x in res['segments'] if x['type'] == 'raw']
+        grid = np.arange(0, res['stats']['final_duration_s'], 0.01)
+        tof = np.full(len(grid), np.nan)
+        for g in tsegs:
+            m = (grid >= g['final'][0]) & (grid < g['final'][1])
+            tof[m] = g['raw'][0] - g['final'][0]
+        dof = np.full(len(grid), np.nan)
+        heard = np.zeros(len(grid), bool)
+        for g in dsegs:
+            m = (grid >= g['final_start']) & (grid < g['final_end'])
+            dof[m] = g[key]
+            heard[m] = g['evidence_s'][tr] >= 0.1
+        ok = ~np.isnan(tof)
+        good = ok & (np.abs(dof - tof) < 0.001)
+        summary[tr]['offset_correct_time_frac'] = round(float(good.sum() / ok.sum()), 4)
+        summary[tr]['offset_wrong_s'] = round(float((ok & ~good).sum() * 0.01), 2)
+        okh = ok & heard
+        summary[tr]['offset_correct_frac_where_track_heard'] = round(float((good & heard).sum() / max(okh.sum(), 1)), 4)
+        summary[tr]['offset_wrong_s_where_track_heard'] = round(float((okh & ~good).sum() * 0.01), 2)
     ins_det = res['inserts']
     summary['insert_truth'] = [round(x, 3) for x in truth['insert']]
     summary['insert_detected'] = [[s['final_start'], s['final_end']] for s in ins_det]

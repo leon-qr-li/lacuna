@@ -11,3 +11,5 @@
 | D27 | 2026-10-16 | 学习模块升级为核心能力：以 Studio 内的实时反馈（恢复、覆盖、聊天修改、批准）为主要学习来源；Studio 自动保存每集 raw + 每个版本 + 最终成品，从此历史不再丢失 | PROPOSED by Claude，随 D26 生效 | 第一刀质量评测改为：新集上 AI 第一刀由 Leon 盲听打分 + 修改量统计 |
 | D28 | 2026-10-16 | 不做通用 speaker diarization：Riverside 分轨即说话人；只做每轨 VAD + 串音检测 | Claude 技术决策 | 节省显存与时间 |
 | D29 | 2026-10-16 | **更正 D26**：Leon 提供了一集完整的 raw 双轨 + 他手剪成品（EP001，73.5 min → 61.4 min），已验证成品由这两轨剪出。其余历史 raw 不存在 | CONFIRMED 事实 | 恢复 S4（单集对齐）并作为 S5 第一刀评测的地面真值；D27 学习策略不变 |
+| D30 | 2026-10-16 | 逐字 ASR = Paraformer-large zh（sherpa-onnx int8，每轨 Silero VAD），所有硬件档位通用；SenseVoice-Small 作交叉校验；Whisper 仅可作 cuda-6gb 上的专有名词提示，绝不作转写源；所有剪辑点按信号能量谷精修 | PROPOSED（S2 证据，待 Leon 抽查 60 秒） | 见 `spikes/s2_asr/REPORT.md` |
+| D31 | 2026-10-16 | 编辑模型与渲染器必须原生支持**每轨独立**时间编辑（单轨 slip、重叠串行化、单轨删短声），停顿收紧到约 0.4s 而非删除；每轨响度匹配为默认步骤 | Claude 技术决策（S4 证据） | 见 `spikes/s4_alignment/REPORT.md`；EP001 作为按轨评测的地面真值 |

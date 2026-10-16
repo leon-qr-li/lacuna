@@ -16,18 +16,18 @@
  "stats": {
   "raw_duration_s": 4411.932,
   "final_duration_s": 3684.766,
-  "insert_total_s": 153.39,
+  "insert_total_s": 153.396,
   "n_inserts": 3,
-  "final_from_raw_s": 3531.376,
-  "n_raw_segments": 496,
+  "final_from_raw_s": 3531.37,
+  "n_raw_segments": 495,
   "raw_used_s": {
-   "Leon": 3522.218,
-   "Pei": 3510.483
+   "Leon": 3522.874,
+   "Pei": 3511.14
   },
   "raw_removed_s": {
-   "Leon": 957.054,
-   "Pei": 968.788,
-   "both_tracks": 813.344
+   "Leon": 889.058,
+   "Pei": 900.792,
+   "both_tracks": 745.348
   },
   "joint_cuts": {
    "count": 246,
@@ -80,6 +80,27 @@
    "count": 181,
    "abs_track_diff_s_median": 0.398
   },
+  "cut_character": {
+   "pause_only": {
+    "count": 172,
+    "total_s": 166.63,
+    "median_s": 0.607,
+    "final_pause_at_cut_median_s": 0.56
+   },
+   "mixed": {
+    "count": 156,
+    "total_s": 281.58,
+    "median_s": 1.144,
+    "final_pause_at_cut_median_s": 0.39
+   },
+   "mostly_speech": {
+    "count": 142,
+    "total_s": 436.25,
+    "median_s": 1.181,
+    "final_pause_at_cut_median_s": 0.28
+   },
+   "definition": "max over tracks of the fraction of removed raw frames >20 dB above that track noise floor: <0.1 pause_only, >=0.5 mostly_speech"
+  },
   "backward_jumps": {
    "count": 23,
    "joint": 5,
@@ -99,8 +120,8 @@
   "joint_pos_disagreement_ms_median": 134.8,
   "desync": {
    "n_runs": 261,
-   "in_sync_s": 869.2,
-   "out_of_sync_s": 2774.0
+   "in_sync_s": 801.9,
+   "out_of_sync_s": 2729.5
   },
   "muted_spans": {
    "Leon": {
@@ -155,7 +176,7 @@
   "segment_confidence": {
    "high": 486,
    "medium": 8,
-   "low": 2
+   "low": 1
   },
   "segment_confidence_s": {
    "high": 3527.6,
@@ -169,28 +190,24 @@
  },
  "validation": {
   "segment_gain": {
-   "global_ncc": 0.9544,
-   "residual_to_final_energy_db": -10.27,
+   "global_ncc": 0.955,
+   "residual_to_final_energy_db": -10.32,
    "window_1s_ncc_pct": {
-    "1": 0.703,
+    "1": 0.708,
     "5": 0.93,
-    "10": 0.951,
+    "10": 0.952,
     "25": 0.97,
     "50": 0.984,
     "75": 0.993,
     "90": 0.997
    },
    "windows": 3177,
-   "windows_below_0_8": 45,
-   "windows_below_0_5": 11,
+   "windows_below_0_8": 43,
+   "windows_below_0_5": 10,
    "worst_windows": [
     [
      1683,
      0.207
-    ],
-    [
-     42,
-     0.218
     ],
     [
      618,
@@ -283,14 +300,18 @@
     [
      83,
      0.659
+    ],
+    [
+     263,
+     0.663
     ]
    ]
   },
   "local_gain": {
-   "global_ncc": 0.9791,
-   "residual_to_final_energy_db": -13.83,
+   "global_ncc": 0.9796,
+   "residual_to_final_energy_db": -13.94,
    "window_1s_ncc_pct": {
-    "1": 0.905,
+    "1": 0.907,
     "5": 0.945,
     "10": 0.958,
     "25": 0.972,
@@ -299,13 +320,9 @@
     "90": 0.997
    },
    "windows": 3177,
-   "windows_below_0_8": 11,
-   "windows_below_0_5": 1,
+   "windows_below_0_8": 9,
+   "windows_below_0_5": 0,
    "worst_windows": [
-    [
-     42,
-     0.218
-    ],
     [
      107,
      0.629
@@ -329,10 +346,6 @@
     [
      1940,
      0.751
-    ],
-    [
-     2803,
-     0.759
     ],
     [
      1358,
@@ -401,11 +414,19 @@
     [
      2561,
      0.883
+    ],
+    [
+     1218,
+     0.887
+    ],
+    [
+     2645,
+     0.888
     ]
    ]
   },
   "ablation_tracks_forced_in_sync": {
-   "global_ncc": 0.5513,
+   "global_ncc": 0.552,
    "residual_to_final_energy_db": -0.39,
    "window_1s_ncc_pct": {
     "1": -0.066,
@@ -417,8 +438,8 @@
     "90": 0.992
    },
    "windows": 3177,
-   "windows_below_0_8": 1241,
-   "windows_below_0_5": 1133,
+   "windows_below_0_8": 1239,
+   "windows_below_0_5": 1132,
    "worst_windows": [
     [
      2668,
@@ -531,8 +552,8 @@
   "pause_levels_per_minute_db": [
    [
     0,
-    -38.0,
-    -40.9
+    -38.2,
+    -41.5
    ],
    [
     60,
@@ -597,11 +618,11 @@
    [
     780,
     -40.3,
-    -58.6
+    -58.5
    ],
    [
     840,
-    -40.1,
+    -40.0,
     -56.5
    ],
    [
@@ -761,8 +782,8 @@
    ],
    [
     2760,
-    -37.9,
-    -43.5
+    -38.5,
+    -44.2
    ],
    [
     2820,
@@ -776,7 +797,7 @@
    ],
    [
     2940,
-    -39.2,
+    -39.1,
     -50.5
    ],
    [
@@ -791,7 +812,7 @@
    ],
    [
     3120,
-    -42.4,
+    -42.3,
     -54.4
    ],
    [
@@ -812,7 +833,7 @@
    [
     3360,
     -43.9,
-    -56.3
+    -56.2
    ],
    [
     3420,
@@ -843,7 +864,9 @@
    "final_end": 41.66,
    "id": 0,
    "dur": 41.66,
-   "confidence": "high"
+   "confidence": "high",
+   "raw_probe_hits": [],
+   "raw_probe_windows": 40
   },
   {
    "type": "raw",
@@ -852,15 +875,15 @@
    "id": 1,
    "dur": 1.0145,
    "leon_src": [
-    -2803.483,
-    -2802.4685
+    1.1945,
+    2.209
    ],
    "pei_src": [
-    -2803.483,
-    -2802.4685
+    1.1945,
+    2.209
    ],
-   "offset_leon": -2845.143,
-   "offset_pei": -2845.143,
+   "offset_leon": -40.4655,
+   "offset_pei": -40.4655,
    "pei_minus_leon_s": 0.0,
    "gain_leon": 2.212,
    "gain_pei": null,
@@ -12016,7 +12039,9 @@
    "final_end": 2802.84,
    "id": 386,
    "dur": 43.8,
-   "confidence": "high"
+   "confidence": "high",
+   "raw_probe_hits": [],
+   "raw_probe_windows": 42
   },
   {
    "type": "raw",
@@ -12025,16 +12050,16 @@
    "id": 387,
    "dur": 0.6623,
    "leon_src": [
-    3469.2267,
-    3469.889
+    3426.461,
+    3427.1233
    ],
    "pei_src": [
-    3469.3068,
-    3469.969
+    3426.461,
+    3427.1233
    ],
-   "offset_leon": 666.3868,
-   "offset_pei": 666.4668,
-   "pei_minus_leon_s": 0.08,
+   "offset_leon": 623.621,
+   "offset_pei": 623.621,
+   "pei_minus_leon_s": 0.0,
    "gain_leon": 2.202,
    "gain_pei": null,
    "evidence_s": {
@@ -15211,39 +15236,12 @@
   {
    "type": "insert",
    "final_start": 3616.83,
-   "final_end": 3684.76,
-   "id": 497,
-   "dur": 67.93,
-   "confidence": "high"
-  },
-  {
-   "type": "raw",
-   "final_start": 3684.76,
    "final_end": 3684.766,
-   "id": 498,
-   "dur": 0.006,
-   "leon_src": [
-    4478.251,
-    4478.257
-   ],
-   "pei_src": [
-    4478.251,
-    4478.257
-   ],
-   "offset_leon": 793.491,
-   "offset_pei": 793.491,
-   "pei_minus_leon_s": 0.0,
-   "gain_leon": null,
-   "gain_pei": null,
-   "evidence_s": {
-    "Leon": 0.0,
-    "Pei": 0.0
-   },
-   "track_confidence": {
-    "Leon": "inferred",
-    "Pei": "inferred"
-   },
-   "confidence": "low"
+   "id": 497,
+   "dur": 67.936,
+   "confidence": "high",
+   "raw_probe_hits": [],
+   "raw_probe_windows": 66
   }
  ],
  "edit_events": [
@@ -15294,7 +15292,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.56
   },
   {
    "kind": "joint",
@@ -15344,7 +15347,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.49
   },
   {
    "kind": "joint",
@@ -15393,7 +15401,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.143,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "joint",
@@ -15440,7 +15453,12 @@
    ],
    "heard_bounds_width_s": 0.51,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.623,
+    "Pei": 0.002
+   },
+   "final_pause_at_cut_s": 0.62
   },
   {
    "kind": "joint",
@@ -15489,7 +15507,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.14
   },
   {
    "kind": "joint",
@@ -15538,7 +15561,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.763,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "joint",
@@ -15587,7 +15615,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.551,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "joint",
@@ -15636,7 +15669,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.362,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.74
   },
   {
    "kind": "joint",
@@ -15685,7 +15723,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.57,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.36
   },
   {
    "kind": "joint",
@@ -15734,7 +15777,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.739,
+    "Pei": 0.108
+   },
+   "final_pause_at_cut_s": 0.64
   },
   {
    "kind": "joint",
@@ -15783,7 +15831,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.473,
+    "Pei": 0.031
+   },
+   "final_pause_at_cut_s": 0.54
   },
   {
    "kind": "joint",
@@ -15832,7 +15885,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -15881,7 +15939,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.892,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "joint",
@@ -15930,7 +15993,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.27
   },
   {
    "kind": "joint",
@@ -15979,7 +16047,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.127,
+    "Pei": 0.473
+   },
+   "final_pause_at_cut_s": 0.15
   },
   {
    "kind": "joint",
@@ -16028,7 +16101,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "single",
@@ -16062,7 +16140,11 @@
    "heard_bounds_width_s": 13.09,
    "staggered_pair": false,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.85
   },
   {
    "kind": "single",
@@ -16098,7 +16180,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.148
+   },
+   "final_pause_at_cut_s": 0.94
   },
   {
    "kind": "asym",
@@ -16147,7 +16233,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.108,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.93
   },
   {
    "kind": "joint",
@@ -16197,7 +16288,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.544,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.26
   },
   {
    "kind": "asym",
@@ -16246,7 +16342,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.688,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.11
   },
   {
    "kind": "joint",
@@ -16295,7 +16396,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.486,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "asym",
@@ -16344,7 +16450,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.08
   },
   {
    "kind": "asym",
@@ -16393,7 +16504,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.243,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.33
   },
   {
    "kind": "single",
@@ -16429,7 +16545,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.6
   },
   {
    "kind": "joint",
@@ -16478,7 +16598,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.14,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.08
   },
   {
    "kind": "joint",
@@ -16527,7 +16652,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.655,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "joint",
@@ -16574,7 +16704,12 @@
    ],
    "heard_bounds_width_s": 0.76,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.17
   },
   {
    "kind": "asym",
@@ -16673,7 +16808,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.568,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.59
   },
   {
    "kind": "asym",
@@ -16722,7 +16862,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.376,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.25
   },
   {
    "kind": "joint",
@@ -16771,7 +16916,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.391,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.25
   },
   {
    "kind": "asym",
@@ -16820,7 +16970,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.593,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.32
   },
   {
    "kind": "joint",
@@ -16869,7 +17024,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.098,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.47
   },
   {
    "kind": "asym",
@@ -16918,7 +17078,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.448,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.13
   },
   {
    "kind": "joint",
@@ -16968,7 +17133,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.32
   },
   {
    "kind": "joint",
@@ -17017,7 +17187,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.62,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.14
   },
   {
    "kind": "joint",
@@ -17066,7 +17241,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.533,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.2
   },
   {
    "kind": "asym",
@@ -17164,7 +17344,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.244,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "joint",
@@ -17264,7 +17449,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.631,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -17313,7 +17503,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.152,
+    "Pei": 0.112
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -17413,7 +17608,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.48
   },
   {
    "kind": "joint",
@@ -17463,7 +17663,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.071,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.4
   },
   {
    "kind": "joint",
@@ -17512,7 +17717,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.556,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.64
   },
   {
    "kind": "asym",
@@ -17561,7 +17771,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.452,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.59
   },
   {
    "kind": "asym",
@@ -17610,7 +17825,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.9
   },
   {
    "kind": "asym",
@@ -17659,7 +17879,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.96
   },
   {
    "kind": "asym",
@@ -17708,7 +17933,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.02,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.76
   },
   {
    "kind": "joint",
@@ -17757,7 +17987,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.458,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.67
   },
   {
    "kind": "joint",
@@ -17806,7 +18041,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.47
   },
   {
    "kind": "single",
@@ -17877,7 +18117,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.653
+   },
+   "final_pause_at_cut_s": 0.89
   },
   {
    "kind": "single",
@@ -17911,7 +18155,11 @@
    "heard_bounds_width_s": 5.1,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.25
   },
   {
    "kind": "joint",
@@ -17960,7 +18208,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.419,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.25
   },
   {
    "kind": "joint",
@@ -18010,7 +18263,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -18060,7 +18318,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.19,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "joint",
@@ -18109,7 +18372,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.41
   },
   {
    "kind": "single",
@@ -18143,7 +18411,11 @@
    "heard_bounds_width_s": 1.94,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.523
+   },
+   "final_pause_at_cut_s": 0.09
   },
   {
    "kind": "asym",
@@ -18192,7 +18464,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.271,
+    "Pei": 0.04
+   },
+   "final_pause_at_cut_s": 0.33
   },
   {
    "kind": "single",
@@ -18226,7 +18503,11 @@
    "heard_bounds_width_s": 0.0,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.33
   },
   {
    "kind": "asym",
@@ -18275,7 +18556,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.403,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.35
   },
   {
    "kind": "single",
@@ -18311,7 +18597,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.61
   },
   {
    "kind": "joint",
@@ -18360,7 +18650,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.923,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.07
   },
   {
    "kind": "single",
@@ -18394,7 +18689,11 @@
    "heard_bounds_width_s": 17.18,
    "staggered_pair": false,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -18443,7 +18742,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.663,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.42
   },
   {
    "kind": "asym",
@@ -18492,7 +18796,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.32
   },
   {
    "kind": "joint",
@@ -18539,7 +18848,12 @@
    ],
    "heard_bounds_width_s": 0.48,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.7
   },
   {
    "kind": "asym",
@@ -18588,7 +18902,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.288,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.49
   },
   {
    "kind": "single",
@@ -18622,7 +18941,11 @@
    "heard_bounds_width_s": 5.65,
    "staggered_pair": false,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.44
   },
   {
    "kind": "joint",
@@ -18669,7 +18992,12 @@
    ],
    "heard_bounds_width_s": 0.0,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.594,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.26
   },
   {
    "kind": "asym",
@@ -18718,7 +19046,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.218,
+    "Pei": 0.127
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -18768,7 +19101,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.72
   },
   {
    "kind": "asym",
@@ -18818,7 +19156,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.903,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.08
   },
   {
    "kind": "joint",
@@ -18868,7 +19211,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.614,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "joint",
@@ -18918,7 +19266,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.268,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.43
   },
   {
    "kind": "joint",
@@ -18967,7 +19320,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.319,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.39
   },
   {
    "kind": "asym",
@@ -19016,7 +19374,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.583,
+    "Pei": 0.013
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "asym",
@@ -19063,7 +19426,12 @@
    ],
    "heard_bounds_width_s": 0.08,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.647,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.14
   },
   {
    "kind": "joint",
@@ -19113,7 +19481,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.639,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.2
   },
   {
    "kind": "joint",
@@ -19162,7 +19535,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.844,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.14
   },
   {
    "kind": "joint",
@@ -19212,7 +19590,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.739,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.86
   },
   {
    "kind": "joint",
@@ -19261,7 +19644,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.313,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -19311,7 +19699,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.405,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -19360,7 +19753,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.989,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.05
   },
   {
    "kind": "asym",
@@ -19409,7 +19807,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.615,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.26
   },
   {
    "kind": "single",
@@ -19443,7 +19846,11 @@
    "heard_bounds_width_s": 3.97,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.695
+   },
+   "final_pause_at_cut_s": 1.09
   },
   {
    "kind": "single",
@@ -19477,7 +19884,11 @@
    "heard_bounds_width_s": 8.7,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.021
+   },
+   "final_pause_at_cut_s": 0.87
   },
   {
    "kind": "asym",
@@ -19526,7 +19937,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.472,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.02
   },
   {
    "kind": "single",
@@ -19595,7 +20011,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.23
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -19645,7 +20065,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.359,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.46
   },
   {
    "kind": "joint",
@@ -19695,7 +20120,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 2.15
   },
   {
    "kind": "joint",
@@ -19744,7 +20174,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.584,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "asym",
@@ -19794,7 +20229,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.24
   },
   {
    "kind": "asym",
@@ -19844,7 +20284,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.288,
+    "Pei": 0.008
+   },
+   "final_pause_at_cut_s": 1.42
   },
   {
    "kind": "asym",
@@ -19941,7 +20386,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.862,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.13
   },
   {
    "kind": "asym",
@@ -19991,7 +20441,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.874,
+    "Pei": 0.016
+   },
+   "final_pause_at_cut_s": 0.06
   },
   {
    "kind": "asym",
@@ -20040,7 +20495,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.232,
+    "Pei": 0.036
+   },
+   "final_pause_at_cut_s": 0.25
   },
   {
    "kind": "single",
@@ -20076,7 +20536,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.28
   },
   {
    "kind": "asym",
@@ -20125,7 +20589,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.12
   },
   {
    "kind": "joint",
@@ -20175,7 +20644,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.269,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.39
   },
   {
    "kind": "joint",
@@ -20224,7 +20698,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.059
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -20323,7 +20802,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.214,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.73
   },
   {
    "kind": "joint",
@@ -20372,7 +20856,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.618,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "joint",
@@ -20421,7 +20910,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.81
   },
   {
    "kind": "joint",
@@ -20470,7 +20964,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.068,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.18
   },
   {
    "kind": "joint",
@@ -20519,7 +21018,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.92
   },
   {
    "kind": "joint",
@@ -20568,7 +21072,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.064,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.81
   },
   {
    "kind": "joint",
@@ -20617,7 +21126,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.436,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.32
   },
   {
    "kind": "joint",
@@ -20666,7 +21180,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.316,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.01
   },
   {
    "kind": "joint",
@@ -20715,7 +21234,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.11
   },
   {
    "kind": "single",
@@ -20749,7 +21273,11 @@
    "heard_bounds_width_s": 13.93,
    "staggered_pair": false,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.6
   },
   {
    "kind": "single",
@@ -20831,7 +21359,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.24
   },
   {
    "kind": "single",
@@ -20867,7 +21400,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "asym",
@@ -20916,7 +21453,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.518,
+    "Pei": 0.006
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "asym",
@@ -20965,7 +21507,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.175,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "single",
@@ -21001,7 +21548,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.327
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "asym",
@@ -21050,7 +21601,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.553,
+    "Pei": 0.005
+   },
+   "final_pause_at_cut_s": 0.57
   },
   {
    "kind": "asym",
@@ -21148,7 +21704,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.57
   },
   {
    "kind": "joint",
@@ -21197,7 +21758,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.5,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.3
   },
   {
    "kind": "asym",
@@ -21246,7 +21812,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.002
+   },
+   "final_pause_at_cut_s": 0.79
   },
   {
    "kind": "single",
@@ -21282,7 +21853,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.835
+   },
+   "final_pause_at_cut_s": 0.11
   },
   {
    "kind": "asym",
@@ -21331,7 +21906,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.414,
+    "Pei": 0.01
+   },
+   "final_pause_at_cut_s": 0.33
   },
   {
    "kind": "asym",
@@ -21429,7 +22009,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.46
   },
   {
    "kind": "joint",
@@ -21478,7 +22063,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.585,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.04
   },
   {
    "kind": "asym",
@@ -21527,7 +22117,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.259,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.24
   },
   {
    "kind": "asym",
@@ -21576,7 +22171,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.743,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.57
   },
   {
    "kind": "asym",
@@ -21674,7 +22274,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.564,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.5
   },
   {
    "kind": "joint",
@@ -21724,7 +22329,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.151,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.59
   },
   {
    "kind": "asym",
@@ -21773,7 +22383,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.308
+   },
+   "final_pause_at_cut_s": 0.04
   },
   {
    "kind": "asym",
@@ -21822,7 +22437,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.633
+   },
+   "final_pause_at_cut_s": 0.08
   },
   {
    "kind": "joint",
@@ -21872,7 +22492,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.729,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "asym",
@@ -21921,7 +22546,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.586,
+    "Pei": 0.054
+   },
+   "final_pause_at_cut_s": 0.61
   },
   {
    "kind": "joint",
@@ -21970,7 +22600,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.079
+   },
+   "final_pause_at_cut_s": 0.48
   },
   {
    "kind": "joint",
@@ -22019,7 +22654,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.463
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -22068,7 +22708,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.43
   },
   {
    "kind": "joint",
@@ -22117,7 +22762,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.34
+   },
+   "final_pause_at_cut_s": 0.17
   },
   {
    "kind": "asym",
@@ -22166,7 +22816,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "joint",
@@ -22213,7 +22868,12 @@
    ],
    "heard_bounds_width_s": 0.09,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.095,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "single",
@@ -22249,7 +22909,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.57
+   },
+   "final_pause_at_cut_s": 0.38
   },
   {
    "kind": "asym",
@@ -22299,7 +22963,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.727,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.05
   },
   {
    "kind": "joint",
@@ -22348,7 +23017,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.57,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.27
   },
   {
    "kind": "joint",
@@ -22397,7 +23071,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.12
   },
   {
    "kind": "joint",
@@ -22446,7 +23125,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.679,
+    "Pei": 0.004
+   },
+   "final_pause_at_cut_s": 0.97
   },
   {
    "kind": "joint",
@@ -22495,7 +23179,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.845,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.14
   },
   {
    "kind": "asym",
@@ -22544,7 +23233,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.704,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.35
   },
   {
    "kind": "joint",
@@ -22593,7 +23287,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.455,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.91
   },
   {
    "kind": "joint",
@@ -22642,7 +23341,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.534,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -22691,7 +23395,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.259,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.72
   },
   {
    "kind": "asym",
@@ -22740,7 +23449,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.643,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "joint",
@@ -22789,7 +23503,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "joint",
@@ -22838,7 +23557,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.19
   },
   {
    "kind": "joint",
@@ -22887,7 +23611,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.713,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.6
   },
   {
    "kind": "joint",
@@ -22936,7 +23665,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.405,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.38
   },
   {
    "kind": "asym",
@@ -22985,7 +23719,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.07,
+    "Pei": 0.459
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "joint",
@@ -23034,7 +23773,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.5
+   },
+   "final_pause_at_cut_s": 0.16
   },
   {
    "kind": "joint",
@@ -23083,7 +23827,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.646
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -23132,7 +23881,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.614
+   },
+   "final_pause_at_cut_s": 0.06
   },
   {
    "kind": "single",
@@ -23250,7 +24004,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.3
   },
   {
    "kind": "asym",
@@ -23346,7 +24104,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -23395,7 +24158,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.522,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "single",
@@ -23431,7 +24199,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 1.19
   },
   {
    "kind": "asym",
@@ -23480,7 +24252,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.258,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.06
   },
   {
    "kind": "joint",
@@ -23529,7 +24306,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.443,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.44
   },
   {
    "kind": "asym",
@@ -23578,7 +24360,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.447,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.28
   },
   {
    "kind": "joint",
@@ -23628,7 +24415,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.25
   },
   {
    "kind": "joint",
@@ -23677,7 +24469,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.19
   },
   {
    "kind": "asym",
@@ -23726,7 +24523,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.57
   },
   {
    "kind": "joint",
@@ -23775,7 +24577,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -23824,7 +24631,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.018,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.98
   },
   {
    "kind": "asym",
@@ -23873,7 +24685,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.78
   },
   {
    "kind": "asym",
@@ -23922,7 +24739,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.598,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -23971,7 +24793,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.309,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.02
   },
   {
    "kind": "joint",
@@ -24020,7 +24847,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.066,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -24069,7 +24901,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.33
   },
   {
    "kind": "asym",
@@ -24118,7 +24955,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.439,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.18
   },
   {
    "kind": "joint",
@@ -24167,7 +25009,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "joint",
@@ -24216,7 +25063,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.589,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -24265,7 +25117,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.475,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.32
   },
   {
    "kind": "joint",
@@ -24314,7 +25171,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.02
   },
   {
    "kind": "joint",
@@ -24363,7 +25225,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.361,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -24412,7 +25279,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "asym",
@@ -24461,7 +25333,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.608,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.8
   },
   {
    "kind": "joint",
@@ -24510,7 +25387,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.033,
+    "Pei": 0.262
+   },
+   "final_pause_at_cut_s": 0.32
   },
   {
    "kind": "joint",
@@ -24559,7 +25441,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.163
+   },
+   "final_pause_at_cut_s": 0.24
   },
   {
    "kind": "joint",
@@ -24608,7 +25495,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.328
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "joint",
@@ -24657,7 +25549,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.24
   },
   {
    "kind": "asym",
@@ -24706,7 +25603,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.264
+   },
+   "final_pause_at_cut_s": 0.49
   },
   {
    "kind": "joint",
@@ -24756,7 +25658,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.1
   },
   {
    "kind": "joint",
@@ -24805,7 +25712,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.84
   },
   {
    "kind": "joint",
@@ -24854,7 +25766,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.082,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.36
   },
   {
    "kind": "joint",
@@ -24903,7 +25820,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.15
   },
   {
    "kind": "joint",
@@ -24953,7 +25875,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "joint",
@@ -25002,7 +25929,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.575,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.78
   },
   {
    "kind": "asym",
@@ -25051,7 +25983,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.715,
+    "Pei": 0.015
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -25100,7 +26037,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.203,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.11
   },
   {
    "kind": "joint",
@@ -25149,7 +26091,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.172,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -25198,7 +26145,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.317,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "asym",
@@ -25248,7 +26200,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.472,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.98
   },
   {
    "kind": "asym",
@@ -25298,7 +26255,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.482,
+    "Pei": 0.081
+   },
+   "final_pause_at_cut_s": 0.76
   },
   {
    "kind": "asym",
@@ -25348,7 +26310,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.06
+   },
+   "final_pause_at_cut_s": 0.3
   },
   {
    "kind": "asym",
@@ -25395,7 +26362,12 @@
    ],
    "heard_bounds_width_s": 0.0,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.3,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.07
   },
   {
    "kind": "joint",
@@ -25444,7 +26416,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.327,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.14
   },
   {
    "kind": "joint",
@@ -25493,7 +26470,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.196,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -25542,7 +26524,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.716,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.26
   },
   {
    "kind": "asym",
@@ -25591,7 +26578,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.031,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.34
   },
   {
    "kind": "asym",
@@ -25640,7 +26632,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.911,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.17
   },
   {
    "kind": "joint",
@@ -25689,7 +26686,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.09
   },
   {
    "kind": "joint",
@@ -25738,7 +26740,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.057,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.4
   },
   {
    "kind": "joint",
@@ -25787,7 +26794,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.696,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.09
   },
   {
    "kind": "joint",
@@ -25836,7 +26848,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.63
   },
   {
    "kind": "joint",
@@ -25883,7 +26900,12 @@
    ],
    "heard_bounds_width_s": 0.69,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.58
   },
   {
    "kind": "joint",
@@ -25930,7 +26952,12 @@
    ],
    "heard_bounds_width_s": 0.27,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.416,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "joint",
@@ -25979,7 +27006,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.208,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.55
   },
   {
    "kind": "asym",
@@ -26028,7 +27060,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.49
   },
   {
    "kind": "joint",
@@ -26077,7 +27114,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.74,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.63
   },
   {
    "kind": "asym",
@@ -26126,7 +27168,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.005,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.96
   },
   {
    "kind": "joint",
@@ -26175,7 +27222,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.21,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -26224,7 +27276,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.712,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.15
   },
   {
    "kind": "single",
@@ -26260,7 +27317,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "asym",
@@ -26309,7 +27370,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.85
   },
   {
    "kind": "asym",
@@ -26358,7 +27424,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.333,
+    "Pei": 0.385
+   },
+   "final_pause_at_cut_s": 0.16
   },
   {
    "kind": "single",
@@ -26392,7 +27463,11 @@
    "heard_bounds_width_s": 8.09,
    "staggered_pair": false,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -26441,7 +27516,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.79,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.28
   },
   {
    "kind": "asym",
@@ -26488,7 +27568,12 @@
    ],
    "heard_bounds_width_s": 0.23,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.629,
+    "Pei": 0.019
+   },
+   "final_pause_at_cut_s": 0.36
   },
   {
    "kind": "asym",
@@ -26588,7 +27673,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.298,
+    "Pei": 0.02
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -26688,7 +27778,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.714,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -26737,7 +27832,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.516,
+    "Pei": 0.251
+   },
+   "final_pause_at_cut_s": 0.19
   },
   {
    "kind": "joint",
@@ -26786,7 +27886,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.98
   },
   {
    "kind": "joint",
@@ -26835,7 +27940,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.64,
+    "Pei": 0.008
+   },
+   "final_pause_at_cut_s": 0.98
   },
   {
    "kind": "joint",
@@ -26884,7 +27994,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.483,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -26933,7 +28048,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.47
   },
   {
    "kind": "joint",
@@ -26982,7 +28102,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.1,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.88
   },
   {
    "kind": "asym",
@@ -27031,7 +28156,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.089,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "joint",
@@ -27078,7 +28208,12 @@
    ],
    "heard_bounds_width_s": 0.17,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.534,
+    "Pei": 0.106
+   },
+   "final_pause_at_cut_s": 0.3
   },
   {
    "kind": "single",
@@ -27114,7 +28249,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.453
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "joint",
@@ -27163,7 +28302,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.522
+   },
+   "final_pause_at_cut_s": 0.19
   },
   {
    "kind": "asym",
@@ -27212,7 +28356,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.177
+   },
+   "final_pause_at_cut_s": 0.87
   },
   {
    "kind": "single",
@@ -27248,7 +28397,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.308
+   },
+   "final_pause_at_cut_s": 0.18
   },
   {
    "kind": "asym",
@@ -27297,7 +28450,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.467,
+    "Pei": 0.223
+   },
+   "final_pause_at_cut_s": 0.36
   },
   {
    "kind": "joint",
@@ -27346,7 +28504,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.27
   },
   {
    "kind": "asym",
@@ -27395,7 +28558,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.743
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "asym",
@@ -27444,7 +28612,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.678,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -27493,7 +28666,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.624,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.46
   },
   {
    "kind": "joint",
@@ -27542,7 +28720,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.85
   },
   {
    "kind": "joint",
@@ -27591,7 +28774,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.209
+   },
+   "final_pause_at_cut_s": 0.85
   },
   {
    "kind": "joint",
@@ -27640,7 +28828,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.599,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "joint",
@@ -27687,7 +28880,12 @@
    ],
    "heard_bounds_width_s": 0.48,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.32
   },
   {
    "kind": "joint",
@@ -27736,7 +28934,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.228
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -27785,7 +28988,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.512,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.61
   },
   {
    "kind": "joint",
@@ -27834,7 +29042,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.22
   },
   {
    "kind": "asym",
@@ -27883,7 +29096,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.114,
+    "Pei": 0.175
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "single",
@@ -27919,7 +29137,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -27968,7 +29190,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.821,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.49
   },
   {
    "kind": "single",
@@ -28004,7 +29231,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.77
   },
   {
    "kind": "single",
@@ -28040,7 +29271,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.036
+   },
+   "final_pause_at_cut_s": 0.58
   },
   {
    "kind": "asym",
@@ -28089,7 +29324,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.14
   },
   {
    "kind": "asym",
@@ -28138,7 +29378,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.407,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.69
   },
   {
    "kind": "single",
@@ -28174,7 +29419,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.56
   },
   {
    "kind": "asym",
@@ -28223,7 +29472,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.854,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -28272,7 +29526,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.932,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.13
   },
   {
    "kind": "joint",
@@ -28321,7 +29580,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.21
   },
   {
    "kind": "joint",
@@ -28370,7 +29634,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -28419,7 +29688,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.64,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.07
   },
   {
    "kind": "joint",
@@ -28468,7 +29742,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.726,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.13
   },
   {
    "kind": "joint",
@@ -28517,7 +29796,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.2,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "asym",
@@ -28566,7 +29850,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.382,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.12
   },
   {
    "kind": "joint",
@@ -28613,7 +29902,12 @@
    ],
    "heard_bounds_width_s": 0.69,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.25
   },
   {
    "kind": "asym",
@@ -28662,7 +29956,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.839,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.54
   },
   {
    "kind": "joint",
@@ -28711,7 +30010,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.266,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.43
   },
   {
    "kind": "asym",
@@ -28760,7 +30064,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.13
   },
   {
    "kind": "asym",
@@ -28809,7 +30118,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "joint",
@@ -28858,7 +30172,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.38,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.49
   },
   {
    "kind": "asym",
@@ -28907,7 +30226,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.066,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.06
   },
   {
    "kind": "asym",
@@ -28956,7 +30280,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.439,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "joint",
@@ -29005,7 +30334,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.55
   },
   {
    "kind": "joint",
@@ -29054,7 +30388,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.56
   },
   {
    "kind": "asym",
@@ -29101,7 +30440,12 @@
    ],
    "heard_bounds_width_s": 0.23,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.54
   },
   {
    "kind": "asym",
@@ -29150,7 +30494,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.192
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "single",
@@ -29186,7 +30535,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.3
   },
   {
    "kind": "asym",
@@ -29235,7 +30588,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.57
   },
   {
    "kind": "joint",
@@ -29284,7 +30642,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.371,
+    "Pei": 0.562
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -29333,7 +30696,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.449
+   },
+   "final_pause_at_cut_s": 0.3
   },
   {
    "kind": "joint",
@@ -29382,7 +30750,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.71
+   },
+   "final_pause_at_cut_s": 0.19
   },
   {
    "kind": "asym",
@@ -29431,7 +30804,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.306
+   },
+   "final_pause_at_cut_s": 0.06
   },
   {
    "kind": "single",
@@ -29467,7 +30845,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.5
   },
   {
    "kind": "asym",
@@ -29516,7 +30898,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.082,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.48
   },
   {
    "kind": "joint",
@@ -29565,7 +30952,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.662,
+    "Pei": 0.148
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -29614,7 +31006,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.41,
+    "Pei": 0.683
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -29663,7 +31060,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.578
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "joint",
@@ -29712,7 +31114,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.69
   },
   {
    "kind": "joint",
@@ -29761,7 +31168,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -29810,7 +31222,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.306
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "joint",
@@ -29859,7 +31276,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.176
+   },
+   "final_pause_at_cut_s": 0.36
   },
   {
    "kind": "joint",
@@ -29908,7 +31330,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.345
+   },
+   "final_pause_at_cut_s": 0.11
   },
   {
    "kind": "asym",
@@ -29957,7 +31384,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.026,
+    "Pei": 0.138
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "single",
@@ -29993,7 +31425,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.58
   },
   {
    "kind": "asym",
@@ -30042,7 +31478,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.595
+   },
+   "final_pause_at_cut_s": 0.43
   },
   {
    "kind": "asym",
@@ -30091,7 +31532,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.741
+   },
+   "final_pause_at_cut_s": 0.18
   },
   {
    "kind": "joint",
@@ -30140,7 +31586,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.578
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "asym",
@@ -30189,7 +31640,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.26
   },
   {
    "kind": "single",
@@ -30225,7 +31681,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.84
+   },
+   "final_pause_at_cut_s": 0.19
   },
   {
    "kind": "asym",
@@ -30274,7 +31734,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.821,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.08
   },
   {
    "kind": "asym",
@@ -30323,7 +31788,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.538,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.19
   },
   {
    "kind": "joint",
@@ -30373,7 +31843,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.745,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.12
   },
   {
    "kind": "asym",
@@ -30422,7 +31897,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.808,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.38
   },
   {
    "kind": "asym",
@@ -30521,7 +32001,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.592,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "asym",
@@ -30570,7 +32055,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.358,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 2.14
   },
   {
    "kind": "single",
@@ -30606,7 +32096,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.039
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "asym",
@@ -30655,7 +32149,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.21,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -30704,7 +32203,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.87
   },
   {
    "kind": "joint",
@@ -30753,7 +32257,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.286,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.87
   },
   {
    "kind": "joint",
@@ -30802,7 +32311,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "joint",
@@ -30851,7 +32365,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.4,
+    "Pei": 0.36
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -30947,7 +32466,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.293,
+    "Pei": 0.152
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -30996,7 +32520,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.514,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.48
   },
   {
    "kind": "joint",
@@ -31045,7 +32574,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.206,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "joint",
@@ -31094,7 +32628,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.14
   },
   {
    "kind": "joint",
@@ -31143,7 +32682,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.228,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.83
   },
   {
    "kind": "joint",
@@ -31192,7 +32736,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.468,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "joint",
@@ -31241,7 +32790,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.44
   },
   {
    "kind": "joint",
@@ -31288,7 +32842,12 @@
    ],
    "heard_bounds_width_s": 0.16,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.049,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "asym",
@@ -31337,7 +32896,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.403,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.38
   },
   {
    "kind": "joint",
@@ -31386,7 +32950,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.25
   },
   {
    "kind": "asym",
@@ -31435,7 +33004,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.378,
+    "Pei": 0.559
+   },
+   "final_pause_at_cut_s": 0.21
   },
   {
    "kind": "joint",
@@ -31482,7 +33056,12 @@
    ],
    "heard_bounds_width_s": 0.04,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.564,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.56
   },
   {
    "kind": "joint",
@@ -31531,7 +33110,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.05
   },
   {
    "kind": "asym",
@@ -31580,7 +33164,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.14
   },
   {
    "kind": "asym",
@@ -31629,7 +33218,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.48
   },
   {
    "kind": "single",
@@ -31665,7 +33259,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.502
+   },
+   "final_pause_at_cut_s": 1.07
   },
   {
    "kind": "asym",
@@ -31714,7 +33312,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.492,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.84
   },
   {
    "kind": "joint",
@@ -31763,7 +33366,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.259,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -31812,7 +33420,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.493,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "single",
@@ -31846,7 +33459,11 @@
    "heard_bounds_width_s": 3.19,
    "staggered_pair": false,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.47
   },
   {
    "kind": "asym",
@@ -31896,7 +33513,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.54
   },
   {
    "kind": "joint",
@@ -31945,7 +33567,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.27
   },
   {
    "kind": "joint",
@@ -31994,7 +33621,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.3,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.9
   },
   {
    "kind": "joint",
@@ -32043,7 +33675,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.519,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.34
   },
   {
    "kind": "joint",
@@ -32092,7 +33729,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.65
   },
   {
    "kind": "joint",
@@ -32142,7 +33784,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "single",
@@ -32178,7 +33825,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.144
+   },
+   "final_pause_at_cut_s": 1.34
   },
   {
    "kind": "asym",
@@ -32227,7 +33878,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.517,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "joint",
@@ -32276,7 +33932,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.265,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.43
   },
   {
    "kind": "single",
@@ -32312,7 +33973,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.513
+   },
+   "final_pause_at_cut_s": 0.11
   },
   {
    "kind": "single",
@@ -32346,7 +34011,11 @@
    "heard_bounds_width_s": 0.88,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "single",
@@ -32380,7 +34049,11 @@
    "heard_bounds_width_s": 2.67,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.12
   },
   {
    "kind": "asym",
@@ -32429,7 +34102,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.114,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.08
   },
   {
    "kind": "joint",
@@ -32479,7 +34157,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "asym",
@@ -32529,7 +34212,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.607,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.62
   },
   {
    "kind": "single",
@@ -32563,7 +34251,11 @@
    "heard_bounds_width_s": 6.04,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.467
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -32612,7 +34304,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.086,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.66
   },
   {
    "kind": "single",
@@ -32646,7 +34343,11 @@
    "heard_bounds_width_s": 3.46,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "asym",
@@ -32695,7 +34396,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.5,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.02
   },
   {
    "kind": "asym",
@@ -32744,7 +34450,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.335
+   },
+   "final_pause_at_cut_s": 0.66
   },
   {
    "kind": "single",
@@ -32780,7 +34491,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.76
   },
   {
    "kind": "asym",
@@ -32829,7 +34544,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.7
   },
   {
    "kind": "asym",
@@ -32878,7 +34598,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.279
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "asym",
@@ -32927,7 +34652,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.569,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.13
   },
   {
    "kind": "asym",
@@ -32976,7 +34706,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.392,
+    "Pei": 0.045
+   },
+   "final_pause_at_cut_s": 0.37
   },
   {
    "kind": "joint",
@@ -33025,7 +34760,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -33074,7 +34814,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.292,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.63
   },
   {
    "kind": "joint",
@@ -33123,7 +34868,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.375,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -33172,7 +34922,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.07,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.03
   },
   {
    "kind": "asym",
@@ -33222,7 +34977,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.219,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.38
   },
   {
    "kind": "single",
@@ -33258,7 +35018,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0
+   },
+   "final_pause_at_cut_s": 0.22
   },
   {
    "kind": "asym",
@@ -33307,7 +35071,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "joint",
@@ -33357,7 +35126,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.93
   },
   {
    "kind": "joint",
@@ -33406,7 +35180,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.37
   },
   {
    "kind": "joint",
@@ -33455,7 +35234,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.2
   },
   {
    "kind": "asym",
@@ -33504,7 +35288,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.617,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.58
   },
   {
    "kind": "joint",
@@ -33553,7 +35342,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.31,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "single",
@@ -33589,7 +35383,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.44
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "asym",
@@ -33638,7 +35436,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.492
+   },
+   "final_pause_at_cut_s": 0.14
   },
   {
    "kind": "asym",
@@ -33687,7 +35490,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.481
+   },
+   "final_pause_at_cut_s": 0.23
   },
   {
    "kind": "joint",
@@ -33736,7 +35544,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.478
+   },
+   "final_pause_at_cut_s": 0.16
   },
   {
    "kind": "asym",
@@ -33785,7 +35598,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.474
+   },
+   "final_pause_at_cut_s": 0.11
   },
   {
    "kind": "single",
@@ -33819,7 +35637,11 @@
    "heard_bounds_width_s": 17.58,
    "staggered_pair": false,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.6
   },
   {
    "kind": "joint",
@@ -33868,7 +35690,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.613,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -33917,7 +35744,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.349,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "single",
@@ -33999,7 +35831,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.723,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.26
   },
   {
    "kind": "joint",
@@ -34046,7 +35883,12 @@
    ],
    "heard_bounds_width_s": 0.06,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.446,
+    "Pei": 0.17
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -34095,7 +35937,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.35
   },
   {
    "kind": "joint",
@@ -34144,7 +35991,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.668,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -34193,7 +36045,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.42
   },
   {
    "kind": "asym",
@@ -34242,7 +36099,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.67,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.42
   },
   {
    "kind": "joint",
@@ -34292,7 +36154,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.412,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "joint",
@@ -34341,7 +36208,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.62
   },
   {
    "kind": "asym",
@@ -34390,7 +36262,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.674,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.34
   },
   {
    "kind": "joint",
@@ -34439,7 +36316,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.592,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -34488,7 +36370,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.47
   },
   {
    "kind": "joint",
@@ -34537,7 +36424,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.875,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.26
   },
   {
    "kind": "single",
@@ -34573,7 +36465,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 1.48
   },
   {
    "kind": "asym",
@@ -34622,7 +36518,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.775,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.5
   },
   {
    "kind": "asym",
@@ -34671,7 +36572,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.12
   },
   {
    "kind": "joint",
@@ -34720,7 +36626,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.26
   },
   {
    "kind": "joint",
@@ -34769,7 +36680,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.321,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -34819,7 +36735,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.301,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.42
   },
   {
    "kind": "joint",
@@ -34869,7 +36790,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.06
   },
   {
    "kind": "asym",
@@ -34918,7 +36844,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "joint",
@@ -34967,7 +36898,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.11
   },
   {
    "kind": "joint",
@@ -35014,7 +36950,12 @@
    ],
    "heard_bounds_width_s": 0.73,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.55,
+    "Pei": 0.006
+   },
+   "final_pause_at_cut_s": 1.38
   },
   {
    "kind": "asym",
@@ -35063,7 +37004,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.748
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -35112,7 +37058,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.42
   },
   {
    "kind": "asym",
@@ -35161,7 +37112,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.419
+   },
+   "final_pause_at_cut_s": 0.28
   },
   {
    "kind": "joint",
@@ -35208,7 +37164,12 @@
    ],
    "heard_bounds_width_s": 0.45,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.284,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.7
   },
   {
    "kind": "joint",
@@ -35258,7 +37219,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.563,
+    "Pei": 0.007
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "single",
@@ -35294,7 +37260,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.685
+   },
+   "final_pause_at_cut_s": 0.39
   },
   {
    "kind": "asym",
@@ -35343,7 +37313,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.277,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 2.16
   },
   {
    "kind": "asym",
@@ -35392,7 +37367,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.368,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.44
   },
   {
    "kind": "asym",
@@ -35441,7 +37421,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.756,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "asym",
@@ -35490,7 +37475,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 2.04
   },
   {
    "kind": "joint",
@@ -35539,7 +37529,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.61
   },
   {
    "kind": "joint",
@@ -35588,7 +37583,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.413,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.51
   },
   {
    "kind": "asym",
@@ -35638,7 +37638,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.462,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.33
   },
   {
    "kind": "asym",
@@ -35687,7 +37692,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.173,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.4
   },
   {
    "kind": "joint",
@@ -35736,7 +37746,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.35
   },
   {
    "kind": "joint",
@@ -35836,7 +37851,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.41
   },
   {
    "kind": "joint",
@@ -35886,7 +37906,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.729,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.42
   },
   {
    "kind": "asym",
@@ -35936,7 +37961,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.217,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.8
   },
   {
    "kind": "asym",
@@ -35985,7 +38015,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.411,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.98
   },
   {
    "kind": "joint",
@@ -36034,7 +38069,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.52
   },
   {
    "kind": "joint",
@@ -36083,7 +38123,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.216,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "asym",
@@ -36130,7 +38175,12 @@
    ],
    "heard_bounds_width_s": 0.68,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.078,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.08
   },
   {
    "kind": "single",
@@ -36164,7 +38214,11 @@
    "heard_bounds_width_s": 5.4,
    "staggered_pair": true,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.47
   },
   {
    "kind": "asym",
@@ -36211,7 +38265,12 @@
    ],
    "heard_bounds_width_s": 0.16,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.043,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.44
   },
   {
    "kind": "joint",
@@ -36260,7 +38319,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.093,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.94
   },
   {
    "kind": "asym",
@@ -36309,7 +38373,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.447,
+    "Pei": 0.016
+   },
+   "final_pause_at_cut_s": 0.7
   },
   {
    "kind": "asym",
@@ -36358,7 +38427,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.285,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.5
   },
   {
    "kind": "single",
@@ -36394,7 +38468,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 1.61
   },
   {
    "kind": "asym",
@@ -36443,7 +38521,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.33,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.16
   },
   {
    "kind": "joint",
@@ -36492,7 +38575,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.31
   },
   {
    "kind": "joint",
@@ -36541,7 +38629,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.399,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -36590,7 +38683,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.79
   },
   {
    "kind": "single",
@@ -36626,7 +38724,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.302
+   },
+   "final_pause_at_cut_s": 1.53
   },
   {
    "kind": "asym",
@@ -36675,7 +38777,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.91
   },
   {
    "kind": "asym",
@@ -36724,7 +38831,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.223,
+    "Pei": 0.026
+   },
+   "final_pause_at_cut_s": 0.58
   },
   {
    "kind": "single",
@@ -36760,7 +38872,11 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.56
   },
   {
    "kind": "asym",
@@ -36807,7 +38923,12 @@
    ],
    "heard_bounds_width_s": 0.0,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.367,
+    "Pei": 0.4
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "joint",
@@ -36856,7 +38977,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.19
   },
   {
    "kind": "joint",
@@ -36905,7 +39031,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.146,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.52
   },
   {
    "kind": "joint",
@@ -36954,7 +39085,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.02
   },
   {
    "kind": "joint",
@@ -37004,7 +39140,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "asym",
@@ -37054,7 +39195,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.85
   },
   {
    "kind": "asym",
@@ -37103,7 +39249,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.657,
+    "Pei": 0.009
+   },
+   "final_pause_at_cut_s": 0.19
   },
   {
    "kind": "single",
@@ -37139,7 +39290,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.428
+   },
+   "final_pause_at_cut_s": 0.53
   },
   {
    "kind": "asym",
@@ -37188,7 +39343,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.175,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.69
   },
   {
    "kind": "joint",
@@ -37238,7 +39398,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.65
   },
   {
    "kind": "joint",
@@ -37287,7 +39452,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.441,
+    "Pei": 0.353
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -37336,7 +39506,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.29
   },
   {
    "kind": "joint",
@@ -37383,7 +39558,12 @@
    ],
    "heard_bounds_width_s": 0.24,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.62
   },
   {
    "kind": "joint",
@@ -37430,7 +39610,12 @@
    ],
    "heard_bounds_width_s": 0.14,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.28
   },
   {
    "kind": "asym",
@@ -37477,7 +39662,12 @@
    ],
    "heard_bounds_width_s": 0.19,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.019,
+    "Pei": 0.116
+   },
+   "final_pause_at_cut_s": 0.46
   },
   {
    "kind": "joint",
@@ -37527,7 +39717,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.692,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.05
   },
   {
    "kind": "asym",
@@ -37576,7 +39771,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.679,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.72
   },
   {
    "kind": "single",
@@ -37612,7 +39812,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.588
+   },
+   "final_pause_at_cut_s": 0.21
   },
   {
    "kind": "joint",
@@ -37662,7 +39866,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.198,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.25
   },
   {
    "kind": "asym",
@@ -37711,7 +39920,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.39,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.39
   },
   {
    "kind": "joint",
@@ -37760,7 +39974,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.943,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.39
   },
   {
    "kind": "joint",
@@ -37809,7 +40028,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.219,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.72
   },
   {
    "kind": "asym",
@@ -37858,7 +40082,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.133,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 1.07
   },
   {
    "kind": "asym",
@@ -37907,7 +40136,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.42
   },
   {
    "kind": "asym",
@@ -37956,7 +40190,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.21
   },
   {
    "kind": "asym",
@@ -38006,7 +40245,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 1.0,
+    "Pei": 0.021
+   },
+   "final_pause_at_cut_s": 0.0
   },
   {
    "kind": "single",
@@ -38089,7 +40333,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.596,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.49
   },
   {
    "kind": "single",
@@ -38125,7 +40374,11 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0
+   },
+   "final_pause_at_cut_s": 0.34
   },
   {
    "kind": "asym",
@@ -38174,7 +40427,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.221,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.22
   },
   {
    "kind": "asym",
@@ -38223,7 +40481,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.73
   },
   {
    "kind": "joint",
@@ -38272,7 +40535,12 @@
    "verified_tracks": [
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.55
   },
   {
    "kind": "joint",
@@ -38319,7 +40587,12 @@
    ],
    "heard_bounds_width_s": 0.22,
    "verified_tracks": [],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.45,
+    "Pei": 0.096
+   },
+   "final_pause_at_cut_s": 0.54
   },
   {
    "kind": "asym",
@@ -38368,7 +40641,12 @@
    "verified_tracks": [
     "Leon"
    ],
-   "verified": false
+   "verified": false,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.18
   },
   {
    "kind": "asym",
@@ -38418,7 +40696,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.448,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.54
   },
   {
    "kind": "joint",
@@ -38468,7 +40751,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.45
   },
   {
    "kind": "joint",
@@ -38518,7 +40806,12 @@
     "Leon",
     "Pei"
    ],
-   "verified": true
+   "verified": true,
+   "removed_speech_frac": {
+    "Leon": 0.0,
+    "Pei": 0.0
+   },
+   "final_pause_at_cut_s": 0.38
   },
   {
    "kind": "asym",
@@ -38574,6 +40867,10 @@
   "both_tracks": [
    [
     0.0,
+    1.1945
+   ],
+   [
+    2.209,
     2.8596
    ],
    [
@@ -39850,6 +42147,10 @@
    ],
    [
     3425.5068,
+    3426.461
+   ],
+   [
+    3427.1233,
     3427.3992
    ],
    [
@@ -40218,12 +42519,16 @@
    ],
    [
     4410.321,
-    4478.251
+    4411.932
    ]
   ],
   "Leon": [
    [
     0.0,
+    1.1945
+   ],
+   [
+    2.209,
     2.8596
    ],
    [
@@ -41636,6 +43941,10 @@
    ],
    [
     3425.4268,
+    3426.461
+   ],
+   [
+    3427.1233,
     3427.3992
    ],
    [
@@ -42048,12 +44357,16 @@
    ],
    [
     4410.321,
-    4478.251
+    4411.932
    ]
   ],
   "Pei": [
    [
     0.0,
+    1.1945
+   ],
+   [
+    2.209,
     2.8596
    ],
    [
@@ -43414,6 +45727,10 @@
    ],
    [
     3425.5068,
+    3426.461
+   ],
+   [
+    3427.1233,
     3427.3992
    ],
    [
@@ -43802,7 +46119,7 @@
    ],
    [
     4410.321,
-    4478.251
+    4411.932
    ]
   ]
  },
@@ -43813,7 +46130,9 @@
    "final_end": 41.66,
    "id": 0,
    "dur": 41.66,
-   "confidence": "high"
+   "confidence": "high",
+   "raw_probe_hits": [],
+   "raw_probe_windows": 40
   },
   {
    "type": "insert",
@@ -43821,15 +46140,19 @@
    "final_end": 2802.84,
    "id": 386,
    "dur": 43.8,
-   "confidence": "high"
+   "confidence": "high",
+   "raw_probe_hits": [],
+   "raw_probe_windows": 42
   },
   {
    "type": "insert",
    "final_start": 3616.83,
-   "final_end": 3684.76,
+   "final_end": 3684.766,
    "id": 497,
-   "dur": 67.93,
-   "confidence": "high"
+   "dur": 67.936,
+   "confidence": "high",
+   "raw_probe_hits": [],
+   "raw_probe_windows": 66
   }
  ],
  "desync_runs": [
@@ -45591,20 +47914,20 @@
   {
    "final": [
     2723.2954,
-    2803.5023
+    2759.04
    ],
    "pei_minus_leon_s": 0.08,
    "both_heard_s": 8.61,
-   "dur": 80.207
+   "dur": 35.745
   },
   {
    "final": [
-    2803.5023,
+    2802.84,
     2804.8049
    ],
    "pei_minus_leon_s": 0.0,
    "both_heard_s": 0.0,
-   "dur": 1.303
+   "dur": 1.965
   },
   {
    "final": [
@@ -46176,11 +48499,11 @@
   {
    "final": [
     3616.3596,
-    3684.766
+    3616.83
    ],
    "pei_minus_leon_s": 0.0,
    "both_heard_s": 0.0,
-   "dur": 68.406
+   "dur": 0.47
   }
  ],
  "muted_track_spans": [

@@ -18,7 +18,7 @@ Findings for EP001 are in `REPORT.md`; the machine-readable map is
 ## Rerun
 
 ```bash
-# EP001 (about 10-15 min on 4 cores; peak RAM ~2.5 GB)
+# EP001 (about 12-15 min on 4 vCPU from scratch; measured peak RSS 4.1 GB)
 python3 -I align.py \
   --leon  "/path/原始双轨_Leon.wav" --pei "/path/原始双轨_Pei.wav" \
   --final "/path/最终成品.mp3" \

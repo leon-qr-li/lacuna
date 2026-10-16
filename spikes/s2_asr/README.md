@@ -15,6 +15,7 @@ Results and recommendation: [`REPORT.md`](REPORT.md).
 | `run_sherpa_whisper.py` | Whisper turbo/large-v3 ONNX via sherpa-onnx (text only here; the published ONNX lacks cross-attention outputs, so no token timestamps) |
 | `convert_sherpa_whisper_to_ct2.py` | **spike-only workaround**: rebuild a faster-whisper model dir from the sherpa-onnx int8 ONNX export because Hugging Face was blocked in the spike container |
 | `compare.py` | all evaluation: filler/repetition counts, pairwise disagreement, 60 s consensus-reference recall, timestamps vs energy, silence/bleed behaviour |
+| `summarize_full.py` | throughput / RAM / SenseVoice event-tag summary of full-track runs → `out/fulltrack_summary.json` |
 | `reference_leon_60s.json` | best-effort consensus reference for Leon 240–300 s of the excerpt (not human-verified) |
 | `run_all.sh` | reproduces every run in REPORT.md |
 | `out/*.json` | engine outputs (text + timestamps only, no audio) and `summary.json` |
