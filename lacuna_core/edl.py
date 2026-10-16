@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import asdict, dataclass, field, fields, replace
+from functools import cached_property
 from typing import ClassVar, Iterable
 
 from .media import MediaRef
@@ -131,6 +132,10 @@ class Timeline:
         return cls(d["sample_rate"], tracks, d["next_id"])
 
     def digest(self) -> str:
+        return self._digest
+
+    @cached_property
+    def _digest(self) -> str:   # immutable, so computed once per instance
         return hashlib.sha256(canonical_json(self.to_dict()).encode()).hexdigest()
 
 
