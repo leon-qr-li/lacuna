@@ -179,10 +179,11 @@ class Renderer:
                 continue
             tt = t[s - a:e - a]
             env = np.ones(e - s)
-            if p.ramp_in:
-                env *= _ramp(tt, p.ramp_in, True)
-            if p.ramp_out:
-                env *= _ramp(tt, p.ramp_out, False)
+            for r, rising in ((p.ramp_in, True), (p.ramp_out, False)):
+                if r:   # a ramp is exactly 1.0 outside its own span within the plan
+                    rs, re_ = max(r[0], s) - s, min(r[0] + r[1], e) - s
+                    if re_ > rs:
+                        env[rs:re_] *= _ramp(tt[rs:re_], r, rising)
             src = self.pool.read(p.media_id, p.src_at_t0 + (s - p.t0), p.src_at_t0 + (e - p.t0))
             out[s - a:e - a] += src * (env * p.gain)
             if cover is not None:

@@ -65,13 +65,13 @@ def check_seam(x: np.ndarray, t: int, sr: int, win_ms: float = 1.0, ctx_ms: floa
     near = slice(max(k - w, 0), k + w)
     mask = np.ones(len(d1), bool)
     mask[max(k - 3 * w, 0):k + 3 * w] = False
-    floor = 1e-6
+    floor = 1e-4                       # about -80 dBFS: ratios against digital silence are meaningless
     ref = np.percentile(d1[mask], 99) if mask.any() else floor
     delta_ratio = float(d1[near].max(initial=0.0) / max(ref, floor))
     nwin = len(d2) // (2 * w)
     wins = d2[:nwin * 2 * w].reshape(nwin, 2 * w).sum(axis=1)
     centre = d2[max(k - w, 0):k + w].sum()
-    hf_ratio = float(centre / max(np.median(wins), floor ** 2))
+    hf_ratio = float(centre / max(np.median(wins), 2 * w * floor ** 2))
     return delta_ratio, hf_ratio, bool(delta_ratio > delta_thresh and hf_ratio > hf_thresh)
 
 
