@@ -10,3 +10,4 @@
 | D26 | 2026-10-16 | **历史原始录音已不存在**，没有 raw/final 配对可供学习或评测 | CONFIRMED 事实 | **取代** Handoff 中“约 10 集 raw + final 可用”的假设（PRD Style learning、Journey 5、Roadmap 1C/P5、Feasibility Gate 1）。S4 取消 |
 | D27 | 2026-10-16 | 学习模块升级为核心能力：以 Studio 内的实时反馈（恢复、覆盖、聊天修改、批准）为主要学习来源；Studio 自动保存每集 raw + 每个版本 + 最终成品，从此历史不再丢失 | PROPOSED by Claude，随 D26 生效 | 第一刀质量评测改为：新集上 AI 第一刀由 Leon 盲听打分 + 修改量统计 |
 | D28 | 2026-10-16 | 不做通用 speaker diarization：Riverside 分轨即说话人；只做每轨 VAD + 串音检测 | Claude 技术决策 | 节省显存与时间 |
+| D29 | 2026-10-16 | **更正 D26**：Leon 提供了一集完整的 raw 双轨 + 他手剪成品（EP001，73.5 min → 61.4 min），已验证成品由这两轨剪出。其余历史 raw 不存在 | CONFIRMED 事实 | 恢复 S4（单集对齐）并作为 S5 第一刀评测的地面真值；D27 学习策略不变 |

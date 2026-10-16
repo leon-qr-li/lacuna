@@ -12,11 +12,11 @@ P0 → P1。方向已确认（D23 API 额度路径、D24 MVP 收窄）。
 - 新事实 D26：历史 raw 录音已删除，无 raw/final 配对 → S4 取消，学习改以 Studio 内实时反馈为主（D27）。
 
 ## In progress / waiting
-1. Leon 的素材在其本机文件夹 `Projects`，正在请求设备文件夹访问（connect_device 卡片）以整理。
+1. ✅ 素材已整理到 Leon 本机 `C:\Projects\LACUNA_Workspace\`（episodes/EP001_样本集/raw + reference，assets/，inbox/，exports/）。EP001 = 一集完整 raw 双轨 + 手剪成品（见 D29、`.notes/inputs.md`）。
 2. ✅ GitHub 仓库 https://github.com/leon-qr-li/lacuna 已就绪，docs 与 Handoff 已迁入 main（2026-10-16）。仓库是今后的权威来源；`/mnt/project-files/lacuna/` 为镜像 / 素材区。
 3. 搭档 Mac 型号未知（不急）。
 
 ## Next action
-- 拿到文件夹访问后：盘点素材，整理成 workspace 结构（raw/ assets/ inbox/ …），在 `.notes/inputs.md` 记录。
+- S4：EP001 raw→final 完整对齐图（保留/删除/移动/插入音乐），作为评测地面真值。
 - 仓库就绪后：迁入 docs，建骨架 + CI 矩阵（ubuntu/windows/macos）。
 - 并行：S2 ASR 对比（需真实片段）、S3 双轨 EDL/渲染（先用合成素材）、P2 低保真线框。
