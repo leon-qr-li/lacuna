@@ -13,7 +13,7 @@ P0 → P1。方向已确认（D23 API 额度路径、D24 MVP 收窄）。
 
 ## In progress / waiting
 1. Leon 的素材在其本机文件夹 `Projects`，正在请求设备文件夹访问（connect_device 卡片）以整理。
-2. GitHub：Leon 需在 https://claude.ai/connect-github 连接并安装 Claude GitHub App；session 不能代建仓库，需 Leon 新建空私有仓库 `lacuna`，然后 add_repo。
+2. ✅ GitHub 仓库 https://github.com/leon-qr-li/lacuna 已就绪，docs 与 Handoff 已迁入 main（2026-10-16）。仓库是今后的权威来源；`/mnt/project-files/lacuna/` 为镜像 / 素材区。
 3. 搭档 Mac 型号未知（不急）。
 
 ## Next action
