@@ -1,0 +1,9 @@
+=== oracle_ops.json ===  ops=1091 {'cut': 926, 'slip': 165}  keep_flags=0  warnings=0
+[L] removed AI 898.7s vs Leon 898.6s (ambiguous 51.4s) | P 1.000 R 1.000 | speech P 1.000 R 1.000 (AI 440.7s / Leon 440.7s) | pause P 1.000 R 1.000 | events P 1.000 R 1.000 (AI 482 / Leon 482) | FALSE DEL 0.0s (0) | missed speech 0.0s
+[P] removed AI 901.6s vs Leon 901.6s (ambiguous 5.2s) | P 1.000 R 1.000 | speech P 1.000 R 1.000 (AI 63.1s / Leon 63.1s) | pause P 1.000 R 1.000 | events P 1.000 R 1.000 (AI 440 / Leon 440) | FALSE DEL 0.0s (0) | missed speech 0.0s
+duration: AI est 3511.8s vs Leon est 3517.0s (Leon actual from raw 3531.37s, raw 4411.932s)
+floor pauses (n=1165) median raw 0.57 / Leon 0.39 / AI 0.39; >1s raw 220 Leon 81 AI 81; paired MAE 0.0s
+by category: {"pause": {"removed_s": 931.4, "precision": 1.0, "speech_removed_s": 12.3, "false_deletion_s": 0.0}, "disfluency": {"removed_s": 78.2, "precision": 1.0, "speech_removed_s": 48.7, "false_deletion_s": 0.0}, "content": {"removed_s": 780.5, "precision": 1.0, "speech_removed_s": 435.7, "false_deletion_s": 0.0}, "single_track_noise": {"removed_s": 10.2, "precision": 1.0, "speech_removed_s": 7.1, "false_deletion_s": 0.0}}
+interjections: 345 candidates; GT moved 165, AI moved 165, both 165, sign agree 1.0, median |Δ err| 0.002; confusion {'kept': {'kept': 133}, 'deleted': {'deleted': 45}, 'moved': {'moved': 165}, 'unclear': {'kept': 2}}
+false deletions total 0s; top:
+missed removals top:

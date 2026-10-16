@@ -1,0 +1,17 @@
+=== baseline_ops.json ===  ops=308 {'tighten_pause': 308}  keep_flags=0  warnings=0
+[L] removed AI 306.4s vs Leon 898.6s (ambiguous 51.4s) | P 0.650 R 0.219 | speech P 0.000 R 0.000 (AI 0.0s / Leon 440.7s) | pause P 0.650 R 0.430 | events P 0.812 R 0.454 (AI 308 / Leon 482) | FALSE DEL 0.0s (0) | missed speech 440.69s
+[P] removed AI 306.4s vs Leon 901.6s (ambiguous 5.2s) | P 0.753 R 0.256 | speech P 0.000 R 0.000 (AI 0.0s / Leon 63.1s) | pause P 0.753 R 0.275 | events P 0.795 R 0.586 (AI 308 / Leon 440) | FALSE DEL 0.0s (0) | missed speech 63.09s
+duration: AI est 4105.5s vs Leon est 3517.0s (Leon actual from raw 3531.37s, raw 4411.932s)
+floor pauses (n=1165) median raw 0.57 / Leon 0.39 / AI 0.41; >1s raw 220 Leon 81 AI 0; paired MAE 0.239s
+by category: {"pause": {"removed_s": 612.9, "precision": 0.701, "speech_removed_s": 0.0, "false_deletion_s": 0.0}}
+interjections: 345 candidates; GT moved 165, AI moved 0, both 0, sign agree None, median |Δ err| None; confusion {'kept': {'kept': 133}, 'deleted': {'kept': 45}, 'moved': {'kept': 165}, 'unclear': {'kept': 2}}
+false deletions total 0s; top:
+missed removals top:
+   L 786.82-794.73 7.91s L002347 「我们就到那儿直接就干就特别渴吧天也热就干完之后完了就行了什么」
+   L 1524.82-1532.35 7.53s L004262 「啊就是有一个就是说举个例子说一个人盯着一个电电冰箱那个电冰箱」
+   L 4370.72-4378.14 7.42s L011084 「那么ntentendo就是你赶紧玩那个什么元宇宙吧ggta六」
+   L 1457.24-1462.46 5.22s L003975 「了我给忘了你scp是什么是securecontrolprot」
+   L 762.80-767.91 5.11s L002274 「啊还有winetasting我们都taste然后我们那那桌w」
+   L 274.88-279.82 4.94s L000621 「就很神奇我第一次看就是现场看四大联盟竟然是我从来没看过的运动」
+   L 614.41-619.07 4.66s L001772 「然后他那个面子而且意大利特别喜欢吃商面就是我亚洲我也不太适应」
+   L 25.83-30.36 4.53s L000043 「但已经很不错了我觉得今天咱们聊的还是比较量大管饱的吧」

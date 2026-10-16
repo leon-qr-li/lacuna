@@ -1,0 +1,359 @@
+{
+ "n_ops": 308,
+ "ops_by_type": {
+  "tighten_pause": 308
+ },
+ "warnings": [],
+ "n_warnings": 0,
+ "keep_flags": 0,
+ "tracks": {
+  "L": {
+   "ai_removed_s": 306.4,
+   "gt_removed_s": 898.6,
+   "gt_ambiguous_s": 51.4,
+   "precision_s": 0.65,
+   "recall_s": 0.219,
+   "speech": {
+    "ai_removed_s": 0.0,
+    "gt_removed_s": 440.7,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "pause": {
+    "ai_removed_s": 306.4,
+    "gt_removed_s": 457.9,
+    "precision": 0.65,
+    "recall": 0.43
+   },
+   "events": {
+    "ai": 308,
+    "gt": 482,
+    "precision": 0.812,
+    "recall": 0.454,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 0.0,
+   "false_deletion_items": 0,
+   "missed_speech_removal_s": 440.69,
+   "missed_items": 460
+  },
+  "P": {
+   "ai_removed_s": 306.4,
+   "gt_removed_s": 901.6,
+   "gt_ambiguous_s": 5.2,
+   "precision_s": 0.753,
+   "recall_s": 0.256,
+   "speech": {
+    "ai_removed_s": 0.0,
+    "gt_removed_s": 63.1,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "pause": {
+    "ai_removed_s": 306.4,
+    "gt_removed_s": 838.5,
+    "precision": 0.753,
+    "recall": 0.275
+   },
+   "events": {
+    "ai": 308,
+    "gt": 440,
+    "precision": 0.795,
+    "recall": 0.586,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 0.0,
+   "false_deletion_items": 0,
+   "missed_speech_removal_s": 63.09,
+   "missed_items": 130
+  }
+ },
+ "false_deletions_top": [],
+ "missed_removals_top": [
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    786.82,
+    794.73
+   ],
+   "dur": 7.91,
+   "first_token": "L002347",
+   "text": "我们就到那儿直接就干就特别渴吧天也热就干完之后完了就行了什么都不买走了走了走了",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    1524.82,
+    1532.35
+   ],
+   "dur": 7.53,
+   "first_token": "L004262",
+   "text": "啊就是有一个就是说举个例子说一个人盯着一个电电冰箱那个电冰箱有一个非常神奇的力量如果你眨眼他都会把你吃了",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    4370.72,
+    4378.14
+   ],
+   "dur": 7.42,
+   "first_token": "L011084",
+   "text": "那么ntentendo就是你赶紧玩那个什么元宇宙吧ggta六还有俩两个月真正的元宇宙",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    1457.24,
+    1462.46
+   ],
+   "dur": 5.22,
+   "first_token": "L003975",
+   "text": "了我给忘了你scp是什么是securecontrolprotect好像是这三个啊",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    762.8,
+    767.91
+   ],
+   "dur": 5.11,
+   "first_token": "L002274",
+   "text": "啊还有winetasting我们都taste然后我们那那桌winetasting是跟一个",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    274.88,
+    279.82
+   ],
+   "dur": 4.94,
+   "first_token": "L000621",
+   "text": "就很神奇我第一次看就是现场看四大联盟竟然是我从来没看过的运动",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    614.41,
+    619.07
+   ],
+   "dur": 4.66,
+   "first_token": "L001772",
+   "text": "然后他那个面子而且意大利特别喜欢吃商面就是我亚洲我也不太适应啊",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    25.83,
+    30.36
+   ],
+   "dur": 4.53,
+   "first_token": "L000043",
+   "text": "但已经很不错了我觉得今天咱们聊的还是比较量大管饱的吧",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    1285.58,
+    1290.0
+   ],
+   "dur": 4.42,
+   "first_token": "L003770",
+   "text": "就是我觉得这这个有点有有有点傻这个营销方式但是啊",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2229.81,
+    2234.14
+   ],
+   "dur": 4.33,
+   "first_token": "L006260",
+   "text": "不是就是audeesy因为当时这个电影上映的时候这边还没有装七十毫米",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2262.8,
+    2267.08
+   ],
+   "dur": 4.28,
+   "first_token": "L006419",
+   "text": "他会问有什么区别我跟他说没区别去看avx",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    1973.92,
+    1977.86
+   ],
+   "dur": 3.94,
+   "first_token": "L005371",
+   "text": "玩使命就是cod都是男就是特别狼性都是男生玩嘛",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2249.54,
+    2253.4
+   ],
+   "dur": 3.86,
+   "first_token": "L006355",
+   "text": "就我觉得哇这这而且就这个现象不是说我片骗",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    86.41,
+    90.23
+   ],
+   "dur": 3.82,
+   "first_token": "L000195",
+   "text": "我我觉得特便宜但是有人说一般嗯",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    3255.76,
+    3259.47
+   ],
+   "dur": 3.71,
+   "first_token": "L008463",
+   "text": "嗯还是期待诺诺兰老老实实拍结构吧就是还是",
+   "op": null,
+   "category": null,
+   "reason": null
+  }
+ ],
+ "false_deletion_total_s": 0,
+ "by_category": {
+  "pause": {
+   "removed_s": 612.9,
+   "precision": 0.701,
+   "speech_removed_s": 0.0,
+   "false_deletion_s": 0.0
+  }
+ },
+ "duration": {
+  "raw_s": 4411.932,
+  "leon_final_from_raw_s": 3531.37,
+  "leon_final_incl_music_s": 3684.766,
+  "leon_est_by_formula_s": 3517.0,
+  "ai_est_s": 4105.5,
+  "formula": "raw - mean(per-track removed); compare ai_est_s with leon_est_by_formula_s"
+ },
+ "floor_pauses": {
+  "n": 1165,
+  "raw": {
+   "p10": 0.34,
+   "p25": 0.41,
+   "median": 0.57,
+   "p75": 0.83,
+   "p90": 1.37,
+   "n_gt_1s": 220,
+   "n_gt_2s": 36,
+   "total_s": 858.1
+  },
+  "leon": {
+   "p10": 0.0,
+   "p25": 0.21,
+   "median": 0.39,
+   "p75": 0.58,
+   "p90": 0.83,
+   "n_gt_1s": 81,
+   "n_gt_2s": 14,
+   "total_s": 530.1
+  },
+  "ai": {
+   "p10": 0.34,
+   "p25": 0.4,
+   "median": 0.41,
+   "p75": 0.56,
+   "p90": 0.68,
+   "n_gt_1s": 0,
+   "n_gt_2s": 0,
+   "total_s": 551.7
+  },
+  "paired_mae_s": 0.239,
+  "paired_median_signed_s(ai-leon)": 0.0
+ },
+ "interjections": {
+  "n_candidates": 345,
+  "confusion_gt_rows_ai_cols": {
+   "kept": {
+    "kept": 133
+   },
+   "deleted": {
+    "kept": 45
+   },
+   "moved": {
+    "kept": 165
+   },
+   "unclear": {
+    "kept": 2
+   }
+  },
+  "gt_moved": 165,
+  "ai_moved": 0,
+  "both_moved": 0,
+  "sign_agreement": null,
+  "median_abs_delta_error_s": null,
+  "definition": "candidate = phrase <=6 tokens, <=2.5 s, preceded by >=0.5 s own pause, with >=1 s of the other host's speech within ±1 s. GT moved = kept and relative placement vs the other track changed by 0.3-3 s (from S4 per-track offsets); deleted = >=50% of its speech removed."
+ }
+}

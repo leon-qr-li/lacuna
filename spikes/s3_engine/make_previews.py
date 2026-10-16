@@ -88,8 +88,19 @@ def main():
                     seams=[r.to_dict() for r in rep], clicks=sum(r.click for r in rep))
         log.append(info)
 
-    # 1. pause tightening: longest joint pause 1-3 s, tightened to ~0.4 s
-    runs = [(a, b) for a, b in quiet_runs(quiet["Leon"] & quiet["Pei"], 100) if b - a <= 300]
+    # ASR tokens (S2 Paraformer, both tracks) mark speech even when it is soft (e.g. Pei's 嗯)
+    asr = {n: json.loads((ROOT / f"spikes/s2_asr/out/paraformer_{n}.json").read_text()) for n in ids}
+    spoken = {n: np.zeros(len(quiet[n]), bool) for n in ids}
+    for n, doc in asr.items():
+        for seg in doc["segments"]:
+            for tok in seg["tokens"]:
+                end = min(tok["end"], tok["start"] + 0.35)     # CIF ends of final tokens run long
+                spoken[n][int(tok["start"] / FRAME):int(end / FRAME) + 1] = True
+    silent = quiet["Leon"] & quiet["Pei"] & ~spoken["Leon"] & ~spoken["Pei"]
+
+    # 1. pause tightening: longest joint pause 1-3 s (no ASR token inside), tightened to ~0.4 s
+    runs = [(a, b) for a, b in quiet_runs(silent, 100) if b - a <= 300]
+    print("pause candidates (s):", sorted(round((b - a) * FRAME, 2) for a, b in quiet_runs(silent, 50))[-8:])
     a, b = max(runs, key=lambda r: r[1] - r[0])
     p0, p1 = t_of(a), t_of(b)
     keep = 0.2
@@ -100,32 +111,31 @@ def main():
          dict(pause_raw_s=[round(p0, 3), round(p1, 3)], pause_s=round(p1 - p0, 2),
               cut_raw_s=[round(c0 / sr, 4), round(c1 / sr, 4)], new_pause_s=round(p1 - p0 - (c1 - c0) / sr, 2)))
 
-    # 2. single-track slip: a Pei backchannel over Leon's speech, slid into Leon's next pause
-    pei_asr = json.loads((ROOT / "spikes/s2_asr/out/paraformer_Pei.json").read_text())
-    done = False
-    for seg in pei_asr["segments"]:
-        if done or not set(seg["text"]) <= set("嗯恩") or len(seg["text"]) > 2:
+    # 2. single-track slip: a Pei backchannel over Leon's speech, slid into the nearest
+    #    following Leon pause (the closest such case in the excerpt; Leon slides 0.3-2 s)
+    options = []
+    for seg in asr["Pei"]["segments"]:
+        if not set(seg["text"]) <= set("嗯恩") or len(seg["text"]) > 2:
             continue
-        s0, s1 = region[0] + seg["start"], region[0] + seg["end"]
-        i0, i1 = int((s0 - region[0]) / FRAME), int((s1 - region[0]) / FRAME)
+        i0, i1 = int(seg["start"] / FRAME), int(seg["end"] / FRAME)
         pei_on = ~quiet["Pei"][i0:i1]
         if pei_on.sum() < 15 or (~quiet["Leon"][i0:i1]).mean() < 0.5:
             continue                                            # not a real overlap
         on = np.nonzero(pei_on)[0]
         v0, v1 = t_of(i0 + on[0]) - 0.04, t_of(i0 + on[-1] + 1) + 0.06   # voiced span + margin
-        cand = [(x, y) for x, y in quiet_runs(quiet["Leon"] & quiet["Pei"], 35)
-                if t_of(x) > v1 and t_of(x) - v1 < 3.0 and (y - x) * FRAME >= (v1 - v0) + 0.15]
-        if not cand:
-            continue
-        g0 = t_of(cand[0][0])
-        m0 = snap_cut_media(pool, [ids["Pei"]], S(v0), sr, radius_ms=30)
-        m1 = snap_cut_media(pool, [ids["Pei"]], S(v1), sr, radius_ms=30)
-        delta = S(g0 + 0.08) - m0
-        after = SlipRegion("Pei", m0, m1, delta).apply(raw)
-        emit("02_interjection_slip", raw, after, v0 - CTX, v1 + CTX + 1.5, v0 - CTX, v1 + CTX + 1.5,
-             dict(asr_text=seg["text"], pei_raw_s=[round(m0 / sr, 3), round(m1 / sr, 3)],
-                  moved_by_s=round(delta / sr, 3), leon_pause_raw_s=[round(t_of(cand[0][0]), 2), round(t_of(cand[0][1]), 2)]))
-        done = True
+        # destination: both mics quiet and no Pei token there (nothing of Pei's gets overwritten)
+        dest = [(x, y) for x, y in quiet_runs(quiet["Leon"] & quiet["Pei"] & ~spoken["Pei"], 30)
+                if t_of(x) > v1 and (y - x) * FRAME >= (v1 - v0) + 0.12]
+        if dest:
+            options.append((t_of(dest[0][0]) - v0, seg["text"], v0, v1, dest[0]))
+    _, text, v0, v1, (x, y) = min(options)
+    m0 = snap_cut_media(pool, [ids["Pei"]], S(v0), sr, radius_ms=30)
+    m1 = snap_cut_media(pool, [ids["Pei"]], S(v1), sr, radius_ms=30)
+    delta = S(t_of(x) + 0.08) - m0
+    after = SlipRegion("Pei", m0, m1, delta).apply(raw)
+    emit("02_interjection_slip", raw, after, v0 - CTX, v1 + CTX + 1.5, v0 - CTX, v1 + CTX + 1.5,
+         dict(asr_text=text, pei_raw_s=[round(m0 / sr, 3), round(m1 / sr, 3)], candidates=len(options),
+              moved_by_s=round(delta / sr, 3), leon_pause_raw_s=[round(t_of(x), 2), round(t_of(y), 2)]))
 
     # 3. single-track delete: one of Leon's short sounds under Pei that Leon removed (S4 map)
     al = ep001.load_alignment()

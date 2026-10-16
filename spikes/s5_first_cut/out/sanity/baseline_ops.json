@@ -1,0 +1,3086 @@
+{
+"episode": "EP001",
+"model": "baseline-tighten-0.8-to-0.4",
+"ops": [
+{
+"id": "b0000",
+"op": "tighten_pause",
+"track": "both",
+"at": 2.6,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.88s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0001",
+"op": "tighten_pause",
+"track": "both",
+"at": 7.58,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.58s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0002",
+"op": "tighten_pause",
+"track": "both",
+"at": 19.0,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.36s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0003",
+"op": "tighten_pause",
+"track": "both",
+"at": 31.12,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.51s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0004",
+"op": "tighten_pause",
+"track": "both",
+"at": 35.86,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.91s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0005",
+"op": "tighten_pause",
+"track": "both",
+"at": 53.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.10s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0006",
+"op": "tighten_pause",
+"track": "both",
+"at": 64.82,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.82s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0007",
+"op": "tighten_pause",
+"track": "both",
+"at": 77.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.04s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0008",
+"op": "tighten_pause",
+"track": "both",
+"at": 97.91,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.34s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0009",
+"op": "tighten_pause",
+"track": "both",
+"at": 101.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.19s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0010",
+"op": "tighten_pause",
+"track": "both",
+"at": 137.15,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.87s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0011",
+"op": "tighten_pause",
+"track": "both",
+"at": 149.4,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.92s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0012",
+"op": "tighten_pause",
+"track": "both",
+"at": 153.62,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.95s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0013",
+"op": "tighten_pause",
+"track": "both",
+"at": 158.27,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.00s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0014",
+"op": "tighten_pause",
+"track": "both",
+"at": 170.81,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.54s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0015",
+"op": "tighten_pause",
+"track": "both",
+"at": 178.88,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.65s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0016",
+"op": "tighten_pause",
+"track": "both",
+"at": 181.52,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.37s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0017",
+"op": "tighten_pause",
+"track": "both",
+"at": 184.79,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.16s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0018",
+"op": "tighten_pause",
+"track": "both",
+"at": 189.54,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.29s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0019",
+"op": "tighten_pause",
+"track": "both",
+"at": 192.07,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.22s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0020",
+"op": "tighten_pause",
+"track": "both",
+"at": 200.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.18s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0021",
+"op": "tighten_pause",
+"track": "both",
+"at": 209.98,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.17s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0022",
+"op": "tighten_pause",
+"track": "both",
+"at": 219.8,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.37s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0023",
+"op": "tighten_pause",
+"track": "both",
+"at": 225.98,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.95s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0024",
+"op": "tighten_pause",
+"track": "both",
+"at": 238.49,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.90s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0025",
+"op": "tighten_pause",
+"track": "both",
+"at": 251.86,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.14s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0026",
+"op": "tighten_pause",
+"track": "both",
+"at": 259.77,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.62s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0027",
+"op": "tighten_pause",
+"track": "both",
+"at": 263.39,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.98s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0028",
+"op": "tighten_pause",
+"track": "both",
+"at": 272.14,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0029",
+"op": "tighten_pause",
+"track": "both",
+"at": 295.38,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.59s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0030",
+"op": "tighten_pause",
+"track": "both",
+"at": 305.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.44s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0031",
+"op": "tighten_pause",
+"track": "both",
+"at": 311.71,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.14s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0032",
+"op": "tighten_pause",
+"track": "both",
+"at": 321.54,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.53s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0033",
+"op": "tighten_pause",
+"track": "both",
+"at": 344.0,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.21s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0034",
+"op": "tighten_pause",
+"track": "both",
+"at": 353.45,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.78s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0035",
+"op": "tighten_pause",
+"track": "both",
+"at": 363.66,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.17s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0036",
+"op": "tighten_pause",
+"track": "both",
+"at": 367.6,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.88s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0037",
+"op": "tighten_pause",
+"track": "both",
+"at": 378.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.15s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0038",
+"op": "tighten_pause",
+"track": "both",
+"at": 385.26,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.51s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0039",
+"op": "tighten_pause",
+"track": "both",
+"at": 407.55,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.98s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0040",
+"op": "tighten_pause",
+"track": "both",
+"at": 413.06,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.60s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0041",
+"op": "tighten_pause",
+"track": "both",
+"at": 428.26,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.84s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0042",
+"op": "tighten_pause",
+"track": "both",
+"at": 431.88,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.33s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0043",
+"op": "tighten_pause",
+"track": "both",
+"at": 441.56,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.25s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0044",
+"op": "tighten_pause",
+"track": "both",
+"at": 446.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.85s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0045",
+"op": "tighten_pause",
+"track": "both",
+"at": 479.46,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.91s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0046",
+"op": "tighten_pause",
+"track": "both",
+"at": 496.23,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.82s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0047",
+"op": "tighten_pause",
+"track": "both",
+"at": 522.62,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.00s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0048",
+"op": "tighten_pause",
+"track": "both",
+"at": 538.84,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0049",
+"op": "tighten_pause",
+"track": "both",
+"at": 554.98,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.73s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0050",
+"op": "tighten_pause",
+"track": "both",
+"at": 560.1,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.54s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0051",
+"op": "tighten_pause",
+"track": "both",
+"at": 566.43,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.34s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0052",
+"op": "tighten_pause",
+"track": "both",
+"at": 577.72,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.19s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0053",
+"op": "tighten_pause",
+"track": "both",
+"at": 597.95,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.92s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0054",
+"op": "tighten_pause",
+"track": "both",
+"at": 601.5,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.91s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0055",
+"op": "tighten_pause",
+"track": "both",
+"at": 613.73,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.36s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0056",
+"op": "tighten_pause",
+"track": "both",
+"at": 634.95,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.69s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0057",
+"op": "tighten_pause",
+"track": "both",
+"at": 673.62,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0058",
+"op": "tighten_pause",
+"track": "both",
+"at": 695.34,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.89s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0059",
+"op": "tighten_pause",
+"track": "both",
+"at": 715.4,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.53s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0060",
+"op": "tighten_pause",
+"track": "both",
+"at": 734.01,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.28s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0061",
+"op": "tighten_pause",
+"track": "both",
+"at": 735.61,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.28s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0062",
+"op": "tighten_pause",
+"track": "both",
+"at": 795.74,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.02s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0063",
+"op": "tighten_pause",
+"track": "both",
+"at": 800.47,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.46s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0064",
+"op": "tighten_pause",
+"track": "both",
+"at": 803.34,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0065",
+"op": "tighten_pause",
+"track": "both",
+"at": 875.52,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.77s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0066",
+"op": "tighten_pause",
+"track": "both",
+"at": 878.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.99s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0067",
+"op": "tighten_pause",
+"track": "both",
+"at": 884.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.87s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0068",
+"op": "tighten_pause",
+"track": "both",
+"at": 887.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.89s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0069",
+"op": "tighten_pause",
+"track": "both",
+"at": 890.75,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.08s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0070",
+"op": "tighten_pause",
+"track": "both",
+"at": 901.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.27s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0071",
+"op": "tighten_pause",
+"track": "both",
+"at": 919.24,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.84s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0072",
+"op": "tighten_pause",
+"track": "both",
+"at": 932.6,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0073",
+"op": "tighten_pause",
+"track": "both",
+"at": 935.38,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0074",
+"op": "tighten_pause",
+"track": "both",
+"at": 938.52,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.17s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0075",
+"op": "tighten_pause",
+"track": "both",
+"at": 944.0,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.61s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0076",
+"op": "tighten_pause",
+"track": "both",
+"at": 946.64,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.09s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0077",
+"op": "tighten_pause",
+"track": "both",
+"at": 967.95,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.10s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0078",
+"op": "tighten_pause",
+"track": "both",
+"at": 972.1,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.51s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0079",
+"op": "tighten_pause",
+"track": "both",
+"at": 981.42,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.09s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0080",
+"op": "tighten_pause",
+"track": "both",
+"at": 986.62,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.39s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0081",
+"op": "tighten_pause",
+"track": "both",
+"at": 998.04,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.99s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0082",
+"op": "tighten_pause",
+"track": "both",
+"at": 1010.72,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.18s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0083",
+"op": "tighten_pause",
+"track": "both",
+"at": 1022.92,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.27s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0084",
+"op": "tighten_pause",
+"track": "both",
+"at": 1033.36,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.89s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0085",
+"op": "tighten_pause",
+"track": "both",
+"at": 1066.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.17s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0086",
+"op": "tighten_pause",
+"track": "both",
+"at": 1077.56,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0087",
+"op": "tighten_pause",
+"track": "both",
+"at": 1083.6,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0088",
+"op": "tighten_pause",
+"track": "both",
+"at": 1115.79,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.08s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0089",
+"op": "tighten_pause",
+"track": "both",
+"at": 1135.47,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.34s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0090",
+"op": "tighten_pause",
+"track": "both",
+"at": 1139.03,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0091",
+"op": "tighten_pause",
+"track": "both",
+"at": 1152.24,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.02s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0092",
+"op": "tighten_pause",
+"track": "both",
+"at": 1211.08,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.68s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0093",
+"op": "tighten_pause",
+"track": "both",
+"at": 1234.92,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.87s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0094",
+"op": "tighten_pause",
+"track": "both",
+"at": 1304.6,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.07s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0095",
+"op": "tighten_pause",
+"track": "both",
+"at": 1328.72,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.90s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0096",
+"op": "tighten_pause",
+"track": "both",
+"at": 1342.64,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.08s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0097",
+"op": "tighten_pause",
+"track": "both",
+"at": 1346.66,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.85s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0098",
+"op": "tighten_pause",
+"track": "both",
+"at": 1417.92,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.25s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0099",
+"op": "tighten_pause",
+"track": "both",
+"at": 1470.97,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.84s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0100",
+"op": "tighten_pause",
+"track": "both",
+"at": 1499.48,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0101",
+"op": "tighten_pause",
+"track": "both",
+"at": 1568.02,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.92s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0102",
+"op": "tighten_pause",
+"track": "both",
+"at": 1625.45,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.62s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0103",
+"op": "tighten_pause",
+"track": "both",
+"at": 1655.09,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.02s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0104",
+"op": "tighten_pause",
+"track": "both",
+"at": 1696.12,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.89s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0105",
+"op": "tighten_pause",
+"track": "both",
+"at": 1704.05,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.36s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0106",
+"op": "tighten_pause",
+"track": "both",
+"at": 1707.32,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0107",
+"op": "tighten_pause",
+"track": "both",
+"at": 1727.14,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.97s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0108",
+"op": "tighten_pause",
+"track": "both",
+"at": 1730.4,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.07s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0109",
+"op": "tighten_pause",
+"track": "both",
+"at": 1750.71,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.78s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0110",
+"op": "tighten_pause",
+"track": "both",
+"at": 1756.58,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.09s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0111",
+"op": "tighten_pause",
+"track": "both",
+"at": 1766.41,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.00s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0112",
+"op": "tighten_pause",
+"track": "both",
+"at": 1808.07,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.94s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0113",
+"op": "tighten_pause",
+"track": "both",
+"at": 1830.88,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.69s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0114",
+"op": "tighten_pause",
+"track": "both",
+"at": 1843.61,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.18s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0115",
+"op": "tighten_pause",
+"track": "both",
+"at": 1867.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.41s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0116",
+"op": "tighten_pause",
+"track": "both",
+"at": 1870.82,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0117",
+"op": "tighten_pause",
+"track": "both",
+"at": 1881.83,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.06s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0118",
+"op": "tighten_pause",
+"track": "both",
+"at": 1919.46,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.97s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0119",
+"op": "tighten_pause",
+"track": "both",
+"at": 1925.57,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.22s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0120",
+"op": "tighten_pause",
+"track": "both",
+"at": 1931.17,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.94s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0121",
+"op": "tighten_pause",
+"track": "both",
+"at": 1939.12,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.75s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0122",
+"op": "tighten_pause",
+"track": "both",
+"at": 1959.72,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.72s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0123",
+"op": "tighten_pause",
+"track": "both",
+"at": 1984.88,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.99s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0124",
+"op": "tighten_pause",
+"track": "both",
+"at": 1989.17,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.12s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0125",
+"op": "tighten_pause",
+"track": "both",
+"at": 2007.38,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.43s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0126",
+"op": "tighten_pause",
+"track": "both",
+"at": 2011.32,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0127",
+"op": "tighten_pause",
+"track": "both",
+"at": 2017.37,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.58s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0128",
+"op": "tighten_pause",
+"track": "both",
+"at": 2021.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0129",
+"op": "tighten_pause",
+"track": "both",
+"at": 2027.26,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.23s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0130",
+"op": "tighten_pause",
+"track": "both",
+"at": 2037.24,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.39s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0131",
+"op": "tighten_pause",
+"track": "both",
+"at": 2066.8,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.56s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0132",
+"op": "tighten_pause",
+"track": "both",
+"at": 2069.32,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.98s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0133",
+"op": "tighten_pause",
+"track": "both",
+"at": 2075.88,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.57s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0134",
+"op": "tighten_pause",
+"track": "both",
+"at": 2082.86,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.11s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0135",
+"op": "tighten_pause",
+"track": "both",
+"at": 2088.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.13s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0136",
+"op": "tighten_pause",
+"track": "both",
+"at": 2093.54,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.07s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0137",
+"op": "tighten_pause",
+"track": "both",
+"at": 2100.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0138",
+"op": "tighten_pause",
+"track": "both",
+"at": 2102.25,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.08s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0139",
+"op": "tighten_pause",
+"track": "both",
+"at": 2107.37,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.67s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0140",
+"op": "tighten_pause",
+"track": "both",
+"at": 2115.76,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.21s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0141",
+"op": "tighten_pause",
+"track": "both",
+"at": 2129.03,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.14s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0142",
+"op": "tighten_pause",
+"track": "both",
+"at": 2131.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0143",
+"op": "tighten_pause",
+"track": "both",
+"at": 2137.97,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.10s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0144",
+"op": "tighten_pause",
+"track": "both",
+"at": 2145.47,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.72s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0145",
+"op": "tighten_pause",
+"track": "both",
+"at": 2155.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.55s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0146",
+"op": "tighten_pause",
+"track": "both",
+"at": 2158.82,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.90s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0147",
+"op": "tighten_pause",
+"track": "both",
+"at": 2163.45,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.07s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0148",
+"op": "tighten_pause",
+"track": "both",
+"at": 2184.05,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.58s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0149",
+"op": "tighten_pause",
+"track": "both",
+"at": 2192.85,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.84s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0150",
+"op": "tighten_pause",
+"track": "both",
+"at": 2201.43,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.00s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0151",
+"op": "tighten_pause",
+"track": "both",
+"at": 2206.6,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.95s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0152",
+"op": "tighten_pause",
+"track": "both",
+"at": 2209.93,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.10s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0153",
+"op": "tighten_pause",
+"track": "both",
+"at": 2222.86,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.75s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0154",
+"op": "tighten_pause",
+"track": "both",
+"at": 2269.72,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.99s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0155",
+"op": "tighten_pause",
+"track": "both",
+"at": 2271.8,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.87s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0156",
+"op": "tighten_pause",
+"track": "both",
+"at": 2283.64,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.85s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0157",
+"op": "tighten_pause",
+"track": "both",
+"at": 2285.68,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.19s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0158",
+"op": "tighten_pause",
+"track": "both",
+"at": 2292.46,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.51s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0159",
+"op": "tighten_pause",
+"track": "both",
+"at": 2299.76,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.84s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0160",
+"op": "tighten_pause",
+"track": "both",
+"at": 2332.94,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.13s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0161",
+"op": "tighten_pause",
+"track": "both",
+"at": 2338.66,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.59s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0162",
+"op": "tighten_pause",
+"track": "both",
+"at": 2347.53,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.90s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0163",
+"op": "tighten_pause",
+"track": "both",
+"at": 2352.56,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.03s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0164",
+"op": "tighten_pause",
+"track": "both",
+"at": 2363.84,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.25s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0165",
+"op": "tighten_pause",
+"track": "both",
+"at": 2366.04,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0166",
+"op": "tighten_pause",
+"track": "both",
+"at": 2386.48,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.94s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0167",
+"op": "tighten_pause",
+"track": "both",
+"at": 2396.39,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.33s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0168",
+"op": "tighten_pause",
+"track": "both",
+"at": 2404.9,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0169",
+"op": "tighten_pause",
+"track": "both",
+"at": 2413.54,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.39s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0170",
+"op": "tighten_pause",
+"track": "both",
+"at": 2420.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.97s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0171",
+"op": "tighten_pause",
+"track": "both",
+"at": 2435.62,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.89s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0172",
+"op": "tighten_pause",
+"track": "both",
+"at": 2449.0,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0173",
+"op": "tighten_pause",
+"track": "both",
+"at": 2453.92,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0174",
+"op": "tighten_pause",
+"track": "both",
+"at": 2462.34,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.92s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0175",
+"op": "tighten_pause",
+"track": "both",
+"at": 2492.55,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.10s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0176",
+"op": "tighten_pause",
+"track": "both",
+"at": 2500.21,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.86s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0177",
+"op": "tighten_pause",
+"track": "both",
+"at": 2503.29,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.10s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0178",
+"op": "tighten_pause",
+"track": "both",
+"at": 2508.85,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.00s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0179",
+"op": "tighten_pause",
+"track": "both",
+"at": 2518.0,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.43s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0180",
+"op": "tighten_pause",
+"track": "both",
+"at": 2533.35,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.69s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0181",
+"op": "tighten_pause",
+"track": "both",
+"at": 2543.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0182",
+"op": "tighten_pause",
+"track": "both",
+"at": 2552.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.28s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0183",
+"op": "tighten_pause",
+"track": "both",
+"at": 2559.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.82s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0184",
+"op": "tighten_pause",
+"track": "both",
+"at": 2563.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.38s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0185",
+"op": "tighten_pause",
+"track": "both",
+"at": 2593.08,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0186",
+"op": "tighten_pause",
+"track": "both",
+"at": 2636.59,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.82s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0187",
+"op": "tighten_pause",
+"track": "both",
+"at": 2714.08,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.45s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0188",
+"op": "tighten_pause",
+"track": "both",
+"at": 2830.28,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.11s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0189",
+"op": "tighten_pause",
+"track": "both",
+"at": 2867.59,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.74s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0190",
+"op": "tighten_pause",
+"track": "both",
+"at": 2881.5,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.92s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0191",
+"op": "tighten_pause",
+"track": "both",
+"at": 2895.86,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.65s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0192",
+"op": "tighten_pause",
+"track": "both",
+"at": 2900.42,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.03s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0193",
+"op": "tighten_pause",
+"track": "both",
+"at": 2913.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0194",
+"op": "tighten_pause",
+"track": "both",
+"at": 2914.94,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.26s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0195",
+"op": "tighten_pause",
+"track": "both",
+"at": 2921.04,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0196",
+"op": "tighten_pause",
+"track": "both",
+"at": 2923.1,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.14s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0197",
+"op": "tighten_pause",
+"track": "both",
+"at": 2949.04,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.72s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0198",
+"op": "tighten_pause",
+"track": "both",
+"at": 2953.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.47s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0199",
+"op": "tighten_pause",
+"track": "both",
+"at": 2960.94,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0200",
+"op": "tighten_pause",
+"track": "both",
+"at": 2967.51,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.36s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0201",
+"op": "tighten_pause",
+"track": "both",
+"at": 2975.67,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.02s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0202",
+"op": "tighten_pause",
+"track": "both",
+"at": 2977.68,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0203",
+"op": "tighten_pause",
+"track": "both",
+"at": 3008.03,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.98s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0204",
+"op": "tighten_pause",
+"track": "both",
+"at": 3013.8,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0205",
+"op": "tighten_pause",
+"track": "both",
+"at": 3039.13,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.82s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0206",
+"op": "tighten_pause",
+"track": "both",
+"at": 3053.6,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.03s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0207",
+"op": "tighten_pause",
+"track": "both",
+"at": 3059.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.82s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0208",
+"op": "tighten_pause",
+"track": "both",
+"at": 3076.48,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.35s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0209",
+"op": "tighten_pause",
+"track": "both",
+"at": 3105.24,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.60s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0210",
+"op": "tighten_pause",
+"track": "both",
+"at": 3129.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0211",
+"op": "tighten_pause",
+"track": "both",
+"at": 3132.43,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.86s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0212",
+"op": "tighten_pause",
+"track": "both",
+"at": 3159.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.84s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0213",
+"op": "tighten_pause",
+"track": "both",
+"at": 3162.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.08s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0214",
+"op": "tighten_pause",
+"track": "both",
+"at": 3173.48,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.87s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0215",
+"op": "tighten_pause",
+"track": "both",
+"at": 3181.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.87s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0216",
+"op": "tighten_pause",
+"track": "both",
+"at": 3187.42,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 5.35s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0217",
+"op": "tighten_pause",
+"track": "both",
+"at": 3198.59,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.34s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0218",
+"op": "tighten_pause",
+"track": "both",
+"at": 3203.7,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.44s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0219",
+"op": "tighten_pause",
+"track": "both",
+"at": 3205.82,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.94s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0220",
+"op": "tighten_pause",
+"track": "both",
+"at": 3215.38,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.47s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0221",
+"op": "tighten_pause",
+"track": "both",
+"at": 3245.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.89s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0222",
+"op": "tighten_pause",
+"track": "both",
+"at": 3246.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.97s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0223",
+"op": "tighten_pause",
+"track": "both",
+"at": 3249.18,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.53s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0224",
+"op": "tighten_pause",
+"track": "both",
+"at": 3251.66,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0225",
+"op": "tighten_pause",
+"track": "both",
+"at": 3253.12,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0226",
+"op": "tighten_pause",
+"track": "both",
+"at": 3262.21,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.60s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0227",
+"op": "tighten_pause",
+"track": "both",
+"at": 3270.4,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.88s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0228",
+"op": "tighten_pause",
+"track": "both",
+"at": 3278.57,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.92s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0229",
+"op": "tighten_pause",
+"track": "both",
+"at": 3292.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.91s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0230",
+"op": "tighten_pause",
+"track": "both",
+"at": 3306.52,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.13s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0231",
+"op": "tighten_pause",
+"track": "both",
+"at": 3340.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.44s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0232",
+"op": "tighten_pause",
+"track": "both",
+"at": 3353.26,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.84s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0233",
+"op": "tighten_pause",
+"track": "both",
+"at": 3359.69,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.48s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0234",
+"op": "tighten_pause",
+"track": "both",
+"at": 3373.58,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.67s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0235",
+"op": "tighten_pause",
+"track": "both",
+"at": 3377.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.71s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0236",
+"op": "tighten_pause",
+"track": "both",
+"at": 3388.22,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0237",
+"op": "tighten_pause",
+"track": "both",
+"at": 3393.02,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.05s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0238",
+"op": "tighten_pause",
+"track": "both",
+"at": 3408.78,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.75s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0239",
+"op": "tighten_pause",
+"track": "both",
+"at": 3415.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0240",
+"op": "tighten_pause",
+"track": "both",
+"at": 3419.04,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.06s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0241",
+"op": "tighten_pause",
+"track": "both",
+"at": 3425.8,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.42s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0242",
+"op": "tighten_pause",
+"track": "both",
+"at": 3435.68,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0243",
+"op": "tighten_pause",
+"track": "both",
+"at": 3455.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.94s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0244",
+"op": "tighten_pause",
+"track": "both",
+"at": 3466.74,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.08s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0245",
+"op": "tighten_pause",
+"track": "both",
+"at": 3498.18,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0246",
+"op": "tighten_pause",
+"track": "both",
+"at": 3534.44,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.86s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0247",
+"op": "tighten_pause",
+"track": "both",
+"at": 3586.54,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.37s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0248",
+"op": "tighten_pause",
+"track": "both",
+"at": 3655.54,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.07s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0249",
+"op": "tighten_pause",
+"track": "both",
+"at": 3663.92,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0250",
+"op": "tighten_pause",
+"track": "both",
+"at": 3676.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.89s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0251",
+"op": "tighten_pause",
+"track": "both",
+"at": 3764.38,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.81s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0252",
+"op": "tighten_pause",
+"track": "both",
+"at": 3784.98,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.49s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0253",
+"op": "tighten_pause",
+"track": "both",
+"at": 3796.94,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0254",
+"op": "tighten_pause",
+"track": "both",
+"at": 3811.72,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.91s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0255",
+"op": "tighten_pause",
+"track": "both",
+"at": 3847.32,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.92s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0256",
+"op": "tighten_pause",
+"track": "both",
+"at": 3879.92,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.01s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0257",
+"op": "tighten_pause",
+"track": "both",
+"at": 3914.28,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.85s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0258",
+"op": "tighten_pause",
+"track": "both",
+"at": 3921.62,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.46s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0259",
+"op": "tighten_pause",
+"track": "both",
+"at": 3938.05,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.30s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0260",
+"op": "tighten_pause",
+"track": "both",
+"at": 3942.74,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.38s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0261",
+"op": "tighten_pause",
+"track": "both",
+"at": 3953.39,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.70s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0262",
+"op": "tighten_pause",
+"track": "both",
+"at": 3967.75,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.20s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0263",
+"op": "tighten_pause",
+"track": "both",
+"at": 3981.24,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.15s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0264",
+"op": "tighten_pause",
+"track": "both",
+"at": 3986.65,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.44s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0265",
+"op": "tighten_pause",
+"track": "both",
+"at": 3997.86,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.39s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0266",
+"op": "tighten_pause",
+"track": "both",
+"at": 4004.8,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.15s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0267",
+"op": "tighten_pause",
+"track": "both",
+"at": 4007.47,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.30s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0268",
+"op": "tighten_pause",
+"track": "both",
+"at": 4011.81,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.30s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0269",
+"op": "tighten_pause",
+"track": "both",
+"at": 4015.06,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.13s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0270",
+"op": "tighten_pause",
+"track": "both",
+"at": 4019.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.25s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0271",
+"op": "tighten_pause",
+"track": "both",
+"at": 4027.04,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.97s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0272",
+"op": "tighten_pause",
+"track": "both",
+"at": 4031.61,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.34s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0273",
+"op": "tighten_pause",
+"track": "both",
+"at": 4045.33,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 5.12s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0274",
+"op": "tighten_pause",
+"track": "both",
+"at": 4051.48,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.03s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0275",
+"op": "tighten_pause",
+"track": "both",
+"at": 4053.81,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.32s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0276",
+"op": "tighten_pause",
+"track": "both",
+"at": 4058.46,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.53s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0277",
+"op": "tighten_pause",
+"track": "both",
+"at": 4060.66,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.40s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0278",
+"op": "tighten_pause",
+"track": "both",
+"at": 4070.46,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.08s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0279",
+"op": "tighten_pause",
+"track": "both",
+"at": 4095.99,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.18s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0280",
+"op": "tighten_pause",
+"track": "both",
+"at": 4105.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.95s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0281",
+"op": "tighten_pause",
+"track": "both",
+"at": 4108.86,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.09s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0282",
+"op": "tighten_pause",
+"track": "both",
+"at": 4116.15,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.29s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0283",
+"op": "tighten_pause",
+"track": "both",
+"at": 4119.63,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.30s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0284",
+"op": "tighten_pause",
+"track": "both",
+"at": 4121.58,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.72s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0285",
+"op": "tighten_pause",
+"track": "both",
+"at": 4123.28,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.57s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0286",
+"op": "tighten_pause",
+"track": "both",
+"at": 4124.98,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.15s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0287",
+"op": "tighten_pause",
+"track": "both",
+"at": 4131.47,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.02s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0288",
+"op": "tighten_pause",
+"track": "both",
+"at": 4140.12,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0289",
+"op": "tighten_pause",
+"track": "both",
+"at": 4148.34,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.07s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0290",
+"op": "tighten_pause",
+"track": "both",
+"at": 4150.16,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.00s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0291",
+"op": "tighten_pause",
+"track": "both",
+"at": 4156.4,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.31s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0292",
+"op": "tighten_pause",
+"track": "both",
+"at": 4172.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.35s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0293",
+"op": "tighten_pause",
+"track": "both",
+"at": 4185.38,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.83s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0294",
+"op": "tighten_pause",
+"track": "both",
+"at": 4206.95,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.24s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0295",
+"op": "tighten_pause",
+"track": "both",
+"at": 4234.28,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.14s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0296",
+"op": "tighten_pause",
+"track": "both",
+"at": 4275.22,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.62s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0297",
+"op": "tighten_pause",
+"track": "both",
+"at": 4302.09,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.26s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0298",
+"op": "tighten_pause",
+"track": "both",
+"at": 4310.77,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 0.93s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0299",
+"op": "tighten_pause",
+"track": "both",
+"at": 4315.38,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.22s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0300",
+"op": "tighten_pause",
+"track": "both",
+"at": 4340.68,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 2.27s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0301",
+"op": "tighten_pause",
+"track": "both",
+"at": 4357.69,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.77s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0302",
+"op": "tighten_pause",
+"track": "both",
+"at": 4360.12,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.31s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0303",
+"op": "tighten_pause",
+"track": "both",
+"at": 4365.2,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.67s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0304",
+"op": "tighten_pause",
+"track": "both",
+"at": 4379.96,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 3.64s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0305",
+"op": "tighten_pause",
+"track": "both",
+"at": 4401.3,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.51s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0306",
+"op": "tighten_pause",
+"track": "both",
+"at": 4405.11,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.07s > 0.8s",
+"confidence": 0.5
+},
+{
+"id": "b0307",
+"op": "tighten_pause",
+"track": "both",
+"at": 4408.7,
+"target_s": 0.4,
+"category": "pause",
+"reason": "floor pause 1.25s > 0.8s",
+"confidence": 0.5
+}
+]
+}

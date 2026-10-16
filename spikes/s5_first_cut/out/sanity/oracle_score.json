@@ -1,0 +1,167 @@
+{
+ "n_ops": 1091,
+ "ops_by_type": {
+  "cut": 926,
+  "slip": 165
+ },
+ "warnings": [],
+ "n_warnings": 0,
+ "keep_flags": 0,
+ "tracks": {
+  "L": {
+   "ai_removed_s": 898.7,
+   "gt_removed_s": 898.6,
+   "gt_ambiguous_s": 51.4,
+   "precision_s": 1.0,
+   "recall_s": 1.0,
+   "speech": {
+    "ai_removed_s": 440.7,
+    "gt_removed_s": 440.7,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "pause": {
+    "ai_removed_s": 458.0,
+    "gt_removed_s": 457.9,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "events": {
+    "ai": 482,
+    "gt": 482,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 0.0,
+   "false_deletion_items": 0,
+   "missed_speech_removal_s": 0.0,
+   "missed_items": 0
+  },
+  "P": {
+   "ai_removed_s": 901.6,
+   "gt_removed_s": 901.6,
+   "gt_ambiguous_s": 5.2,
+   "precision_s": 1.0,
+   "recall_s": 1.0,
+   "speech": {
+    "ai_removed_s": 63.1,
+    "gt_removed_s": 63.1,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "pause": {
+    "ai_removed_s": 838.5,
+    "gt_removed_s": 838.5,
+    "precision": 1.0,
+    "recall": 1.0
+   },
+   "events": {
+    "ai": 440,
+    "gt": 440,
+    "precision": 1.0,
+    "recall": 1.0,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 0.0,
+   "false_deletion_items": 0,
+   "missed_speech_removal_s": 0.0,
+   "missed_items": 0
+  }
+ },
+ "false_deletions_top": [],
+ "missed_removals_top": [],
+ "false_deletion_total_s": 0,
+ "by_category": {
+  "pause": {
+   "removed_s": 931.4,
+   "precision": 1.0,
+   "speech_removed_s": 12.3,
+   "false_deletion_s": 0.0
+  },
+  "disfluency": {
+   "removed_s": 78.2,
+   "precision": 1.0,
+   "speech_removed_s": 48.7,
+   "false_deletion_s": 0.0
+  },
+  "content": {
+   "removed_s": 780.5,
+   "precision": 1.0,
+   "speech_removed_s": 435.7,
+   "false_deletion_s": 0.0
+  },
+  "single_track_noise": {
+   "removed_s": 10.2,
+   "precision": 1.0,
+   "speech_removed_s": 7.1,
+   "false_deletion_s": 0.0
+  }
+ },
+ "duration": {
+  "raw_s": 4411.932,
+  "leon_final_from_raw_s": 3531.37,
+  "leon_final_incl_music_s": 3684.766,
+  "leon_est_by_formula_s": 3517.0,
+  "ai_est_s": 3511.8,
+  "formula": "raw - mean(per-track removed); compare ai_est_s with leon_est_by_formula_s"
+ },
+ "floor_pauses": {
+  "n": 1165,
+  "raw": {
+   "p10": 0.34,
+   "p25": 0.41,
+   "median": 0.57,
+   "p75": 0.83,
+   "p90": 1.37,
+   "n_gt_1s": 220,
+   "n_gt_2s": 36,
+   "total_s": 858.1
+  },
+  "leon": {
+   "p10": 0.0,
+   "p25": 0.21,
+   "median": 0.39,
+   "p75": 0.58,
+   "p90": 0.83,
+   "n_gt_1s": 81,
+   "n_gt_2s": 14,
+   "total_s": 530.1
+  },
+  "ai": {
+   "p10": 0.0,
+   "p25": 0.21,
+   "median": 0.39,
+   "p75": 0.58,
+   "p90": 0.83,
+   "n_gt_1s": 81,
+   "n_gt_2s": 14,
+   "total_s": 530.1
+  },
+  "paired_mae_s": 0.0,
+  "paired_median_signed_s(ai-leon)": 0.0
+ },
+ "interjections": {
+  "n_candidates": 345,
+  "confusion_gt_rows_ai_cols": {
+   "kept": {
+    "kept": 133
+   },
+   "deleted": {
+    "deleted": 45
+   },
+   "moved": {
+    "moved": 165
+   },
+   "unclear": {
+    "kept": 2
+   }
+  },
+  "gt_moved": 165,
+  "ai_moved": 165,
+  "both_moved": 165,
+  "sign_agreement": 1.0,
+  "median_abs_delta_error_s": 0.002,
+  "definition": "candidate = phrase <=6 tokens, <=2.5 s, preceded by >=0.5 s own pause, with >=1 s of the other host's speech within ±1 s. GT moved = kept and relative placement vs the other track changed by 0.3-3 s (from S4 per-track offsets); deleted = >=50% of its speech removed."
+ }
+}

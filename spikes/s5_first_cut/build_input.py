@@ -529,7 +529,7 @@ def write_doc(a, data, stats, overlaps, gaps, silences, sounds):
               f"- 地板间隙 (两轨都没说话 ≥1.0 s): {stats['floor_gaps_ge_1s']['count']} 处, 共 {stats['floor_gaps_ge_1s']['total_s']} s。",
               f"- 两轨都完全无声 ≥1.5 s: {len(silences)} 处。", f"- 无文字声音候选: {len(sounds)} 个。", "",
               "### 重叠表 (overlaps)", "",
-              "`起-止 时长 先开口者 | L: 首id-末id 文本 | P: 首id-末id 文本`", ""]
+              "`起-止 时长 先开口者(L/P/same=同时) | L: 首id-末id 重叠部分文本 | P: 首id-末id 重叠部分文本`", ""]
     for o in overlaps:
         lt = f"{o['L'][0]}-{o['L'][1]} {o['L'][2]}" if o["L"] else "-"
         pt = f"{o['P'][0]}-{o['P'][1]} {o['P'][2]}" if o["P"] else "-"

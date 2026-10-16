@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "lacuna/spikes/s5_first_cut/edit_ops.schema.json",
+  "title": "LACUNA first-cut edit operations (per-track, raw time)",
+  "description": "Output the AI editor must produce. Every op references the raw host tracks only, by token id (e.g. L000812 / P000045, from the editor input) or by raw seconds. Token-id ranges are inclusive and cover whole tokens: from = start of the first token, to = end of the last token. A number is a raw time in seconds on that track. Ops never add audio. Anything not covered by an op is kept as recorded.",
+  "type": "object",
+  "required": ["episode", "ops"],
+  "additionalProperties": false,
+  "properties": {
+    "episode": {"type": "string"},
+    "model": {"type": "string", "description": "free text: which model / prompt produced this"},
+    "notes": {"type": "string"},
+    "ops": {"type": "array", "items": {"$ref": "#/$defs/op"}}
+  },
+  "$defs": {
+    "track": {"enum": ["L", "P", "both"], "description": "L = Leon track, P = Pei track, both = the same raw time range on both tracks"},
+    "point": {
+      "description": "token id (string, e.g. 'L000812') or raw seconds (number). For track 'both' use raw seconds (a token id of either track is accepted and resolved to its time).",
+      "oneOf": [
+        {"type": "string", "pattern": "^[LP][0-9]{6}$"},
+        {"type": "number", "minimum": 0}
+      ]
+    },
+    "category": {
+      "enum": ["pause", "disfluency", "repetition", "crosstalk", "content", "interjection_move", "single_track_noise"],
+      "description": "pause = silence only; disfluency = 嗯/呃/false start/stumble; repetition = involuntary repeat; crosstalk = overlapping speech made sequential or removed; content = whole phrases/topics removed; interjection_move = an interjection slid in time or deleted; single_track_noise = breath/click/cough/noise on one track"
+    },
+    "common": {
+      "type": "object",
+      "required": ["id", "op", "category", "reason", "confidence"],
+      "properties": {
+        "id": {"type": "string", "description": "unique op id, e.g. op0001"},
+        "op": {"enum": ["cut", "tighten_pause", "slip", "keep_flag"]},
+        "category": {"$ref": "#/$defs/category"},
+        "reason": {"type": "string", "description": "one short sentence (Chinese is fine) a human reviewer can check"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1, "description": "probability Leon would make the same edit here"}
+      }
+    },
+    "op": {
+      "allOf": [{"$ref": "#/$defs/common"}],
+      "oneOf": [
+        {
+          "title": "cut",
+          "description": "Remove raw audio [from, to] on the given track(s). On a single track this shortens that track only (the renderer keeps the other track continuous); to silence a short sound under the other host's speech without moving anything, cut it on its own track with category single_track_noise.",
+          "properties": {
+            "op": {"const": "cut"},
+            "track": {"$ref": "#/$defs/track"},
+            "from": {"$ref": "#/$defs/point"},
+            "to": {"$ref": "#/$defs/point"}
+          },
+          "required": ["track", "from", "to"]
+        },
+        {
+          "title": "tighten_pause",
+          "description": "Shorten one pause to target_s seconds (removal taken from its middle). 'at' = token id the pause FOLLOWS (pause on that token's track), or a raw time inside the pause. track 'both' = a floor gap where neither host speaks; it is shortened on both tracks.",
+          "properties": {
+            "op": {"const": "tighten_pause"},
+            "track": {"$ref": "#/$defs/track"},
+            "at": {"$ref": "#/$defs/point"},
+            "target_s": {"type": "number", "minimum": 0}
+          },
+          "required": ["track", "at", "target_s"]
+        },
+        {
+          "title": "slip",
+          "description": "Move the raw range [from, to] of one track by delta_s seconds relative to the other track (positive = later, i.e. the interjection lands later in the other host's speech). Used for interjection_move / crosstalk serialisation. Does not delete audio.",
+          "properties": {
+            "op": {"const": "slip"},
+            "track": {"enum": ["L", "P"]},
+            "from": {"$ref": "#/$defs/point"},
+            "to": {"$ref": "#/$defs/point"},
+            "delta_s": {"type": "number", "minimum": -5, "maximum": 5}
+          },
+          "required": ["track", "from", "to", "delta_s"]
+        },
+        {
+          "title": "keep_flag",
+          "description": "Do nothing, but flag [from, to] for human review (uncertain: possible edit that the editor chose NOT to make).",
+          "properties": {
+            "op": {"const": "keep_flag"},
+            "track": {"$ref": "#/$defs/track"},
+            "from": {"$ref": "#/$defs/point"},
+            "to": {"$ref": "#/$defs/point"},
+            "suggested": {"enum": ["cut", "tighten_pause", "slip"], "description": "the edit that was considered"}
+          },
+          "required": ["track", "from", "to"]
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "episode": "EP001",
+      "ops": [
+        {"id": "op0001", "op": "cut", "track": "L", "from": "L000812", "to": "L000815", "category": "disfluency", "reason": "口误重启: 我觉得这个…我觉得 → 保留第二次", "confidence": 0.7},
+        {"id": "op0002", "op": "tighten_pause", "track": "both", "at": 2302.1, "target_s": 0.45, "category": "pause", "reason": "话题之间 2.3s 空白", "confidence": 0.85},
+        {"id": "op0003", "op": "slip", "track": "P", "from": "P002201", "to": "P002201", "delta_s": 0.6, "category": "interjection_move", "reason": "嗯 压在 L 的句中, 挪到 L 句末停顿", "confidence": 0.5},
+        {"id": "op0004", "op": "cut", "track": "L", "from": 1234.50, "to": 1234.92, "category": "single_track_noise", "reason": "P 说话时 L 轨无文字杂音", "confidence": 0.4},
+        {"id": "op0005", "op": "keep_flag", "track": "L", "from": "L004100", "to": "L004131", "suggested": "cut", "category": "content", "reason": "离题较长, 但可能是后面要回扣的梗, 需 Leon 决定", "confidence": 0.5}
+      ]
+    }
+  ]
+}

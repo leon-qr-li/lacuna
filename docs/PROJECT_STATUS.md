@@ -20,6 +20,10 @@ P0 → P1。方向已确认（D23 API 额度路径、D24 MVP 收窄）。
 - S2 ASR：`spikes/s2_asr/REPORT.md` → Paraformer 推荐（D30）。
 - S4 对齐：`spikes/s4_alignment/REPORT.md` → 470 处剪辑、两轨大量独立编辑（D31）。
 
+- S3 引擎：`spikes/s3_engine/REPORT.md` → `lacuna_core/` 按轨 EDL + 渲染 + 预览，38 测试通过，EP001 重建 NCC 0.951，0 咔哒声。试听片段 `/mnt/project-files/lacuna/previews/`。
+- S5 第一刀：准备中（转写包 + 打分器），之后盲剪 + 打分。
+- UX 线框 v1：https://claude.ai/artifact/1BvHmxW54dWCS9kFPyumqV（`design/wireframes/`）。
+
 ## Next action
 - S4：EP001 raw→final 完整对齐图（保留/删除/移动/插入音乐），作为评测地面真值。
 - 仓库就绪后：迁入 docs，建骨架 + CI 矩阵（ubuntu/windows/macos）。
