@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>素材收件箱</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F3EF}
+a{color:#1F5F5B}a:hover{color:#123F3C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #F4F3EF; color: #1E1E1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px;">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 24px; border-bottom: 1px solid #D6D3CB; background: #FFFFFF;">
+    <strong style="font-size: 16px; letter-spacing: 0.08em;">LACUNA</strong>
+    <nav aria-label="主导航" style="display: flex; flex-wrap: wrap; gap: 4px; margin-left: 24px;">
+      <a href="Home.dc.html" style="padding: 8px 12px; border-radius: 6px; color: #4A4843; text-decoration: none;">剧集</a>
+      <a href="Assets.dc.html" style="padding: 8px 12px; border-radius: 6px; background: #ECEAE4; color: #1E1E1C; text-decoration: none; font-weight: 500;">素材</a>
+      <a href="Playbook.dc.html" style="padding: 8px 12px; border-radius: 6px; color: #4A4843; text-decoration: none;">剪辑手册</a>
+    </nav>
+  </header>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-direction: column; gap: 20px;">
+    <h1 style="margin: 0; font-size: 24px;">素材</h1>
+
+    <section aria-label="等你提供" style="display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 15px;">等你提供 · 1</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 18px; border-radius: 12px; border: 1px solid #E8C9A6; background: #FFF6EC;">
+        <div style="flex: 1 1 360px; line-height: 1.7;">
+          <strong>《Obsession》的一段过场音乐</strong>（EP001 · 27:30 话题切换处）
+          <p style="margin: 4px 0 0; color: #4A4843;">想要的感觉：紧张、有点不安，节奏感强，用作过场，正常音量。还没听过实际音频，所以先不定具体片段。</p>
+        </div>
+        <div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 12px; color: #5C5A55;">把文件放进这个文件夹（已建好）：</span>
+          <code style="padding: 10px 12px; border-radius: 8px; background: #FFFFFF; border: 1px solid #E4E1DA; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">inbox\EP001\</code>
+          <button type="button" style="min-height: 44px; border: 1px solid #B8B4AA; border-radius: 8px; background: #FFFFFF;">打开文件夹</button>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="刚放进来" style="display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 15px;">刚放进来 · 自动整理中</h2>
+      <div style="padding: 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <strong style="flex: 1 1 240px;">90s_intro_v2.wav</strong>
+          <span style="font-size: 12px; color: #5C5A55;">0:18 · 48kHz 立体声</span>
+          <span style="padding: 4px 10px; border-radius: 999px; background: #E3EFEE; color: #1F5F5B; font-size: 12px;">识别为：片头</span>
+        </div>
+        <p style="margin: 0; padding: 10px 12px; border-radius: 8px; background: #F4F3EF; line-height: 1.6;">这是 90 年代系列的新片头吗？是的话我会把它记成系列规则，以后这个系列自动使用。
+          <span style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+            <button type="button" style="min-height: 44px; padding: 0 14px; border: none; border-radius: 8px; background: #1F5F5B; color: #FFFFFF;">是，记成系列规则</button>
+            <button type="button" style="min-height: 44px; padding: 0 14px; border: 1px solid #B8B4AA; border-radius: 8px; background: #FFFFFF;">只用在这一集</button>
+          </span>
+        </p>
+      </div>
+    </section>
+
+    <section aria-label="素材库" style="display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 15px;">素材库</h2>
+      <div style="overflow-x: auto; border-radius: 12px; border: 1px solid #E4E1DA; background: #FFFFFF;">
+        <table style="width: 100%; min-width: 720px; border-collapse: collapse;">
+          <thead><tr style="text-align: left; color: #5C5A55; font-size: 12px;">
+            <th style="padding: 10px 14px; font-weight: 500;">名称</th><th style="padding: 10px 14px; font-weight: 500;">用途</th><th style="padding: 10px 14px; font-weight: 500;">时长</th><th style="padding: 10px 14px; font-weight: 500;">来源</th><th style="padding: 10px 14px; font-weight: 500;">用在</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-top: 1px solid #E4E1DA;"><td style="padding: 10px 14px;">洛城二三事 片尾</td><td style="padding: 10px 14px;">片尾</td><td style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace;">0:22</td><td style="padding: 10px 14px;">你提供</td><td style="padding: 10px 14px;">全部剧集</td></tr>
+            <tr style="border-top: 1px solid #E4E1DA;"><td style="padding: 10px 14px;">[电影名] 原声 · [曲名]</td><td style="padding: 10px 14px;">过场</td><td style="padding: 10px 14px; font-family: 'IBM Plex Mono', monospace;">3:41</td><td style="padding: 10px 14px;">你提供</td><td style="padding: 10px 14px;">EP001 · 已选 1:12–1:56</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #5C5A55;">LACUNA 不会下载或录制音乐，只使用你放进来的文件。标签、时长和用途都会自动填写。</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>改动审阅</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F3EF}
+a{color:#1F5F5B}a:hover{color:#123F3C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 960px; display: flex; flex-direction: column; background: #F4F3EF; color: #1E1E1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px;">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 24px; border-bottom: 1px solid #D6D3CB; background: #FFFFFF;">
+    <strong style="font-size: 16px; letter-spacing: 0.08em;">LACUNA</strong>
+    <span style="color: #5C5A55;">/</span>
+    <span style="font-weight: 500;">EP001 样本集</span>
+    <nav aria-label="审阅模式" style="display: flex; gap: 4px; margin-left: auto; padding: 4px; border-radius: 8px; background: #ECEAE4;">
+      <a href="Main.dc.html" style="padding: 8px 14px; border-radius: 6px; color: #4A4843; text-decoration: none;">整集试听</a>
+      <a href="Review.dc.html" style="padding: 8px 14px; border-radius: 6px; background: #FFFFFF; color: #1E1E1C; text-decoration: none; font-weight: 500;">改动审阅 · 12</a>
+    </nav>
+  </header>
+
+  <p style="margin: 0; padding: 6px 24px; background: #FFF4D6; color: #6B4E00; font-size: 12px;">示意数据：分类数量取自 EP001 的真实剪辑统计，具体条目为演示用。</p>
+
+  <div style="display: flex; flex-wrap: wrap; flex: 1; align-items: stretch;">
+
+    <nav aria-label="改动列表" style="flex: 1 1 320px; max-width: 420px; display: flex; flex-direction: column; gap: 18px; padding: 20px; border-right: 1px solid #D6D3CB; background: #FFFFFF;">
+      <section>
+        <h2 style="margin: 0 0 4px; font-size: 15px;">需要你过目 · 12</h2>
+        <p style="margin: 0 0 10px; font-size: 12px; color: #5C5A55;">按影响大小排序。已经应用在第一刀里，你只需要决定是否恢复。</p>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;">
+          <li><a href="#d1" style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #1E1E1C; color: #FFFFFF; text-decoration: none;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px;">15:02</span><span>删除 38 秒 · 旅行题外话</span></a></li>
+          <li><a href="#d2" style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #F4F3EF; color: #1E1E1C; text-decoration: none;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">27:40</span><span>删除 22 秒 · 重复讲到的剧情</span></a></li>
+          <li><a href="#d3" style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #F4F3EF; color: #1E1E1C; text-decoration: none;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">42:06</span><span>挪动 · Pei「对对对」后移 0.8 秒</span></a></li>
+          <li><a href="#d4" style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 8px; background: #F4F3EF; color: #1E1E1C; text-decoration: none;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">48:15</span><span>删除插话 · Leon 打断 Pei，并修复 Pei 的续句</span></a></li>
+          <li style="padding: 6px 12px; font-size: 12px; color: #5C5A55;">另外 8 处…</li>
+        </ul>
+      </section>
+      <section>
+        <h2 style="margin: 0 0 4px; font-size: 15px;">常规清理 · 458 处</h2>
+        <p style="margin: 0 0 10px; font-size: 12px; color: #5C5A55;">按类别汇总，不逐条审批。整集试听时听到问题直接说即可。</p>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px;">
+          <li style="display: flex; justify-content: space-between; padding: 8px 12px; border-radius: 8px; background: #F4F3EF;"><span>停顿收紧到约 0.4 秒</span><span style="font-family: 'IBM Plex Mono', monospace;">172</span></li>
+          <li style="display: flex; justify-content: space-between; padding: 8px 12px; border-radius: 8px; background: #F4F3EF;"><span>口误与无意识重复</span><span style="font-family: 'IBM Plex Mono', monospace;">214</span></li>
+          <li style="display: flex; justify-content: space-between; padding: 8px 12px; border-radius: 8px; background: #F4F3EF;"><span>抢话错开</span><span style="font-family: 'IBM Plex Mono', monospace;">46</span></li>
+          <li style="display: flex; justify-content: space-between; padding: 8px 12px; border-radius: 8px; background: #F4F3EF;"><span>单轨杂声（压在对方说话下）</span><span style="font-family: 'IBM Plex Mono', monospace;">26</span></li>
+        </ul>
+      </section>
+      <section>
+        <h2 style="margin: 0 0 4px; font-size: 15px;">刻意保留 · 31 处</h2>
+        <p style="margin: 0; font-size: 12px; color: #5C5A55;">AI 拿不准、按「宁可保留」原则没动的地方，比如强调性的重复和笑声前的停顿。</p>
+      </section>
+    </nav>
+
+    <main id="d1" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding: 24px;">
+      <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px;">
+        <h1 style="margin: 0; font-size: 22px;">删除 38 秒 · 旅行题外话</h1>
+        <span style="font-family: 'IBM Plex Mono', monospace; color: #5C5A55;">成品 15:02 · 原始 Leon 17:31–18:09</span>
+      </div>
+
+      <section style="padding: 16px 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA; line-height: 1.7;">
+        <h2 style="margin: 0 0 6px; font-size: 13px; color: #5C5A55; font-weight: 500;">为什么删</h2>
+        <p style="margin: 0;">这段在讲去堪萨斯城的行程细节，和后面的电影话题没有关联，后文也没有再提到（不是伏笔或回扣）。删掉后前后两句能自然接上。</p>
+        <p style="margin: 8px 0 0; font-size: 12px; color: #5C5A55;">把握度：中 · 类型：内容删除 · 可随时恢复</p>
+      </section>
+
+      <section aria-label="原文对照" style="padding: 16px 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA; line-height: 1.9;">
+        <h2 style="margin: 0 0 6px; font-size: 13px; color: #5C5A55; font-weight: 500;">原话（只显示，不改写；划线部分被剪掉）</h2>
+        <p style="margin: 0;"><span style="color: #3E6E9E; font-weight: 500;">Leon</span>　我就想再往那边跑跑啊，<span style="text-decoration: line-through; color: #8C8984;">然后我去 Kansas City，那边其实……就是那个烤肉特别有名，我们排了一个多小时……</span></p>
+        <p style="margin: 0;"><span style="color: #B26A1F; font-weight: 500;">Pei</span>　<span style="text-decoration: line-through; color: #8C8984;">嗯嗯，那个我知道。</span></p>
+        <p style="margin: 0;"><span style="color: #3E6E9E; font-weight: 500;">Leon</span>　所以看这部电影之前，我基本知道就是说那个那个 hook 是什么……</p>
+      </section>
+
+      <section aria-label="试听" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 18px; border-radius: 12px; background: #1E1E1C; color: #FFFFFF;">
+        <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #5C5A55; border-radius: 8px; background: transparent; color: #FFFFFF;">▶ 原始（前后 10 秒）</button>
+        <button type="button" style="min-height: 44px; padding: 0 16px; border: none; border-radius: 8px; background: #FFFFFF; color: #1E1E1C; font-weight: 500;">▶ 剪后（前后 10 秒）</button>
+        <span style="font-size: 12px; color: #CFC9BC;">两段可来回切换，位置保持同步</span>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <button type="button" style="min-height: 44px; padding: 0 18px; border: none; border-radius: 8px; background: #1F5F5B; color: #FFFFFF;">保留这个删除</button>
+        <button type="button" style="min-height: 44px; padding: 0 18px; border: 1px solid #1E1E1C; border-radius: 8px; background: #FFFFFF; color: #1E1E1C;">恢复原话</button>
+        <label for="tweak" style="position: absolute; width: 1px; height: 1px; overflow: hidden;">用一句话调整</label>
+        <input id="tweak" type="text" placeholder="或者直接说：保留烤肉那句，其他删掉" style="flex: 1 1 280px; min-height: 44px; padding: 0 12px; border: 1px solid #B8B4AA; border-radius: 8px; font: inherit;">
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #5C5A55;">快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，R 恢复。</p>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

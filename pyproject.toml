@@ -1,0 +1,15 @@
+[project]
+name = "lacuna-core"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "soundfile>=0.12"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.setuptools]
+packages = ["lacuna_core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

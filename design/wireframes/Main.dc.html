@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>剧集工作台</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F3EF}
+a{color:#1F5F5B}a:hover{color:#123F3C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 960px; display: flex; flex-direction: column; background: #F4F3EF; color: #1E1E1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px;">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 24px; border-bottom: 1px solid #D6D3CB; background: #FFFFFF;">
+    <strong style="font-size: 16px; letter-spacing: 0.08em;">LACUNA</strong>
+    <span style="color: #5C5A55;">/</span>
+    <span style="font-weight: 500;">EP001 样本集</span>
+    <span style="padding: 4px 10px; border-radius: 999px; background: #E3EFEE; color: #1F5F5B; font-size: 12px;">第一刀已完成 · 12 处待你过目</span>
+    <nav aria-label="审阅模式" style="display: flex; gap: 4px; margin-left: auto; padding: 4px; border-radius: 8px; background: #ECEAE4;">
+      <a href="Main.dc.html" style="padding: 8px 14px; border-radius: 6px; background: #FFFFFF; color: #1E1E1C; text-decoration: none; font-weight: 500;">整集试听</a>
+      <a href="Review.dc.html" style="padding: 8px 14px; border-radius: 6px; color: #4A4843; text-decoration: none;">改动审阅 · 12</a>
+    </nav>
+    <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #1E1E1C; border-radius: 8px; background: #1E1E1C; color: #FFFFFF;">导出</button>
+  </header>
+
+  <p style="margin: 0; padding: 6px 24px; background: #FFF4D6; color: #6B4E00; font-size: 12px;">示意数据：数字取自 EP001 的真实剪辑统计，对话内容为演示用。</p>
+
+  <div style="display: flex; flex-wrap: wrap; flex: 1; align-items: stretch;">
+
+    <section aria-label="AI 制作人对话" style="flex: 1 1 340px; max-width: 400px; display: flex; flex-direction: column; border-right: 1px solid #D6D3CB; background: #FFFFFF;">
+      <h2 style="margin: 0; padding: 16px 20px 8px; font-size: 13px; color: #5C5A55; font-weight: 500;">AI 制作人</h2>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 8px 20px 16px; overflow: auto;">
+        <div style="padding: 12px 14px; border-radius: 10px; background: #F4F3EF; line-height: 1.6;">第一刀做好了：73:32 → 61:42。收紧了停顿，去掉了口误和抢话，你的音轨提高了 7dB。有 12 处删得比较多或者挪动了插话，已排在「改动审阅」最前面。</div>
+        <div style="align-self: flex-end; max-width: 85%; padding: 12px 14px; border-radius: 10px; background: #1F5F5B; color: #FFFFFF; line-height: 1.6;">
+          <span style="display: inline-block; margin-bottom: 4px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.18); font-family: 'IBM Plex Mono', monospace; font-size: 12px;">@ 42:10</span><br>这块不太对，把前面那句恢复一下，停顿短一点
+        </div>
+        <div style="padding: 12px 14px; border-radius: 10px; background: #F4F3EF; line-height: 1.6;">
+          恢复了 Pei 在 42:06 的「对对对」，停顿从 1.2 秒收到 0.4 秒。
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+            <button type="button" style="min-height: 44px; padding: 0 12px; border: 1px solid #1F5F5B; border-radius: 8px; background: #FFFFFF; color: #1F5F5B;">试听前后对比</button>
+            <button type="button" style="min-height: 44px; padding: 0 12px; border: none; border-radius: 8px; background: #1F5F5B; color: #FFFFFF;">批准</button>
+            <button type="button" style="min-height: 44px; padding: 0 12px; border: 1px solid #B8B4AA; border-radius: 8px; background: #FFFFFF; color: #1E1E1C;">再改</button>
+          </div>
+        </div>
+      </div>
+      <form style="display: flex; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid #E4E1DA;">
+        <label for="say" style="position: absolute; width: 1px; height: 1px; overflow: hidden;">对 AI 制作人说</label>
+        <span style="align-self: center; padding: 4px 8px; border-radius: 6px; background: #ECEAE4; font-family: 'IBM Plex Mono', monospace; font-size: 12px;">@ 42:31</span>
+        <input id="say" type="text" placeholder="比如：这段别加音乐" style="flex: 1; min-height: 44px; padding: 0 12px; border: 1px solid #B8B4AA; border-radius: 8px; font: inherit;">
+      </form>
+    </section>
+
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px; padding: 20px 24px;">
+      <section aria-label="整集概览" style="padding: 16px 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-bottom: 12px;">
+          <h2 style="margin: 0; font-size: 15px;">话题段落</h2>
+          <span style="color: #5C5A55; font-size: 12px;">点击跳转 · 按话题而非固定时长切分</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 7fr 14fr 18fr 3fr 16fr 4fr; gap: 3px;">
+          <div style="padding: 8px; border-radius: 6px; background: #CFC9BC; font-size: 12px;">片头</div>
+          <div style="padding: 8px; border-radius: 6px; background: #E4E1DA; font-size: 12px;">近况闲聊</div>
+          <div style="padding: 8px; border-radius: 6px; background: #A9C9C6; font-size: 12px;">《Obsession》</div>
+          <div style="padding: 8px; border-radius: 6px; background: #CFC9BC; font-size: 12px;">♪</div>
+          <div style="padding: 8px; border-radius: 6px; background: #A9C9C6; font-size: 12px;">《Backrooms》</div>
+          <div style="padding: 8px; border-radius: 6px; background: #CFC9BC; font-size: 12px;">片尾</div>
+        </div>
+      </section>
+
+      <section aria-label="双轨时间线" style="padding: 16px 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;"><span>41:40</span><span>42:00</span><span>42:20</span><span>42:40</span></div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="width: 44px; font-size: 12px; color: #5C5A55;">Leon</span>
+          <div style="position: relative; flex: 1; height: 36px; border-radius: 6px; background: #F4F3EF;">
+            <div style="position: absolute; left: 0%; width: 34%; top: 6px; bottom: 6px; border-radius: 4px; background: #3E6E9E;"></div>
+            <div style="position: absolute; left: 36%; width: 22%; top: 6px; bottom: 6px; border-radius: 4px; background: #3E6E9E;"></div>
+            <div style="position: absolute; left: 70%; width: 30%; top: 6px; bottom: 6px; border-radius: 4px; background: #3E6E9E;"></div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="width: 44px; font-size: 12px; color: #5C5A55;">Pei</span>
+          <div style="position: relative; flex: 1; height: 36px; border-radius: 6px; background: #F4F3EF;">
+            <div style="position: absolute; left: 12%; width: 6%; top: 6px; bottom: 6px; border-radius: 4px; background: #E3A464;"></div>
+            <div style="position: absolute; left: 58%; width: 11%; top: 6px; bottom: 6px; border-radius: 4px; background: #E3A464; outline: 2px dashed #8A4A12; outline-offset: 2px;"></div>
+          </div>
+        </div>
+        <div style="position: relative; height: 0;"><div style="position: absolute; left: calc(56px + 50%); top: -96px; width: 2px; height: 92px; background: #1E1E1C;"></div></div>
+        <p style="margin: 0; font-size: 12px; color: #5C5A55;">虚线框 = 刚改动、待批准的片段（Pei 的「对对对」已挪到 Leon 停顿处）</p>
+      </section>
+
+      <section aria-label="播放器" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; background: #1E1E1C; color: #FFFFFF;">
+        <button type="button" aria-label="后退 5 秒" style="min-width: 44px; min-height: 44px; border: 1px solid #5C5A55; border-radius: 8px; background: transparent; color: #FFFFFF;">−5s</button>
+        <button type="button" aria-label="播放" style="min-width: 56px; min-height: 56px; border: none; border-radius: 999px; background: #FFFFFF; color: #1E1E1C; font-size: 18px;">▶</button>
+        <button type="button" aria-label="前进 5 秒" style="min-width: 44px; min-height: 44px; border: 1px solid #5C5A55; border-radius: 8px; background: transparent; color: #FFFFFF;">+5s</button>
+        <span style="font-family: 'IBM Plex Mono', monospace;">42:10 / 61:42</span>
+        <div style="flex: 1 1 200px; height: 6px; border-radius: 3px; background: #4A4843;"><div style="width: 68%; height: 6px; border-radius: 3px; background: #A9C9C6;"></div></div>
+        <div role="group" aria-label="播放速度" style="display: flex; gap: 4px;">
+          <button type="button" style="min-height: 44px; padding: 0 12px; border: 1px solid #5C5A55; border-radius: 8px; background: transparent; color: #FFFFFF;">1×</button>
+          <button type="button" aria-pressed="true" style="min-height: 44px; padding: 0 12px; border: none; border-radius: 8px; background: #FFFFFF; color: #1E1E1C; font-weight: 500;">1.5×</button>
+        </div>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 12px;"><input type="checkbox" checked> 暂停时回退 5 秒</label>
+      </section>
+
+      <section aria-label="当前位置附近的改动" style="padding: 16px 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA;">
+        <h2 style="margin: 0 0 10px; font-size: 15px;">这附近改了什么</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px;">
+          <li style="display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">41:52</span><span>停顿 1.6s → 0.4s</span><span style="font-size: 12px; color: #5C5A55;">常规清理 · 已自动应用</span></li>
+          <li style="display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">42:06</span><span>Pei「对对对」后移 0.8s，避开抢话</span><span style="font-size: 12px; color: #8A4A12;">待批准</span></li>
+          <li style="display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">42:24</span><span>Leon 口误「就是就是那个」→ 保留「就是那个」</span><span style="font-size: 12px; color: #5C5A55;">常规清理 · 已自动应用</span></li>
+        </ul>
+      </section>
+    </main>
+
+    <aside aria-label="任务" style="flex: 1 1 260px; max-width: 320px; display: flex; flex-direction: column; gap: 16px; padding: 20px; border-left: 1px solid #D6D3CB; background: #FAF9F6;">
+      <h2 style="margin: 0; font-size: 13px; color: #5C5A55; font-weight: 500;">任务</h2>
+      <div style="padding: 12px; border-radius: 10px; border: 1px solid #E8C9A6; background: #FFF6EC;">
+        <div style="font-size: 12px; color: #8A4A12; margin-bottom: 4px;">等你提供</div>
+        <div style="font-weight: 500;">《Obsession》过场配乐</div>
+        <div style="font-size: 12px; color: #5C5A55; margin-top: 4px; line-height: 1.5;">放进 inbox\EP001 文件夹即可，其他工作不受影响</div>
+      </div>
+      <div style="padding: 12px; border-radius: 10px; border: 1px solid #E4E1DA; background: #FFFFFF;">
+        <div style="font-size: 12px; color: #1F5F5B; margin-bottom: 4px;">进行中</div>
+        <div>生成节目简介与章节时间</div>
+      </div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; color: #4A4843;">
+        <li>✓ 双轨导入与检查</li>
+        <li>✓ 逐字转写</li>
+        <li>✓ 整集理解（6 个话题）</li>
+        <li>✓ 第一刀</li>
+        <li>✓ 响度匹配（Leon +7dB）</li>
+      </ul>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

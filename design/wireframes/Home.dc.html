@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>首页与环境检查</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F3EF}
+a{color:#1F5F5B}a:hover{color:#123F3C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="min-height: 900px; background: #F4F3EF; color: #1E1E1C; font-family: 'Noto Sans SC', system-ui, sans-serif; font-size: 14px;">
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 24px; border-bottom: 1px solid #D6D3CB; background: #FFFFFF;">
+    <strong style="font-size: 16px; letter-spacing: 0.08em;">LACUNA</strong>
+    <nav aria-label="主导航" style="display: flex; flex-wrap: wrap; gap: 4px; margin-left: 24px;">
+      <a href="Home.dc.html" style="padding: 8px 12px; border-radius: 6px; background: #ECEAE4; color: #1E1E1C; text-decoration: none; font-weight: 500;">剧集</a>
+      <a href="Assets.dc.html" style="padding: 8px 12px; border-radius: 6px; color: #4A4843; text-decoration: none;">素材</a>
+      <a href="Playbook.dc.html" style="padding: 8px 12px; border-radius: 6px; color: #4A4843; text-decoration: none;">剪辑手册</a>
+    </nav>
+    <span style="margin-left: auto; font-size: 12px; color: #5C5A55;">工作区 C:\Projects\LACUNA_Workspace</span>
+  </header>
+
+  <div style="max-width: 1200px; margin: 0 auto; padding: 28px 24px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start;">
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+        <h1 style="margin: 0; font-size: 24px;">剧集</h1>
+        <button type="button" style="margin-left: auto; min-height: 44px; padding: 0 16px; border: none; border-radius: 8px; background: #1E1E1C; color: #FFFFFF;">新建一集</button>
+      </div>
+      <div style="padding: 18px; border-radius: 12px; border: 2px dashed #B8B4AA; background: #FAF9F6; line-height: 1.6;">
+        <strong>发现新录音：</strong>episodes\EP002\raw 里有 2 个新文件（Leon.wav、Pei.wav，各 1:58:12）。
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+          <a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 8px; background: #1F5F5B; color: #FFFFFF; text-decoration: none;">开干</a>
+          <button type="button" style="min-height: 44px; padding: 0 16px; border: 1px solid #B8B4AA; border-radius: 8px; background: #FFFFFF;">先说说这集的想法</button>
+        </div>
+      </div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px;">
+        <li><a href="Main.dc.html" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 16px 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA; color: #1E1E1C; text-decoration: none;">
+          <strong style="flex: 1 1 200px;">EP001 样本集</strong>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">73:32 → 61:42</span>
+          <span style="padding: 4px 10px; border-radius: 999px; background: #FFF6EC; color: #8A4A12; font-size: 12px;">等你审阅 · 12 处</span>
+          <span style="font-size: 12px; color: #5C5A55;">等你提供 1 个配乐</span>
+        </a></li>
+        <li><div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 16px 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA;">
+          <strong style="flex: 1 1 200px;">EP000 · 90 年代系列 · 《 [片名] 》</strong>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5C5A55;">已导出</span>
+          <span style="padding: 4px 10px; border-radius: 999px; background: #ECEAE4; font-size: 12px;">已上传喜马拉雅 · 小宇宙待确认</span>
+        </div></li>
+      </ul>
+    </main>
+
+    <aside aria-label="本机环境" style="flex: 1 1 300px; max-width: 380px; padding: 18px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E1DA;">
+      <h2 style="margin: 0 0 4px; font-size: 15px;">本机环境</h2>
+      <p style="margin: 0 0 12px; font-size: 12px; color: #5C5A55;">启动时自动检测，按硬件自动选择方案</p>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px;">
+        <li style="display: flex; justify-content: space-between; gap: 8px;"><span>音频处理（FFmpeg）</span><span style="color: #1F5F5B; font-weight: 500;">就绪</span></li>
+        <li style="display: flex; justify-content: space-between; gap: 8px;"><span>转写 · Paraformer（CPU）</span><span style="color: #1F5F5B; font-weight: 500;">就绪</span></li>
+        <li style="display: flex; justify-content: space-between; gap: 8px;"><span>显卡 · GTX 1660 SUPER 6GB</span><span style="color: #1F5F5B; font-weight: 500;">可用</span></li>
+        <li style="display: flex; justify-content: space-between; gap: 8px;"><span>内存 16GB · 占用上限 6GB</span><span style="color: #1F5F5B; font-weight: 500;">正常</span></li>
+        <li style="display: flex; justify-content: space-between; gap: 8px;"><span>AI 制作人 · Claude API</span><span style="color: #1F5F5B; font-weight: 500;">就绪</span></li>
+        <li style="display: flex; justify-content: space-between; gap: 8px;"><span>本月 API 额度</span><span style="font-family: 'IBM Plex Mono', monospace;">$[已用] / $100</span></li>
+        <li style="display: flex; justify-content: space-between; gap: 8px;"><span>磁盘剩余</span><span style="font-family: 'IBM Plex Mono', monospace;">[GB]</span></li>
+      </ul>
+      <p style="margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; background: #F4F3EF; font-size: 12px; line-height: 1.6;">额度用完时 AI 功能会暂停，不会产生费用；剪辑、试听、导出仍可使用。</p>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
