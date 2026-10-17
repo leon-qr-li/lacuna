@@ -1,6 +1,6 @@
 # Phase 6a — 片头、配乐与 ducking (= 6a)
 
-State: **built (D45)**; install with the next batch update, then Leon validates
+State: **done, validated by Leon 2026-10-17** (D45)
 
 What Leon gets: 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库
 
