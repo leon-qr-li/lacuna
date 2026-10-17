@@ -20,6 +20,7 @@ from .episode import ConflictError, Episode
 from .exporter import ExportBusy, Exporter
 from .importer import ImportBusy, ImportError_, Importer, list_dir
 from .learning import Learning
+from .publish import PublishBusy, Publisher
 from .library import KINDS, Library, LibraryError, lookup_credit
 from .music import ROLES, EpisodeMusic
 from .store import PathError, Workspace
@@ -78,6 +79,16 @@ class RuleBody(BaseModel):
     action: str = Field(pattern="^(approve|reject|reset)$")
 
 
+class PublishEditBody(BaseModel):
+    markdown: str | None = Field(None, max_length=200_000, description="Leon's Markdown; null = back to generated")
+    title: str | None = Field(None, max_length=200)
+
+
+class NameBody(BaseModel):
+    heard: str = Field(min_length=1, max_length=200)
+    action: str = Field(pattern="^(apply|ignore)$")
+
+
 class LibraryFileBody(BaseModel):
     path: str = Field(min_length=1, max_length=2000)
     kind: str = Field("music", pattern="^(music|jingle|clip)$")
@@ -116,7 +127,7 @@ class OpBody(PlayheadBody):
 
 def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST,
                importer: Importer | None = None, dictation: Dictation | None = None,
-               credit_client=None) -> FastAPI:
+               publisher: Publisher | None = None, credit_client=None) -> FastAPI:
     """`credit_client`: an Anthropic-like client for the library's credit lookup (tests inject a fake)."""
     ws = Workspace(workspace).ensure()
     adapter = adapter or make_adapter("auto")
@@ -127,6 +138,8 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     importer = importer or Importer(ws)
     learning = Learning(ws)
     dictation = dictation or Dictation(ws.root / "models")
+    publisher = publisher or Publisher(ws)
+    publisher.on_usage = lambda eid, u: log_usage(ws.root / USAGE_LOG, eid, u | {"kind": "publish"})
     library = Library(ws)
     musics: dict[str, EpisodeMusic] = {}
 
@@ -322,6 +335,45 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     def open_exports(episode_id: str):
         get(episode_id)
         return {"folder": exporter.open_folder(episode_id)}
+
+    # ------------------------------------------------------------------ publish pack (phase 9)
+    def publish_view(ep: Episode) -> dict:
+        return publisher.view(ep) | editor_status(adapter)
+
+    @app.get("/api/episodes/{episode_id}/publish")
+    def publish_get(episode_id: str):
+        return publish_view(get(episode_id))
+
+    @app.post("/api/episodes/{episode_id}/publish/generate")
+    def publish_generate(episode_id: str):
+        ep = get(episode_id)
+        try:
+            publisher.start(ep)
+        except PublishBusy as e:
+            raise HTTPException(409, str(e))
+        return publish_view(ep)
+
+    def publish_change(ep: Episode, fn) -> dict:
+        try:
+            fn()
+        except KeyError:
+            raise HTTPException(404, "还没有生成发布资料")
+        return publish_view(ep)
+
+    @app.post("/api/episodes/{episode_id}/publish/retime")
+    def publish_retime(episode_id: str):
+        ep = get(episode_id)
+        return publish_change(ep, lambda: publisher.retime(ep))
+
+    @app.put("/api/episodes/{episode_id}/publish")
+    def publish_edit(episode_id: str, body: PublishEditBody):
+        ep = get(episode_id)
+        return publish_change(ep, lambda: publisher.edit(ep, body.markdown, body.title))
+
+    @app.post("/api/episodes/{episode_id}/publish/names")
+    def publish_name(episode_id: str, body: NameBody):
+        ep = get(episode_id)
+        return publish_change(ep, lambda: publisher.name(ep, body.heard, body.action))
 
     # ------------------------------------------------------------------ import
     @app.get("/api/fs")
@@ -588,5 +640,6 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     app.state.exporter = exporter
     app.state.importer = importer
     app.state.dictation = dictation
+    app.state.publisher = publisher
     app.state.library = library
     return app

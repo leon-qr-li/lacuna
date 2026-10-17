@@ -25,6 +25,8 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - **Chat voice input** (2026-10-17, D43): 🎤 button next to the chat box; local SenseVoice, text lands in the box, Leon sends. Needs the models from a first import (`<workspace>/models`).
 - **Phase 6a media library + music** (2026-10-17, D45): 素材库 page, Claude credit lookup, 配乐 tab with intro / interlude / outro / bed / clip, measured levels and voice-driven ducking, series intro rule, export with music. Merged with the batch; Leon's PC update + validation pending (batch update run by the coordinator). Nothing extra to install (uses ffmpeg/ffprobe already needed). Leon needs to add his EP001 intro / interlude (45:59) / outro music files to the library.
 
+- **Phase 9 publish pack built** (2026-10-17, D46): episode page 「发布资料」 → Claude writes title / blurb / show notes from the current cut's transcript (text only), timeline times computed locally on the final cut, Markdown in the D40 format, copy = rich text + Markdown, chapters, name check (corrections remembered in `names.json`), local re-timing after later edits. BGM from the 6a library once it lands (placeholder until then). Real-key run on Leon's PC pending (`scripts/publish_smoke.py`).
+
 ## Open issues
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.
 - Content-trim selection is taste: phase 5 turns Leon's cut/kept passages into examples for the first-cut prompt (D39); effect measurable only on a new episode (phase 4).

@@ -132,6 +132,54 @@ class FakeFirstCutAnthropic:
                                   cache_read_input_tokens=0)))
 
 
+# ---------------------------------------------------------------- publish pack (phase 9)
+
+def publish_answer(user: str) -> dict:
+    """What a real writer would hand back for the transcript in `user`: two parts, an entry every
+    other segment, one made-up segment id (must be dropped) and one misheard name."""
+    import re
+    segs = re.findall(r"^(s\d{4}) \S+ (\S+?)：(.*)$", user, flags=re.M)
+    half = max(1, len(segs) // 2)
+
+    def entries(rows):
+        return [{"segment": sid, "text": f"{who} 聊到「{text[:6]}」"} for sid, who, text in rows[::2]]
+    return {
+        "title": "合成的一期：两部电影",
+        "alt_titles": ["两部电影一个结尾", "那个结尾到底好不好"],
+        "blurb": "两个人聊一部很好看的电影，和它的结尾。",
+        "intro": "一个月没见，我们又来聊电影了。\n\n- **第一部**：真的很好看\n- **第二部**：结尾有争议",
+        "sections": [{"heading": "暖场", "entries": entries(segs[:half]) + [{"segment": "s9999", "text": "不存在"}]},
+                     {"heading": "正题：那个结尾", "entries": entries(segs[half:])}],
+        "films": [{"name": "《一部电影》", "note": "结尾"}],
+        "shows": ["《Stranger Things》"],
+        "things": ["天线宝宝"],
+        "glossary": [{"term": "网大", "meaning": "夸人用的，真的。"}],
+        "names_to_check": [{"heard": "结尾", "suggested": "结局", "segment": segs[0][0] if segs else None,
+                            "why": "上下文是在说电影的结局"}],
+    }
+
+
+class FakePublishAnthropic:
+    """`client.beta.messages.stream(...)` answering the publish request with `publish_answer`."""
+
+    def __init__(self, delay: float = 0.0):
+        self.delay = delay
+        self.requests: list[dict] = []
+        self.beta = SimpleNamespace(messages=SimpleNamespace(stream=self._stream))
+
+    def _stream(self, **kw):
+        import time
+        self.requests.append(kw)
+        if self.delay:
+            time.sleep(self.delay)
+        inp = publish_answer(kw["messages"][0]["content"])
+        return _Stream(SimpleNamespace(
+            stop_reason="tool_use", model=kw["model"], _request_id="req_fake",
+            content=[SimpleNamespace(type="tool_use", name="submit_publish_pack", input=inp)],
+            usage=SimpleNamespace(input_tokens=30000, output_tokens=4000, cache_creation_input_tokens=0,
+                                  cache_read_input_tokens=0)))
+
+
 # ---------------------------------------------------------------------------- library credit lookup
 
 CREDIT_ANSWER = {"title": "Odysseus", "artist": None, "composer": "Ludwig Göransson",
