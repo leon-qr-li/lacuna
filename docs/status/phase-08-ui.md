@@ -1,6 +1,6 @@
 # Phase 8 — UI 审美（大改版）
 
-State: **first pass done, merged; awaiting the batch update + Leon's iteration**
+State: **done — accepted by Leon 2026-10-17 17:11Z** (rounds 1 + 2 on his PC)
 
 What Leon gets: a modern, calmer UI ("C 轻盈"): a clear 5-step flow per episode, buttons next to the work they do,
 bundled fonts that look right on his PC, and a dark / light theme. Functions and logic do not change.
