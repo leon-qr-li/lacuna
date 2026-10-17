@@ -32,8 +32,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-          cache-dependency-path: pyproject.toml
+
+      # uv installs the same packages as pip, several times faster (pip was ~35-50 s on Windows)
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
 
       - uses: actions/setup-node@v4
         with:
@@ -45,10 +49,10 @@ jobs:
         uses: AnimMouse/setup-ffmpeg@v1
 
       - name: Install Python package
-        run: python -m pip install -e ".[test,claude]"
+        run: uv pip install --system -e ".[test,claude]"
 
       - name: Engine + API tests
-        run: python -m pytest -q -rs tests
+        run: python -m pytest -q -rs --durations=8 tests
 
       - name: Build UI
         working-directory: web
@@ -56,9 +60,25 @@ jobs:
           npm ci
           npm run build
 
+      - name: Cache Playwright Chromium
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+            ~/Library/Caches/ms-playwright
+            ~/AppData/Local/ms-playwright
+          key: playwright-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('web/package-lock.json') }}
+
       - name: Install Chromium for Playwright
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         working-directory: web
-        run: npx playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
+        run: npx playwright install chromium
+
+      - name: Install Chromium system libraries (Linux)
+        if: runner.os == 'Linux'
+        working-directory: web
+        run: npx playwright install-deps chromium
 
       - name: E2E (Chromium against the real backend)
         working-directory: web
