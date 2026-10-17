@@ -16,6 +16,7 @@ from .audio import parse_range
 from .editor import EditorAdapter, editor_status, make_adapter
 from .episode import ConflictError, Episode
 from .exporter import ExportBusy, Exporter
+from .importer import ImportBusy, ImportError_, Importer, list_dir
 from .learning import Learning
 from .store import PathError, Workspace
 
@@ -30,6 +31,13 @@ def log_usage(path: Path, episode_id: str, usage: dict) -> None:
             f.write(json.dumps(line, ensure_ascii=False) + "\n")
     except OSError:
         pass      # bookkeeping must never break the chat
+
+
+def next_episode_id(ids: list[str]) -> str:
+    """EP00N after the highest EPnnn already used (EP001_AI counts as 1)."""
+    import re
+    nums = [int(m.group(1)) for i in ids if (m := re.match(r"EP(\d+)", i))]
+    return f"EP{(max(nums) + 1) if nums else 1:03d}"
 
 
 class PlayheadBody(BaseModel):
@@ -56,6 +64,11 @@ class ExportBody(BaseModel):
     channels: int = Field(2, ge=1, le=2)
 
 
+class ImportBody(BaseModel):
+    id: str = Field(min_length=1, max_length=120, description="episode id = folder name, e.g. EP002")
+    title: str = Field("", max_length=200)
+    leon: str = Field(min_length=1, max_length=2000, description="path of Leon's raw track")
+    pei: str = Field(min_length=1, max_length=2000, description="path of Pei's raw track")
 class RuleBody(BaseModel):
     id: str = Field(min_length=1, max_length=200)
     action: str = Field(pattern="^(approve|reject|reset)$")
@@ -67,13 +80,15 @@ class OpBody(PlayheadBody):
     reason: str = Field("", max_length=2000)
 
 
-def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST) -> FastAPI:
+def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST,
+               importer: Importer | None = None) -> FastAPI:
     ws = Workspace(workspace).ensure()
     adapter = adapter or make_adapter("auto")
     app = FastAPI(title="LACUNA Studio", docs_url="/api/docs", openapi_url="/api/openapi.json")
     episodes: dict[str, Episode] = {}
     lock = threading.Lock()
     exporter = Exporter(ws)
+    importer = importer or Importer(ws)
     learning = Learning(ws)
 
     def get(episode_id: str) -> Episode:
@@ -255,6 +270,60 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         get(episode_id)
         return {"folder": exporter.open_folder(episode_id)}
 
+    # ------------------------------------------------------------------ import
+    @app.get("/api/fs")
+    def browse(path: str | None = None):
+        try:
+            return list_dir(path, ws.root)
+        except ImportError_ as e:
+            raise HTTPException(404, str(e))
+
+    @app.get("/api/imports")
+    def imports():
+        return {"jobs": importer.status(), "next_id": next_episode_id(ws.episode_ids() + [j["id"] for j in importer.status()])}
+
+    @app.post("/api/imports")
+    def start_import(body: ImportBody):
+        try:
+            return {"job": importer.start(body.id.strip(), body.title, body.leon, body.pei)}
+        except ImportBusy as e:
+            raise HTTPException(409, str(e))
+        except ImportError_ as e:
+            raise HTTPException(422, str(e))
+
+    @app.get("/api/imports/{episode_id}")
+    def import_status(episode_id: str):
+        j = importer.status(episode_id)
+        if j is None:
+            raise HTTPException(404, "no such import")
+        return {"job": j}
+
+    @app.post("/api/imports/{episode_id}/resume")
+    def resume_import(episode_id: str):
+        try:
+            return {"job": importer.resume(episode_id)}
+        except KeyError:
+            raise HTTPException(404, "no such import")
+        except ImportBusy as e:
+            raise HTTPException(409, str(e))
+
+    @app.post("/api/imports/{episode_id}/cancel")
+    def cancel_import(episode_id: str):
+        try:
+            importer.cancel(episode_id)
+        except KeyError:
+            raise HTTPException(409, "这一集没有在导入")
+        return {"job": importer.status(episode_id)}
+
+    @app.delete("/api/imports/{episode_id}")
+    def forget_import(episode_id: str):
+        try:
+            importer.forget(episode_id)
+        except KeyError:
+            raise HTTPException(404, "no such import")
+        except ImportBusy as e:
+            raise HTTPException(409, str(e))
+        return {"ok": True}
     # ------------------------------------------------------------------ learning (D27)
     def open_episodes() -> list[Episode]:
         out = []
@@ -294,4 +363,5 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     app.state.workspace = ws
     app.state.episodes = episodes
     app.state.exporter = exporter
+    app.state.importer = importer
     return app

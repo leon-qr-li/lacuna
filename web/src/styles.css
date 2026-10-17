@@ -188,6 +188,33 @@ input[type="text"] { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; b
 .export-result dd { margin: 0; }
 .export-files { margin: 0 0 8px; padding-left: 18px; word-break: break-all; }
 
+/* phase 4: import + task panel */
+.imports { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; align-items: flex-start; }
+.imports > section { width: 100%; }
+.import-new { width: 100%; }
+.import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.import-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.import-grid input { min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); }
+.import-track { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.import-track > span.small { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.leon { background: var(--leon); } .dot.pei { background: var(--pei); }
+.fs { border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); padding: 10px; margin-bottom: 12px; }
+.fs-head { justify-content: space-between; margin-bottom: 6px; }
+.fs-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.fs-roots { margin-bottom: 6px; flex-wrap: wrap; }
+.fs-list { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow: auto; }
+.fs-item { display: flex; gap: 10px; align-items: baseline; width: 100%; text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; color: var(--ink); }
+.fs-item:hover { background: var(--accent-soft); }
+.wrap { flex-wrap: wrap; }
+.jobs { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.job { padding: 12px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-soft); display: flex; flex-direction: column; gap: 8px; }
+.job-error, .job-interrupted { border-color: #e7c3c3; }
+.bar { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--accent); transition: width 0.4s; }
+.linkbtn { display: inline-flex; align-items: center; text-decoration: none; }
+.linkbtn.btn-primary, .linkbtn.btn-primary:hover { color: #fff; }
+@media (max-width: 600px) { .import-grid { grid-template-columns: 1fr; } }
 /* learning page (phase 5) */
 .learning { max-width: 880px; width: 100%; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
 .rules { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }

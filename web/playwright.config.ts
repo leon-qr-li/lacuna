@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 8799;
 export const AI_PORT = 8798;
+export const IMPORT_PORT = 8797;
 const PYTHON = process.env.PYTHON ?? (process.platform === "win32" ? "python" : "python3");
 
 export default defineConfig({
@@ -25,6 +26,13 @@ export default defineConfig({
       // a workspace holding one AI first-cut episode (see tests/app/synth.py make_ai_workspace)
       command: `${PYTHON} ../tests/app/serve_e2e.py ${AI_PORT} --ai`,
       url: `http://127.0.0.1:${AI_PORT}/api/health`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      // empty workspace + two raw tracks; fake ASR and fake Claude first cut (phase 4 import)
+      command: `${PYTHON} ../tests/app/serve_e2e.py ${IMPORT_PORT} --import`,
+      url: `http://127.0.0.1:${IMPORT_PORT}/api/health`,
       reuseExistingServer: false,
       timeout: 60_000,
     },

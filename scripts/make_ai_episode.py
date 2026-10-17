@@ -19,9 +19,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from lacuna_core import MediaRef, Project, SourcePool, new_timeline  # noqa: E402
-from lacuna_core.edl import Clip, Track, replace  # noqa: E402
-from lacuna_app.ai_cut import convert_ops, load_tokens, transcript_for  # noqa: E402
+from lacuna_core import MediaRef  # noqa: E402
+from lacuna_app.ai_cut import build_episode, load_tokens, report_dict  # noqa: E402
 from lacuna_app.episode import create_episode  # noqa: E402
 from lacuna_app.learning import review_policy  # noqa: E402
 from lacuna_app.store import Workspace  # noqa: E402
@@ -44,23 +43,7 @@ def find_raw(raw_dir: Path) -> dict[str, Path]:
 
 def build(media: dict[str, MediaRef], ops_doc: dict, tokens, w0: float, w1: float | None, policy=None):
     """(project, edits, transcript, report) for raw window [w0, w1) (w1 None = to the end)."""
-    sr = next(iter(media.values())).sample_rate
-    if any(m.sample_rate != sr for m in media.values()):
-        raise ValueError("host tracks have different sample rates")
-    end = min(m.frames for m in media.values())
-    a = int(round(w0 * sr))
-    b = end if w1 is None else min(int(round(w1 * sr)), end)
-    if b <= a:
-        raise ValueError("empty window")
-    w1 = b / sr
-    tracks = [Track(name, (Clip(f"{name[0]}0", ref.media_id, a, b, 0),)) for name, ref in media.items()]
-    base = replace(new_timeline(sr, list(media)), tracks=tuple(tracks), next_id=1)
-    project = Project({m.media_id: m for m in media.values()}, base)
-    with SourcePool({m.media_id: m for m in media.values()}) as pool:
-        def read(name: str, x: int, y: int):
-            return pool.read(media[name].media_id, x + a, y + a)
-        edits, report = convert_ops(ops_doc, tokens, sr, w0, w1, read, policy)
-    return project, edits, transcript_for(tokens, w0, w1), report
+    return build_episode(media, ops_doc, tokens, w0, w1, policy)
 
 
 def main(argv=None):
@@ -92,8 +75,7 @@ def main(argv=None):
     meta = {"title": args.title, "demo": False, "raw_offset_s": w0,
             "source": f"ai_cut:{Path(args.ops).name}",
             "ai_model": ops_doc.get("model", "") if isinstance(ops_doc, dict) else "",
-            "ai_report": {"ops_in": report.ops_in, "edits_out": report.edits_out,
-                          "skipped": dict(report.skipped), "converted": dict(report.converted)}}
+            "ai_report": report_dict(report)}
     d = create_episode(Workspace(args.workspace), args.episode, meta, project, edits, transcript)
     cons = sum(e.consequential for e in edits)
     print(f"wrote {d}: {len(edits)} edits ({cons} to review)")

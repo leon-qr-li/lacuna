@@ -48,3 +48,75 @@ class FakeAnthropic:
             content=[SimpleNamespace(type="tool_use", name="propose_edit", input=decide(sc))],
             usage=SimpleNamespace(input_tokens=2500, output_tokens=300, cache_creation_input_tokens=0,
                                   cache_read_input_tokens=0))
+
+
+# ---------------------------------------------------------------- first cut (new-episode import)
+
+def first_cut_ops(a: float, b: float) -> list[dict]:
+    """What a real editor would answer for the synthetic conversation (tests/app/synth.py) in the
+    raw window [a, b): tool-schema ops (all fields present, unused ones null, points as strings)."""
+    from tests.app.synth import tok
+
+    def op(**kw):
+        base = {"op": None, "track": None, "category": None, "from": None, "to": None, "at": None,
+                "target_s": None, "delta_s": None, "reason": "", "confidence": 0.5}
+        return base | kw
+    ops = [
+        op(op="tighten_pause", track="both", at="4.75", target_s=0.4, category="pause",
+           reason="Leon→Pei 接话 1.5s→0.4s", confidence=0.6),
+        op(op="cut", track="L", **{"from": tok("L", 18.2), "to": tok("L", 20.0)}, category="repetition",
+           reason="同一句话说了两遍，保留第二遍", confidence=0.7),
+        op(op="cut", track="both", **{"from": "26.4", "to": "29.7"}, category="content",
+           reason="这段题外话和主线无关，后面没有再提", confidence=0.55),
+        op(op="tighten_pause", track="both", at="45.0", target_s=0.6, category="pause",
+           reason="空白 2.0 秒，收到 0.6 秒", confidence=0.85),
+        op(op="cut", track="L", **{"from": "L999999", "to": "L999999"}, category="disfluency",
+           reason="不存在的 token，会被丢掉", confidence=0.5),
+    ]
+
+    def start(o):
+        p = o["at"] if o["op"] == "tighten_pause" else o["from"]
+        return float(p) if p[0].isdigit() else 0.0
+    return [o for o in ops if a <= start(o) < b]
+
+
+class _Stream:
+    def __init__(self, resp):
+        self.resp = resp
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def get_final_message(self):
+        return self.resp
+
+
+class FakeFirstCutAnthropic:
+    """`client.beta.messages.stream(...)` answering each window request with `first_cut_ops`."""
+
+    def __init__(self, delay: float = 0.0, fail_windows: set[int] | None = None):
+        import re
+        self._re = re.compile(r"原始时间 ([\d.]+)–([\d.]+) 秒")
+        self.delay = delay
+        self.fail_windows = set(fail_windows or ())
+        self.requests: list[dict] = []
+        self.beta = SimpleNamespace(messages=SimpleNamespace(stream=self._stream))
+
+    def _stream(self, **kw):
+        import time
+        self.requests.append(kw)
+        m = self._re.search(kw["messages"][0]["content"])
+        a, b = float(m.group(1)), float(m.group(2))
+        if self.delay:
+            time.sleep(self.delay)
+        if int(a // 600) in self.fail_windows:
+            raise RuntimeError("simulated API failure")
+        inp = {"notes": "合成对话：两人聊电影。", "ops": first_cut_ops(a, b)}
+        return _Stream(SimpleNamespace(
+            stop_reason="tool_use", model=kw["model"], _request_id="req_fake",
+            content=[SimpleNamespace(type="tool_use", name="submit_ops", input=inp)],
+            usage=SimpleNamespace(input_tokens=500, output_tokens=900, cache_creation_input_tokens=20000,
+                                  cache_read_input_tokens=0)))

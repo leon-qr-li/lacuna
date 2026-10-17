@@ -131,6 +131,38 @@ export interface ExportJob {
   } | null;
 }
 
+export interface ImportTrack {
+  path: string;
+  name: string;
+  duration: number | null;
+  sample_rate: number | null;
+}
+
+export interface ImportJob {
+  id: string;
+  title: string;
+  tracks: { L: ImportTrack; P: ImportTrack };
+  state: "queued" | "running" | "done" | "error" | "interrupted" | "cancelled";
+  progress: number;
+  step: string | null;
+  stage: string;
+  created: string;
+  started: string | null;
+  run_started?: string;
+  finished: string | null;
+  elapsed_s?: number;
+  error: string | null;
+  result: { episode: string; edits: number; to_review: number; raw_duration: number; engine: string } | null;
+}
+
+export interface FsListing {
+  path: string;
+  parent: string | null;
+  dirs: { name: string; path: string }[];
+  files: { name: string; path: string; size: number; duration: number | null }[];
+  roots: string[];
+}
+
 export interface LearnedRule {
   id: string;
   kind: string;
@@ -204,6 +236,13 @@ export const api = {
     req<Episode>("POST", `${ep(id)}/proposals/${pid}/discard`, { playhead }),
   startExport: (id: string, formats: string[]) => req<{ job: ExportJob }>("POST", `${ep(id)}/export`, { formats }),
   exportStatus: (id: string) => req<{ job: ExportJob | null }>("GET", `${ep(id)}/export`),
+  imports: () => req<{ jobs: ImportJob[]; next_id: string }>("GET", "/api/imports"),
+  startImport: (body: { id: string; title: string; leon: string; pei: string }) =>
+    req<{ job: ImportJob }>("POST", "/api/imports", body),
+  resumeImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/resume`),
+  cancelImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/cancel`),
+  forgetImport: (id: string) => req<{ ok: boolean }>("DELETE", `/api/imports/${encodeURIComponent(id)}`),
+  fs: (path?: string) => req<FsListing>("GET", `/api/fs${path ? `?path=${encodeURIComponent(path)}` : ""}`),
   learning: () => req<LearningOverview>("GET", "/api/learning"),
   decideRule: (id: string, action: "approve" | "reject" | "reset") =>
     req<LearningOverview>("POST", "/api/learning/rules", { id, action }),

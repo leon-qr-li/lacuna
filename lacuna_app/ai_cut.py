@@ -33,6 +33,8 @@ from typing import Callable, Iterable
 
 import numpy as np
 
+from lacuna_core import MediaRef, Project, SourcePool, new_timeline
+from lacuna_core.edl import Clip, Track, replace
 from lacuna_core.refine import snap_cut
 
 from .episode import APPLIED, RESTORED, Edit
@@ -383,3 +385,32 @@ def transcript_for(tokens: dict[str, TrackTokens], w0: float, w1: float) -> dict
     return {"tracks": {TRACK_NAMES[tag]: [[round(t["start"] - w0, 3), round(t["end"] - w0, 3), t["t"]]
                                           for t in tr.toks if w0 <= t["start"] < w1]
                        for tag, tr in tokens.items() if tag in TRACK_NAMES}}
+
+
+def build_episode(media: dict[str, MediaRef], ops_doc: dict, tokens: dict[str, TrackTokens], w0: float = 0.0,
+                  w1: float | None = None, policy: ReviewPolicy | None = None) -> tuple[Project, list[Edit], dict, Report]:
+    """(project, edits, transcript, report) for raw window [w0, w1) (w1 None = to the end).
+
+    `media` maps host name (Leon / Pei) to its raw track; the base timeline is the uncut recording."""
+    sr = next(iter(media.values())).sample_rate
+    if any(m.sample_rate != sr for m in media.values()):
+        raise ValueError("host tracks have different sample rates")
+    end = min(m.frames for m in media.values())
+    a = int(round(w0 * sr))
+    b = end if w1 is None else min(int(round(w1 * sr)), end)
+    if b <= a:
+        raise ValueError("empty window")
+    w1 = b / sr
+    tracks = [Track(name, (Clip(f"{name[0]}0", ref.media_id, a, b, 0),)) for name, ref in media.items()]
+    base = replace(new_timeline(sr, list(media)), tracks=tuple(tracks), next_id=1)
+    project = Project({m.media_id: m for m in media.values()}, base)
+    with SourcePool({m.media_id: m for m in media.values()}) as pool:
+        def read(name: str, x: int, y: int):
+            return pool.read(media[name].media_id, x + a, y + a)
+        edits, report = convert_ops(ops_doc, tokens, sr, w0, w1, read, policy)
+    return project, edits, transcript_for(tokens, w0, w1), report
+
+
+def report_dict(report: Report) -> dict:
+    return {"ops_in": report.ops_in, "edits_out": report.edits_out,
+            "skipped": dict(report.skipped), "converted": dict(report.converted)}
