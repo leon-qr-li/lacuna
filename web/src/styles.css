@@ -183,4 +183,3 @@ input[type="text"] { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; b
 .export-result dt { color: var(--muted); }
 .export-result dd { margin: 0; }
 .export-files { margin: 0 0 8px; padding-left: 18px; word-break: break-all; }
-.warn { color: var(--warn); }
