@@ -3,7 +3,7 @@
 Layout (all under ``<workspace>/library/``)::
 
     library.json                 index (schema 1): assets + series rules
-    music/ jingles/ clips/       the files themselves (copied in, or dropped there by Leon)
+    music/ jingles/ clips/ other/   the files themselves (uploaded from the browser, or dropped there by Leon)
     _removed/                    files taken out of the library (never deleted)
     .cache/                      decoded copies at a project sample rate (disposable)
 
@@ -37,8 +37,18 @@ from .store import PathError, Workspace, atomic_write_json, inside, read_json
 
 SCHEMA = 1
 INDEX = "library.json"
-KINDS = {"music": "配乐", "jingle": "系列片头 / 片尾", "clip": "台词 / 片段"}
-FOLDERS = {"music": "music", "jingle": "jingles", "clip": "clips"}
+# What Leon uses an asset for (his fixed list, 2026-10-17). The music page takes the placement
+# role from it, so an intro goes to the start and a trailer is inserted like a clip.
+KINDS = {
+    "intro": "片头（播客开始）", "outro": "片尾（播客结尾）", "interlude": "休息间隙",
+    "bed": "聊天背景音", "dialogue": "电影对白 / sample", "trailer": "预告片 trailer", "other": "其他素材",
+}
+ROLE_FOR_KIND = {"intro": "intro", "outro": "outro", "interlude": "interlude", "bed": "bed",
+                 "dialogue": "clip", "trailer": "clip", "other": "interlude"}
+FOLDERS = {"intro": "jingles", "outro": "jingles", "interlude": "music", "bed": "music",
+           "dialogue": "clips", "trailer": "clips", "other": "other"}
+SCAN_KIND = {"jingles": "intro", "music": "interlude", "clips": "dialogue", "other": "other"}
+LEGACY_KIND = {"jingle": "intro", "music": "interlude", "clip": "dialogue"}   # the first three kinds (#23)
 AUDIO_EXT = {".mp3", ".wav", ".flac", ".m4a", ".aac", ".ogg", ".opus", ".aif", ".aiff", ".wma"}
 CREDIT_FIELDS = ("title", "artist", "composer", "album", "film", "year")
 CONFIRMED, SUGGESTED, UNKNOWN = "confirmed", "suggested", "unknown"
@@ -150,6 +160,9 @@ class Library:
             if doc.get("schema") != SCHEMA:
                 raise ValueError(f"unsupported library schema {doc.get('schema')}")
             doc.setdefault("series", [])
+            for a in doc["assets"]:
+                k = a.get("kind")
+                a["kind"] = k if k in KINDS else LEGACY_KIND.get(k, "other")
             return doc
 
     def save(self, doc: dict) -> None:
@@ -170,7 +183,7 @@ class Library:
         return inside(self.dir, *Path(asset["file"]).parts)
 
     # ------------------------------------------------------------------ adding
-    def add_file(self, src: str | Path, kind: str = "music", note: str = "") -> dict:
+    def add_file(self, src: str | Path, kind: str = "other", note: str = "") -> dict:
         """Copy an audio file into the library (unless it already lives there) and analyse it.
         The same content added again returns the existing asset (note updated if given)."""
         if kind not in KINDS:
@@ -236,7 +249,7 @@ class Library:
         """Index audio files Leon dropped into the library folders by hand. Returns the new assets."""
         known = {a["file"] for a in self.assets()}
         new = []
-        for kind, folder in FOLDERS.items():
+        for folder, kind in SCAN_KIND.items():
             d = self.dir / folder
             if not d.is_dir():
                 continue
@@ -247,8 +260,47 @@ class Library:
                         new.append(self.add_file(p, kind))
         return new
 
+    def upload_target(self, name: str, kind: str) -> Path:
+        """Reserve a fresh ``<folder>/<name>.part`` for a file uploaded from the browser (dragged
+        in or picked). Only the base name is kept, so the upload can never land outside the folder."""
+        if kind not in KINDS:
+            raise LibraryError(f"unknown kind {kind!r}")
+        base = name.replace("\\", "/").rsplit("/", 1)[-1]
+        base = "".join(c for c in base if c not in '<>:"|?*' and ord(c) >= 32).strip(" .")
+        stem, ext = os.path.splitext(base)
+        if not stem or ext.lower() not in AUDIO_EXT:
+            raise LibraryError(f"不是支持的音频文件：{name}")
+        d = self.dir / FOLDERS[kind]
+        d.mkdir(parents=True, exist_ok=True)
+        for n in range(1000):
+            dst = d / (base if n == 0 else f"{stem} ({n}){ext}")
+            part = dst.with_name(dst.name + ".part")
+            if dst.exists():
+                continue
+            try:
+                part.open("xb").close()
+                return part
+            except FileExistsError:
+                continue
+        raise LibraryError(f"同名文件太多：{base}")
+
+    def add_upload(self, part: Path, kind: str, note: str = "") -> tuple[dict, bool]:
+        """Finish an upload written to `upload_target`'s path. Returns (asset, duplicate): music
+        already in the library under another name is not kept twice."""
+        dst = part.with_name(part.name[: -len(".part")])
+        os.replace(part, dst)
+        try:
+            asset = self.add_file(dst, kind, note)
+        except Exception:
+            dst.unlink(missing_ok=True)
+            raise
+        duplicate = self.path_of(asset).resolve() != dst.resolve()
+        if duplicate:
+            dst.unlink(missing_ok=True)
+        return asset, duplicate
+
     def ensure_dirs(self) -> None:
-        for folder in FOLDERS.values():
+        for folder in SCAN_KIND:
             (self.dir / folder).mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------ editing
@@ -364,7 +416,7 @@ class Library:
     def view(self) -> dict:
         assets = [self.asset_view(a) for a in self.assets()]
         return {"assets": sorted(assets, key=lambda a: a["added_at"], reverse=True), "series": self.series(),
-                "folder": str(self.dir), "kinds": KINDS}
+                "folder": str(self.dir), "kinds": KINDS, "kind_roles": ROLE_FOR_KIND}
 
 
 # ===================================================================== credit lookup (Claude + web search)
@@ -404,7 +456,8 @@ CREDIT_TOOL = {
 
 def lookup_request(asset: dict) -> dict:
     info = {"file_name": asset.get("name"), "embedded_tags": asset.get("tags") or {},
-            "duration_s": asset.get("duration_s"), "leons_note": asset.get("note") or "", "kind": asset.get("kind")}
+            "duration_s": asset.get("duration_s"), "leons_note": asset.get("note") or "",
+            "used_as": KINDS.get(asset.get("kind"), "")}
     return dict(model="claude-opus-5-5", max_tokens=16000, system=LOOKUP_SYSTEM,
                 output_config={"effort": "medium"},
                 tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 5}, CREDIT_TOOL],

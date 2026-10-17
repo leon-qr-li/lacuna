@@ -63,7 +63,8 @@ if __name__ == "__main__":
         from tests.app.synth import write_music_inbox
 
         ws = make_workspace(Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws")
-        write_music_inbox(Path(ws) / "music_inbox")       # for the media library (phase 6a)
+        # music files for the media library E2E to drag / pick (web/e2e/music.spec.ts reads them here)
+        write_music_inbox(Path(__file__).resolve().parents[2] / "web" / "e2e" / ".fixtures" / "music_inbox")
         # cover (phase 10): publish pack and covers drawn by scripted fake Claudes
         pub = Publisher(Workspace(ws), lambda: ClaudePublisher(client=FakePublishAnthropic()))
         posters = Posters(Workspace(ws), pub, lambda: ClaudeDesigner(client=FakePosterAnthropic(delay=0.5)))

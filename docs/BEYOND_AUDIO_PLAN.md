@@ -71,7 +71,7 @@ Journey 2 / 6、D13、D20、D24（MVP 收窄）、评估 `00_TECH_LEAD_ASSESSMEN
 **Leon 2026-10-17 定方向**：看过 4 张样张（`/mnt/project-files/lacuna/posters/`：Obsession、The Odyssey、Trois Couleurs、EP001），选 **Claude 写 SVG、本地渲染**，不用付费生图、不用本地生图模型。
 
 - 风格要求（Leon）：极简、美观、高级感、洋气不俗气；图形结构；有电影元素 + 本期讨论内容的元素；**不需要中文字**（只有小号英文片名/期数）。
-- 做法：Claude 读本期转写摘要 + 片名列表（文字），用 API 输出 3–4 版 SVG；App 用本地 Chromium 渲染成 PNG（正方形 3000×3000 给平台，另出横版备用）；Leon 选一版、可以用一句话让它改（“换成暖色”“船再小一点”）。不读剧照，用户媒体不出本机。
+- 做法：Claude 读本期转写摘要 + 片名列表（文字），用 API 输出 3–4 版 SVG；App 在本机用 resvg + 自带 Inter 字体渲染（正方形 3000×3000 JPG/PNG；D49 改用 resvg，横版暂不做）；Leon 选一版、可以用一句话让它改（“换成暖色”“船再小一点”）。不读剧照，用户媒体不出本机。
 - 运行时走 API（Max 额度，D23），不走 Claude Code 订阅登录；样张生成方式与 App 里一致。估算每集约 $0.5（待实测）。
 - 做不到的：照片质感、光影、笔触。以后要再考虑 Recraft 等付费底图。
 - 样张生成脚本：`posters/gen.py`（同目录），可作为风格参考与测试素材。

@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Asset, Credit, CreditStatus, LibraryView as Lib } from "../api";
 import { api, fmt } from "../api";
-import { FileBrowser } from "./ImportPanel";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: "已确认",
@@ -18,31 +17,29 @@ const FIELDS: { key: keyof Credit; label: string }[] = [
   { key: "year", label: "年份" },
 ];
 
-function AddAsset({ kinds, onAdded, onClose }: { kinds: Record<string, string>; onAdded: (a: Asset) => void; onClose: () => void }) {
-  const [path, setPath] = useState<string | null>(null);
-  const [kind, setKind] = useState("music");
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-  if (!path) return <FileBrowser label="选择音乐文件" onPick={(p) => setPath(p)} onClose={onClose} />;
-  const add = async () => {
-    setBusy(true);
-    setErr(null);
-    try {
-      onAdded((await api.addAsset(path, kind, note)).asset);
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  };
+type Upload = { name: string; state: "busy" | "done" | "dup" | "error"; msg?: string };
+
+const ACCEPT = ".mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff,.wma,audio/*";
+
+/** Drag files onto the page, or pick them with the system file dialog. The browser sends the
+ * bytes to the local app, which keeps them in the library folder. */
+function DropZone({ kinds, dragging, onFiles }: { kinds: Record<string, string>; dragging: boolean; onFiles: (files: File[], kind: string) => void }) {
+  const [kind, setKind] = useState("other");
+  const input = useRef<HTMLInputElement>(null);
   return (
-    <div className="card lib-add" role="dialog" aria-label="加入素材库">
-      <p className="mono small">{path}</p>
-      <div className="row gap8 wrap">
-        <label className="row gap8">
+    <div
+      className={`card lib-drop${dragging ? " lib-drop-active" : ""}`}
+      data-testid="drop-zone"
+      data-kind={kind}
+    >
+      <p className="lib-drop-title">把音乐文件拖到这里</p>
+      <div className="row gap12 lib-drop-actions">
+        <button type="button" className="btn btn-primary" onClick={() => input.current?.click()}>
+          选择文件
+        </button>
+        <label className="row gap8 small">
           用途
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
+          <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="新文件的用途">
             {Object.entries(kinds).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
@@ -50,28 +47,26 @@ function AddAsset({ kinds, onAdded, onClose }: { kinds: Record<string, string>; 
             ))}
           </select>
         </label>
-        <input
-          className="grow"
-          placeholder="随口说一句，比如：这是《奥德赛》的主题曲"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          aria-label="备注"
-        />
       </div>
-      {err && <p className="error small">{err}</p>}
-      <div className="row gap8">
-        <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void add()}>
-          {busy ? "正在分析…" : "加入素材库"}
-        </button>
-        <button type="button" className="btn btn-outline" onClick={onClose}>
-          取消
-        </button>
-      </div>
+      <p className="small muted">mp3、wav、flac、m4a 等都可以，一次可以拖好几个。</p>
+      <input
+        ref={input}
+        type="file"
+        multiple
+        accept={ACCEPT}
+        hidden
+        aria-label="选择音乐文件"
+        onChange={(e) => {
+          const files = Array.from(e.target.files ?? []);
+          e.target.value = "";
+          if (files.length) onFiles(files, kind);
+        }}
+      />
     </div>
   );
 }
 
-function AssetRow({ a, onChange, onRemoved, claude }: { a: Asset; onChange: (a: Asset) => void; onRemoved: () => void; claude: boolean }) {
+function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: Record<string, string>; onChange: (a: Asset) => void; onRemoved: () => void; claude: boolean }) {
   const [note, setNote] = useState(a.note);
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState<Partial<Credit>>({});
@@ -99,7 +94,19 @@ function AssetRow({ a, onChange, onRemoved, claude }: { a: Asset; onChange: (a: 
     <li className="card lib-row" data-testid="asset-row">
       <div className="row gap12 wrap">
         <strong className="grow">{a.name}</strong>
-        <span className="chip">{a.kind_label}</span>
+        <select
+          className="chip-select"
+          value={a.kind}
+          aria-label="用途"
+          disabled={!!busy}
+          onChange={(e) => void run("kind", api.updateAsset(a.id, { kind: e.target.value }))}
+        >
+          {Object.entries(kinds).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
         <span className="muted small mono">
           {fmt(a.duration_s)}
           {a.lufs != null && ` · ${a.lufs.toFixed(1)} LUFS`}
@@ -148,7 +155,8 @@ function AssetRow({ a, onChange, onRemoved, claude }: { a: Asset; onChange: (a: 
           title={claude ? "" : "没有 API key，Claude 暂时不可用"}
           onClick={() => {
             const go = note !== a.note ? api.updateAsset(a.id, { note }).then(() => api.lookupCredit(a.id)) : api.lookupCredit(a.id);
-            void run("lookup", go);
+            // show what Claude filled in, ready to correct before confirming
+            void run("lookup", go.then((r) => (setDraft({ ...r.asset.credit }), setEdit(true), r)));
           }}
         >
           {busy === "lookup" ? "Claude 正在查…" : "让 Claude 查正式曲名"}
@@ -217,25 +225,62 @@ function AssetRow({ a, onChange, onRemoved, claude }: { a: Asset; onChange: (a: 
 export function LibraryView() {
   const [lib, setLib] = useState<Lib | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
+  const [uploads, setUploads] = useState<Upload[]>([]);
+  const [dragging, setDragging] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const load = useCallback(() => {
+    const load = useCallback(() => {
     api
       .library()
       .then(setLib)
       .catch((e) => setErr(String(e.message ?? e)));
   }, []);
   useEffect(load, [load]);
+
+  const addFiles = async (files: File[], kind: string) => {
+    setNote(null);
+    setUploads(files.map((f) => ({ name: f.name, state: "busy" })));
+    for (const [i, f] of files.entries()) {
+      let u: Upload;
+      try {
+        const r = await api.uploadAsset(f, kind);
+        u = r.duplicate
+          ? { name: f.name, state: "dup", msg: `素材库里已经有这首（${r.asset.name}）` }
+          : { name: f.name, state: "done" };
+      } catch (e) {
+        u = { name: f.name, state: "error", msg: (e as Error).message };
+      }
+      setUploads((us) => us.map((x, j) => (j === i ? u : x)));
+    }
+    load();
+  };
+
   if (err) return <p className="error pad">{err}</p>;
   if (!lib) return <p className="pad muted">加载中…</p>;
   const replace = (a: Asset) => setLib({ ...lib, assets: lib.assets.map((x) => (x.id === a.id ? { ...x, ...a } : x)) });
+  const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
   return (
-    <main className="home library">
+    <main
+      className="home library"
+      onDragOver={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        setDragging(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false);
+      }}
+      onDrop={(e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        setDragging(false);
+        const zone = (e.currentTarget as HTMLElement).querySelector<HTMLElement>("[data-testid=drop-zone]");
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length) void addFiles(files, zone?.dataset.kind ?? "other");
+      }}
+    >
       <div className="row gap8 wrap">
         <h1 className="grow">素材库</h1>
-        <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
-          添加音乐文件
-        </button>
         <button
           type="button"
           className="btn btn-outline"
@@ -252,25 +297,25 @@ export function LibraryView() {
           打开文件夹
         </button>
       </div>
+      <DropZone kinds={lib.kinds} dragging={dragging} onFiles={(f, k) => void addFiles(f, k)} />
+      {uploads.length > 0 && (
+        <ul className="lib-uploads small" data-testid="uploads">
+          {uploads.map((u, i) => (
+            <li key={i} className={u.state === "error" ? "error" : ""}>
+              {u.state === "busy" ? "正在加入" : u.state === "error" ? "没加进去" : u.state === "dup" ? "跳过" : "已加入"}：{u.name}
+              {u.msg && `（${u.msg}）`}
+            </li>
+          ))}
+        </ul>
+      )}
       <p className="muted small">
-        文件夹：<span className="mono">{lib.folder}</span>。也可以直接把文件丢进里面的 music / jingles / clips，再点「扫描文件夹」。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 Claude。
+        文件会复制到素材库文件夹 <span className="mono">{lib.folder}</span>，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 Claude。
       </p>
       {note && <p className="small">{note}</p>}
-      {adding && (
-        <AddAsset
-          kinds={lib.kinds}
-          onClose={() => setAdding(false)}
-          onAdded={(a) => {
-            setAdding(false);
-            load();
-            setNote(`已加入：${a.name}`);
-          }}
-        />
-      )}
-      {lib.assets.length === 0 && <p className="muted">素材库还是空的。点「添加音乐文件」，选片头、配乐或台词片段。</p>}
+      {lib.assets.length === 0 && <p className="muted">素材库还是空的。把片头、配乐或台词片段拖进来就行。</p>}
       <ul className="lib-list">
         {lib.assets.map((a) => (
-          <AssetRow key={a.id} a={a} onChange={replace} onRemoved={load} claude={lib.lookup} />
+          <AssetRow key={a.id} a={a} kinds={lib.kinds} onChange={replace} onRemoved={load} claude={lib.lookup} />
         ))}
       </ul>
     </main>

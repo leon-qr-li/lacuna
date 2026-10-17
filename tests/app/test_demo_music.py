@@ -27,7 +27,7 @@ def test_demo_music_goes_into_library(tmp_path, monkeypatch):
     lib = Library(ws)
     assert [a["id"] for a in again] == [a["id"] for a in assets]
     assert len(lib.assets()) == 3
-    assert {a["kind"] for a in lib.assets()} == {"jingle", "music"}
+    assert [a["kind"] for a in lib.assets()] == ["intro", "interlude", "outro"]
     for a in lib.assets():
         assert "测试" in a["name"] and "测试" in a["note"]
         assert a["credit"]["status"] == CONFIRMED and "测试" in a["credit"]["artist"]
