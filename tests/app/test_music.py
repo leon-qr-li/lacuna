@@ -1,4 +1,4 @@
-"""Media library + music placement / ducking (phase 6a, D44)."""
+"""Media library + music placement / ducking (phase 6a, D45)."""
 import json
 import shutil
 from pathlib import Path

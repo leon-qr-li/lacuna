@@ -97,11 +97,14 @@ class _Stream:
 class FakeFirstCutAnthropic:
     """`client.beta.messages.stream(...)` answering each window request with `first_cut_ops`."""
 
-    def __init__(self, delay: float = 0.0, fail_windows: set[int] | None = None):
+    def __init__(self, delay: float = 0.0, fail_windows: set[int] | None = None,
+                 refuse_windows: set[int] | None = None, refuse_models: set[str] | None = None):
         import re
         self._re = re.compile(r"原始时间 ([\d.]+)–([\d.]+) 秒")
         self.delay = delay
         self.fail_windows = set(fail_windows or ())
+        self.refuse_windows = set(refuse_windows or ())
+        self.refuse_models = set(refuse_models or ())      # empty = every model refuses those windows
         self.requests: list[dict] = []
         self.beta = SimpleNamespace(messages=SimpleNamespace(stream=self._stream))
 
@@ -114,6 +117,13 @@ class FakeFirstCutAnthropic:
             time.sleep(self.delay)
         if int(a // 600) in self.fail_windows:
             raise RuntimeError("simulated API failure")
+        usage = SimpleNamespace(input_tokens=500, output_tokens=900, cache_creation_input_tokens=20000,
+                                cache_read_input_tokens=0)
+        if int(a // 600) in self.refuse_windows and (not self.refuse_models or kw["model"] in self.refuse_models):
+            return _Stream(SimpleNamespace(
+                stop_reason="refusal", model=kw["model"], _request_id="req_fake", usage=usage,
+                stop_details=SimpleNamespace(type="refusal", category="reasoning_extraction", explanation="x"),
+                content=[SimpleNamespace(type="thinking", thinking="")]))
         inp = {"notes": "合成对话：两人聊电影。", "ops": first_cut_ops(a, b)}
         return _Stream(SimpleNamespace(
             stop_reason="tool_use", model=kw["model"], _request_id="req_fake",

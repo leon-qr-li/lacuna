@@ -1,4 +1,4 @@
-"""Media library: Leon's music, series jingles and film clips, with credits (D44).
+"""Media library: Leon's music, series jingles and film clips, with credits (D45).
 
 Layout (all under ``<workspace>/library/``)::
 
