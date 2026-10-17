@@ -1,6 +1,6 @@
 # LACUNA Studio — Project Status
 
-_Last updated: 2026-10-17 04:50Z (review list now in timeline order, D47); prev 2026-10-17 02:55Z_
+_Last updated: 2026-10-17 05:10Z (phase 10 cover built, D49); prev 04:50Z_
 
 ## Current phase
 POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速) done and validated by Leon on his PC (main a719a8a). Mastering + export merged (#4). Phase 3 (real AI chat, #8/#9) installed on Leon's PC (main 5b13662) and validated by Leon 2026-10-17.
@@ -27,6 +27,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - **6a follow-up: upload + fixed uses** (2026-10-17, D48, Leon's asks while validating): drag files onto 素材库 or pick with the system dialog (server-side folder browser removed there); fixed 用途 dropdown (片头 / 片尾 / 休息间隙 / 聊天背景音 / 电影对白·sample / 预告片 / 其他) that sets the placement role on the 配乐 tab; after a Claude lookup the filled credit fields open for editing. `scripts/make_demo_music.py` makes 3 test tracks (on Leon's PC already; re-run after updating so their uses become 片头 / 休息间隙 / 片尾).
 
 - **Phase 9 publish pack built** (2026-10-17, D46): episode page 「发布资料」 → Claude writes title / blurb / show notes from the current cut's transcript (text only), timeline times computed locally on the final cut, Markdown in the D40 format, copy = rich text + Markdown, chapters, name check (corrections remembered in `names.json`), local re-timing after later edits. BGM from the 6a library once it lands (placeholder until then). Validated by Leon 2026-10-17 on EP001_AI with the real Claude ("我很喜欢这个 show note").
+- **Phase 10 cover built** (2026-10-17, D49): episode page 「海报」 → Claude draws 4 square covers in parallel (one emblem / side by side / geometry / free) from the publish pack's text, rendered locally with resvg + bundled Inter; zoom, change one with a sentence (typed or voice) → new version, 「用这张」 → `exports/<ep>/publish/cover.jpg` + `.png` + `.svg` at 3000×3000. Needs a publish pack first. Merged; install with the next batch update (`pip install -e .` pulls resvg-py + Pillow), then Leon validates with the real key (cost per round to be measured).
 
 ## Open issues
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.

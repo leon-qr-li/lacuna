@@ -21,7 +21,7 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
 | 8 | UI 审美迭代 | 视觉与布局打磨 | flows stable (after 4) | 5–6 | — |
 | 9 | 发布资料包 | 标题（可换候选）、一句话简介、show notes（D40 样式）、成品时间线上的章节、专有名词核对，一键复制（富文本 + Markdown） | 2 | 6a | **done, validated by Leon 2026-10-17** (D46) |
-| 10 | 海报 | Claude 按本期内容写 3–4 版极简 SVG 海报，本地渲染 PNG，Leon 挑一版或一句话改 | 9 | 6a | — (direction set, D38) |
+| 10 | 海报 | Claude 按本期内容写 3–4 版极简 SVG 海报，本地渲染 PNG，Leon 挑一版或一句话改 | 9 | 6a | **built (D49)**; install with the next batch update, then Leon validates |
 | 11 | 辅助发布 | 发布页（文件、文字、海报、清单、打开上传页）+ 发布/同步状态核实；之后再试浏览器代填 | 9, 10 | — | — |
 | 6b | AI 推荐配乐 | AI 提议放音乐/台词的位置，从库里原声的真实分析中给 2–3 个候选片段 | 6, 5 | — | after MVP |
 

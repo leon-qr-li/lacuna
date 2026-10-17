@@ -55,12 +55,19 @@ if __name__ == "__main__":
         import uvicorn
 
         from lacuna_app.editor import MockEditorAdapter
+        from lacuna_app.poster import ClaudeDesigner, Posters
+        from lacuna_app.publish import ClaudePublisher, Publisher
         from lacuna_app.server import create_app
-        from tests.app.fake_claude import FakeCreditAnthropic
+        from lacuna_app.store import Workspace
+        from tests.app.fake_claude import FakeCreditAnthropic, FakePosterAnthropic, FakePublishAnthropic
         from tests.app.synth import write_music_inbox
 
         ws = make_workspace(Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws")
         # music files for the media library E2E to drag / pick (web/e2e/music.spec.ts reads them here)
         write_music_inbox(Path(__file__).resolve().parents[2] / "web" / "e2e" / ".fixtures" / "music_inbox")
-        uvicorn.run(create_app(ws, MockEditorAdapter(), credit_client=FakeCreditAnthropic()), host="127.0.0.1",
-                    port=int(port), log_level="warning")
+        # cover (phase 10): publish pack and covers drawn by scripted fake Claudes
+        pub = Publisher(Workspace(ws), lambda: ClaudePublisher(client=FakePublishAnthropic()))
+        posters = Posters(Workspace(ws), pub, lambda: ClaudeDesigner(client=FakePosterAnthropic(delay=0.5)))
+        uvicorn.run(create_app(ws, MockEditorAdapter(), credit_client=FakeCreditAnthropic(), publisher=pub,
+                               posters=posters),
+                    host="127.0.0.1", port=int(port), log_level="warning")

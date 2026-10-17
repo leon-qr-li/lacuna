@@ -267,3 +267,18 @@ select, input:not([type]), input[type="number"] { padding: 6px 8px; border: 1px 
 .lib-uploads { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .chip-select { padding: 3px 8px; border-radius: 999px; border: 1px solid var(--accent-mid); background: var(--accent-soft); color: var(--accent); font-size: 12px; }
 .lib-drop-actions { flex-wrap: wrap; justify-content: center; }
+
+/* ---- cover (phase 10) */
+.poster { max-width: 1180px; }
+.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.poster-card { display: flex; flex-direction: column; gap: 8px; }
+.poster-card.is-chosen { border-color: var(--accent-mid); box-shadow: 0 0 0 2px var(--accent-mid); }
+.poster-card p { margin: 0; }
+.poster-card input { min-width: 0; }
+.poster-img { padding: 0; border: 0; background: none; cursor: zoom-in; }
+.poster-img img, .cover-card img { display: block; width: 100%; aspect-ratio: 1; border-radius: 6px; }
+.cover-card { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.cover-card img { width: 160px; }
+.cover-card p { margin: 4px 0 8px; }
+.poster-zoom { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .78); cursor: zoom-out; }
+.poster-zoom img { width: min(92vw, 92vh); aspect-ratio: 1; }

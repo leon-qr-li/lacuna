@@ -9,15 +9,16 @@ import { LibraryView } from "./components/LibraryView";
 import { MusicView } from "./components/MusicView";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
+import { PosterView } from "./components/PosterView";
 import { PublishView } from "./components/PublishView";
 import { ReviewView } from "./components/ReviewView";
 import { Lanes, Overview } from "./components/Timeline";
 import { usePlayer } from "./usePlayer";
 
-type Mode = "listen" | "review" | "music" | "publish";
+type Mode = "listen" | "review" | "music" | "publish" | "poster";
 
 function parseHash(): { id: string | null; mode: Mode; learning: boolean; library: boolean } {
-  const m = /^#\/ep\/([^/]+)(?:\/(listen|review|music|publish))?/.exec(window.location.hash);
+  const m = /^#\/ep\/([^/]+)(?:\/(listen|review|music|publish|poster))?/.exec(window.location.hash);
   return {
     id: m ? decodeURIComponent(m[1]) : null,
     mode: (m?.[2] as Mode) ?? "listen",
@@ -251,6 +252,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           <a href={`#/ep/${encodeURIComponent(id)}/publish`} aria-current={mode === "publish" ? "page" : undefined}>
             发布资料
           </a>
+          <a href={`#/ep/${encodeURIComponent(id)}/poster`} aria-current={mode === "poster" ? "page" : undefined}>
+            海报
+          </a>
         </nav>
         <div className="row gap8">
           <button type="button" className="btn btn-outline" onClick={undo} disabled={!ep?.can_undo} title={ep?.undo_label ?? ""}>
@@ -287,6 +291,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             </main>
           </div>
           {mode === "publish" && <PublishView id={id} version={ep.version} flash={flash} />}
+          {mode === "poster" && <PosterView id={id} flash={flash} onPauseMain={player.pause} />}
           {mode === "review" && (
             <ReviewView
               ep={ep}
