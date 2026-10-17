@@ -33,7 +33,7 @@ export function Skel({ w, h = 12, r, style }: { w?: number | string; h?: number 
 /** Placeholder rows shaped like the episode cards on the home page. */
 export function EpisodeListSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <ul className="ep-list ld-ep-list" aria-hidden="true" data-testid="episodes-loading">
+    <ul className="ld-ep-list" aria-hidden="true" data-testid="episodes-loading">
       {Array.from({ length: rows }, (_, i) => (
         <li key={i}>
           <span className="ld-ep">

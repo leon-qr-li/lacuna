@@ -23,7 +23,9 @@
 @keyframes ld-sheen { to { transform: translateX(100%); } }
 .ld-ep { flex: 1; display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
 .ld-ep-body { flex: 1; display: grid; gap: 9px; }
-.ld-ep-list li { pointer-events: none; }
+/* same grid as .ep-list (styles.css), own class so it never matches the real list */
+.ld-ep-list { list-style: none; padding: 0; margin: 0 0 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.ld-ep-list li { display: flex; pointer-events: none; }
 
 /* a page or tab on its way */
 .ld-page { padding: 34px 24px; max-width: 980px; margin: 0 auto; width: 100%; animation: ld-in 0.15s ease-out; }
