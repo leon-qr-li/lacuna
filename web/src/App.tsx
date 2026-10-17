@@ -3,6 +3,7 @@ import type { EditInfo, Episode, EpisodeListItem } from "./api";
 import { api, fmt } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
 import { ExportPanel } from "./components/ExportPanel";
+import { ImportPanel } from "./components/ImportPanel";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
@@ -38,24 +39,30 @@ export default function App() {
 function Home() {
   const [list, setList] = useState<EpisodeListItem[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => {
-    api
-      .episodes()
-      .then((r) => {
+  const load = useCallback((first = false) => {
+    Promise.all([api.episodes(), api.imports().catch(() => ({ jobs: [] }))])
+      .then(([r, im]) => {
         setList(r.episodes);
-        if (r.episodes.length === 1 && !r.episodes[0].error) go(r.episodes[0].id);
+        // opening the app with a single episode and nothing importing: go straight to it
+        // (not when Leon came back here on purpose via the LACUNA link)
+        if (first && !window.location.hash && r.episodes.length === 1 && !r.episodes[0].error && !im.jobs.length)
+          go(r.episodes[0].id);
       })
       .catch((e) => setErr(String(e)));
   }, []);
+  useEffect(() => load(true), [load]);
+  const reload = useCallback(() => load(), [load]);
+  const open = useCallback((id: string) => go(id, "review"), []);
   return (
     <div className="app">
       <header className="topbar">
         <strong className="brand">LACUNA</strong>
       </header>
       <main className="home">
+        <ImportPanel onEpisodesChanged={reload} onOpen={open} />
         <h1>剧集</h1>
         {err && <p className="error">{err}</p>}
-        {list?.length === 0 && <p className="muted">工作区里还没有剧集。用 scripts/make_ai_episode.py 导入 AI 第一刀（或 scripts/make_demo_episode.py 建演示集）。</p>}
+        {list?.length === 0 && <p className="muted">工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。</p>}
         <ul className="ep-list">
           {list?.map((e) => (
             <li key={e.id}>

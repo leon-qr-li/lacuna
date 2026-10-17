@@ -198,7 +198,7 @@ class Importer:
     def _run(self, job: dict) -> None:
         d = self.dir_for(job["id"])
         with self._lock:
-            job.update(state="running", started=job.get("started") or now())
+            job.update(state="running", started=job.get("started") or now(), run_started=now())
         self._save(job)
         t0 = time.monotonic()
         try:
@@ -371,9 +371,9 @@ def list_dir(path: str | None, default: Path) -> dict:
             continue
         try:
             if e.is_dir():
-                dirs.append(e.name)
+                dirs.append({"name": e.name, "path": str(p / e.name)})
             elif Path(e.name).suffix.lower() in AUDIO_EXT:
-                f = {"name": e.name, "size": e.stat().st_size, "duration": None}
+                f = {"name": e.name, "path": str(p / e.name), "size": e.stat().st_size, "duration": None}
                 try:
                     i = sf.info(e.path)
                     f["duration"] = round(i.frames / i.samplerate, 1)
@@ -388,5 +388,5 @@ def list_dir(path: str | None, default: Path) -> dict:
     else:
         roots += [str(Path.home()), "/"]
     parent = str(p.parent) if p.parent != p else None
-    return {"path": str(p), "parent": parent, "dirs": sorted(dirs, key=str.lower),
+    return {"path": str(p), "parent": parent, "dirs": sorted(dirs, key=lambda d: d["name"].lower()),
             "files": sorted(files, key=lambda f: f["name"].lower()), "roots": list(dict.fromkeys(roots))}

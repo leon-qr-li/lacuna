@@ -19,6 +19,8 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - **On Leon's PC** (2026-10-17, main 7bc041e): episode `EP001_AI` ("EP001 · AI 第一刀", v3 ops) built in `C:\Projects\LACUNA_Workspace`: 646 edits, 114 to review, 73:32 → 59:43; 107/107 pytest there. Start with `C:\Projects\LACUNA_Start.bat`.
 - **Mastering + export** (2026-10-17, D36): top-bar 导出 → stereo 24-bit WAV + 128 kbps MP3 in `<workspace>/exports/<episode>/` (+ JSON record), -16 LUFS / ≤ -1 dBTP, gentle chain (`lacuna_core/master.py`, `export.py`, `lacuna_app/exporter.py`). Validated on Leon's PC with full raw EP001 (Leon +7 dB): in -17.4 LUFS / +5.5 dBTP → out -16.14 LUFS / -1.30 dBTP; compressor mean 0.95 dB; limiter active 0.5 %; MP3 -16.6 LUFS / -1.46 dBTP; 73.5 min in ~5 min, ~145 MB RAM. Leon's own 最终成品.mp3 measures -17.9 LUFS / +4.4 dBTP (clipping). Listening pair in `exports\EP001_mastering_test\` (A_before_preview / B_after_master, from 60:22).
 
+- **Phase 4 new-episode import** (2026-10-17, D38): Home → 导入新一集 → pick Leon/Pei tracks → local ASR (Paraformer + SenseVoice, sherpa-onnx) → features → Claude first cut in ~10-min windows → review. Resumable per step (`<workspace>/imports/<id>/`). Real ASR verified on sherpa test clips in the cloud box; full EP001 run on Leon's PC pending (needs `pip install -e ".[asr]"`, first import downloads ~400 MB of models).
+
 ## Open issues
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.
 - Content-trim selection is taste: needs ranked review + learning from Leon's restores (D27), not more rules.

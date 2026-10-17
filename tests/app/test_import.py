@@ -232,6 +232,7 @@ def test_check_track_and_browser(rec, tmp_path):
     assert [f["name"] for f in lst["files"]] == ["Leon.wav", "Pei.wav"]
     assert lst["files"][0]["duration"] == 60.0 and lst["parent"] == str(tmp_path.resolve())
     up = list_dir(str(tmp_path), tmp_path)
-    assert "Riverside 下载" in up["dirs"]
+    assert {"name": "Riverside 下载", "path": str(rec["Leon"].parent.resolve())} in up["dirs"]
+    assert lst["files"][1]["path"] == str(rec["Pei"].resolve())
     with pytest.raises(Exception, match="打不开"):
         list_dir(str(tmp_path / "missing"), tmp_path)
