@@ -23,11 +23,12 @@ TRACKS = {"L": "Leon", "P": "Pei"}
 
 def frame_db(x, win=400, hop=160):
     n = 1 + (len(x) - win) // hop
-    idx = np.arange(win)[None, :] + hop * np.arange(n)[:, None]
     out = np.empty(n, dtype=np.float32)
-    for i in range(0, n, 50000):            # chunked to bound memory
-        fr = x[idx[i:i + 50000]]
-        out[i:i + 50000] = 10 * np.log10(np.mean(fr * fr, axis=1) + 1e-10)
+    cols = np.arange(win)[None, :]
+    for i in range(0, n, 50000):            # chunked to bound memory (the index too: n x win int64 is 2.3 GB for 2 h)
+        j = min(i + 50000, n)
+        fr = x[cols + hop * np.arange(i, j)[:, None]]
+        out[i:j] = 10 * np.log10(np.mean(fr * fr, axis=1) + 1e-10)
     return out
 
 
