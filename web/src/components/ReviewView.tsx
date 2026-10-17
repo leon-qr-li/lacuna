@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { AB, EditInfo, Episode, TextLine } from "../api";
 import { api, confidenceLabel, fmt, statusLabel } from "../api";
 import { ABPlayer, type ABHandle } from "./ABPlayer";
+import { GrowText } from "./GrowText";
 import { Icon } from "./Icon";
 
 interface Props {
@@ -225,11 +226,10 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
               <label htmlFor="tweak" className="sr-only">
                 用一句话调整
               </label>
-              <input
+              <GrowText
                 id="tweak"
-                type="text"
                 value={tweak}
-                onChange={(e) => setTweak(e.target.value)}
+                onChange={setTweak}
                 placeholder="或者直接说：恢复这处 / 停顿短一点"
               />
             </form>

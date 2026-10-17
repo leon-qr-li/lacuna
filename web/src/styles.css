@@ -177,11 +177,14 @@ a.btn, a.btn:hover { text-decoration: none; color: var(--ink); }
 .linkbtn.btn-primary, .linkbtn.btn-primary:hover { color: var(--on-ink); }
 
 input[type="text"], input[type="password"], input:not([type]), input[type="number"], select, textarea {
-  min-height: 40px; padding: 0 12px;
+  min-height: 42px; padding: 0 12px; font-size: 15px;
   border: 1px solid var(--line-2); border-radius: var(--r-sm);
   background: var(--solid); color: var(--ink);
 }
-textarea { padding: 10px 12px; }
+textarea { padding: 10px 12px; line-height: 1.55; }
+select { max-width: 100%; text-overflow: ellipsis; }
+.grow-text { flex: 1; min-width: 0; width: 100%; min-height: 44px; resize: none; overflow-y: auto; display: block; }
+.align-end { align-items: flex-end; }
 input[type="text"] { flex: 1; min-width: 0; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 input[type="checkbox"], input[type="radio"], input[type="range"], progress { accent-color: var(--accent); }
@@ -196,7 +199,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 
 /* ---------- episode workspace */
 .workspace { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; }
-.workspace > .chat { order: 2; margin: 24px 28px 24px 0; }
+.workspace > .chat { order: 2; margin: 24px 28px 24px 0; align-self: stretch; }
 .workspace.chat-closed > .chat { display: none; }
 .center { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding: 24px 28px 40px; }
 
@@ -246,7 +249,9 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .nearby .linkish { font-family: var(--mono); color: var(--accent-ink); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; text-decoration: none; }
 
 /* ---------- chat */
-.chat { flex: 1 1 340px; max-width: 400px; display: flex; flex-direction: column; border-radius: var(--r); border: 1px solid var(--line); background: var(--solid); box-shadow: var(--shadow); max-height: calc(100vh - 120px); position: sticky; top: 84px; overflow: hidden; }
+/* AI 制作人: owns the whole right column, full height whether or not there is a conversation yet */
+.chat { flex: 0 1 460px; min-width: 340px; display: flex; flex-direction: column; border-radius: var(--r); border: 1px solid var(--line); background: var(--solid); box-shadow: var(--shadow); height: max(520px, calc(100vh - 232px)); position: sticky; top: 24px; overflow: hidden; }
+@media (max-width: 1100px) { .chat { flex-basis: 100%; height: 70vh; position: static; } }
 .chat-title { margin: 0; padding: 18px 20px 8px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .chat-title .chip { font-weight: 500; }
 .chat-log { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 8px 20px 16px; overflow: auto; min-height: 240px; }
@@ -259,8 +264,10 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .proposal { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .pstate { margin-top: 8px; font-size: 12.5px; }
 .pstate.ok { color: var(--ok); }
-.chat-form { display: flex; gap: 8px; margin: 10px 14px 14px; padding: 6px 6px 6px 10px; border-radius: 16px; background: var(--hover); }
-.chat-form input[type="text"] { border: 0; background: none; box-shadow: none; }
+.chat-form { display: flex; flex-direction: column; gap: 6px; margin: 10px 14px 14px; padding: 8px; border-radius: 18px; border: 1px solid var(--line); background: var(--hover); }
+.chat-form:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.chat-form textarea { flex: none; border: 0; background: none; box-shadow: none; min-height: 64px; padding: 6px 8px; }
+.chat-form-row { display: flex; align-items: center; gap: 8px; }
 .at-chip { align-self: center; padding: 2px 8px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-ink); font-size: 11.5px; white-space: nowrap; }
 .mic { min-width: 40px; min-height: 40px; padding: 0 10px; white-space: nowrap; }
 .mic-on { background: var(--danger); border-color: var(--danger); color: #fff; font-variant-numeric: tabular-nums; }
@@ -299,7 +306,8 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .rv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .rv-lines .line { margin: 0 0 8px; line-height: 1.8; }
 .rv-tweak { display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
-.rv-tweak input[type="text"] { border: 0; background: none; box-shadow: none; padding-left: 0; }
+.rv-tweak textarea { border: 0; background: none; box-shadow: none; padding-left: 0; }
+.rv-tweak:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 @media (max-width: 720px) { .rv-why { grid-template-columns: 1fr; } .review-nav { position: static; max-width: none; } }
 
 /* the floating dock (review: compare + decide; contextual per step) */
@@ -327,7 +335,8 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .home-hero h1 { margin: 0 0 6px; font-size: 32px; letter-spacing: -0.01em; }
 .home-hero p { margin: 0; }
 .ep-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.ep-list a { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); text-decoration: none; color: var(--ink); transition: transform 0.15s, box-shadow 0.15s; }
+.ep-list li { display: flex; }
+.ep-list a { flex: 1; display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); text-decoration: none; color: var(--ink); transition: transform 0.15s, box-shadow 0.15s; }
 .ep-list a:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); color: var(--ink); }
 .ep-list strong { font-size: 16px; }
 .ep-cover { flex: none; width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; background: var(--grad); color: #fff; font-size: 26px; font-weight: 700; box-shadow: 0 8px 20px rgb(91 108 255 / 0.28); }

@@ -1,5 +1,6 @@
 // Suggested music (by use, or from talking to Claude): heard first, applied only when accepted
 import { useState } from "react";
+import { GrowText } from "../../components/GrowText";
 import type { MusicDraft } from "./api";
 import { fmt } from "../../api";
 
@@ -77,12 +78,11 @@ export function MusicChatBox({ onSend }: { onSend: (text: string) => Promise<boo
   return (
     <div className="card music-chat">
       <h2>跟 Claude 说配乐怎么改</h2>
-      <div className="row gap8">
-        <input
-          className="grow"
+      <div className="row gap8 align-end">
+        <GrowText
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && send()}
+          onChange={setText}
+          onEnter={send}
           placeholder="比如：间奏晚两秒 / 背景音小 3 dB / 片尾去掉"
           aria-label="跟 Claude 说配乐怎么改"
           disabled={busy}

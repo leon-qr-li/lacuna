@@ -13,6 +13,8 @@ const ROLE_HELP: Record<Role, string> = {
   clip: "插入一段台词，前后各留一点空",
 };
 const ANCHORED: Role[] = ["interlude", "bed", "clip"];
+// the asset picker shows one short line per piece; the full credit is in the library and the credits list
+const shortLabel = (t: string, max = 44) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
 
 function Num({ label, value, onChange, step = 0.5, min = 0 }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number }) {
   return (
@@ -150,10 +152,11 @@ function AddPlacement({ assets, kindRoles, onAdd }: {
             setRole(roleOf(e.target.value));
           }}
           aria-label="选择素材"
+          className="music-pick"
         >
           {assets.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.credit_line !== a.name.replace(/\.[^.]+$/, "") ? `${a.credit_line}（${a.name}）` : a.name} · {a.kind_label}
+              {shortLabel(a.credit_line !== a.name.replace(/\.[^.]+$/, "") ? a.credit_line : a.name)} · {a.kind_label}
             </option>
           ))}
         </select>

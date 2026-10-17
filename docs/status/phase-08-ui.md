@@ -28,3 +28,9 @@ Decision: `docs/decisions/2026-10-17-ui-redesign-c-focus.md`.
 
 ## Coordination
 - 6a thread no longer touches App.tsx, the review player, MusicView or ExportPanel (done with #47 / #49).
+
+## Round 2 (Leon's feedback after the 2026-10-17.3 update)
+- Episode cards equal height; AI 制作人 wider (460px) and fills the right column even with no conversation;
+  text boxes are multi-line and grow (`components/GrowText.tsx`: Enter sends, Shift+Enter new line) in the chat,
+  review tweak, music chat, library note and poster revise; inputs 15px; the 放一段音乐 picker shows a short label
+  (long credits trimmed) and never overflows. E2E `web/e2e/layout.spec.ts`.

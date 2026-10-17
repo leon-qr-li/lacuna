@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { GrowText } from "../../components/GrowText";
 import type { Asset, Credit, CreditStatus, LibraryView as Lib } from "./api";
 import { fmt } from "../../api";
 import { libraryApi } from "./api";
@@ -114,12 +115,12 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
         </span>
       </div>
       <audio controls preload="none" src={`/api/library/assets/${a.id}/audio`} className="lib-audio" />
-      <div className="row gap8">
-        <input
-          className="grow"
+      <div className="row gap8 align-end">
+        <GrowText
           value={note}
           placeholder="随口说一句，比如：这是《奥德赛》的主题曲"
-          onChange={(e) => setNote(e.target.value)}
+          onChange={setNote}
+          onEnter={() => note !== a.note && !busy && void run("save", libraryApi.updateAsset(a.id, { note }))}
           aria-label="备注"
         />
         <button
