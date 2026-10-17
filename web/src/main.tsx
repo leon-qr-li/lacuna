@@ -6,9 +6,12 @@ import "./styles.css"; // first: feature styles (imported by the features) come 
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { AuthGate } from "./features/auth/AuthGate";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <AuthGate>
+      <App />
+    </AuthGate>
   </StrictMode>,
 );

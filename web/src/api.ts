@@ -189,6 +189,8 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
+    // signed out or session expired: the sign-in screen comes back (features/auth/AuthGate)
+    if (res.status === 401 && !url.startsWith("/api/auth/")) window.dispatchEvent(new Event("lacuna:auth"));
     let msg = res.statusText;
     try {
       msg = (await res.json()).detail ?? msg;
