@@ -4,6 +4,8 @@ const PATHS = {
   redo: "m15 14 5-5-5-5M20 9H9a5 5 0 0 0 0 10h3",
   chat: "M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z",
   chev: "m9 6 6 6-6 6",
+  chevl: "m15 6-6 6 6 6",
+  check: "m5 12 5 5 9-10",
 } as const;
 
 export function Icon({ name, size = 16 }: { name: keyof typeof PATHS; size?: number }) {

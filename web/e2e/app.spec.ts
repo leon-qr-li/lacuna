@@ -59,9 +59,9 @@ test.describe.serial("LACUNA Studio", () => {
     await page.getByRole("link", { name: /审阅改动/ }).click();
     await expect(page).toHaveURL(/\/review$/);
     await expect(page.getByTestId("review-title")).toHaveText("删除 4.4 秒 · 题外话");
-    await expect(page.getByText("原话（只显示，不改写；划线部分被剪掉）")).toBeVisible();
+    await expect(page.getByRole("region", { name: "原文对照" })).toBeVisible();
     await expect(page.locator(".struck").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /原始（前后 10 秒）/ })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /A · 原始/ })).toBeEnabled();
     // shared playhead: selecting an edit moves the main player there
     await expect.poll(() => audioTime(page)).toBeCloseTo(25.2, 0);
     // R restores, undo brings the cut back
