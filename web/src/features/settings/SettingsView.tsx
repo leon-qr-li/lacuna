@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { AppInfo } from "./api";
 import { settingsApi } from "./api";
 import { ThemeSetting } from "../theme/ThemeSetting";
+import { AccountCard } from "../auth/AccountCard";
 import { joinList, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
@@ -206,6 +207,8 @@ export function SettingsView() {
           </button>
         </div>
       </section>
+
+      <AccountCard />
 
       <section className="card" aria-label={t("这台电脑")}>
         <h2>{t("这台电脑")}</h2>
