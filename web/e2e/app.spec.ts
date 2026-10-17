@@ -75,6 +75,27 @@ test.describe.serial("LACUNA Studio", () => {
     await expect.poll(() => audioTime(page)).toBeCloseTo(25.2, 0);
   });
 
+  test("slow audio stream: the playhead survives restore → undo → back to Full Listen", async ({ page }) => {
+    // regression (macOS CI): a seek set while the new version's stream is not yet seekable was dropped to 0.
+    // Delaying the audio responses reproduces that race on any OS.
+    let n = 0;
+    await page.route("**/audio/**", async (route) => {
+      await new Promise((r) => setTimeout(r, [300, 1200, 700][n++ % 3]));
+      await route.continue();
+    });
+    await openEpisode(page);
+    await page.getByRole("link", { name: /改动审阅/ }).click();
+    await expect(page.getByTestId("review-title")).toHaveText("删除 4.4 秒 · 题外话");
+    await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
+    await page.keyboard.press("r");
+    await expect(page.locator(".toast")).toHaveText("已恢复原话");
+    await page.getByRole("button", { name: "撤销" }).click();
+    await expect(page.getByRole("button", { name: "保留这个删除" })).toBeVisible();
+    await page.getByRole("link", { name: "整集试听" }).click();
+    await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
+    await expect(page.getByTestId("clock")).toContainText("0:25");
+  });
+
   test("chat command → preview → approve → edit appears; undo removes it", async ({ page }) => {
     await openEpisode(page);
     await page.getByRole("slider", { name: "播放位置" }).fill("15.5");
