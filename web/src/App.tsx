@@ -181,27 +181,31 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       <audio ref={player.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (
         <p className="pad muted">加载中…</p>
-      ) : mode === "listen" ? (
-        <div className="workspace">
-          <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} />
-          <main className="center">
-            <Overview ep={ep} time={player.time} onSeek={player.seek} />
-            <Lanes ep={ep} time={player.time} onSeek={player.seek} highlight={pending} />
-            <PlayerBar player={player} duration={ep.duration} />
-            <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
-          </main>
-        </div>
       ) : (
-        <ReviewView
-          ep={ep}
-          selected={selected}
-          onSelect={(e) => {
-            setSelected(e.id);
-            player.seek(e.t); // keep the shared playhead on the edit under review
-          }}
-          onReview={review}
-          onPauseMain={player.pause}
-        />
+        <>
+          {/* Full Listen stays mounted in review mode so the conversation is kept */}
+          <div className="workspace" hidden={mode !== "listen"}>
+            <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} />
+            <main className="center">
+              <Overview ep={ep} time={player.time} onSeek={player.seek} />
+              <Lanes ep={ep} time={player.time} onSeek={player.seek} highlight={pending} />
+              <PlayerBar player={player} duration={ep.duration} />
+              <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
+            </main>
+          </div>
+          {mode === "review" && (
+            <ReviewView
+              ep={ep}
+              selected={selected}
+              onSelect={(e) => {
+                setSelected(e.id);
+                player.seek(e.t); // keep the shared playhead on the edit under review
+              }}
+              onReview={review}
+              onPauseMain={player.pause}
+            />
+          )}
+        </>
       )}
     </div>
   );

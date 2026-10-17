@@ -76,7 +76,7 @@ test.describe.serial("LACUNA Studio", () => {
 
   test("chat command → preview → approve → edit appears; undo removes it", async ({ page }) => {
     await openEpisode(page);
-    await page.getByLabel("播放位置").fill("15.5");
+    await page.getByRole("slider", { name: "播放位置" }).fill("15.5");
     await expect(page.locator(".at-chip")).toHaveText("@ 0:15");
     await page.getByLabel(/对 AI 制作人说/).fill("这里停顿短一点");
     await page.keyboard.press("Enter");
@@ -103,5 +103,10 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.locator(".toast")).toContainText("已撤销");
     await expect(chatEdit).toHaveCount(0);
     await expect(page.getByTestId("clock")).toContainText("/ 0:52");
+
+    // the conversation survives a round trip through Edit Review
+    await page.getByRole("link", { name: /改动审阅/ }).click();
+    await page.getByRole("link", { name: "整集试听" }).click();
+    await expect(page.getByTestId("chat-log")).toContainText("✓ 已批准并应用");
   });
 });
