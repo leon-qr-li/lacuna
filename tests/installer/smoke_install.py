@@ -126,10 +126,14 @@ def main() -> int:
         build_release.build(V2, base, notes="第二版")
         t0 = time.monotonic()
         update_to(V2)
-        wait(lambda: version() == V2, f"{V2} after the update", 300)
+
+        def logged(v: str):
+            # the new version answers a moment before the launcher logs the update as done
+            last = (api("/api/app")["update"]["last_update"] or {}) if version() else {}
+            return last if last.get("to") == v else None
+        last = wait(lambda: logged(V2), f"{V2} after the update", 300)
         print(f"update took {time.monotonic() - t0:.0f} s")
-        last = api("/api/app")["update"]["last_update"]
-        assert last and last["ok"] and last["to"] == V2, last
+        assert last["ok"] and version() == V2, last
 
         step(f"broken release {V3} rolls back to {V2}")
         build_release.build(V3, base, notes="坏的", repo=broken_repo(tmp))
