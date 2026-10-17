@@ -1,0 +1,594 @@
+"""One episode: source media, the AI first cut as a list of reviewable edits, history, rendering.
+
+Model
+-----
+* The lacuna_core `Project` base timeline is the *uncut* recording (both tracks in sync).
+* Every edit (first-cut or chat) holds lacuna_core op dicts expressed in **base** coordinates:
+  `cut` (ripple, all tracks), `lift` (one track, no ripple) or `track_gain`.
+* An edit's status is applied / restored / proposed / discarded. The current timeline is derived
+  from the applied set: gains, then lifts, then cuts from latest to earliest - so base
+  coordinates stay valid and any edit can be restored independently of the others.
+  Overlapping cuts are refused.
+* History is an undo/redo stack of field changes on edits (status / approved), persisted.
+* `state.json` stores the lacuna_core Project (media + base + the derived op log, i.e. the
+  exact render recipe), the edit list and the history, written atomically.
+"""
+from __future__ import annotations
+
+import hashlib
+import threading
+import uuid
+from collections import OrderedDict
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+
+import numpy as np
+
+from lacuna_core import EDLError, MediaRef, Previewer, Project, Renderer, RenderSettings, SegmentCache, SourcePool, Timeline
+from lacuna_core.edl import Op
+from lacuna_core.refine import snap_cut
+
+from . import analysis
+from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
+from .editor import ChatContext, EditorAdapter, Proposal
+from .store import META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
+
+STATE_SCHEMA = 1
+APPLIED, RESTORED, PROPOSED, DISCARDED = "applied", "restored", "proposed", "discarded"
+
+CATEGORY_LABELS = {
+    "pause": "停顿收紧",
+    "filler": "口误与无意识重复",
+    "crosstalk": "单轨杂声（压在对方说话下）",
+    "single_track": "单轨删减",
+    "content": "内容删除",
+    "interjection": "插话处理",
+    "loudness": "响度匹配",
+    "chat": "聊天修改",
+}
+
+
+class ConflictError(ValueError):
+    """The requested change cannot be applied (overlap, nothing to undo, wrong state ...)."""
+
+
+@dataclass
+class Edit:
+    id: str
+    ops: list[dict]
+    category: str
+    title: str
+    reason: str = ""
+    confidence: float = 0.5
+    consequential: bool = False
+    status: str = APPLIED
+    approved: bool = False
+    source: str = "first_cut"
+
+    @property
+    def cuts(self) -> list[tuple[int, int]]:
+        return [(o["start"], o["end"]) for o in self.ops if o["op"] == "cut"]
+
+    @property
+    def span(self) -> tuple[int, int] | None:
+        s = [(o["start"], o["end"]) for o in self.ops if "start" in o]
+        return (min(a for a, _ in s), max(b for _, b in s)) if s else None
+
+    @property
+    def tracks(self) -> list[str] | None:
+        ts = {o.get("track") for o in self.ops if o["op"] == "lift"}
+        return sorted(ts) if ts and not self.cuts else None
+
+
+@dataclass
+class Clip:
+    """A rendered A/B excerpt kept briefly in memory for the browser to fetch."""
+    wav: bytes
+    start: float
+    edit_at: float
+    edit_len: float
+
+
+def _key(enabled: frozenset[str]) -> str:
+    return hashlib.sha1("|".join(sorted(enabled)).encode()).hexdigest()[:16]
+
+
+def to_tl(x: int, cuts: list[tuple[int, int]]) -> int:
+    """Base sample -> timeline sample under `cuts` (sorted, non-overlapping)."""
+    t = x
+    for a, b in cuts:
+        if a >= x:
+            break
+        t -= min(b, x) - a
+    return t
+
+
+def to_base(t: int, cuts: list[tuple[int, int]], right: bool = True) -> int:
+    """Timeline sample -> base sample. At a cut point `right` picks the material after it."""
+    x = t
+    for a, b in cuts:
+        if a < x or (a == x and right):
+            x += b - a
+        else:
+            break
+    return x
+
+
+def subtract(a: int, b: int, cuts: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """[a, b) minus the cut ranges."""
+    out, cur = [], a
+    for ca, cb in cuts:
+        if cb <= cur or ca >= b:
+            continue
+        if ca > cur:
+            out.append((cur, ca))
+        cur = max(cur, cb)
+    if cur < b:
+        out.append((cur, b))
+    return out
+
+
+class Episode:
+    def __init__(self, ws: Workspace, episode_id: str):
+        self.id = episode_id
+        self.dir = ws.episode_dir(episode_id)
+        self.lock = threading.RLock()
+        self.meta = read_json(self.dir / META_FILE)
+        st = read_json(self.dir / STATE_FILE)
+        if st.get("schema") != STATE_SCHEMA:
+            raise ValueError(f"unsupported state schema {st.get('schema')}")
+        proj = Project.from_json(_dumps(st["project"]))
+        self.media: dict[str, MediaRef] = proj.media
+        self.base: Timeline = proj.base
+        self.sr = self.base.sample_rate
+        self.edits: dict[str, Edit] = {e["id"]: Edit(**e) for e in st["edits"]}
+        self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
+        self.proposals: dict[str, dict] = st.get("proposals") or {}
+        self.transcript = self._load_transcript()
+        self._timelines: OrderedDict[frozenset, Timeline] = OrderedDict()
+        self._versions: OrderedDict[str, frozenset] = OrderedDict()
+        self._clips: OrderedDict[str, Clip] = OrderedDict()
+        self._pool: SourcePool | None = None
+        self._previewer: Previewer | None = None
+        self.timeline_for(self.enabled)   # validates
+
+    # ------------------------------------------------------------------ derivation
+    @property
+    def enabled(self) -> frozenset[str]:
+        return frozenset(e.id for e in self.edits.values() if e.status == APPLIED)
+
+    def ops_for(self, enabled: frozenset[str]) -> list[dict]:
+        es = [self.edits[i] for i in sorted(enabled)]
+        ops = [o for e in es for o in e.ops]
+        gains = [o for o in ops if o["op"] not in ("cut", "lift")]
+        lifts = sorted((o for o in ops if o["op"] == "lift"), key=lambda o: (o["start"], o["track"]))
+        cuts = sorted((o for o in ops if o["op"] == "cut"), key=lambda o: -o["start"])
+        return gains + lifts + cuts
+
+    def cuts_for(self, enabled: frozenset[str]) -> list[tuple[int, int]]:
+        cs = sorted(c for i in enabled for c in self.edits[i].cuts)
+        for (a0, b0), (a1, b1) in zip(cs, cs[1:]):
+            if a1 < b0:
+                raise ConflictError("两处删除重叠，不能同时应用")
+        return cs
+
+    def project_for(self, enabled: frozenset[str]) -> Project:
+        self.cuts_for(enabled)
+        log = [{"seq": i, "action": "apply", "op": o} for i, o in enumerate(self.ops_for(enabled))]
+        try:
+            return Project(self.media, self.base, log)
+        except EDLError as e:
+            raise ConflictError(f"改动无法应用：{e}") from e
+
+    def timeline_for(self, enabled: frozenset[str]) -> Timeline:
+        tl = self._timelines.get(enabled)
+        if tl is None:
+            tl = self.project_for(enabled).timeline
+            self._timelines[enabled] = tl
+            while len(self._timelines) > 24:
+                self._timelines.popitem(last=False)
+        else:
+            self._timelines.move_to_end(enabled)
+        return tl
+
+    def version_key(self, enabled: frozenset[str] | None = None) -> str:
+        enabled = self.enabled if enabled is None else enabled
+        k = _key(enabled)
+        self._versions[k] = enabled
+        self._versions.move_to_end(k)
+        while len(self._versions) > 32:
+            self._versions.popitem(last=False)
+        return k
+
+    def enabled_for_key(self, key: str) -> frozenset[str] | None:
+        return self._versions.get(key)
+
+    # ------------------------------------------------------------------ rendering
+    @property
+    def previewer(self) -> Previewer:
+        if self._previewer is None:
+            self._pool = SourcePool(self.media)
+            self._previewer = Previewer(Renderer(self._pool, RenderSettings(channels=1)),
+                                        SegmentCache(192 << 20), block_s=2.0)
+        return self._previewer
+
+    def render(self, enabled: frozenset[str], a: int, b: int) -> np.ndarray:
+        with self.lock:
+            return self.previewer.render(self.timeline_for(enabled), a, b).audio
+
+    def wav_size(self, enabled: frozenset[str]) -> int:
+        return HEADER_BYTES + self.timeline_for(enabled).length * SAMPLE_BYTES
+
+    def iter_wav(self, enabled: frozenset[str], first: int, last: int, chunk_s: float = 4.0):
+        """Bytes [first, last] (inclusive) of the WAV of this version, rendered on demand."""
+        n = self.timeline_for(enabled).length
+        head = wav_header(n, self.sr, 1)
+        if first < HEADER_BYTES:
+            yield head[first:min(last + 1, HEADER_BYTES)]
+        d0, d1 = max(first - HEADER_BYTES, 0), last - HEADER_BYTES + 1      # data byte range
+        if d1 <= d0:
+            return
+        s0, s1 = d0 // SAMPLE_BYTES, min(-(-d1 // SAMPLE_BYTES), n)
+        step = int(chunk_s * self.sr)
+        for s in range(s0, s1, step):
+            e = min(s + step, s1)
+            data = pcm16(self.render(enabled, s, e)[:, 0])
+            lo = max(d0 - s * SAMPLE_BYTES, 0)
+            hi = min(d1 - s * SAMPLE_BYTES, len(data))
+            yield data[lo:hi]
+
+    def ab(self, before: frozenset[str], after: frozenset[str], span: tuple[int, int] | None,
+           ctx_s: float = 10.0, max_s: float = 80.0) -> dict:
+        a, b = span or (0, 0)
+        out = {}
+        for side, enabled in (("before", before), ("after", after)):
+            tl = self.timeline_for(enabled)
+            cuts = self.cuts_for(enabled)
+            ta, tb = to_tl(a, cuts), to_tl(b, cuts)
+            c = int(ctx_s * self.sr)
+            start, end = max(ta - c, 0), min(max(tb, ta) + c, tl.length)
+            end = min(end, start + int(max_s * self.sr))
+            audio = self.render(enabled, start, end)
+            cid = uuid.uuid4().hex[:12]
+            self._clips[cid] = Clip(wav_bytes(audio, self.sr), start / self.sr,
+                                    (ta - start) / self.sr, (tb - ta) / self.sr)
+            while len(self._clips) > 24:
+                self._clips.popitem(last=False)
+            out[side] = {"url": f"/api/episodes/{self.id}/clips/{cid}.wav",
+                         "start": round(start / self.sr, 3),
+                         "edit_at": round((ta - start) / self.sr, 3),
+                         "edit_len": round((tb - ta) / self.sr, 3),
+                         "duration": round((end - start) / self.sr, 3)}
+        return out
+
+    def clip(self, cid: str) -> Clip | None:
+        return self._clips.get(cid)
+
+    def edit_ab(self, eid: str) -> dict:
+        e = self._edit(eid)
+        return self.ab(self.enabled - {eid}, self.enabled | {eid}, e.span)
+
+    def proposal_ab(self, pid: str) -> dict:
+        p = self._proposal(pid)
+        after = self._enabled_after(p["changes"])
+        span = self.edits[p["target"]].span
+        return self.ab(self.enabled, after, span)
+
+    # ------------------------------------------------------------------ mutations
+    def _edit(self, eid: str) -> Edit:
+        if eid not in self.edits:
+            raise KeyError(eid)
+        return self.edits[eid]
+
+    def _proposal(self, pid: str) -> dict:
+        if pid not in self.proposals:
+            raise KeyError(pid)
+        return self.proposals[pid]
+
+    def _enabled_after(self, changes: list[dict]) -> frozenset[str]:
+        en = set(self.enabled)
+        for c in changes:
+            if c["field"] == "status":
+                (en.add if c["new"] == APPLIED else en.discard)(c["id"])
+        return frozenset(en)
+
+    def _set(self, changes: list[dict], key: str) -> None:
+        for c in changes:
+            setattr(self.edits[c["id"]], c["field"], c[key])
+
+    def change(self, label: str, changes: list[tuple[str, str, object]]) -> None:
+        """Apply field changes to edits as one undoable step."""
+        with self.lock:
+            rec = [{"id": i, "field": f, "old": getattr(self._edit(i), f), "new": v} for i, f, v in changes]
+            rec = [c for c in rec if c["old"] != c["new"]]
+            if not rec:
+                return
+            self.timeline_for(self._enabled_after(rec))      # raises ConflictError if invalid
+            self._set(rec, "new")
+            self.history["undo"].append({"label": label, "changes": rec})
+            self.history["redo"].clear()
+            self.save()
+
+    def undo(self) -> str:
+        return self._step("undo", "redo", "old")
+
+    def redo(self) -> str:
+        return self._step("redo", "undo", "new")
+
+    def _step(self, src: str, dst: str, key: str) -> str:
+        with self.lock:
+            if not self.history[src]:
+                raise ConflictError("没有可以撤销的操作" if src == "undo" else "没有可以重做的操作")
+            entry = self.history[src][-1]
+            target = [{"id": c["id"], "field": c["field"], "new": c[key]} for c in entry["changes"]]
+            self.timeline_for(self._enabled_after(target))
+            self.history[src].pop()
+            self._set(entry["changes"], key)
+            self.history[dst].append(entry)
+            self.save()
+            return entry["label"]
+
+    def review(self, eid: str, action: str) -> None:
+        e = self._edit(eid)
+        if e.status not in (APPLIED, RESTORED):
+            raise ConflictError("这处改动还没有生效")
+        if action == "keep":
+            self.change(f"保留：{e.title}", [(eid, "status", APPLIED), (eid, "approved", True)])
+        elif action == "restore":
+            self.change(f"恢复：{e.title}", [(eid, "status", RESTORED), (eid, "approved", True)])
+        elif action == "apply":
+            self.change(f"重新应用：{e.title}", [(eid, "status", APPLIED)])
+        else:
+            raise ConflictError(f"unknown action {action}")
+
+    def add_edit(self, ops: list[dict], category: str, title: str, reason: str = "",
+                 confidence: float = 1.0, source: str = "manual", status: str = PROPOSED) -> Edit:
+        for o in ops:
+            Op.from_dict(o)    # shape check
+            if o["op"] not in ("cut", "lift", "track_gain"):
+                raise ConflictError(f"op {o['op']} is not supported in this slice")
+        with self.lock:
+            eid = f"{'x' if source == 'chat' else 'm'}{len(self.edits) + 1:04d}"
+            while eid in self.edits:
+                eid += "_"
+            e = Edit(eid, ops, category, title, reason, confidence,
+                     consequential=category in ("content", "interjection"), status=status, source=source)
+            self.edits[eid] = e
+            return e
+
+    def apply_op(self, op: dict, title: str, reason: str = "") -> Edit:
+        """Directly apply a base-coordinate op as a new, undoable edit."""
+        e = self.add_edit([op], "chat", title, reason, source="manual")
+        try:
+            self.change(f"应用：{title}", [(e.id, "status", APPLIED), (e.id, "approved", True)])
+        except ConflictError:
+            del self.edits[e.id]
+            raise
+        return e
+
+    # ------------------------------------------------------------------ chat
+    def chat(self, text: str, playhead_s: float, adapter: EditorAdapter) -> dict:
+        with self.lock:
+            enabled = self.enabled
+            tl = self.timeline_for(enabled)
+            cuts = self.cuts_for(enabled)
+            dur = tl.length / self.sr
+            t = min(max(playhead_s, 0.0), dur)
+            lo, hi = max(t - 20, 0.0), min(t + 20, dur)
+            mix = self.render(enabled, int(lo * self.sr), int(hi * self.sr))[:, 0]
+            runs = analysis.quiet_runs(mix, self.sr, lo)
+            ctx = ChatContext(text, t, dur, runs, analysis.speech_around(runs, t, lo, hi),
+                              [self.edit_json(self.edits[i], cuts) for i in self._near(t, 20.0, cuts)],
+                              self.transcript_text(to_base(int(t * self.sr), cuts) / self.sr))
+            prop = adapter.propose(ctx)
+            return {"reply": prop.message, "adapter": adapter.name,
+                    "proposal": self._make_proposal(prop, cuts, mix, lo)}
+
+    def _near(self, t: float, radius: float, cuts) -> list[str]:
+        out = []
+        for e in self.edits.values():
+            sp = e.span
+            if sp and e.status in (APPLIED, RESTORED) and abs(to_tl(sp[0], cuts) / self.sr - t) <= radius:
+                out.append(e.id)
+        return sorted(out, key=lambda i: self.edits[i].span[0])
+
+    def _make_proposal(self, p: Proposal, cuts, mix: np.ndarray, lo: float) -> dict | None:
+        if p.action == "restore" and p.edit_id in self.edits:
+            changes = [{"id": p.edit_id, "field": "status", "new": RESTORED}]
+            target = p.edit_id
+        elif p.action == "cut":
+            def snap(x):   # nudge the boundary to the quietest nearby sample of the mix
+                i = int((x - lo) * self.sr)
+                return int(lo * self.sr) + snap_cut([mix], i, self.sr, radius_ms=40) if 0 < i < len(mix) else int(x * self.sr)
+            a, b = snap(p.start), snap(p.end)
+            if b - a < int(0.05 * self.sr):
+                return None
+            pieces = subtract(to_base(a, cuts, right=True), to_base(b, cuts, right=False), cuts)
+            if not pieces:
+                return None
+            e = self.add_edit([{"op": "cut", "start": x, "end": y, "tracks": None} for x, y in pieces],
+                              p.category, p.title or "聊天修改", p.reason, p.confidence, source="chat")
+            changes = [{"id": e.id, "field": "status", "new": APPLIED},
+                       {"id": e.id, "field": "approved", "new": True}]
+            target = e.id
+        else:
+            return None
+        try:
+            self.timeline_for(self._enabled_after(changes))
+        except ConflictError:
+            return None
+        for old in [k for k, v in self.proposals.items() if v["state"] == "pending"]:
+            self.discard_proposal(old)          # a new instruction supersedes the last one
+        self.proposals = {k: v for k, v in self.proposals.items() if v["state"] == "pending"}
+        pid = uuid.uuid4().hex[:10]
+        self.proposals[pid] = {"id": pid, "title": p.title, "message": p.message, "target": target,
+                               "changes": changes, "state": "pending"}
+        self.save()
+        return self.proposals[pid]
+
+    def approve_proposal(self, pid: str) -> None:
+        p = self._proposal(pid)
+        if p["state"] != "pending":
+            raise ConflictError("这个建议已经处理过了")
+        self.change(f"批准：{p['title']}", [(c["id"], c["field"], c["new"]) for c in p["changes"]])
+        p["state"] = "approved"
+        self.save()
+
+    def discard_proposal(self, pid: str) -> None:
+        with self.lock:
+            p = self._proposal(pid)
+            p["state"] = "discarded"
+            e = self.edits.get(p["target"])
+            if e and e.status == PROPOSED:
+                e.status = DISCARDED
+            self.save()
+
+    # ------------------------------------------------------------------ persistence
+    def state_dict(self) -> dict:
+        proj = self.project_for(self.enabled)
+        import json
+        return {"schema": STATE_SCHEMA, "project": json.loads(proj.to_json()),
+                "edits": [asdict(e) for e in self.edits.values()],
+                "history": self.history, "proposals": self.proposals}
+
+    def save(self) -> None:
+        with self.lock:
+            atomic_write_json(self.dir / STATE_FILE, self.state_dict(),
+                              protected=tuple(Path(m.path) for m in self.media.values()))
+
+    def close(self) -> None:
+        if self._pool:
+            self._pool.close()
+
+    # ------------------------------------------------------------------ transcript
+    def _load_transcript(self) -> dict | None:
+        name = self.meta.get("transcript")
+        if not name:
+            return None
+        p = self.dir / Path(name).name
+        return read_json(p) if p.is_file() else None
+
+    def words(self, a_s: float, b_s: float) -> list[tuple[str, float, float, str]]:
+        if not self.transcript:
+            return []
+        out = []
+        for track, words in self.transcript["tracks"].items():
+            out += [(track, s, e, w) for s, e, w in words if e > a_s and s < b_s]
+        return sorted(out, key=lambda x: x[1])
+
+    def transcript_text(self, base_s: float, radius: float = 15.0) -> str:
+        parts, prev = [], None
+        for track, _, _, w in self.words(base_s - radius, base_s + radius):
+            if track != prev:
+                parts.append(f"\n{track}: ")
+                prev = track
+            parts.append(w)
+        return "".join(parts).strip()
+
+    def edit_text(self, eid: str, ctx_s: float = 6.0) -> list[dict]:
+        """Original words around an edit, each marked removed or kept (read-only)."""
+        e = self._edit(eid)
+        if not e.span:
+            return []
+        a, b = (x / self.sr for x in e.span)
+        removed = [(o["start"] / self.sr, o["end"] / self.sr, o.get("track")) for o in e.ops if "start" in o]
+        lines: list[dict] = []
+        for track, s, en, w in self.words(a - ctx_s, b + ctx_s):
+            mid = (s + en) / 2
+            gone = any(x <= mid < y and (tr is None or tr == track) for x, y, tr in removed)
+            if not lines or lines[-1]["speaker"] != track or s - lines[-1]["_end"] > 1.5:
+                lines.append({"speaker": track, "words": [], "_end": en})
+            lines[-1]["words"].append({"t": w, "removed": gone})
+            lines[-1]["_end"] = en
+        for ln in lines:
+            del ln["_end"]
+        return lines
+
+    # ------------------------------------------------------------------ views
+    def edit_json(self, e: Edit, cuts) -> dict:
+        sp = e.span
+        t = to_tl(sp[0], cuts) / self.sr if sp else 0.0
+        removed = sum(b - a for a, b in e.cuts) or (sum(o["end"] - o["start"] for o in e.ops if o["op"] == "lift"))
+        off = float(self.meta.get("raw_offset_s", 0.0))
+        return {
+            "id": e.id, "category": e.category, "category_label": CATEGORY_LABELS.get(e.category, e.category),
+            "title": e.title, "reason": e.reason, "confidence": e.confidence,
+            "consequential": e.consequential, "status": e.status, "approved": e.approved,
+            "source": e.source, "t": round(t, 3), "len": round(removed / self.sr, 3),
+            "tracks": e.tracks,
+            "raw": [round(sp[0] / self.sr + off, 2), round(sp[1] / self.sr + off, 2)] if sp else None,
+        }
+
+    def summary(self) -> dict:
+        with self.lock:
+            enabled = self.enabled
+            tl = self.timeline_for(enabled)
+            cuts = self.cuts_for(enabled)
+            key = self.version_key(enabled)
+            edits = [self.edit_json(e, cuts) for e in self.edits.values() if e.status in (APPLIED, RESTORED)]
+            edits.sort(key=lambda d: d["t"])
+            routine: dict[str, dict] = {}
+            for d in edits:
+                if not d["consequential"] and d["source"] == "first_cut":
+                    r = routine.setdefault(d["category"], {"category": d["category"], "label": d["category_label"],
+                                                           "count": 0, "seconds": 0.0, "restored": 0})
+                    r["count"] += 1
+                    r["seconds"] = round(r["seconds"] + d["len"], 2)
+                    r["restored"] += d["status"] == RESTORED
+            tracks = []
+            for tr in tl.tracks:
+                spans: list[list[float]] = []
+                for c in tr.clips:
+                    s, en = c.start / self.sr, c.end / self.sr
+                    if spans and abs(spans[-1][1] - s) < 1e-6:
+                        spans[-1][1] = round(en, 3)
+                    else:
+                        spans.append([round(s, 3), round(en, 3)])
+                tracks.append({"name": tr.name, "gain_db": tr.gain_db, "clips": spans})
+            undo, redo = self.history["undo"], self.history["redo"]
+            pending_review = sum(1 for d in edits if d["consequential"] and not d["approved"])
+            return {
+                "id": self.id, "title": self.meta.get("title", self.id), "demo": bool(self.meta.get("demo")),
+                "demo_note": self.meta.get("demo_note", ""), "sample_rate": self.sr,
+                "duration": round(tl.length / self.sr, 3), "raw_duration": round(self.base.length / self.sr, 3),
+                "raw_offset_s": float(self.meta.get("raw_offset_s", 0.0)),
+                "version": key, "audio_url": f"/api/episodes/{self.id}/audio/{key}.wav",
+                "can_undo": bool(undo), "can_redo": bool(redo),
+                "undo_label": undo[-1]["label"] if undo else None,
+                "redo_label": redo[-1]["label"] if redo else None,
+                "tracks": tracks, "topics": self.meta.get("topics", []),
+                "edits": edits, "routine": sorted(routine.values(), key=lambda r: -r["count"]),
+                "pending_review": pending_review,
+                "proposals": [p | {"edit": self.edit_json(self.edits[p["target"]], cuts)}
+                              for p in self.proposals.values() if p["state"] == "pending"],
+                "has_transcript": self.transcript is not None,
+            }
+
+    def map_playhead(self, t_s: float, before: frozenset[str], after: frozenset[str]) -> float:
+        base = to_base(int(t_s * self.sr), self.cuts_for(before))
+        return round(to_tl(base, self.cuts_for(after)) / self.sr, 3)
+
+
+def _dumps(d) -> str:
+    import json
+    return json.dumps(d, ensure_ascii=False)
+
+
+def create_episode(ws: Workspace, episode_id: str, meta: dict, project: Project, edits: list[Edit],
+                   transcript: dict | None = None) -> Path:
+    """Write a new episode folder (used by the demo script and tests). The project must be the
+    base (uncut) timeline with an empty log; edits carry the first cut."""
+    import json
+    d = ws.ensure().episode_dir(episode_id)
+    d.mkdir(parents=True, exist_ok=True)
+    if transcript is not None:
+        meta = {**meta, "transcript": "transcript.json"}
+        atomic_write_json(d / "transcript.json", transcript)
+    atomic_write_json(d / META_FILE, meta)
+    atomic_write_json(d / STATE_FILE, {"schema": STATE_SCHEMA, "project": json.loads(project.to_json()),
+                                       "edits": [asdict(e) for e in edits],
+                                       "history": {"undo": [], "redo": []}, "proposals": {}})
+    ep = Episode(ws, episode_id)   # validate + rewrite with the derived log
+    ep.save()
+    ep.close()
+    return d

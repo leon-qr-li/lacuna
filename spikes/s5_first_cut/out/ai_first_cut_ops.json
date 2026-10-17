@@ -1,0 +1,4397 @@
+{
+ "episode": "EP001",
+ "model": "claude-opus-5-5 first-cut editor (blind; brief+playbook only)",
+ "notes": "Pause tightening on floor gaps >=1.2s (laugh-adjacent gaps kept longer); disfluency/repetition cuts keep the last clean restart; no topic-level content cuts; tangents kept and flagged.",
+ "ops": [
+  {
+   "id": "op0001",
+   "track": "L",
+   "from": "L000000",
+   "to": "L000000",
+   "category": "disfluency",
+   "reason": "开场\"大家好\"前的预备\"好\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0002",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 7.57,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.57s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0003",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 19.0,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.36s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0004",
+   "track": "L",
+   "from": "L000039",
+   "to": "L000041",
+   "category": "crosstalk",
+   "reason": "\"我们上\"压在P句上且未说完, 删",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0005",
+   "track": "P",
+   "from": "P000027",
+   "to": "P000027",
+   "category": "disfluency",
+   "reason": "正…正式节目: 删卡顿的第一个\"正\"",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0006",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 31.12,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.51s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0007",
+   "track": "L",
+   "from": "L000069",
+   "to": "L000086",
+   "category": "content",
+   "reason": "\"量大管饱…把这句话剪了吧\" 自嘲梗, 保留但请Leon确认",
+   "confidence": 0.4,
+   "op": "keep_flag",
+   "suggested": "cut"
+  },
+  {
+   "id": "op0008",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 35.86,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.92s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0009",
+   "track": "L",
+   "from": "L000093",
+   "to": "L000093",
+   "category": "repetition",
+   "reason": "听听说 → 听说",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0010",
+   "track": "L",
+   "from": "L000099",
+   "to": "L000102",
+   "category": "disfluency",
+   "reason": "\"最近刚从 对吧 刚vacation\" 删中间重启",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0011",
+   "track": "P",
+   "from": "P000042",
+   "to": "P000045",
+   "category": "repetition",
+   "reason": "比较比较比较大 → 比较大",
+   "confidence": 0.7,
+   "op": "cut"
+  },
+  {
+   "id": "op0012",
+   "track": "L",
+   "from": "L000107",
+   "to": "L000107",
+   "category": "crosstalk",
+   "reason": "\"五\"孤立残字压在P句上",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0013",
+   "track": "L",
+   "from": "L000111",
+   "to": "L000112",
+   "category": "repetition",
+   "reason": "军训军训完了 → 军训完了",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0014",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 53.2,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.10s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0015",
+   "track": "L",
+   "from": "L000126",
+   "to": "L000127",
+   "category": "disfluency",
+   "reason": "\"配嗯 配是去了\" 删假起头",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0016",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 64.81,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.83s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0017",
+   "op": "cut",
+   "track": "L",
+   "from": 69.3,
+   "to": 70.39,
+   "category": "single_track_noise",
+   "reason": "对方说话时L轨无文字低能量声音(呼吸/杂音) 1.1s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0018",
+   "track": "L",
+   "from": "L000195",
+   "to": "L000195",
+   "category": "repetition",
+   "reason": "我我觉得 → 我觉得",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0019",
+   "track": "P",
+   "from": "P000127",
+   "to": "P000128",
+   "category": "crosstalk",
+   "reason": "\"然后\"压在L句上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0020",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 97.91,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.34s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0021",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 101.44,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.19s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0022",
+   "track": "L",
+   "from": "L000239",
+   "to": "L000239",
+   "category": "repetition",
+   "reason": "地地方 → 地方",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0023",
+   "track": "L",
+   "from": "L000242",
+   "to": "L000243",
+   "category": "repetition",
+   "reason": "就是(停)就是 → 保留第二个",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0024",
+   "track": "L",
+   "from": "L000249",
+   "to": "L000249",
+   "category": "repetition",
+   "reason": "墨墨西哥 → 墨西哥",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0025",
+   "track": "L",
+   "from": "L000261",
+   "to": "L000262",
+   "category": "disfluency",
+   "reason": "一躺是那 是那种吗 → 一躺是那种吗",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0026",
+   "track": "P",
+   "from": "P000231",
+   "to": "P000232",
+   "category": "disfluency",
+   "reason": "在在呃附近 → 在附近",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0027",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 153.61,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 3.96s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0028",
+   "track": "P",
+   "from": "P000307",
+   "to": "P000310",
+   "category": "disfluency",
+   "reason": "\"你的这个,你第一成\" 删假起头",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0029",
+   "track": "L",
+   "from": "L000295",
+   "to": "L000297",
+   "category": "crosstalk",
+   "reason": "\"对但是\"压在P\"狼性精神\"上, 后面\"不是 但还好\"重新接上",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0030",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 170.81,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.54s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0031",
+   "track": "L",
+   "from": "L000310",
+   "to": "L000316",
+   "category": "disfluency",
+   "reason": "第一次旅旅就是第一次这个旅途 → 第一次这个旅途",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0032",
+   "track": "L",
+   "from": "L000333",
+   "to": 179.62,
+   "category": "disfluency",
+   "reason": "\"我挺开(1.65s)我挺开心的\" 删前一次+停顿",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0033",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 181.51,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.37s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0034",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 189.53,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.29s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0035",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 192.07,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.22s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0036",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 219.81,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.37s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0037",
+   "track": "L",
+   "from": "L000520",
+   "to": "L000521",
+   "category": "repetition",
+   "reason": "那个那个 → 那个",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0038",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 251.86,
+   "target_s": 1.2,
+   "category": "pause",
+   "reason": "含L笑声候选, 只略收 3.14s → 1.2s",
+   "confidence": 0.4
+  },
+  {
+   "id": "op0039",
+   "track": "L",
+   "from": "L000552",
+   "to": "L000552",
+   "category": "repetition",
+   "reason": "继继承 → 继承",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0040",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 259.76,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.62s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0041",
+   "track": "L",
+   "from": "L000581",
+   "to": "L000581",
+   "category": "repetition",
+   "reason": "不不是 → 不是",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0042",
+   "track": "L",
+   "from": "L000615",
+   "to": "L000618",
+   "category": "crosstalk",
+   "reason": "\"那个当啊\"压在P\"不错啊\"上的假起头",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0043",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 295.38,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.60s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0044",
+   "track": "L",
+   "from": "L000726",
+   "to": "L000730",
+   "category": "disfluency",
+   "reason": "大家就是这个 就是就 school trip → 大家就是 school trip",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0045",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 305.78,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.44s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0046",
+   "track": "L",
+   "from": "L000742",
+   "to": "L000749",
+   "category": "crosstalk",
+   "reason": "\"大家都很累明天到\"被P提问打断且未完, L随后用\"没有\"回答",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0047",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 321.54,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.54s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0048",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 344.0,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.21s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0049",
+   "track": "L",
+   "from": "L000934",
+   "to": "L000941",
+   "category": "crosstalk",
+   "reason": "\"就是这样一个节奏\"与P同时开口, 提前到前面的空档里, 两句都保留",
+   "confidence": 0.45,
+   "op": "slip",
+   "delta_s": -1.6
+  },
+  {
+   "id": "op0050",
+   "op": "cut",
+   "track": "L",
+   "from": 355.78,
+   "to": 357.19,
+   "category": "single_track_noise",
+   "reason": "对方说话时L轨无文字低能量声音(呼吸/杂音) 1.4s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0051",
+   "track": "L",
+   "from": "L000943",
+   "to": "L000945",
+   "category": "repetition",
+   "reason": "就第一天第一天 → 就第一天",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0052",
+   "track": "L",
+   "from": "L000981",
+   "to": "L000982",
+   "category": "repetition",
+   "reason": "那个那个地方 → 那个地方",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0053",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 385.26,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.51s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0054",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 413.06,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.60s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0055",
+   "track": "P",
+   "from": "P000523",
+   "to": "P000523",
+   "category": "repetition",
+   "reason": "航航班 → 航班",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0056",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 431.88,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.33s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0057",
+   "track": "L",
+   "from": "L001192",
+   "to": "L001194",
+   "category": "disfluency",
+   "reason": "就是嗯就是这种焦虑感 → 就是这种焦虑感",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0058",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 441.56,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.25s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0059",
+   "track": "L",
+   "from": "L001202",
+   "to": "L001205",
+   "category": "crosstalk",
+   "reason": "\"我是属于\"被P的追问压住, L随后完整重说",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0060",
+   "track": "P",
+   "from": "P000572",
+   "to": "P000572",
+   "category": "repetition",
+   "reason": "规规划 → 规划",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0061",
+   "track": "L",
+   "from": "L001223",
+   "to": "L001223",
+   "category": "disfluency",
+   "reason": "\"但是假我原来\" 删残字\"假\"",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0062",
+   "track": "P",
+   "from": "P000578",
+   "to": "P000578",
+   "category": "disfluency",
+   "reason": "我这是我对你的印象 → 这是我对你的印象",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0063",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 479.47,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "P轨有无字声音, 只略收 3.91s → 1.0s",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0064",
+   "track": "L",
+   "from": "L001303",
+   "to": "L001306",
+   "category": "disfluency",
+   "reason": "很多都是很多时候 → 很多时候",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0065",
+   "track": "L",
+   "from": "L001336",
+   "to": "L001336",
+   "category": "repetition",
+   "reason": "半半天 → 半天",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0066",
+   "track": "P",
+   "from": "P000624",
+   "to": "P000626",
+   "category": "crosstalk",
+   "reason": "句尾\"应该也\"被L接过且未说完",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0067",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 554.99,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.73s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0068",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 560.1,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.54s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0069",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 566.43,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.34s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0070",
+   "track": "P",
+   "from": "P000669",
+   "to": "P000673",
+   "category": "interjection_move",
+   "reason": "P\"主要是看展\"压在L\"没有那么焦虑\"上, 后移落进L的0.58s停顿",
+   "confidence": 0.35,
+   "op": "slip",
+   "delta_s": 0.5
+  },
+  {
+   "id": "op0071",
+   "track": "L",
+   "from": "L001715",
+   "to": "L001721",
+   "category": "crosstalk",
+   "reason": "\"罗马就是他妈 是\"未说完即被P提问压住, 后面L重新展开",
+   "confidence": 0.35,
+   "op": "cut"
+  },
+  {
+   "id": "op0072",
+   "track": "L",
+   "from": "L001723",
+   "to": "L001731",
+   "category": "crosstalk",
+   "reason": "\"就是什么山西我操操\"被P插话/笑声打断, 随后完整重说同一梗",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0073",
+   "track": "P",
+   "from": "P000700",
+   "to": "P000702",
+   "category": "crosstalk",
+   "reason": "\"你其实\"未说完, 压在L笑点上",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0074",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 601.49,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.92s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0075",
+   "track": "L",
+   "from": "L001763",
+   "to": "L001763",
+   "category": "repetition",
+   "reason": "除除外 → 除外",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0076",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 613.72,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.36s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0077",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 634.94,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.68s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0078",
+   "track": "L",
+   "from": "L001863",
+   "to": "L001864",
+   "category": "crosstalk",
+   "reason": "\"但是\"压在P句上未展开",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0079",
+   "track": "L",
+   "from": "L001868",
+   "to": "L001870",
+   "category": "disfluency",
+   "reason": "对就是有会会有一点点 → 对就是有一点点",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0080",
+   "track": "L",
+   "from": "L001907",
+   "to": "L001907",
+   "category": "repetition",
+   "reason": "蛋蛋黄酱 → 蛋黄酱",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0081",
+   "op": "cut",
+   "track": "L",
+   "from": 656.75,
+   "to": 657.99,
+   "category": "single_track_noise",
+   "reason": "对方说话时L轨无文字低能量声音(呼吸/杂音) 1.2s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0082",
+   "op": "cut",
+   "track": "L",
+   "from": 661.37,
+   "to": 662.3,
+   "category": "single_track_noise",
+   "reason": "对方说话时L轨无文字低能量声音(呼吸/杂音) 0.9s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0083",
+   "track": "L",
+   "from": "L002004",
+   "to": "L002010",
+   "category": "disfluency",
+   "reason": "\"可以可给他给呃\" 卡顿, 保留\"聊聊电影的可以给大家推荐\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0084",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 715.39,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.53s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0085",
+   "track": "L",
+   "from": "L002164",
+   "to": "L002167",
+   "category": "repetition",
+   "reason": "家乡的味 家乡的味道 → 家乡的味道",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0086",
+   "track": "both",
+   "from": 719.0,
+   "to": 722.2,
+   "category": "crosstalk",
+   "reason": "L\"而且很便宜很平民\"与P\"哎说到这儿\"同时开口; 可把L提前约1s, 需听感确认",
+   "confidence": 0.4,
+   "op": "keep_flag",
+   "suggested": "slip"
+  },
+  {
+   "id": "op0087",
+   "track": "P",
+   "from": "P000844",
+   "to": "P000845",
+   "category": "repetition",
+   "reason": "我也是我也我还没看 → 我也是我还没看",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0088",
+   "track": "L",
+   "from": "L002198",
+   "to": "L002199",
+   "category": "disfluency",
+   "reason": "对他嗯他也是 → 对他也是",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0089",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 734.01,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.28s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0090",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 735.61,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.28s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0091",
+   "track": "L",
+   "from": "L002251",
+   "to": "L002251",
+   "category": "repetition",
+   "reason": "他他不是 → 他不是",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0092",
+   "track": "L",
+   "from": "L002257",
+   "to": "L002258",
+   "category": "repetition",
+   "reason": "托托托斯卡纳 → 托斯卡纳",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0093",
+   "track": "L",
+   "from": "L002287",
+   "to": "L002287",
+   "category": "repetition",
+   "reason": "那那桌 → 那桌",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0094",
+   "track": "L",
+   "from": "L002292",
+   "to": "L002300",
+   "category": "disfluency",
+   "reason": "\"是跟一个 呃 呃胜啊对 是跟两个\" → \"是跟两个\"",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0095",
+   "track": "L",
+   "from": "L002313",
+   "to": "L002316",
+   "category": "disfluency",
+   "reason": "\"一个是bi呃 一个是biological\" 删假起头",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0096",
+   "track": "L",
+   "from": "L002327",
+   "to": "L002400",
+   "category": "content",
+   "reason": "意大利品酒/美国游客吐槽小插曲, 有趣, 保留",
+   "confidence": 0.6,
+   "op": "keep_flag",
+   "suggested": "cut"
+  },
+  {
+   "id": "op0097",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 795.74,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.02s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0098",
+   "track": "L",
+   "from": "L002395",
+   "to": "L002395",
+   "category": "repetition",
+   "reason": "美美国游客 → 美国游客",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0099",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 800.47,
+   "target_s": 0.9,
+   "category": "pause",
+   "reason": "笑点前停顿, 保留节奏 1.46s → 0.9s",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0100",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 803.35,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.01s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0101",
+   "track": "P",
+   "from": "P000979",
+   "to": "P000979",
+   "category": "disfluency",
+   "reason": "句首\"呃\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0102",
+   "track": "P",
+   "from": "P001073",
+   "to": "P001073",
+   "category": "repetition",
+   "reason": "很很爽 → 很爽",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0103",
+   "track": "P",
+   "from": "P001082",
+   "to": "P001082",
+   "category": "repetition",
+   "reason": "提提前 → 提前",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0104",
+   "track": "P",
+   "from": "P001101",
+   "to": "P001106",
+   "category": "disfluency",
+   "reason": "要是去看展展什么干看展的话 → 要是去看展的话",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0105",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 875.52,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.77s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0106",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 884.43,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.87s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0107",
+   "track": "L",
+   "from": "L002582",
+   "to": "L002582",
+   "category": "repetition",
+   "reason": "一一光之神 → 一光之神",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0108",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 901.43,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.27s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0109",
+   "track": "L",
+   "from": "L002620",
+   "to": "L002621",
+   "category": "disfluency",
+   "reason": "\"呃(停)这(停)东南方\" 删犹豫",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0110",
+   "track": "P",
+   "from": "P001169",
+   "to": "P001169",
+   "category": "repetition",
+   "reason": "怎么还还 → 怎么还",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0111",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 944.0,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.61s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0112",
+   "track": "L",
+   "from": "L002788",
+   "to": "L002794",
+   "category": "disfluency",
+   "reason": "\"最近的这个 新cup 最近的这个出行\" → 删口误重启",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0113",
+   "op": "tighten_pause",
+   "track": "L",
+   "at": "L002815",
+   "target_s": 0.3,
+   "category": "pause",
+   "reason": "\"之后(0.57)就(0.80)回顾\" 句内长停顿收紧",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0114",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 972.1,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.51s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0115",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 986.62,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.39s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0116",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 998.03,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.99s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0117",
+   "track": "L",
+   "from": "L003001",
+   "to": "L003013",
+   "category": "crosstalk",
+   "reason": "L\"这两对儿是完全不一样的电影\"在P问句末尾抢话, 后移到P说完",
+   "confidence": 0.4,
+   "op": "slip",
+   "delta_s": 0.6
+  },
+  {
+   "id": "op0118",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1022.91,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.27s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0119",
+   "track": "P",
+   "from": "P001289",
+   "to": "P001289",
+   "category": "disfluency",
+   "reason": "\"都(停)很一个是很典型\" 删残字\"很\"",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0120",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1066.3,
+   "target_s": 0.9,
+   "category": "pause",
+   "reason": "\"网大\"笑点后, P笑 2.17s → 0.9s",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0121",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1077.57,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.83s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0122",
+   "op": "cut",
+   "track": "P",
+   "from": 1095.29,
+   "to": 1096.14,
+   "category": "single_track_noise",
+   "reason": "对方说话时P轨无文字低能量声音(呼吸/杂音) 0.9s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0123",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1135.47,
+   "target_s": 0.6,
+   "category": "pause",
+   "reason": "L句中停顿 1.34s → 0.6s",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0124",
+   "track": "L",
+   "from": "L003405",
+   "to": "L003405",
+   "category": "repetition",
+   "reason": "更更internet → 更internet",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0125",
+   "track": "L",
+   "from": "L003491",
+   "to": "L003492",
+   "category": "repetition",
+   "reason": "那个那个hook → 那个hook",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0126",
+   "track": "L",
+   "from": "L003522",
+   "to": "L003530",
+   "category": "disfluency",
+   "reason": "\"像 嗯待会儿可以在就现在就可以聊\" → \"现在就可以聊\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0127",
+   "track": "L",
+   "from": "L003581",
+   "to": "L003581",
+   "category": "repetition",
+   "reason": "是是符合 → 是符合",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0128",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1211.08,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.68s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0129",
+   "track": "P",
+   "from": "P001528",
+   "to": "P001528",
+   "category": "repetition",
+   "reason": "做做marketing → 做marketing",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0130",
+   "track": "L",
+   "from": "L003775",
+   "to": "L003775",
+   "category": "repetition",
+   "reason": "这这个 → 这个",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0131",
+   "track": "L",
+   "from": "L003778",
+   "to": "L003781",
+   "category": "repetition",
+   "reason": "有点有有有点傻 → 有点傻",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0132",
+   "track": "P",
+   "from": "P001586",
+   "to": "P001589",
+   "category": "crosstalk",
+   "reason": "\"他需要去\"压在L句尾, P随后\"对他需要去…\"完整重说",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0133",
+   "op": "tighten_pause",
+   "track": "P",
+   "at": "P001628",
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "P独白句中\"这个就是(1.07)恐怖的\" 收紧",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0134",
+   "track": "P",
+   "from": "P001655",
+   "to": "P001655",
+   "category": "repetition",
+   "reason": "恐恐怖片 → 恐怖片",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0135",
+   "track": "P",
+   "from": "P001765",
+   "to": "P001767",
+   "category": "repetition",
+   "reason": "\"a二四 a二十四\" → a二十四",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0136",
+   "op": "tighten_pause",
+   "track": "P",
+   "at": "P001795",
+   "target_s": 0.6,
+   "category": "pause",
+   "reason": "P句中 1.08s 停顿收紧",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0137",
+   "track": "P",
+   "from": "P001832",
+   "to": "P001833",
+   "category": "disfluency",
+   "reason": "这个呃呃功课 → 这个功课",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0138",
+   "track": "P",
+   "from": "P001938",
+   "to": "P001941",
+   "category": "repetition",
+   "reason": "我都没有我都没有特别的 → 我都没有特别的",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0139",
+   "track": "P",
+   "from": "P002052",
+   "to": "P002054",
+   "category": "disfluency",
+   "reason": "\"时候你那个你已经\" → \"时候你已经\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0140",
+   "track": "P",
+   "from": "P002060",
+   "to": "P002060",
+   "category": "repetition",
+   "reason": "半半截 → 半截",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0141",
+   "track": "P",
+   "from": "P002065",
+   "to": "P002066",
+   "category": "repetition",
+   "reason": "那个那个 → 那个",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0142",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1417.92,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.25s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0143",
+   "track": "L",
+   "from": "L003846",
+   "to": "L004402",
+   "category": "content",
+   "reason": "SCP基金会科普约2分钟, 偏离电影但是Leon的兴趣点并引出backrooms, 保留",
+   "confidence": 0.5,
+   "op": "keep_flag",
+   "suggested": "cut"
+  },
+  {
+   "id": "op0144",
+   "track": "L",
+   "from": "L003865",
+   "to": "L003865",
+   "category": "repetition",
+   "reason": "这这东西 → 这东西",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0145",
+   "track": "L",
+   "from": "L003882",
+   "to": "L003883",
+   "category": "disfluency",
+   "reason": "\"它就是就你你搜\" 删\"就你\"",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0146",
+   "track": "P",
+   "from": "P002155",
+   "to": "P002156",
+   "category": "crosstalk",
+   "reason": "\"然后\"压在L句上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0147",
+   "track": "L",
+   "from": "L004020",
+   "to": "L004020",
+   "category": "repetition",
+   "reason": "说的不(停)不对 → 说的不对",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0148",
+   "track": "L",
+   "from": "L004040",
+   "to": "L004045",
+   "category": "disfluency",
+   "reason": "\"它在核核心啊它核心设定\" → \"它核心设定\"",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0149",
+   "track": "L",
+   "from": "L004283",
+   "to": "L004283",
+   "category": "repetition",
+   "reason": "电电冰箱 → 电冰箱",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0150",
+   "track": "L",
+   "from": "L004326",
+   "to": "L004329",
+   "category": "disfluency",
+   "reason": "\"然后做成(停)现在(停)发展成\" → \"然后发展成\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0151",
+   "track": "L",
+   "from": "L004357",
+   "to": "L004357",
+   "category": "repetition",
+   "reason": "s s c p → s c p",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0152",
+   "track": "P",
+   "from": "P002307",
+   "to": "P002308",
+   "category": "disfluency",
+   "reason": "\"大家是有对他是有\" → \"大家对他是有\"",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0153",
+   "track": "P",
+   "from": "P002317",
+   "to": "P002318",
+   "category": "repetition",
+   "reason": "这个这个规划 → 这个规划",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0154",
+   "track": "P",
+   "from": "P002366",
+   "to": "P002368",
+   "category": "crosstalk",
+   "reason": "压在L句中的残句(ASR\"晚上好/然后\"), 未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0155",
+   "track": "P",
+   "from": "P002379",
+   "to": "P002380",
+   "category": "disfluency",
+   "reason": "我当时看我看到 → 我当时看到",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0156",
+   "track": "P",
+   "from": "P002395",
+   "to": "P002396",
+   "category": "repetition",
+   "reason": "这个事情这个(停)这个super → 这个事情这个super",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0157",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1625.45,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.62s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0158",
+   "track": "P",
+   "from": "P002413",
+   "to": "P002420",
+   "category": "disfluency",
+   "reason": "\"就是我后他就是这 当然这涉及剧透\" → \"当然这涉及剧透\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0159",
+   "track": "P",
+   "from": "P002502",
+   "to": "P002503",
+   "category": "repetition",
+   "reason": "他这个这个店 → 他这个店",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0160",
+   "track": "P",
+   "from": "P002576",
+   "to": "P002576",
+   "category": "repetition",
+   "reason": "你你知道 → 你知道",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0161",
+   "track": "P",
+   "from": "P002580",
+   "to": "P002584",
+   "category": "repetition",
+   "reason": "又很巧的是(停)很巧的是 → 很巧的是",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0162",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1704.05,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.36s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0163",
+   "track": "L",
+   "from": "L004624",
+   "to": 1707.6,
+   "category": "disfluency",
+   "reason": "\"行 我觉得就是嗯\"后中断重起 → 保留\"行\"直接接\"而且这个backroom\"",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0164",
+   "track": "L",
+   "from": "L004667",
+   "to": "L004667",
+   "category": "repetition",
+   "reason": "感感觉 → 感觉",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0165",
+   "track": "P",
+   "from": "P002667",
+   "to": "P002673",
+   "category": "disfluency",
+   "reason": "\"我可能我甚至我可能我的年纪\" → \"可能我的年纪\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0166",
+   "track": "P",
+   "from": "P002695",
+   "to": "P002696",
+   "category": "disfluency",
+   "reason": "很害很吓人 → 很吓人",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0167",
+   "track": "L",
+   "from": "L004752",
+   "to": "L004757",
+   "category": "disfluency",
+   "reason": "\"不对对对我说就是呃我我说错了\" → \"不对对对 我说错了\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0168",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1750.71,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.78s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0169",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1808.07,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.94s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0170",
+   "track": "L",
+   "from": "L004996",
+   "to": "L004996",
+   "category": "disfluency",
+   "reason": "\"就是不原来的\" 删残字\"不\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0171",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1830.88,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.69s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0172",
+   "track": "L",
+   "from": "L005195",
+   "to": "L005196",
+   "category": "repetition",
+   "reason": "他们那个那个networks → 他们那个networks",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0173",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1867.2,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.41s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0174",
+   "track": "P",
+   "from": "P002729",
+   "to": "P002731",
+   "category": "disfluency",
+   "reason": "\"就大家需现在的观众\" → \"就现在的观众\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0175",
+   "track": "P",
+   "from": "P002807",
+   "to": "P002808",
+   "category": "repetition",
+   "reason": "这种这种概念 → 这种概念",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0176",
+   "track": "P",
+   "from": "P002833",
+   "to": "P002833",
+   "category": "disfluency",
+   "reason": "很难去 呃有 → 很难去有",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0177",
+   "track": "P",
+   "from": "P002849",
+   "to": "P002849",
+   "category": "repetition",
+   "reason": "这这也 → 这也",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0178",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1925.57,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.22s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0179",
+   "op": "cut",
+   "track": "P",
+   "from": 1927.03,
+   "to": 1928.66,
+   "category": "single_track_noise",
+   "reason": "对方说话时P轨无文字低能量声音(呼吸/杂音) 1.6s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0180",
+   "track": "L",
+   "from": "L005216",
+   "to": "L005216",
+   "category": "repetition",
+   "reason": "发发现 → 发现",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0181",
+   "track": "L",
+   "from": "L005243",
+   "to": "L005243",
+   "category": "repetition",
+   "reason": "女女主 → 女主",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0182",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1939.12,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.75s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0183",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 1959.72,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.72s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0184",
+   "track": "L",
+   "from": "L005335",
+   "to": "L005336",
+   "category": "disfluency",
+   "reason": "小淘气 嗯嗯(停) 就是 → 删\"嗯嗯\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0185",
+   "track": "L",
+   "from": "L005434",
+   "to": "L005434",
+   "category": "repetition",
+   "reason": "玩玩射击 → 玩射击",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0186",
+   "track": "L",
+   "from": "L005440",
+   "to": "L005441",
+   "category": "repetition",
+   "reason": "那个那个女孩 → 那个女孩",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0187",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2007.38,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.43s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0188",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2017.37,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.58s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0189",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2027.27,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.23s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0190",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2037.24,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.39s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0191",
+   "track": "L",
+   "from": "L005661",
+   "to": "L005661",
+   "category": "repetition",
+   "reason": "比比那个 → 比那个",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0192",
+   "track": "L",
+   "from": "L005673",
+   "to": "L005684",
+   "category": "disfluency",
+   "reason": "\"我那个我这个就是我就刚才(停)就是这录\" → \"就是这录这节目之前\"",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0193",
+   "track": "L",
+   "from": "L005696",
+   "to": "L005696",
+   "category": "repetition",
+   "reason": "跟跟佩聊 → 跟佩聊",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0194",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2066.8,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.56s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0195",
+   "track": "L",
+   "from": "L005743",
+   "to": "L005744",
+   "category": "repetition",
+   "reason": "卖卖卖不出去 → 卖不出去",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0196",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2075.87,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.56s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0197",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2082.85,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.10s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0198",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2107.36,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.66s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0199",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2115.76,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.21s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0200",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2129.03,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.14s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0201",
+   "track": "L",
+   "from": "L005944",
+   "to": "L005948",
+   "category": "disfluency",
+   "reason": "\"一月二十不(停)一月二十几号\" → \"一月二十几号\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0202",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2145.47,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.72s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0203",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2155.78,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.55s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0204",
+   "track": "P",
+   "from": "P003050",
+   "to": "P003051",
+   "category": "disfluency",
+   "reason": "你为(停)你为什么 → 你为什么",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0205",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2184.05,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.58s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0206",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2192.85,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.85s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0207",
+   "track": "P",
+   "from": "P003069",
+   "to": "P003072",
+   "category": "disfluency",
+   "reason": "你就这么你就准备这么 → 你就准备这么",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0208",
+   "track": "P",
+   "from": "P003081",
+   "to": "P003081",
+   "category": "repetition",
+   "reason": "骂你你周围 → 骂你周围",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0209",
+   "track": "P",
+   "from": "P003089",
+   "to": "P003092",
+   "category": "crosstalk",
+   "reason": "第一次\"什么意思\"压在L句上, P随后又完整问了一次",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0210",
+   "track": "P",
+   "from": "P003103",
+   "to": "P003104",
+   "category": "crosstalk",
+   "reason": "\"然后\"压在L句上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0211",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2222.86,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.75s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0212",
+   "track": "P",
+   "from": "P003105",
+   "to": "P003105",
+   "category": "disfluency",
+   "reason": "你那你是因为 → 那你是因为",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0213",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2271.8,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.87s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0214",
+   "track": "L",
+   "from": "L006450",
+   "to": "L006451",
+   "category": "disfluency",
+   "reason": "\"这是\"中断后重起",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0215",
+   "track": "L",
+   "from": "L006467",
+   "to": "L006467",
+   "category": "disfluency",
+   "reason": "开到兰里去开(停)四个小时 → 删多余\"开\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0216",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2283.64,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.85s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0217",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2292.45,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.52s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0218",
+   "track": "L",
+   "from": "L006534",
+   "to": "L006536",
+   "category": "repetition",
+   "reason": "诺诺诺诺兰 → 诺兰",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0219",
+   "track": "P",
+   "from": "P003179",
+   "to": "P003180",
+   "category": "crosstalk",
+   "reason": "\"因为\"压在L句上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0220",
+   "track": "P",
+   "from": "P003182",
+   "to": "P003186",
+   "category": "repetition",
+   "reason": "所以我觉得所以我觉得 → 所以我觉得",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0221",
+   "track": "P",
+   "from": "P003265",
+   "to": "P003266",
+   "category": "repetition",
+   "reason": "我我我能 → 我能",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0222",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2338.65,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.58s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0223",
+   "track": "P",
+   "from": "P003324",
+   "to": "P003335",
+   "category": "disfluency",
+   "reason": "\"不住在一个就是不不不是跟不是在电影行业\" → \"不是在电影行业\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0224",
+   "track": "L",
+   "from": "L006560",
+   "to": "L006561",
+   "category": "content",
+   "reason": "L插话\"说的你好笑\"(调侃P已不在电影行业), 保留",
+   "confidence": 0.4,
+   "op": "keep_flag",
+   "suggested": "cut"
+  },
+  {
+   "id": "op0225",
+   "track": "P",
+   "from": "P003353",
+   "to": "P003356",
+   "category": "crosstalk",
+   "reason": "\"足够说明\"被L插话打断后重说, 保留第二次",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0226",
+   "track": "P",
+   "from": "P003414",
+   "to": "P003418",
+   "category": "repetition",
+   "reason": "这不是他最这不是他最好的 → 这不是他最好的",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0227",
+   "track": "P",
+   "from": "P003478",
+   "to": "P003480",
+   "category": "disfluency",
+   "reason": "但是我所以我就在想 → 所以我就在想",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0228",
+   "track": "P",
+   "from": "P003488",
+   "to": "P003489",
+   "category": "disfluency",
+   "reason": "就什么到底是什么 → 就到底是什么",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0229",
+   "track": "P",
+   "from": "P003501",
+   "to": "P003504",
+   "category": "disfluency",
+   "reason": "\"这个是当当下\" → \"当下\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0230",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2396.38,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.34s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0231",
+   "track": "L",
+   "from": "L006625",
+   "to": "L006625",
+   "category": "disfluency",
+   "reason": "句首\"呃\"",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0232",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2413.54,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.38s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0233",
+   "track": "P",
+   "from": "P003565",
+   "to": "P003565",
+   "category": "repetition",
+   "reason": "很(停)很有西方 → 很有西方",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0234",
+   "track": "P",
+   "from": "P003608",
+   "to": "P003609",
+   "category": "repetition",
+   "reason": "去去(停)去关注 → 去关注",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0235",
+   "op": "tighten_pause",
+   "track": "P",
+   "at": "P003609",
+   "target_s": 0.3,
+   "category": "pause",
+   "reason": "删重复后剩余 0.8s 停顿收紧",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0236",
+   "track": "L",
+   "from": "L006667",
+   "to": "L006667",
+   "category": "repetition",
+   "reason": "就就呵呵呵 → 就呵呵呵",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0237",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2453.9,
+   "target_s": 2.2,
+   "category": "pause",
+   "reason": "L\"有一部我特不喜欢\"后 P 笑声+空白 3.06s, 只略收, 保留笑声",
+   "confidence": 0.4
+  },
+  {
+   "id": "op0238",
+   "track": "L",
+   "from": "L006842",
+   "to": "L006843",
+   "category": "repetition",
+   "reason": "老老老婆 → 老婆",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0239",
+   "track": "L",
+   "from": "L006862",
+   "to": "L006866",
+   "category": "disfluency",
+   "reason": "半小时那那那那就那场戏 → 半小时那场戏",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0240",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2492.55,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.10s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0241",
+   "track": "L",
+   "from": "L006888",
+   "to": "L006889",
+   "category": "repetition",
+   "reason": "节节节奏 → 节奏",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0242",
+   "op": "tighten_pause",
+   "track": "P",
+   "at": "P003647",
+   "target_s": 0.6,
+   "category": "pause",
+   "reason": "\"你这(1.10)你这很温柔\" 收紧停顿, 保留重复的喜剧效果",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0243",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2508.85,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.00s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0244",
+   "track": "L",
+   "from": "L006921",
+   "to": "L006921",
+   "category": "repetition",
+   "reason": "我我帮你 → 我帮你",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0245",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2533.35,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.69s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0246",
+   "track": "L",
+   "from": "L007006",
+   "to": "L007007",
+   "category": "disfluency",
+   "reason": "写了一这这个东西 → 写了这个东西",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0247",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2552.3,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.29s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0248",
+   "track": "L",
+   "from": "L007049",
+   "to": "L007055",
+   "category": "disfluency",
+   "reason": "\"就是是他从哪儿就是从哪儿出来\" → \"就是从哪儿出来\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0249",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2563.15,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.39s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0250",
+   "track": "P",
+   "from": "P003706",
+   "to": "P003708",
+   "category": "disfluency",
+   "reason": "\"那这个(停)那你是\" 删假起头",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0251",
+   "track": "P",
+   "from": "P003722",
+   "to": "P003725",
+   "category": "disfluency",
+   "reason": "\"我觉得还挺这个倒是挺从始至终\" → \"我觉得倒是挺从始至终\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0252",
+   "track": "P",
+   "from": "P003734",
+   "to": "P003735",
+   "category": "disfluency",
+   "reason": "\"嗯(0.68)呃就我的点\" 删卡住的语气词",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0253",
+   "track": "P",
+   "from": "P003761",
+   "to": "P003761",
+   "category": "repetition",
+   "reason": "他他首先 → 他首先",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0254",
+   "track": "P",
+   "from": "P003798",
+   "to": "P003798",
+   "category": "repetition",
+   "reason": "这不不是 → 这不是",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0255",
+   "track": "P",
+   "from": "P003807",
+   "to": "P003808",
+   "category": "repetition",
+   "reason": "一个一个短板 → 一个短板",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0256",
+   "track": "P",
+   "from": "P003861",
+   "to": "P003863",
+   "category": "disfluency",
+   "reason": "\"有编剧给他去(停)去给他做的\" → \"有编剧去给他做的\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0257",
+   "op": "cut",
+   "track": "L",
+   "from": 2639.79,
+   "to": 2640.93,
+   "category": "single_track_noise",
+   "reason": "对方说话时L轨无文字低能量声音(呼吸/杂音) 1.1s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0258",
+   "track": "P",
+   "from": "P004079",
+   "to": "P004081",
+   "category": "disfluency",
+   "reason": "\"make sense嗯让给给人\" → \"make sense给人\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0259",
+   "track": "P",
+   "from": "P004146",
+   "to": "P004147",
+   "category": "repetition",
+   "reason": "顺顺顺时针 → 顺时针",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0260",
+   "track": "L",
+   "from": "L007142",
+   "to": "L007142",
+   "category": "repetition",
+   "reason": "流流水账 → 流水账",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0261",
+   "track": "P",
+   "from": "P004238",
+   "to": "P004238",
+   "category": "repetition",
+   "reason": "就就(停)怎么着 → 就怎么着",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0262",
+   "track": "L",
+   "from": "L007155",
+   "to": "L007157",
+   "category": "repetition",
+   "reason": "像个游像个游戏 → 像个游戏",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0263",
+   "track": "P",
+   "from": "P004290",
+   "to": "P004291",
+   "category": "repetition",
+   "reason": "就所以所以 → 就所以",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0264",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2714.07,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.45s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0265",
+   "track": "P",
+   "from": "P004429",
+   "to": "P004430",
+   "category": "repetition",
+   "reason": "这个这个conclude → 这个conclude",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0266",
+   "track": "P",
+   "from": "P004476",
+   "to": "P004477",
+   "category": "repetition",
+   "reason": "去去去打造 → 去打造",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0267",
+   "track": "P",
+   "from": "P004483",
+   "to": "P004487",
+   "category": "disfluency",
+   "reason": "会让人一种会让我有一种 → 会让我有一种",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0268",
+   "track": "P",
+   "from": "P004593",
+   "to": "P004604",
+   "category": "disfluency",
+   "reason": "\"所有人都他他要求所有人就odysseus要求\" → \"odysseus要求\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0269",
+   "track": "P",
+   "from": "P004662",
+   "to": "P004664",
+   "category": "disfluency",
+   "reason": "你其实没有打没有在前面 → 你其实没有在前面",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0270",
+   "track": "P",
+   "from": "P004699",
+   "to": "P004699",
+   "category": "repetition",
+   "reason": "给给他打造 → 给他打造",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0271",
+   "track": "P",
+   "from": "P004725",
+   "to": "P004725",
+   "category": "repetition",
+   "reason": "他他带领 → 他带领",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0272",
+   "track": "P",
+   "from": "P004748",
+   "to": "P004749",
+   "category": "repetition",
+   "reason": "这些这些事情 → 这些事情",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0273",
+   "track": "L",
+   "from": "L007197",
+   "to": "L007212",
+   "category": "disfluency",
+   "reason": "\"就是诺兰啊不是不是诺什么诺诺诺兰\" 口误绕圈, 保留\"就因为文本里 就是原来文本里\"",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0274",
+   "track": "L",
+   "from": "L007220",
+   "to": "L007221",
+   "category": "repetition",
+   "reason": "奥德奥德修斯 → 奥德修斯",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0275",
+   "track": "L",
+   "from": "L007269",
+   "to": "L007270",
+   "category": "repetition",
+   "reason": "极极极度 → 极度",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0276",
+   "track": "L",
+   "from": "L007293",
+   "to": "L007294",
+   "category": "repetition",
+   "reason": "才衔才衔接 → 才衔接",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0277",
+   "track": "L",
+   "from": "L007330",
+   "to": "L007332",
+   "category": "disfluency",
+   "reason": "\"就是他我觉我到最后\" → \"就是我到最后\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0278",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2867.59,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.74s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0279",
+   "track": "L",
+   "from": "L007412",
+   "to": "L007413",
+   "category": "repetition",
+   "reason": "那个那个 → 那个",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0280",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2895.86,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.65s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0281",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2914.94,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.26s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0282",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2923.1,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.14s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0283",
+   "track": "L",
+   "from": "L007586",
+   "to": "L007589",
+   "category": "disfluency",
+   "reason": "\"诺兰说自己说他说这部\" → \"诺兰他说这部\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0284",
+   "track": "P",
+   "from": "P004941",
+   "to": "P004943",
+   "category": "disfluency",
+   "reason": "\"没有没有他肯定 他没有原话\" 删未完的\"他肯定\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0285",
+   "track": "P",
+   "from": "P004975",
+   "to": "P004975",
+   "category": "repetition",
+   "reason": "他就就是 → 他就是",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0286",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2949.04,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "含L疑似笑声 2.72s → 1.0s",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0287",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2953.3,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.47s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0288",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2967.51,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.36s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0289",
+   "op": "cut",
+   "track": "L",
+   "from": 2995.42,
+   "to": 2997.36,
+   "category": "single_track_noise",
+   "reason": "对方说话时L轨无文字低能量声音(呼吸/杂音) 1.9s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0290",
+   "track": "P",
+   "from": "P005130",
+   "to": 3014.2,
+   "category": "disfluency",
+   "reason": "\"如果你(1.05s)就是如果你只是\" → 删第一次\"如果你\"及停顿",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0291",
+   "track": "P",
+   "from": "P005166",
+   "to": "P005169",
+   "category": "repetition",
+   "reason": "就是好像就是好像 → 就是好像",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0292",
+   "track": "L",
+   "from": "L007729",
+   "to": "L007733",
+   "category": "crosstalk",
+   "reason": "\"这而且就是\"压在P句上未展开",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0293",
+   "track": "P",
+   "from": "P005201",
+   "to": "P005207",
+   "category": "disfluency",
+   "reason": "\"电影本身那那如果我不我当然\" → \"电影本身当然\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0294",
+   "track": "P",
+   "from": "P005211",
+   "to": "P005211",
+   "category": "repetition",
+   "reason": "我不不是 → 我不是",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0295",
+   "track": "P",
+   "from": "P005220",
+   "to": "P005223",
+   "category": "disfluency",
+   "reason": "\"如(停)果是指如果是这样\" → \"如果是这样\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0296",
+   "track": "L",
+   "from": "L007745",
+   "to": "L007746",
+   "category": "disfluency",
+   "reason": "像你跟你刚才说的 → 像你刚才说的",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0297",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3076.5,
+   "target_s": 0.6,
+   "category": "pause",
+   "reason": "\"他委屈不委屈(1.35)吧\" 句中长停顿",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0298",
+   "track": "L",
+   "from": "L007885",
+   "to": "L007886",
+   "category": "disfluency",
+   "reason": "反正我就我觉得 → 反正我觉得",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0299",
+   "track": "L",
+   "from": "L007978",
+   "to": "L007978",
+   "category": "repetition",
+   "reason": "就就这就 → 就这就",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0300",
+   "track": "L",
+   "from": "L008021",
+   "to": "L008022",
+   "category": "disfluency",
+   "reason": "嗯我我个人认为 → 我个人认为",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0301",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3132.43,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.86s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0302",
+   "track": "L",
+   "from": "L008137",
+   "to": "L008140",
+   "category": "repetition",
+   "reason": "那个那个那个time stamp → 那个time stamp",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0303",
+   "track": "L",
+   "from": "L008187",
+   "to": "L008190",
+   "category": "disfluency",
+   "reason": "\"我看那个我看看我能不能\" → \"我看看我能不能\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0304",
+   "track": "L",
+   "from": "L008285",
+   "to": "L008292",
+   "category": "disfluency",
+   "reason": "\"没有给我的感没(停)有没有给我任何\" → \"没有给我任何\"",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0305",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3187.4,
+   "target_s": 3.0,
+   "category": "pause",
+   "reason": "\"雷德利斯科特\"笑点后 5.35s, P在笑; 只收到 3s",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0306",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3198.59,
+   "target_s": 0.9,
+   "category": "pause",
+   "reason": "笑点后 2.34s → 0.9s",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0307",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3203.7,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.44s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0308",
+   "track": "L",
+   "from": "L008381",
+   "to": "L008381",
+   "category": "repetition",
+   "reason": "雷雷斯科特 → 雷斯科特",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0309",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3215.38,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.47s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0310",
+   "op": "cut",
+   "track": "L",
+   "from": 3222.11,
+   "to": 3223.2,
+   "category": "single_track_noise",
+   "reason": "对方说话时L轨无文字低能量声音(呼吸/杂音) 1.1s",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0311",
+   "track": "P",
+   "from": "P005328",
+   "to": "P005330",
+   "category": "repetition",
+   "reason": "那那个那个味儿 → 那个味儿",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0312",
+   "track": "L",
+   "from": "L008425",
+   "to": "L008428",
+   "category": "crosstalk",
+   "reason": "\"行这个是\"被P接话压住未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0313",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3245.3,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.89s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0314",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3249.18,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.53s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0315",
+   "track": "L",
+   "from": "L008468",
+   "to": "L008468",
+   "category": "repetition",
+   "reason": "诺诺兰 → 诺兰",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0316",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3262.21,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.60s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0317",
+   "track": "P",
+   "from": "P005392",
+   "to": "P005393",
+   "category": "disfluency",
+   "reason": "\"真的很想我想说\" → \"真的我想说\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0318",
+   "track": "P",
+   "from": "P005405",
+   "to": "P005413",
+   "category": "disfluency",
+   "reason": "\"没有其实(停)我当时没有 / 当时没有还是说\" 删第一次绕口",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0319",
+   "track": "P",
+   "from": "P005474",
+   "to": "P005474",
+   "category": "repetition",
+   "reason": "我我应该 → 我应该",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0320",
+   "track": "P",
+   "from": "P005492",
+   "to": "P005497",
+   "category": "disfluency",
+   "reason": "\"这部电影就就odyssey这部电影\" → \"odyssey这部电影\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0321",
+   "track": "P",
+   "from": "P005503",
+   "to": "P005503",
+   "category": "disfluency",
+   "reason": "这部电影呃如果 → 删\"呃\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0322",
+   "track": "P",
+   "from": "P005536",
+   "to": "P005538",
+   "category": "disfluency",
+   "reason": "呃就是就是有一说一 → 就是有一说一",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0323",
+   "track": "P",
+   "from": "P005547",
+   "to": "P005547",
+   "category": "repetition",
+   "reason": "你你说 → 你说",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0324",
+   "track": "P",
+   "from": "P005600",
+   "to": "P005601",
+   "category": "repetition",
+   "reason": "这个这个体验 → 这个体验",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0325",
+   "track": "P",
+   "from": "P005610",
+   "to": "P005610",
+   "category": "repetition",
+   "reason": "你你的感官 → 你的感官",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0326",
+   "track": "P",
+   "from": "P005623",
+   "to": "P005624",
+   "category": "repetition",
+   "reason": "这个这个刺激到 → 这个刺激到",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0327",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3340.44,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.44s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0328",
+   "track": "L",
+   "from": "L008562",
+   "to": "L008565",
+   "category": "disfluency",
+   "reason": "\"一无(停)就是一无是处\" → \"一无是处\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0329",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3359.69,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.48s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0330",
+   "track": "L",
+   "from": "L008680",
+   "to": "L008680",
+   "category": "disfluency",
+   "reason": "句首\"呃\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0331",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3373.59,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.67s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0332",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3377.16,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.71s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0333",
+   "track": "L",
+   "from": "L008716",
+   "to": "L008717",
+   "category": "repetition",
+   "reason": "我觉我觉得 → 我觉得",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0334",
+   "track": "P",
+   "from": "P005667",
+   "to": "P005667",
+   "category": "repetition",
+   "reason": "跟我(停)我这次 → 跟我 这次",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0335",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3408.78,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "含L笑声候选 1.75s → 1.0s",
+   "confidence": 0.4
+  },
+  {
+   "id": "op0336",
+   "track": "L",
+   "from": "L008798",
+   "to": "L008801",
+   "category": "disfluency",
+   "reason": "\"那你这你看你看的是\" → \"那你看的是\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0337",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3415.2,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "笑点后长空白 3.83s → 1.0s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0338",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3425.8,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.42s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0339",
+   "track": "P",
+   "from": "P005691",
+   "to": "P005692",
+   "category": "crosstalk",
+   "reason": "\"因为\"压在L句上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0340",
+   "track": "P",
+   "from": "P005722",
+   "to": "P005722",
+   "category": "repetition",
+   "reason": "所以我我觉得 → 所以我觉得",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0341",
+   "track": "P",
+   "from": "P005783",
+   "to": "P005783",
+   "category": "repetition",
+   "reason": "就是我我脑子 → 就是我脑子",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0342",
+   "track": "P",
+   "from": "P005850",
+   "to": "P005855",
+   "category": "disfluency",
+   "reason": "\"他没有做(停)任何他没有纠结于\" → \"他没有纠结于\"",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0343",
+   "track": "P",
+   "from": "P005922",
+   "to": "P005948",
+   "category": "content",
+   "reason": "P重复40秒前说过的\"很久没看到这么干净的超英电影\", 属于被打断后的重述, 保留待定",
+   "confidence": 0.45,
+   "op": "keep_flag",
+   "suggested": "cut"
+  },
+  {
+   "id": "op0344",
+   "track": "P",
+   "from": "P005963",
+   "to": "P005964",
+   "category": "disfluency",
+   "reason": "我觉得也也呃跟 → 我觉得也跟",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0345",
+   "track": "P",
+   "from": "P006093",
+   "to": "P006094",
+   "category": "repetition",
+   "reason": "这些这些啊 → 这些啊",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0346",
+   "track": "P",
+   "from": "P006107",
+   "to": "P006108",
+   "category": "disfluency",
+   "reason": "它会给没有给你 → 它没有给你",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0347",
+   "track": "P",
+   "from": "P006191",
+   "to": "P006193",
+   "category": "repetition",
+   "reason": "动作的动作系 → 动作系",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0348",
+   "track": "P",
+   "from": "P006214",
+   "to": "P006216",
+   "category": "repetition",
+   "reason": "镜头的镜头语言 → 镜头语言",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0349",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3586.53,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.37s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0350",
+   "track": "P",
+   "from": "P006377",
+   "to": "P006384",
+   "category": "disfluency",
+   "reason": "\"我刚刚在聊这个(停)呃我们开播之前\" → \"我们开播之前\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0351",
+   "track": "P",
+   "from": "P006471",
+   "to": "P006471",
+   "category": "repetition",
+   "reason": "回忆我我只记得 → 回忆我只记得",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0352",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3663.91,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.81s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0353",
+   "track": "L",
+   "from": "L009232",
+   "to": "L009232",
+   "category": "repetition",
+   "reason": "托比马奎尔那那一版 → 那一版",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0354",
+   "track": "L",
+   "from": "L009363",
+   "to": "L009364",
+   "category": "disfluency",
+   "reason": "原来蜘蛛拍蜘蛛侠 → 原来拍蜘蛛侠",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0355",
+   "track": "L",
+   "from": "L009436",
+   "to": "L009436",
+   "category": "repetition",
+   "reason": "那那个反派 → 那个反派",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0356",
+   "track": "L",
+   "from": "L009453",
+   "to": "L009453",
+   "category": "repetition",
+   "reason": "反派是是他自己 → 反派是他自己",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0357",
+   "track": "L",
+   "from": "L009460",
+   "to": "L009464",
+   "category": "disfluency",
+   "reason": "loneliness就是是那个 peter parker → loneliness peter parker",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0358",
+   "track": "L",
+   "from": "L009491",
+   "to": "L009491",
+   "category": "repetition",
+   "reason": "比比那个 → 比那个",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0359",
+   "op": "tighten_pause",
+   "track": "L",
+   "at": "L009499",
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "\"渣男啊(2.10)对吧\" L 句中长停顿收紧",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0360",
+   "track": "L",
+   "from": "L009502",
+   "to": "L009507",
+   "category": "disfluency",
+   "reason": "\"一个是对吧这这两个\" → \"这两个\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0361",
+   "track": "L",
+   "from": "L009560",
+   "to": "L009562",
+   "category": "repetition",
+   "reason": "就是是那那那种 → 就是那种",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0362",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3784.97,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.49s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0363",
+   "track": "P",
+   "from": "P006547",
+   "to": "P006551",
+   "category": "disfluency",
+   "reason": "\"我给你我我我跟你的感受\" → \"我跟你的感受\"",
+   "confidence": 0.6,
+   "op": "cut"
+  },
+  {
+   "id": "op0364",
+   "track": "P",
+   "from": "P006644",
+   "to": "P006644",
+   "category": "disfluency",
+   "reason": "是呃没有给我 → 是没有给我",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0365",
+   "track": "P",
+   "from": "P006677",
+   "to": "P006677",
+   "category": "repetition",
+   "reason": "从头再再来 → 从头再来",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0366",
+   "track": "P",
+   "from": "P006787",
+   "to": "P006787",
+   "category": "disfluency",
+   "reason": "给我的一(停)感觉 → 给我的感觉",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0367",
+   "track": "P",
+   "from": "P006810",
+   "to": "P006810",
+   "category": "repetition",
+   "reason": "这这个环境 → 这个环境",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0368",
+   "track": "P",
+   "from": "P006968",
+   "to": "P006969",
+   "category": "repetition",
+   "reason": "这个这个呃作用 → 这个作用",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0369",
+   "track": "P",
+   "from": "P006972",
+   "to": "P006972",
+   "category": "disfluency",
+   "reason": "删\"呃\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0370",
+   "track": "P",
+   "from": "P007028",
+   "to": "P007029",
+   "category": "repetition",
+   "reason": "对很很很享受 → 对很享受",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0371",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3921.62,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.46s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0372",
+   "track": "L",
+   "from": "L009755",
+   "to": "L009755",
+   "category": "repetition",
+   "reason": "那你你那 → 那你那",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0373",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3938.05,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.30s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0374",
+   "track": "L",
+   "from": "L009763",
+   "to": "L009763",
+   "category": "repetition",
+   "reason": "干干嘛 → 干嘛",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0375",
+   "track": "L",
+   "from": "L009776",
+   "to": "L009779",
+   "category": "disfluency",
+   "reason": "句尾\"这(停)这这就\"未完成",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0376",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3942.74,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.38s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0377",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3953.39,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "\"基本上就是…就完了\" 笑点停顿 1.69s → 0.8s",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0378",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3967.75,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.20s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0379",
+   "track": "L",
+   "from": "L009930",
+   "to": "L009930",
+   "category": "repetition",
+   "reason": "太太年轻 → 太年轻",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0380",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3986.65,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "P句中停顿 stranger things(停)的baby 1.44s → 0.5s",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0381",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3997.86,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.39s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0382",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4007.47,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.30s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0383",
+   "track": "L",
+   "from": "L010026",
+   "to": "L010026",
+   "category": "repetition",
+   "reason": "还还是 → 还是",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0384",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4011.81,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.30s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0385",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4015.05,
+   "target_s": 1.2,
+   "category": "pause",
+   "reason": "含笑声候选 3.14s → 1.2s",
+   "confidence": 0.4
+  },
+  {
+   "id": "op0386",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4019.3,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.25s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0387",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4031.61,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "笑点后空白 3.34s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0388",
+   "track": "P",
+   "from": "P007072",
+   "to": "P007077",
+   "category": "disfluency",
+   "reason": "\"你怎么对这也就就(停)是对这种问题好奇\" → \"你怎么对这种问题好奇\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0389",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4045.33,
+   "target_s": 1.2,
+   "category": "pause",
+   "reason": "笑点后 5s 空白, P疑似在笑 5.12s → 1.2s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0390",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4053.81,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.32s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0391",
+   "track": "L",
+   "from": "L010126",
+   "to": "L010127",
+   "category": "repetition",
+   "reason": "你要你要不说 → 你要不说",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0392",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4058.45,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.53s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0393",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4060.66,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.40s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0394",
+   "track": "L",
+   "from": "L010230",
+   "to": "L010232",
+   "category": "disfluency",
+   "reason": "\"今天的模嗯(停)呃当代folklore\" → \"今天的当代folklore\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0395",
+   "track": "L",
+   "from": "L010274",
+   "to": "L010288",
+   "category": "disfluency",
+   "reason": "\"一个是商业文化一个是原来的就是\" 重说为\"一个是现代商业文化吧\", 删第一次",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0396",
+   "track": "L",
+   "from": "L010343",
+   "to": "L010343",
+   "category": "repetition",
+   "reason": "我我是抱 → 我是抱",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0397",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4116.15,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.29s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0398",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4119.62,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.30s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0399",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4121.58,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.71s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0400",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4123.28,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.56s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0401",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4131.47,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.01s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0402",
+   "track": "L",
+   "from": "L010400",
+   "to": "L010404",
+   "category": "disfluency",
+   "reason": "\"不是什么什么我(停)我的跟我女神\" → \"不是什么跟我女神\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0403",
+   "track": "L",
+   "from": 4148.3,
+   "to": 4150.3,
+   "category": "disfluency",
+   "reason": "\"这个是 / 呃 / 我接触\" 删孤立\"呃\"及两侧空档",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0404",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4156.39,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.32s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0405",
+   "track": "L",
+   "from": "L010450",
+   "to": "L010453",
+   "category": "disfluency",
+   "reason": "哎就是嗯嗯就是因为 → 哎就是因为",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0406",
+   "track": "L",
+   "from": "L010456",
+   "to": "L010457",
+   "category": "repetition",
+   "reason": "因为因为 → 因为",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0407",
+   "track": "L",
+   "from": "L010465",
+   "to": "L010473",
+   "category": "disfluency",
+   "reason": "\"就是我是第一个接触就是小时候\" → \"就是小时候\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0408",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4172.3,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 3.34s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0409",
+   "track": "L",
+   "from": "L010505",
+   "to": "L010513",
+   "category": "disfluency",
+   "reason": "\"我这这个电影系列这这个游戏系列\" → \"这个游戏系列\"",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0410",
+   "track": "L",
+   "from": "L010579",
+   "to": "L010580",
+   "category": "crosstalk",
+   "reason": "\"然后\"压在P句上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0411",
+   "track": "L",
+   "from": "L010599",
+   "to": "L010600",
+   "category": "crosstalk",
+   "reason": "\"然后\"压在P提问上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0412",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4206.94,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.23s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0413",
+   "track": "L",
+   "from": "L010685",
+   "to": "L010686",
+   "category": "repetition",
+   "reason": "那个(停)那个bad corp → 那个bad corp",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0414",
+   "track": "L",
+   "from": "L010755",
+   "to": "L010756",
+   "category": "disfluency",
+   "reason": "他就讲他这他的选角 → 他就讲他的选角",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0415",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4275.22,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 3.61s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0416",
+   "track": "L",
+   "from": "L010905",
+   "to": "L010907",
+   "category": "crosstalk",
+   "reason": "\"我觉得\"压在P句尾, L随后完整重说",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0417",
+   "track": "P",
+   "from": "P007267",
+   "to": "P007268",
+   "category": "crosstalk",
+   "reason": "\"但是\"压在L句中未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0418",
+   "track": "P",
+   "from": "P007269",
+   "to": "P007269",
+   "category": "crosstalk",
+   "reason": "孤立的\"我\"压在L句中",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0419",
+   "track": "L",
+   "from": "L010963",
+   "to": "L010969",
+   "category": "disfluency",
+   "reason": "\"都是那就是那种就是那个日式\" → \"都是那个日式\"",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0420",
+   "track": "L",
+   "from": "L010975",
+   "to": "L010975",
+   "category": "repetition",
+   "reason": "那那种 → 那种",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0421",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4302.09,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.26s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0422",
+   "track": "P",
+   "from": "P007271",
+   "to": "P007271",
+   "category": "repetition",
+   "reason": "就就我 → 就我",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0423",
+   "track": "P",
+   "from": "P007273",
+   "to": "P007273",
+   "category": "repetition",
+   "reason": "我我是 → 我是",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0424",
+   "track": "P",
+   "from": "P007278",
+   "to": "P007280",
+   "category": "repetition",
+   "reason": "中中二中二少年 → 中二少年",
+   "confidence": 0.5,
+   "op": "cut"
+  },
+  {
+   "id": "op0425",
+   "track": "P",
+   "from": "P007287",
+   "to": "P007290",
+   "category": "repetition",
+   "reason": "你就你就你就把我 → 你就把我 (或为有意的气急重复, 低置信)",
+   "confidence": 0.4,
+   "op": "cut"
+  },
+  {
+   "id": "op0426",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4315.38,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.21s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0427",
+   "track": "P",
+   "from": "P007306",
+   "to": "P007307",
+   "category": "repetition",
+   "reason": "但是但是 → 但是",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0428",
+   "track": "P",
+   "from": "P007368",
+   "to": "P007369",
+   "category": "crosstalk",
+   "reason": "\"然后\"压在L句上未展开",
+   "confidence": 0.45,
+   "op": "cut"
+  },
+  {
+   "id": "op0429",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4340.68,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 2.27s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0430",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4357.68,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.76s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0431",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4360.11,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.31s → 0.7s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0432",
+   "track": "L",
+   "from": "L011065",
+   "to": "L011065",
+   "category": "repetition",
+   "reason": "安安利 → 安利",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0433",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4365.19,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.67s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0434",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4379.95,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "两轨空白 3.63s → 0.8s",
+   "confidence": 0.75
+  },
+  {
+   "id": "op0435",
+   "track": "both",
+   "from": 4392.1,
+   "to": 4398.1,
+   "category": "crosstalk",
+   "reason": "结尾\"九十年代\"与P\"你还记得这事儿\"互相叠话, 自然打趣, 保留",
+   "confidence": 0.4,
+   "op": "keep_flag",
+   "suggested": "slip"
+  },
+  {
+   "id": "op0436",
+   "track": "L",
+   "from": "L011165",
+   "to": "L011167",
+   "category": "repetition",
+   "reason": "老老气老气横秋 → 老气横秋",
+   "confidence": 0.55,
+   "op": "cut"
+  },
+  {
+   "id": "op0437",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4401.3,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.51s → 0.7s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0438",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4408.69,
+   "target_s": 0.7,
+   "category": "pause",
+   "reason": "两轨空白 1.25s → 0.7s",
+   "confidence": 0.55
+  }
+ ]
+}

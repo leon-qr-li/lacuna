@@ -1,0 +1,199 @@
+"""FastAPI app: JSON API + streamed audio + the built web UI. Bind to 127.0.0.1 only."""
+from __future__ import annotations
+
+import threading
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+from .audio import parse_range
+from .editor import EditorAdapter, make_adapter
+from .episode import ConflictError, Episode
+from .store import PathError, Workspace
+
+WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
+
+
+class PlayheadBody(BaseModel):
+    playhead: float | None = Field(None, ge=0, description="seconds on the timeline the client is playing")
+
+
+class ReviewBody(PlayheadBody):
+    action: str = Field(pattern="^(keep|restore|apply)$")
+
+
+class ChatBody(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+    playhead: float = Field(ge=0)
+
+
+class OpBody(PlayheadBody):
+    op: dict
+    title: str = Field("手动修改", max_length=200)
+    reason: str = Field("", max_length=2000)
+
+
+def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST) -> FastAPI:
+    ws = Workspace(workspace).ensure()
+    adapter = adapter or make_adapter("auto")
+    app = FastAPI(title="LACUNA Studio", docs_url="/api/docs", openapi_url="/api/openapi.json")
+    episodes: dict[str, Episode] = {}
+    lock = threading.Lock()
+
+    def get(episode_id: str) -> Episode:
+        try:
+            ws.episode_dir(episode_id)
+        except PathError:
+            raise HTTPException(400, "invalid episode id")
+        with lock:
+            ep = episodes.get(episode_id)
+            if ep is None:
+                if episode_id not in ws.episode_ids():
+                    raise HTTPException(404, "no such episode")
+                ep = episodes[episode_id] = Episode(ws, episode_id)
+            return ep
+
+    @app.exception_handler(ConflictError)
+    async def _conflict(_req, exc: ConflictError):
+        return JSONResponse({"detail": str(exc)}, status_code=409)
+
+    def mutate(ep: Episode, playhead: float | None, fn) -> dict:
+        """Run a mutation; return the new summary plus the playhead mapped onto the new timeline."""
+        try:
+            before = ep.enabled
+            extra = fn() or {}
+        except KeyError:
+            raise HTTPException(404, "no such edit or proposal")
+        out = ep.summary() | extra
+        if playhead is not None:
+            out["playhead"] = ep.map_playhead(playhead, before, ep.enabled)
+        return out
+
+    # ------------------------------------------------------------------ API
+    @app.get("/api/health")
+    def health():
+        return {"ok": True, "workspace": str(ws.root), "editor": adapter.name}
+
+    @app.get("/api/episodes")
+    def list_episodes():
+        out = []
+        for eid in ws.episode_ids():
+            try:
+                s = get(eid).summary()
+                out.append({k: s[k] for k in ("id", "title", "demo", "duration", "raw_duration", "pending_review")})
+            except Exception as e:   # a broken episode must not hide the others
+                out.append({"id": eid, "title": eid, "error": str(e)})
+        return {"episodes": out, "editor": adapter.name}
+
+    @app.get("/api/episodes/{episode_id}")
+    def load_episode(episode_id: str):
+        return get(episode_id).summary()
+
+    @app.get("/api/episodes/{episode_id}/audio/{version}.wav")
+    def audio(episode_id: str, version: str, request: Request):
+        ep = get(episode_id)
+        enabled = ep.enabled_for_key(version)
+        if enabled is None:
+            if version != ep.version_key():
+                raise HTTPException(404, "unknown or expired version")
+            enabled = ep.enabled
+        total = ep.wav_size(enabled)
+        rng = parse_range(request.headers.get("range"), total)
+        headers = {"Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600"}
+        if request.headers.get("range") and rng is None:
+            return Response(status_code=416, headers={"Content-Range": f"bytes */{total}"})
+        first, last = rng or (0, total - 1)
+        headers["Content-Length"] = str(last - first + 1)
+        if rng:
+            headers["Content-Range"] = f"bytes {first}-{last}/{total}"
+        return StreamingResponse(ep.iter_wav(enabled, first, last), status_code=206 if rng else 200,
+                                 media_type="audio/wav", headers=headers)
+
+    @app.get("/api/episodes/{episode_id}/clips/{cid}.wav")
+    def clip(episode_id: str, cid: str):
+        c = get(episode_id).clip(cid)
+        if c is None:
+            raise HTTPException(404, "clip expired")
+        return Response(c.wav, media_type="audio/wav", headers={"Cache-Control": "private, max-age=600"})
+
+    @app.get("/api/episodes/{episode_id}/edits/{eid}/ab")
+    def edit_ab(episode_id: str, eid: str):
+        try:
+            return get(episode_id).edit_ab(eid)
+        except KeyError:
+            raise HTTPException(404, "no such edit")
+
+    @app.get("/api/episodes/{episode_id}/edits/{eid}/text")
+    def edit_text(episode_id: str, eid: str):
+        try:
+            return {"lines": get(episode_id).edit_text(eid)}
+        except KeyError:
+            raise HTTPException(404, "no such edit")
+
+    @app.post("/api/episodes/{episode_id}/edits/{eid}/review")
+    def review(episode_id: str, eid: str, body: ReviewBody):
+        ep = get(episode_id)
+        return mutate(ep, body.playhead, lambda: ep.review(eid, body.action))
+
+    @app.post("/api/episodes/{episode_id}/ops")
+    def apply_op(episode_id: str, body: OpBody):
+        ep = get(episode_id)
+        try:
+            return mutate(ep, body.playhead, lambda: {"edit_id": ep.apply_op(body.op, body.title, body.reason).id})
+        except (TypeError, ValueError) as e:
+            if isinstance(e, ConflictError):
+                raise
+            raise HTTPException(422, f"bad op: {e}")
+
+    @app.post("/api/episodes/{episode_id}/undo")
+    def undo(episode_id: str, body: PlayheadBody):
+        ep = get(episode_id)
+        return mutate(ep, body.playhead, lambda: {"done": ep.undo()})
+
+    @app.post("/api/episodes/{episode_id}/redo")
+    def redo(episode_id: str, body: PlayheadBody):
+        ep = get(episode_id)
+        return mutate(ep, body.playhead, lambda: {"done": ep.redo()})
+
+    @app.post("/api/episodes/{episode_id}/chat")
+    def chat(episode_id: str, body: ChatBody):
+        return get(episode_id).chat(body.text, body.playhead, adapter)
+
+    @app.get("/api/episodes/{episode_id}/proposals/{pid}/ab")
+    def proposal_ab(episode_id: str, pid: str):
+        try:
+            return get(episode_id).proposal_ab(pid)
+        except KeyError:
+            raise HTTPException(404, "no such proposal")
+
+    @app.post("/api/episodes/{episode_id}/proposals/{pid}/approve")
+    def approve(episode_id: str, pid: str, body: PlayheadBody):
+        ep = get(episode_id)
+        return mutate(ep, body.playhead, lambda: ep.approve_proposal(pid))
+
+    @app.post("/api/episodes/{episode_id}/proposals/{pid}/discard")
+    def discard(episode_id: str, pid: str, body: PlayheadBody):
+        ep = get(episode_id)
+        return mutate(ep, body.playhead, lambda: ep.discard_proposal(pid))
+
+    # ------------------------------------------------------------------ web UI
+    if (web_dist / "index.html").is_file():
+        app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
+
+        @app.get("/{path:path}", include_in_schema=False)
+        def spa(path: str):
+            if path.startswith("api/"):
+                raise HTTPException(404)
+            return FileResponse(web_dist / "index.html")
+    else:
+        @app.get("/", include_in_schema=False)
+        def no_ui():
+            return Response("<p>LACUNA API is running. Build the UI: <code>cd web && npm ci && npm run build</code></p>",
+                            media_type="text/html")
+
+    app.state.workspace = ws
+    app.state.episodes = episodes
+    return app

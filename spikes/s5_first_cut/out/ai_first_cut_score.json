@@ -1,0 +1,601 @@
+{
+ "n_ops": 438,
+ "ops_by_type": {
+  "cut": 275,
+  "tighten_pause": 153,
+  "keep_flag": 7,
+  "slip": 3
+ },
+ "warnings": [],
+ "n_warnings": 0,
+ "keep_flags": 7,
+ "tracks": {
+  "L": {
+   "ai_removed_s": 271.6,
+   "gt_removed_s": 898.6,
+   "gt_ambiguous_s": 51.4,
+   "precision_s": 0.701,
+   "recall_s": 0.208,
+   "speech": {
+    "ai_removed_s": 93.0,
+    "gt_removed_s": 440.7,
+    "precision": 0.712,
+    "recall": 0.149
+   },
+   "pause": {
+    "ai_removed_s": 178.6,
+    "gt_removed_s": 457.9,
+    "precision": 0.696,
+    "recall": 0.264
+   },
+   "events": {
+    "ai": 297,
+    "gt": 482,
+    "precision": 0.808,
+    "recall": 0.413,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 26.77,
+   "false_deletion_items": 60,
+   "missed_speech_removal_s": 374.87,
+   "missed_items": 424
+  },
+  "P": {
+   "ai_removed_s": 242.7,
+   "gt_removed_s": 901.6,
+   "gt_ambiguous_s": 5.2,
+   "precision_s": 0.628,
+   "recall_s": 0.167,
+   "speech": {
+    "ai_removed_s": 76.3,
+    "gt_removed_s": 63.1,
+    "precision": 0.256,
+    "recall": 0.282
+   },
+   "pause": {
+    "ai_removed_s": 166.4,
+    "gt_removed_s": 838.5,
+    "precision": 0.799,
+    "recall": 0.159
+   },
+   "events": {
+    "ai": 278,
+    "gt": 440,
+    "precision": 0.619,
+    "recall": 0.507,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 56.76,
+   "false_deletion_items": 107,
+   "missed_speech_removal_s": 45.29,
+   "missed_items": 105
+  }
+ },
+ "false_deletions_top": [
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    598.41,
+    600.54
+   ],
+   "dur": 2.13,
+   "first_token": "L001723",
+   "text": "就是什么山西我操操",
+   "op": "op0072",
+   "category": "crosstalk",
+   "reason": "\"就是什么山西我操操\"被P插话/笑声打断, 随后完整重说同一梗"
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    3312.18,
+    3314.16
+   ],
+   "dur": 1.98,
+   "first_token": "P005536",
+   "text": "呃就是",
+   "op": "op0322",
+   "category": "disfluency",
+   "reason": "呃就是就是有一说一 → 就是有一说一"
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    4033.77,
+    4035.53
+   ],
+   "dur": 1.76,
+   "first_token": "P007072",
+   "text": "对这也就就",
+   "op": "op0388",
+   "category": "disfluency",
+   "reason": "\"你怎么对这也就就(停)是对这种问题好奇\" → \"你怎么对这种问题好奇\""
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    1626.26,
+    1627.86
+   ],
+   "dur": 1.6,
+   "first_token": "P002413",
+   "text": "就是我后他就是这当",
+   "op": "op0158",
+   "category": "disfluency",
+   "reason": "\"就是我后他就是这 当然这涉及剧透\" → \"当然这涉及剧透\""
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    4164.27,
+    4165.86
+   ],
+   "dur": 1.59,
+   "first_token": "L010467",
+   "text": "我是第一个接触",
+   "op": "op0407",
+   "category": "disfluency",
+   "reason": "\"就是我是第一个接触就是小时候\" → \"就是小时候\""
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    3031.58,
+    3033.04
+   ],
+   "dur": 1.46,
+   "first_token": "P005201",
+   "text": "那那如果我不我",
+   "op": "op0293",
+   "category": "disfluency",
+   "reason": "\"电影本身那那如果我不我当然\" → \"电影本身当然\""
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    3613.35,
+    3614.7
+   ],
+   "dur": 1.35,
+   "first_token": "P006377",
+   "text": "我刚刚在聊这个",
+   "op": "op0350",
+   "category": "disfluency",
+   "reason": "\"我刚刚在聊这个(停)呃我们开播之前\" → \"我们开播之前\""
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    4298.09,
+    4299.43
+   ],
+   "dur": 1.34,
+   "first_token": "L010963",
+   "text": "那就是那种就是",
+   "op": "op0419",
+   "category": "disfluency",
+   "reason": "\"都是那就是那种就是那个日式\" → \"都是那个日式\""
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    46.69,
+    48.03
+   ],
+   "dur": 1.34,
+   "first_token": "P000042",
+   "text": "比较比较",
+   "op": "op0011",
+   "category": "repetition",
+   "reason": "比较比较比较大 → 比较大"
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    1735.42,
+    1736.68
+   ],
+   "dur": 1.26,
+   "first_token": "P002667",
+   "text": "我可能我甚至我",
+   "op": "op0165",
+   "category": "disfluency",
+   "reason": "\"我可能我甚至我可能我的年纪\" → \"可能我的年纪\""
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    3012.01,
+    3013.27
+   ],
+   "dur": 1.26,
+   "first_token": "P005130",
+   "text": "如果你",
+   "op": "op0290",
+   "category": "disfluency",
+   "reason": "\"如果你(1.05s)就是如果你只是\" → 删第一次\"如果你\"及停顿"
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    2340.33,
+    2341.58
+   ],
+   "dur": 1.25,
+   "first_token": "P003324",
+   "text": "不住在一个就是",
+   "op": "op0223",
+   "category": "disfluency",
+   "reason": "\"不住在一个就是不不不是跟不是在电影行业\" → \"不是在电影行业\""
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    2767.57,
+    2768.81
+   ],
+   "dur": 1.24,
+   "first_token": "P004598",
+   "text": "他要求所有人就",
+   "op": "op0268",
+   "category": "disfluency",
+   "reason": "\"所有人都他他要求所有人就odysseus要求\" → \"odysseus要求\""
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    592.38,
+    593.52
+   ],
+   "dur": 1.14,
+   "first_token": "L001715",
+   "text": "罗马就是他妈",
+   "op": "op0071",
+   "category": "crosstalk",
+   "reason": "\"罗马就是他妈 是\"未说完即被P提问压住, 后面L重新展开"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    905.66,
+    906.8
+   ],
+   "dur": 1.14,
+   "first_token": "L002620",
+   "text": "呃",
+   "op": "op0109",
+   "category": "disfluency",
+   "reason": "\"呃(停)这(停)东南方\" 删犹豫"
+  }
+ ],
+ "missed_removals_top": [
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    786.82,
+    794.73
+   ],
+   "dur": 7.91,
+   "first_token": "L002347",
+   "text": "我们就到那儿直接就干就特别渴吧天也热就干完之后完了就行了什么都不买走了走了走了",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    4370.72,
+    4378.14
+   ],
+   "dur": 7.42,
+   "first_token": "L011084",
+   "text": "那么ntentendo就是你赶紧玩那个什么元宇宙吧ggta六还有俩两个月真正的元宇宙",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    1457.24,
+    1462.46
+   ],
+   "dur": 5.22,
+   "first_token": "L003975",
+   "text": "了我给忘了你scp是什么是securecontrolprotect好像是这三个啊",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    274.88,
+    279.82
+   ],
+   "dur": 4.94,
+   "first_token": "L000621",
+   "text": "就很神奇我第一次看就是现场看四大联盟竟然是我从来没看过的运动",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    614.41,
+    619.07
+   ],
+   "dur": 4.66,
+   "first_token": "L001772",
+   "text": "然后他那个面子而且意大利特别喜欢吃商面就是我亚洲我也不太适应啊",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    25.83,
+    30.36
+   ],
+   "dur": 4.53,
+   "first_token": "L000043",
+   "text": "但已经很不错了我觉得今天咱们聊的还是比较量大管饱的吧",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    1527.92,
+    1532.35
+   ],
+   "dur": 4.43,
+   "first_token": "L004284",
+   "text": "电冰箱那个电冰箱有一个非常神奇的力量如果你眨眼他都会把你吃了",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2229.81,
+    2234.14
+   ],
+   "dur": 4.33,
+   "first_token": "L006260",
+   "text": "不是就是audeesy因为当时这个电影上映的时候这边还没有装七十毫米",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2262.8,
+    2267.08
+   ],
+   "dur": 4.28,
+   "first_token": "L006419",
+   "text": "他会问有什么区别我跟他说没区别去看avx",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    1973.92,
+    1977.86
+   ],
+   "dur": 3.94,
+   "first_token": "L005371",
+   "text": "玩使命就是cod都是男就是特别狼性都是男生玩嘛",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2249.54,
+    2253.4
+   ],
+   "dur": 3.86,
+   "first_token": "L006355",
+   "text": "就我觉得哇这这而且就这个现象不是说我片骗",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2253.78,
+    2257.45
+   ],
+   "dur": 3.67,
+   "first_token": "L006375",
+   "text": "有很多人就来问我说七十毫米的电影值得看吗你",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2011.85,
+    2015.38
+   ],
+   "dur": 3.53,
+   "first_token": "L005531",
+   "text": "你炸就该归归战他演的确实好啊这行活确实可以啊",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    624.82,
+    628.33
+   ],
+   "dur": 3.51,
+   "first_token": "L001816",
+   "text": "然后他们的食物确实比较plain就是我觉得",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    86.76,
+    90.23
+   ],
+   "dur": 3.47,
+   "first_token": "L000196",
+   "text": "我觉得特便宜但是有人说一般嗯",
+   "op": null,
+   "category": null,
+   "reason": null
+  }
+ ],
+ "false_deletion_total_s": 84.45,
+ "by_category": {
+  "pause": {
+   "removed_s": 315.2,
+   "precision": 0.757,
+   "speech_removed_s": 0.0,
+   "false_deletion_s": 0.0
+  },
+  "disfluency": {
+   "removed_s": 113.9,
+   "precision": 0.543,
+   "speech_removed_s": 96.8,
+   "false_deletion_s": 46.5
+  },
+  "repetition": {
+   "removed_s": 54.0,
+   "precision": 0.474,
+   "speech_removed_s": 53.4,
+   "false_deletion_s": 28.1
+  },
+  "crosstalk": {
+   "removed_s": 20.0,
+   "precision": 0.536,
+   "speech_removed_s": 19.2,
+   "false_deletion_s": 8.9
+  },
+  "single_track_noise": {
+   "removed_s": 11.3,
+   "precision": 0.543,
+   "speech_removed_s": 0.0,
+   "false_deletion_s": 0.0
+  }
+ },
+ "duration": {
+  "raw_s": 4411.932,
+  "leon_final_from_raw_s": 3531.37,
+  "leon_final_incl_music_s": 3684.766,
+  "leon_est_by_formula_s": 3517.0,
+  "ai_est_s": 4154.8,
+  "formula": "raw - mean(per-track removed); compare ai_est_s with leon_est_by_formula_s"
+ },
+ "floor_pauses": {
+  "n": 1165,
+  "raw": {
+   "p10": 0.34,
+   "p25": 0.41,
+   "median": 0.57,
+   "p75": 0.83,
+   "p90": 1.37,
+   "n_gt_1s": 220,
+   "n_gt_2s": 36,
+   "total_s": 858.1
+  },
+  "leon": {
+   "p10": 0.0,
+   "p25": 0.21,
+   "median": 0.39,
+   "p75": 0.58,
+   "p90": 0.83,
+   "n_gt_1s": 81,
+   "n_gt_2s": 14,
+   "total_s": 530.1
+  },
+  "ai": {
+   "p10": 0.33,
+   "p25": 0.41,
+   "median": 0.57,
+   "p75": 0.7,
+   "p90": 0.9,
+   "n_gt_1s": 72,
+   "n_gt_2s": 3,
+   "total_s": 694.4
+  },
+  "paired_mae_s": 0.244,
+  "paired_median_signed_s(ai-leon)": 0.0
+ },
+ "interjections": {
+  "n_candidates": 345,
+  "confusion_gt_rows_ai_cols": {
+   "kept": {
+    "deleted": 4,
+    "kept": 129
+   },
+   "deleted": {
+    "deleted": 8,
+    "kept": 37
+   },
+   "moved": {
+    "kept": 155,
+    "deleted": 9,
+    "moved": 1
+   },
+   "unclear": {
+    "kept": 2
+   }
+  },
+  "gt_moved": 165,
+  "ai_moved": 1,
+  "both_moved": 1,
+  "sign_agreement": 0.0,
+  "median_abs_delta_error_s": 0.952,
+  "definition": "candidate = phrase <=6 tokens, <=2.5 s, preceded by >=0.5 s own pause, with >=1 s of the other host's speech within ±1 s. GT moved = kept and relative placement vs the other track changed by 0.3-3 s (from S4 per-track offsets); deleted = >=50% of its speech removed."
+ }
+}
