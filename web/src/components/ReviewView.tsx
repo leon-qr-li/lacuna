@@ -12,6 +12,8 @@ interface Props {
 }
 
 /** Impact ranking: long removals the AI is less sure about first. */
+const LATIN = /^[A-Za-z0-9']+$/;
+
 const impact = (e: EditInfo) => e.len * (1.3 - e.confidence);
 
 export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Props) {
@@ -152,6 +154,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
                     <span className={`spk spk-${ep.tracks.findIndex((t) => t.name === l.speaker)}`}>{l.speaker}</span>
                     {l.words.map((w, j) => (
                       <span key={j} className={w.removed ? "struck" : undefined}>
+                        {j > 0 && LATIN.test(w.t) && LATIN.test(l.words[j - 1].t) ? " " : ""}
                         {w.t}
                       </span>
                     ))}

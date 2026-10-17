@@ -79,7 +79,8 @@ def build(al: dict, media: dict[str, MediaRef], w0: float, w1: float, tokens: di
 
     joint_events = [e for e in al["edit_events"] if e["kind"] == "joint" and e["type"] == "cut"]
     both = [(max(a, w0), min(b, w1)) for a, b in al["removed_raw"]["both_tracks"] if b > w0 and a < w1]
-    both = [(a, b) for a, b in both if b - a > 0.02]
+    both_all = both
+    both = [(a, b) for a, b in both if b - a >= 0.05]   # shorter cuts are inaudible trims
     edits: list[Edit] = []
 
     def add(ops, cat, title, reason, conf, cons):
@@ -100,7 +101,7 @@ def build(al: dict, media: dict[str, MediaRef], w0: float, w1: float, tokens: di
     # material removed on one track only (the other host kept talking) -> lift on that track
     for name in media:
         own = [(max(a, w0), min(b, w1)) for a, b in al["removed_raw"][name] if b > w0 and a < w1]
-        for a, b in minus(own, both):
+        for a, b in minus(own, both_all):
             d = b - a
             if d >= 4.0:
                 add([{"op": "lift", "track": name, "start": S(a), "end": S(b)}], "content",
