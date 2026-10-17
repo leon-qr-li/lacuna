@@ -421,6 +421,31 @@ class SetFades(Op):
 
 
 @dataclass(frozen=True)
+class InsertGap(Op):
+    """Open `length` samples of silence at timeline sample `at` on `tracks` (None = all): material
+    at or after `at` moves right and a clip spanning `at` is split there. Makes room for music
+    between two sentences; it adds no audio by itself."""
+    kind: ClassVar[str] = "insert_gap"
+    at: int
+    length: int
+    tracks: tuple[str, ...] | None = None
+
+    def apply(self, tl):
+        if self.at < 0 or self.length < 0:
+            raise EDLError("bad gap")
+        if self.length == 0:
+            return tl
+        for name in self.tracks or tuple(t.name for t in tl.tracks):
+            tr = tl.track(name)
+            clips = list(tr.clips)
+            tl = _split_at(tl, clips, self.at)
+            ducks = tuple(replace(d, start=d.start + self.length, end=d.end + self.length) if d.start >= self.at
+                          else replace(d, end=d.end + self.length) if d.end > self.at else d for d in tr.ducks)
+            tl = tl.with_track(replace(tr, clips=_sorted(_shift(clips, self.at, self.length)), ducks=ducks))
+        return tl
+
+
+@dataclass(frozen=True)
 class AddDuck(Op):
     """Gain/ducking automation: lower `track` by depth_db over [start, end) with ramps."""
     kind: ClassVar[str] = "duck"
