@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -13,11 +14,16 @@ ALIGNMENT = Path(__file__).resolve().parents[1] / "s4_alignment/out/ep001_alignm
 RAW_DIR = Path("/mnt/user-data/uploads/Projects")
 RAW = {"Leon": RAW_DIR / "原始双轨_Leon.wav", "Pei": RAW_DIR / "原始双轨_Pei.wav"}
 FINAL = RAW_DIR / "最终成品.mp3"
+# LACUNA_EP001_DIR: a workspace episode folder (raw/Leon.wav, raw/Pei.wav, reference/最终成品.mp3)
+if os.environ.get("LACUNA_EP001_DIR"):
+    _ep = Path(os.environ["LACUNA_EP001_DIR"])
+    RAW = {n: _ep / "raw" / f"{n}.wav" for n in RAW}
+    FINAL = _ep / "reference" / "最终成品.mp3"
 SRC_KEY = {"Leon": "leon_src", "Pei": "pei_src"}
 
 
 def load_alignment(path: Path = ALIGNMENT) -> dict:
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def build_project(al: dict, media: dict[str, MediaRef], f0: float = 0.0, f1: float | None = None,

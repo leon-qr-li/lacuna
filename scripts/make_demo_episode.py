@@ -28,7 +28,7 @@ from lacuna_app.store import Workspace  # noqa: E402
 ALIGNMENT = ROOT / "spikes/s4_alignment/out/ep001_alignment.json"
 TOKENS = ROOT / "spikes/s5_first_cut/out/ep001_tokens.json"
 RAW_DIR = Path("/mnt/user-data/uploads/Projects")
-NAMES = {"Leon": "原始双轨_Leon.wav", "Pei": "原始双轨_Pei.wav"}
+NAMES = {"Leon": ("原始双轨_Leon.wav", "Leon.wav"), "Pei": ("原始双轨_Pei.wav", "Pei.wav")}
 DEMO_TAG = "（演示：位置取自 Leon 手剪成品，理由为合成）"
 CONF = {"high": 0.85, "medium": 0.65, "low": 0.45}
 
@@ -141,11 +141,14 @@ def main(argv=None):
 
     raw_dir = Path(args.raw_dir)
     media = {}
-    for name, fn in NAMES.items():
-        print(f"hashing {fn} …", flush=True)
-        media[name] = MediaRef.probe(raw_dir / fn)
-    al = json.loads(ALIGNMENT.read_text())
-    tokens = json.loads(TOKENS.read_text()) if TOKENS.is_file() else None
+    for name, candidates in NAMES.items():
+        path = next((raw_dir / fn for fn in candidates if (raw_dir / fn).is_file()), None)
+        if path is None:
+            sys.exit(f"no raw track for {name} in {raw_dir} (looked for {', '.join(candidates)})")
+        print(f"hashing {path.name} …", flush=True)
+        media[name] = MediaRef.probe(path)
+    al = json.loads(ALIGNMENT.read_text(encoding="utf-8"))
+    tokens = json.loads(TOKENS.read_text(encoding="utf-8")) if TOKENS.is_file() else None
     w0, w1 = args.start, args.start + args.minutes * 60
     project, edits, transcript = build(al, media, w0, w1, tokens)
     meta = {"title": "EP001 样本集（10 分钟演示片段）", "demo": True,
