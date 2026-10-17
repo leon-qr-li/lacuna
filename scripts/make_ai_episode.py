@@ -23,6 +23,7 @@ from lacuna_core import MediaRef, Project, SourcePool, new_timeline  # noqa: E40
 from lacuna_core.edl import Clip, Track, replace  # noqa: E402
 from lacuna_app.ai_cut import convert_ops, load_tokens, transcript_for  # noqa: E402
 from lacuna_app.episode import create_episode  # noqa: E402
+from lacuna_app.learning import review_policy  # noqa: E402
 from lacuna_app.store import Workspace  # noqa: E402
 
 TOKENS = ROOT / "spikes/s5_first_cut/out/ep001_tokens.json"
@@ -41,7 +42,7 @@ def find_raw(raw_dir: Path) -> dict[str, Path]:
     return out
 
 
-def build(media: dict[str, MediaRef], ops_doc: dict, tokens, w0: float, w1: float | None):
+def build(media: dict[str, MediaRef], ops_doc: dict, tokens, w0: float, w1: float | None, policy=None):
     """(project, edits, transcript, report) for raw window [w0, w1) (w1 None = to the end)."""
     sr = next(iter(media.values())).sample_rate
     if any(m.sample_rate != sr for m in media.values()):
@@ -58,7 +59,7 @@ def build(media: dict[str, MediaRef], ops_doc: dict, tokens, w0: float, w1: floa
     with SourcePool({m.media_id: m for m in media.values()}) as pool:
         def read(name: str, x: int, y: int):
             return pool.read(media[name].media_id, x + a, y + a)
-        edits, report = convert_ops(ops_doc, tokens, sr, w0, w1, read)
+        edits, report = convert_ops(ops_doc, tokens, sr, w0, w1, read, policy)
     return project, edits, transcript_for(tokens, w0, w1), report
 
 
@@ -86,7 +87,8 @@ def main(argv=None):
     tokens = load_tokens(args.tokens)
     w0 = args.start
     w1 = None if args.minutes is None else w0 + args.minutes * 60
-    project, edits, transcript, report = build(media, ops_doc, tokens, w0, w1)
+    # what goes to review follows the learned rules Leon approved (phase 5), defaults otherwise
+    project, edits, transcript, report = build(media, ops_doc, tokens, w0, w1, review_policy(args.workspace))
     meta = {"title": args.title, "demo": False, "raw_offset_s": w0,
             "source": f"ai_cut:{Path(args.ops).name}",
             "ai_model": ops_doc.get("model", "") if isinstance(ops_doc, dict) else "",

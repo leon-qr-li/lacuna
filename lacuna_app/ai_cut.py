@@ -36,7 +36,7 @@ import numpy as np
 from lacuna_core.refine import snap_cut
 
 from .episode import APPLIED, RESTORED, Edit
-from .review import needs_review
+from .review import ReviewPolicy, needs_review
 
 TRACK_NAMES = {"L": "Leon", "P": "Pei"}
 CATEGORY_MAP = {
@@ -136,8 +136,9 @@ class _OpError(ValueError):
 
 class Converter:
     def __init__(self, tokens: dict[str, TrackTokens], sr: int, w0: float = 0.0,
-                 w1: float = float("inf"), read: Reader | None = None):
+                 w1: float = float("inf"), read: Reader | None = None, policy: ReviewPolicy | None = None):
         self.tokens = tokens
+        self.policy = policy
         self.sr = sr
         self.w0, self.w1 = w0, w1
         self.read = read
@@ -196,6 +197,15 @@ class Converter:
     def speech(self, tags: Iterable[str], a: float, b: float) -> float:
         return sum(self.tokens[t].speech_in(a, b) for t in tags if t in self.tokens)
 
+    def host(self, tags: list[str], a: float, b: float) -> str:
+        """Whose speech [a, b) removes on `tags`: Leon / Pei / both / none (same rule as learning.decisions)."""
+        per = {TRACK_NAMES[t]: self.tokens[t].speech_in(a, b) for t in tags if t in self.tokens}
+        top = max(per.values(), default=0.0)
+        if top < 0.05:
+            return "none"
+        big = [t for t, v in per.items() if v >= 0.3 * top]
+        return big[0] if len(big) == 1 else "both"
+
     def text(self, tags: Iterable[str], a: float, b: float) -> str:
         return " / ".join(s for s in (self.tokens[t].text_in(a, b) for t in tags if t in self.tokens) if s)
 
@@ -242,7 +252,8 @@ class Converter:
                 return self._edit(oid, ops, cat, "AI 建议（未删）· " + title,
                                   "AI 没有删这段，留给你决定。" + reason, conf, sp, ai_cat,
                                   status=RESTORED, review=True)
-            return self._edit(oid, ops, cat, title, reason, conf, sp, ai_cat)
+            host = TRACK_NAMES[tags[0]] if len(tags) == 1 else self.host(tags, a, b)
+            return self._edit(oid, ops, cat, title, reason, conf, sp, ai_cat, host=host)
 
         if kind == "tighten_pause":
             at = o["at"]
@@ -275,7 +286,7 @@ class Converter:
                 raise _OpError("range vanished after snapping")
             ops = [{"op": "cut", "start": x, "end": y, "tracks": None}]
             title = f"停顿 {gb - ga:.1f}s → {target:.1f}s"
-            return self._edit(oid, ops, cat, title, reason, conf, 0.0, ai_cat)
+            return self._edit(oid, ops, cat, title, reason, conf, 0.0, ai_cat, host="none")
 
         if kind == "slip":
             if track == "both":
@@ -294,7 +305,7 @@ class Converter:
             ops = [{"op": "slip", "track": name, "start": x, "end": y, "delta": d}]
             word = self.text([track], a, b)
             title = f"{name} 插话{'挪后' if delta > 0 else '提前'} {abs(delta):.1f} 秒" + (f" ·「{word[:10]}」" if word else "")
-            return self._edit(oid, ops, cat, title, reason, conf, 0.0, ai_cat)
+            return self._edit(oid, ops, cat, title, reason, conf, 0.0, ai_cat, host=name)
 
         raise _OpError(f"unknown op {kind!r}")
 
@@ -311,8 +322,10 @@ class Converter:
         return f"{who}{label} · {dur:.1f} 秒{quote}"
 
     def _edit(self, oid, ops, cat, title, reason, conf, speech_s, ai_cat, status=APPLIED,
-              review=None) -> Edit:
-        cons = needs_review(cat, conf, speech_s) if review is None else review
+              review=None, host=None) -> Edit:
+        if review is None:
+            review = needs_review(cat, conf, speech_s, kind=ai_cat, host=host, policy=self.policy)
+        cons = review
         return Edit("", ops, cat, title, reason, round(conf, 2), cons, status=status, source="first_cut",
                     op_id=oid, ai_category=ai_cat, speech_s=round(speech_s, 2))
 
@@ -355,10 +368,12 @@ class Converter:
 
 
 def convert_ops(doc: dict | list, tokens: dict[str, TrackTokens], sr: int, w0: float = 0.0,
-                w1: float = float("inf"), read: Reader | None = None) -> tuple[list[Edit], Report]:
-    """AI ops document -> (edits in base coordinates, report)."""
+                w1: float = float("inf"), read: Reader | None = None,
+                policy: ReviewPolicy | None = None) -> tuple[list[Edit], Report]:
+    """AI ops document -> (edits in base coordinates, report). `policy`: learned review calibration
+    (`learning.review_policy`), None = the defaults."""
     ops = doc["ops"] if isinstance(doc, dict) else doc
-    c = Converter(tokens, sr, w0, w1, read)
+    c = Converter(tokens, sr, w0, w1, read, policy)
     edits = c.convert(ops)
     return edits, c.report
 
