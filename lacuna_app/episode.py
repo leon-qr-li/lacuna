@@ -344,7 +344,10 @@ class Episode:
     def add_edit(self, ops: list[dict], category: str, title: str, reason: str = "",
                  confidence: float = 1.0, source: str = "manual", status: str = PROPOSED) -> Edit:
         for o in ops:
-            Op.from_dict(o)    # shape check
+            try:
+                Op.from_dict(o)    # shape check
+            except (KeyError, TypeError) as e:
+                raise ValueError(f"malformed op {o!r}") from e
             if o["op"] not in ("cut", "lift", "track_gain"):
                 raise ConflictError(f"op {o['op']} is not supported in this slice")
         with self.lock:
