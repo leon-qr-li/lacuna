@@ -60,6 +60,7 @@ if __name__ == "__main__":
         from tests.app.synth import write_music_inbox
 
         ws = make_workspace(Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws")
-        write_music_inbox(Path(ws) / "music_inbox")       # for the media library (phase 6a)
+        # music files for the media library E2E to drag / pick (web/e2e/music.spec.ts reads them here)
+        write_music_inbox(Path(__file__).resolve().parents[2] / "web" / "e2e" / ".fixtures" / "music_inbox")
         uvicorn.run(create_app(ws, MockEditorAdapter(), credit_client=FakeCreditAnthropic()), host="127.0.0.1",
                     port=int(port), log_level="warning")

@@ -1,4 +1,10 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+
+// written by tests/app/serve_e2e.py when the backend starts
+const INBOX = join(dirname(fileURLToPath(import.meta.url)), ".fixtures", "music_inbox");
 
 const EP = encodeURIComponent("EP_TEST_合成");
 
@@ -9,33 +15,44 @@ test("media library → credits → music on the episode → series rule", async
   await expect(page).toHaveURL(/#\/library/);
   await expect(page.getByText("素材库还是空的")).toBeVisible();
 
-  // add the theme: browse to the inbox folder, say what it is
-  await page.getByRole("button", { name: "添加音乐文件" }).click();
-  const fs = page.getByRole("dialog", { name: "选择音乐文件" });
-  await fs.getByRole("button", { name: /music_inbox/ }).click();
-  await fs.getByRole("button", { name: /odyssey_theme\.mp3/ }).click();
-  const add = page.getByRole("dialog", { name: "加入素材库" });
-  await add.getByLabel("备注").fill("这是奥德赛的主题曲");
-  await add.getByRole("button", { name: "加入素材库" }).click();
+  // add the theme with the system file picker, then say what it is
+  await page.getByLabel("选择音乐文件").setInputFiles(join(INBOX, "odyssey_theme.mp3"));
+  await expect(page.getByTestId("uploads")).toContainText("已加入：odyssey_theme.mp3");
   const theme = page.getByTestId("asset-row").filter({ hasText: "odyssey_theme.mp3" });
   await expect(theme).toContainText("待确认"); // from the file's own tags
+  await theme.getByLabel("备注").fill("这是奥德赛的主题曲");
+  await theme.getByRole("button", { name: "保存备注" }).click();
+  await expect(theme.getByRole("button", { name: "保存备注" })).toBeDisabled();
   await expect(theme.getByTestId("credit-line")).toContainText("Odyssey Main Theme");
 
   // Claude looks up the official title (fake client), Leon confirms it
   await theme.getByRole("button", { name: "让 Claude 查正式曲名" }).click();
   await expect(theme.getByTestId("credit-line")).toContainText("《奥德赛》原声 · Ludwig Göransson — “Odysseus”");
   await expect(theme).toContainText("Claude 查的");
+  await expect(theme.getByLabel("曲名")).toHaveValue("Odysseus"); // filled in, ready to correct
+  await theme.getByRole("button", { name: "收起" }).click();
   await theme.getByRole("button", { name: "对，就是这首" }).click();
   await expect(theme).toContainText("已确认");
 
-  // the jingle goes in as a series intro, with a hand-written credit
-  await page.getByRole("button", { name: "添加音乐文件" }).click();
-  await page.getByRole("dialog", { name: "选择音乐文件" }).getByRole("button", { name: /music_inbox/ }).click();
-  await page.getByRole("dialog", { name: "选择音乐文件" }).getByRole("button", { name: /洛城片头\.wav/ }).click();
-  await page.getByRole("dialog", { name: "加入素材库" }).locator("select").selectOption("jingle");
-  await page.getByRole("dialog", { name: "加入素材库" }).getByRole("button", { name: "加入素材库" }).click();
+  // the jingle is dragged onto the page as a series intro, then gets a hand-written credit
+  await page.getByLabel("新文件的用途").selectOption("intro");
+  const bytes = [...readFileSync(join(INBOX, "洛城片头.wav"))];
+  const drop = await page.evaluateHandle((b) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([new Uint8Array(b)], "洛城片头.wav", { type: "audio/wav" }));
+    return dt;
+  }, bytes);
+  await page.getByTestId("drop-zone").dispatchEvent("dragover", { dataTransfer: drop });
+  await expect(page.getByTestId("drop-zone")).toHaveClass(/lib-drop-active/);
+  await page.getByTestId("drop-zone").dispatchEvent("drop", { dataTransfer: drop });
+  await expect(page.getByTestId("uploads")).toContainText("已加入：洛城片头.wav");
   const jingle = page.getByTestId("asset-row").filter({ hasText: "洛城片头.wav" });
-  await expect(jingle).toContainText("系列片头 / 片尾");
+  await expect(jingle.getByLabel("用途")).toHaveValue("intro");
+
+  // the same file again is not added twice
+  await page.getByLabel("选择音乐文件").setInputFiles(join(INBOX, "odyssey_theme.mp3"));
+  await expect(page.getByTestId("uploads")).toContainText("跳过：odyssey_theme.mp3");
+  await expect(page.getByTestId("asset-row")).toHaveCount(2);
   await expect(jingle).toContainText("还不知道曲名");
   await jingle.getByRole("button", { name: "手动改" }).click();
   await jingle.getByLabel("曲名").fill("洛城二三事 片头");
@@ -48,14 +65,14 @@ test("media library → credits → music on the episode → series rule", async
   await expect(page.getByRole("heading", { name: "配乐", exact: true })).toBeVisible();
   await expect(page.getByText("BGM：未设置")).toBeVisible();
   const voice = await page.getByText(/人声剪辑 .* → 成品 /).innerText();
-  await page.getByLabel("选择素材").selectOption({ label: "“洛城二三事 片头”（洛城片头.wav）" });
-  await page.getByLabel("用途").selectOption("intro");
+  await page.getByLabel("选择素材").selectOption({ label: "“洛城二三事 片头”（洛城片头.wav） · 片头（播客开始）" });
+  await expect(page.getByLabel("用途")).toHaveValue("intro"); // taken from the asset's use
   await page.getByRole("button", { name: "放进去" }).click();
   await expect(page.getByTestId("placement")).toHaveCount(1);
   await expect(page.getByText(/人声剪辑 .* → 成品 /)).not.toHaveText(voice); // the intro adds time
 
   // an interlude at 0:20 of the final cut
-  await page.getByLabel("选择素材").selectOption({ label: "《奥德赛》原声 · Ludwig Göransson — “Odysseus”（odyssey_theme.mp3）" });
+  await page.getByLabel("选择素材").selectOption({ label: "《奥德赛》原声 · Ludwig Göransson — “Odysseus”（odyssey_theme.mp3） · 其他素材" });
   await page.getByLabel("用途").selectOption("interlude");
   await page.getByRole("button", { name: "放进去" }).click();
   await expect(page.getByText("请写位置")).toBeVisible();

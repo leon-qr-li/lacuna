@@ -264,9 +264,11 @@ export interface Credit {
   note?: string;
 }
 
+export type Kind = "intro" | "outro" | "interlude" | "bed" | "dialogue" | "trailer" | "other";
+
 export interface Asset {
   id: string;
-  kind: "music" | "jingle" | "clip";
+  kind: Kind;
   kind_label: string;
   file: string;
   name: string;
@@ -283,7 +285,8 @@ export interface LibraryView {
   assets: Asset[];
   series: { name: string; default: boolean }[];
   folder: string;
-  kinds: Record<string, string>;
+  kinds: Record<Kind, string>; // Leon's fixed list of uses, in display order
+  kind_roles: Record<Kind, Role>; // where the music page puts an asset of that use
   lookup: boolean; // Claude credit lookup available (API key found)
 }
 
@@ -364,6 +367,25 @@ async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
 
 const ep = (id: string) => `/api/episodes/${encodeURIComponent(id)}`;
 
+async function uploadAsset(file: File, kind: string, note = ""): Promise<{ asset: Asset; duplicate: boolean }> {
+  const q = new URLSearchParams({ name: file.name, kind, note });
+  const res = await fetch(`/api/library/upload?${q}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/octet-stream" },
+    body: file,
+  });
+  if (!res.ok) {
+    let msg = res.statusText;
+    try {
+      msg = (await res.json()).detail ?? msg;
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(String(msg));
+  }
+  return res.json() as Promise<{ asset: Asset; duplicate: boolean }>;
+}
+
 async function dictate(audio: Blob): Promise<Dictated> {
   const res = await fetch("/api/dictation", {
     method: "POST",
@@ -416,8 +438,7 @@ export const api = {
   decideRule: (id: string, action: "approve" | "reject" | "reset") =>
     req<LearningOverview>("POST", "/api/learning/rules", { id, action }),
   library: () => req<LibraryView>("GET", "/api/library"),
-  addAsset: (path: string, kind: string, note: string) =>
-    req<{ asset: Asset }>("POST", "/api/library/files", { path, kind, note }),
+  uploadAsset,
   scanLibrary: () => req<LibraryView & { added: Asset[] }>("POST", "/api/library/scan"),
   openLibrary: () => req<{ folder: string }>("POST", "/api/library/open"),
   updateAsset: (aid: string, body: { note?: string; kind?: string; credit?: Partial<Credit>; confirm?: boolean }) =>
