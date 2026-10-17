@@ -24,6 +24,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - **Chat voice input** (2026-10-17, D43): 🎤 button next to the chat box; local SenseVoice, text lands in the box, Leon sends. Needs the models from a first import (`<workspace>/models`).
 
 ## Open issues
+- First cut on real episodes: Opus 5.5 / Opus 5 refuse full-size first-cut requests (`reasoning_extraction`, D44). Refused windows now fall back to Sonnet 5.5 and refusals are logged; compare Sonnet's first cut with Leon's review before deciding the default model.
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.
 - Content-trim selection is taste: phase 5 turns Leon's cut/kept passages into examples for the first-cut prompt (D39); effect measurable only on a new episode (phase 4).
 - Pause shaping too uniform (keeps 2 vs Leon's 41 pauses >1 s); interjection moves should come from asymmetric per-track pause cuts.

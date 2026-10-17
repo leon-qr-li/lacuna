@@ -129,6 +129,46 @@ def test_api_failure_resumes_from_cache(ws, rec):
     assert "EP002" in ws.episode_ids()
 
 
+def test_refusal_falls_back_to_sonnet_and_is_logged(ws, rec):
+    # Opus refuses full-size first-cut requests (reasoning_extraction); the window is re-cut by Sonnet
+    fake = FakeFirstCutAnthropic(refuse_models={"claude-opus-5-5"})
+    imp = importer(ws, fake)
+    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "done", job["error"]
+    assert [r["model"] for r in fake.requests] == ["claude-opus-5-5", "claude-sonnet-5-5"]
+    assert job["result"]["edits"] == 4
+    meta = json.loads((ws.episode_dir("EP002") / "episode.json").read_text(encoding="utf-8"))
+    assert meta["ai_model"].startswith("claude-sonnet-5-5 /")
+    assert "拒绝" in meta["ai_notes"] and "claude-sonnet-5-5" in meta["ai_notes"]
+    usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert usage[-1]["calls"] == 2 and usage[-1]["refused_calls"] == 1
+    assert usage[-1]["refusal"] == "reasoning_extraction" and usage[-1]["cost_usd"] > 0
+
+
+def test_refused_by_every_model_logs_the_cost(ws, rec):
+    fake = FakeFirstCutAnthropic(refuse_models={"claude-opus-5-5", "claude-sonnet-5-5"})
+    imp = importer(ws, fake)
+    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "error" and "拒绝" in job["error"] and "reasoning_extraction" in job["error"]
+    assert "继续" in job["error"]
+    usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert usage[-1]["episode"] == "EP002" and usage[-1]["refused_calls"] == 2 and usage[-1]["cost_usd"] > 0
+
+
+def test_after_a_refusal_later_windows_go_straight_to_the_fallback():
+    fake = FakeFirstCutAnthropic(refuse_models={"claude-opus-5-5"})
+    fc = ClaudeFirstCut(client=fake)
+    assert fc.models() == ["claude-opus-5-5", "claude-sonnet-5-5"]
+    fc.run_window("sys", "doc", 0.0, 600.0, 0, 3)
+    assert fc.models() == ["claude-sonnet-5-5"]
+    fc.run_window("sys", "doc", 600.0, 1200.0, 1, 3)
+    assert [r["model"] for r in fake.requests] == ["claude-opus-5-5", "claude-sonnet-5-5", "claude-sonnet-5-5"]
+    assert fc.spent["calls"] == 3 and fc.spent["refused_calls"] == 1
+    assert ClaudeFirstCut(client=fake, fallback_model="").models() == ["claude-opus-5-5"]
+
+
 def test_restart_marks_running_job_interrupted(ws, rec):
     imp = importer(ws)
     imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)

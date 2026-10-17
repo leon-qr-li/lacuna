@@ -296,6 +296,8 @@ class Importer:
             except Exception as e:
                 from .first_cut import FirstCutError
                 if isinstance(e, FirstCutError):
+                    if e.usage:
+                        self._log_usage(job["id"], e.usage)     # refused / failed calls cost money too
                     if job["id"] in self._cancel:
                         raise Cancelled()
                     raise ImportError_(f"AI 第一刀没做完：{e}。已剪好的段落都存着，点「继续」接着剪。")

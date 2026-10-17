@@ -24,6 +24,7 @@ from .ai_cut import TrackTokens
 from .editor import PRICES, ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 
 PROMPTS = Path(__file__).resolve().parent / "prompts"
+FALLBACK_MODEL = os.environ.get("LACUNA_FIRST_CUT_FALLBACK", "claude-sonnet-5-5")   # "" = no fallback
 WINDOW_S = 600.0
 MIN_TAIL_S = 180.0              # a shorter last window is merged into the one before
 CATEGORIES = ["pause", "disfluency", "repetition", "crosstalk", "content", "interjection_move",
@@ -107,7 +108,7 @@ class FirstCutResult:
 
 
 class FirstCutError(RuntimeError):
-    pass
+    usage: dict = {}                    # set by ClaudeFirstCut.run: what the failed run cost
 
 
 def _point(v: Any):
@@ -161,6 +162,9 @@ def _add_usage(total: dict, u: dict) -> None:
         total[k] = round(total.get(k, 0) + (u.get(k) or 0), 4)
     total["model"] = u.get("model", total.get("model"))
     total["calls"] = total.get("calls", 0) + 1
+    if u.get("refused"):
+        total["refused_calls"] = total.get("refused_calls", 0) + 1
+        total["refusal"] = u["refused"]
 
 
 class ClaudeFirstCut:
@@ -170,13 +174,17 @@ class ClaudeFirstCut:
     model = ClaudeEditorAdapter.model
 
     def __init__(self, api_key: str | None = None, client: Any = None, effort: str | None = None,
-                 concurrency: int = 2):
+                 concurrency: int = 2, fallback_model: str | None = None):
         if api_key is None and client is None:
             api_key, _ = find_api_key()
         self.api_key = api_key
         self._client = client
         self.effort = effort or os.environ.get("LACUNA_FIRST_CUT_EFFORT", "high")
         self.concurrency = concurrency
+        self.fallback_model = (FALLBACK_MODEL if fallback_model is None else fallback_model)
+        self._refused = False
+        self._lock = threading.Lock()
+        self.spent: dict = {}           # usage of every call in the current run (refused ones too)
 
     @property
     def available(self) -> bool:
@@ -201,22 +209,46 @@ class ClaudeFirstCut:
                                               **req) as s:
             return s.get_final_message()
 
+    def models(self) -> list[str]:
+        """Models to try for a window, in order. Once the main model refused a window, the rest of the
+        run goes straight to the fallback (Opus refuses full-size first-cut requests as
+        `reasoning_extraction`; the server-side fallback does not reroute them, Sonnet 5.5 cuts fine)."""
+        if self.fallback_model and self.fallback_model != self.model:
+            return [self.fallback_model] if self._refused else [self.model, self.fallback_model]
+        return [self.model]
+
     def run_window(self, system: str, doc: str, a: float, b: float, k: int, n: int) -> tuple[list[dict], str, dict]:
-        """(raw tool ops, notes, usage) for one window; raises FirstCutError with a Chinese message."""
-        t0 = time.monotonic()
-        try:
-            resp = self._call(self.request(system, doc, window_request(a, b, k, n)))
-        except Exception as e:      # noqa: BLE001
-            raise FirstCutError(error_message(e).replace("，这次没有改动。", "")) from e
-        usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
-        if resp.stop_reason == "refusal":
-            raise FirstCutError(f"Claude 拒绝处理第 {k + 1} 段")
-        for block in resp.content:
-            if block.type == "tool_use" and block.name == "submit_ops":
-                return list(block.input.get("ops") or []), str(block.input.get("notes") or ""), usage
-        if resp.stop_reason == "max_tokens":
-            raise FirstCutError(f"第 {k + 1} 段的回答太长被截断")
-        raise FirstCutError(f"Claude 没有交回第 {k + 1} 段的剪辑")
+        """(raw tool ops, notes, usage) for one window; raises FirstCutError with a Chinese message.
+        Every call, refused ones included, is added to `self.spent` so the cost is logged either way."""
+        usage: dict = {}
+        refusal = ""
+        for model in self.models():
+            req = self.request(system, doc, window_request(a, b, k, n))
+            req["model"] = model
+            t0 = time.monotonic()
+            try:
+                resp = self._call(req)
+            except Exception as e:      # noqa: BLE001
+                raise FirstCutError(error_message(e).replace("，这次没有改动。", "")) from e
+            u = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
+            if resp.stop_reason == "refusal":
+                refusal = getattr(getattr(resp, "stop_details", None), "category", None) or "refusal"
+                u["refused"] = refusal
+            with self._lock:
+                _add_usage(self.spent, u)
+            _add_usage(usage, u)
+            if resp.stop_reason == "refusal":
+                if model == self.model:
+                    self._refused = True
+                continue
+            usage["model"] = model
+            for block in resp.content:
+                if block.type == "tool_use" and block.name == "submit_ops":
+                    return list(block.input.get("ops") or []), str(block.input.get("notes") or ""), usage
+            if resp.stop_reason == "max_tokens":
+                raise FirstCutError(f"第 {k + 1} 段的回答太长被截断")
+            raise FirstCutError(f"Claude 没有交回第 {k + 1} 段的剪辑")
+        raise FirstCutError(f"Claude 拒绝处理第 {k + 1} 段（{refusal}），备用模型也拒绝了")
 
     def run(self, doc: str, duration: float, tokens: dict[str, TrackTokens], episode: str,
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
@@ -228,6 +260,8 @@ class ClaudeFirstCut:
         wins = windows(duration)
         n = len(wins)
         results: dict[int, tuple[list[dict], str, dict]] = {}
+        used: dict[int, str] = {}       # window -> model that cut it
+        self.spent, self._refused = {}, False
         if cache_dir:
             cache_dir.mkdir(parents=True, exist_ok=True)
             for k in range(n):
@@ -236,6 +270,7 @@ class ClaudeFirstCut:
                     d = json.loads(p.read_text(encoding="utf-8"))
                     if d.get("window") == list(wins[k]) and d.get("system_len") == len(system):
                         results[k] = (d["ops"], d["notes"], {})
+                        used[k] = (d.get("usage") or {}).get("model") or self.model
         lock = threading.Lock()
 
         def report():
@@ -248,6 +283,7 @@ class ClaudeFirstCut:
             ops, notes, usage = self.run_window(system, doc, a, b, k, n)
             with lock:
                 results[k] = (ops, notes, usage)
+                used[k] = usage.get("model") or self.model
                 if cache_dir:
                     (cache_dir / f"window_{k:02d}.json").write_text(json.dumps(
                         {"window": [a, b], "system_len": len(system), "ops": ops, "notes": notes,
@@ -256,29 +292,37 @@ class ClaudeFirstCut:
 
         report()
         todo = [k for k in range(n) if k not in results]
-        if todo:
-            one(todo[0])            # first call alone: it writes the prompt cache the others read
-            with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
-                for f in [ex.submit(one, k) for k in todo[1:]]:
-                    f.result()      # re-raises the first failure
+        try:
+            if todo:
+                one(todo[0])        # first call alone: it writes the prompt cache the others read
+                with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
+                    for f in [ex.submit(one, k) for k in todo[1:]]:
+                        f.result()  # re-raises the first failure
+        except FirstCutError as e:
+            e.usage = dict(self.spent)      # what the failed run cost, refused calls included
+            raise
         if cancelled():
             raise FirstCutError("已取消")
-        usage: dict = {}
         ops: list[dict] = []
         notes = []
         for k in range(n):
-            raw, note, u = results[k]
-            if u:
-                _add_usage(usage, u)
+            raw, note, _ = results[k]
             a, b = wins[k]
             ops += to_s5_ops(raw, tokens, a, b, last=k == n - 1)
             if note:
                 notes.append(f"{int(a // 60)}–{int(b // 60)} 分：{note}")
         for i, o in enumerate(ops):
             o["id"] = f"op{i + 1:04d}"
-        doc_out = {"episode": episode, "model": f"{self.model} / LACUNA first cut (effort {self.effort})",
+        names = sorted(set(used.values()), key=lambda m: m != self.model)
+        fell_back = [k + 1 for k in range(n) if used[k] != self.model]
+        if fell_back:
+            notes.append(f"{self.model} 拒绝了这次初剪，第 {'、'.join(map(str, fell_back))} 段改由 "
+                         f"{used[fell_back[0] - 1]} 剪。")
+        doc_out = {"episode": episode, "model": f"{' + '.join(names)} / LACUNA first cut (effort {self.effort})",
                    "notes": "\n".join(notes), "ops": ops}
-        return FirstCutResult(doc_out, usage, notes)
+        if fell_back:
+            doc_out["fallback_windows"] = fell_back
+        return FirstCutResult(doc_out, dict(self.spent), notes)
 
 
 class RuleFirstCut:
