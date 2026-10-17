@@ -8,3 +8,6 @@
 .upload-col { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .upload a.btn { text-decoration: none; }
 .upload-cover-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.upload-h { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; }
+.step-n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--grad); color: #fff; font: 600 13px var(--mono); }
+.upload-cover { border-radius: 14px; border-color: var(--line); }
