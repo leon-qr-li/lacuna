@@ -44,14 +44,18 @@ export function ExportPanel({ id, version }: { id: string; version: string }) {
 
   const running = job?.state === "running";
   const rep = job?.result?.report;
-  const stale = job?.state === "done" && job.version !== version;
+  // edits or music changed since this export
+  const stale = job?.state === "done" && (job.version !== version || !!job.music_stale);
   return (
     <div className="export">
       <button
         type="button"
         className="btn btn-primary"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          if (!open && !running) poll(); // the music may have changed on another page
+          setOpen((o) => !o);
+        }}
         data-testid="export-toggle"
       >
         {running ? `导出中 ${Math.round((job?.progress ?? 0) * 100)}%` : "导出"}
