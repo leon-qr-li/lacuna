@@ -27,14 +27,15 @@ from . import learning
 from .ai_cut import TrackTokens, build_episode, report_dict
 from .episode import create_episode
 from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json
+from .i18n import N_, tr
 
 AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", ".aac"}
 HOSTS = (("L", "Leon"), ("P", "Pei"))
 JOB_FILE = "job.json"
 STEPS = (("models", 0.04), ("asr_L", 0.34), ("asr_P", 0.34), ("features", 0.04), ("first_cut", 0.20),
          ("episode", 0.04))
-STEP_LABELS = {"models": "准备识别模型", "asr_L": "识别 Leon 的分轨", "asr_P": "识别 Pei 的分轨",
-               "features": "分析停顿、语速和重叠", "first_cut": "AI 第一刀", "episode": "生成审阅"}
+STEP_LABELS = {"models": N_("准备识别模型"), "asr_L": N_("识别 Leon 的分轨"), "asr_P": N_("识别 Pei 的分轨"),
+               "features": N_("分析停顿、语速和重叠"), "first_cut": N_("AI 第一刀"), "episode": N_("生成审阅")}
 
 
 class ImportBusy(RuntimeError):
@@ -57,9 +58,9 @@ def check_track(path: str | Path) -> dict:
     """Basic facts about a raw track, or a Chinese error."""
     p = Path(path).expanduser()
     if not p.is_file():
-        raise ImportError_(f"找不到文件：{p}")
+        raise ImportError_(tr("找不到文件：{p}", p=p))
     if p.suffix.lower() not in AUDIO_EXT:
-        raise ImportError_(f"不是音频文件：{p.name}")
+        raise ImportError_(tr("不是音频文件：{name}", name=p.name))
     try:
         info = sf.info(str(p))
         return {"path": str(p.resolve()), "name": p.name, "duration": round(info.frames / info.samplerate, 2),
@@ -103,7 +104,7 @@ class Importer:
             if job.get("hidden"):
                 continue
             if job.get("state") in ("queued", "running"):
-                job.update(state="interrupted", error="App 在导入途中关闭了，点「继续」从断点接着做。")
+                job.update(state="interrupted", error=tr("App 在导入途中关闭了，点「继续」从断点接着做。"))
             self.jobs[job["id"]] = job
 
     def _save(self, job: dict) -> None:
@@ -123,18 +124,18 @@ class Importer:
         try:
             check_id(episode_id)
         except PathError:
-            raise ImportError_("剧集编号不能含 \\ / : * ? \" < > | 等字符")
+            raise ImportError_(tr("剧集编号不能含 \\ / : * ? \" < > | 等字符"))
         if episode_id in self.ws.episode_ids():
-            raise ImportError_(f"已经有一集叫 {episode_id}，换个编号")
+            raise ImportError_(tr("已经有一集叫 {episode_id}，换个编号", episode_id=episode_id))
         tracks = {"L": check_track(leon), "P": check_track(pei)}
         if tracks["L"]["path"] == tracks["P"]["path"]:
-            raise ImportError_("Leon 和 Pei 选了同一个文件")
+            raise ImportError_(tr("Leon 和 Pei 选了同一个文件"))
         with self._lock:
             old = self.jobs.get(episode_id)
             if old and old["state"] in ("queued", "running"):
-                raise ImportBusy("这一集已经在导入")
+                raise ImportBusy(tr("这一集已经在导入"))
         job = {"id": episode_id, "title": title.strip() or episode_id, "tracks": tracks,
-               "state": "queued", "progress": 0.0, "step": None, "stage": "排队", "steps": {},
+               "state": "queued", "progress": 0.0, "step": None, "stage": tr("排队"), "steps": {},
                "created": now(), "started": None, "finished": None, "error": None, "result": None}
         return self._launch(job, wait)
 
@@ -144,8 +145,8 @@ class Importer:
         if job is None:
             raise KeyError(episode_id)
         if job["state"] not in ("error", "interrupted", "cancelled"):
-            raise ImportBusy("这一集不需要继续")
-        job = dict(job, state="queued", error=None, stage="排队")
+            raise ImportBusy(tr("这一集不需要继续"))
+        job = dict(job, state="queued", error=None, stage=tr("排队"))
         return self._launch(job, wait)
 
     def cancel(self, episode_id: str) -> None:
@@ -161,7 +162,7 @@ class Importer:
             if j is None:
                 raise KeyError(episode_id)
             if j["state"] in ("queued", "running"):
-                raise ImportBusy("正在导入，先取消")
+                raise ImportBusy(tr("正在导入，先取消"))
             j["hidden"] = True
             self._save(j)
             del self.jobs[episode_id]
@@ -169,7 +170,7 @@ class Importer:
     def _launch(self, job: dict, wait: bool) -> dict:
         with self._lock:
             if self._running:
-                raise ImportBusy(f"{self._running} 正在导入，等它做完再导入下一集")
+                raise ImportBusy(tr("{_running} 正在导入，等它做完再导入下一集", _running=self._running))
             self._running = job["id"]
             self._cancel.discard(job["id"])
             self.jobs[job["id"]] = job
@@ -205,17 +206,17 @@ class Importer:
         try:
             self._steps(job, d)
             with self._lock:
-                job.update(state="done", progress=1.0, stage="完成，可以开始审阅", finished=now())
+                job.update(state="done", progress=1.0, stage=tr("完成，可以开始审阅"), finished=now())
         except Cancelled:
             with self._lock:
-                job.update(state="cancelled", stage="已取消", error="已取消。点「继续」从断点接着做。", finished=now())
+                job.update(state="cancelled", stage=tr("已取消"), error=tr("已取消。点「继续」从断点接着做。"), finished=now())
         except ImportError_ as e:
             with self._lock:
                 job.update(state="error", error=str(e), finished=now())
         except Exception as e:     # noqa: BLE001 - surfaced to the UI; full trace on the console
             traceback.print_exc()
             with self._lock:
-                job.update(state="error", error=f"{STEP_LABELS.get(job.get('step'), '导入')}出错：{e or type(e).__name__}",
+                job.update(state="error", error=tr("{p0}出错：{p1}", p0=tr(STEP_LABELS.get(job.get('step'), N_('导入'))), p1=e or type(e).__name__),
                            finished=now())
         finally:
             with self._lock:
@@ -229,7 +230,7 @@ class Importer:
         # 1. models (real ASR only)
         if backend is None:
             if not asr_mod.sherpa_installed():
-                raise ImportError_('没装语音识别组件 sherpa-onnx（pip install -e ".[asr]"）')
+                raise ImportError_(tr("没装语音识别组件 sherpa-onnx（pip install -e \".[asr]\"）"))
             if not asr_mod.models_present(self.models_dir):
                 asr_mod.ensure_models(self.models_dir, lambda f, s: self._progress(job, "models", f, s))
         self._done_step(job, "models")
@@ -244,13 +245,13 @@ class Importer:
             if out.is_file():
                 asr[tag] = read_json(out)
                 continue
-            self._progress(job, step, 0.0, f"解码 {name} 的分轨")
+            self._progress(job, step, 0.0, tr("解码 {name} 的分轨", name=name))
             t = time.monotonic()
             x = asr_mod.decode_16k(job["tracks"][tag]["path"])
             audio16[tag] = x
             if backend is None:
                 if rec is None:
-                    self._progress(job, step, 0.01, "加载识别模型")
+                    self._progress(job, step, 0.01, tr("加载识别模型"))
                     rec = asr_mod.load_recognizers(self.models_dir)
                 res = asr_mod.transcribe(x, rec, lambda f, s, step=step, name=name:
                                          self._progress(job, step, f, f"{name}：{s}"))
@@ -266,7 +267,7 @@ class Importer:
         from . import features
         tok_p, feat_p, doc_p = d / "tokens.json", d / "features.json", d / "editor_input.md"
         if not (tok_p.is_file() and feat_p.is_file() and doc_p.is_file()):
-            self._progress(job, "features", 0.0, "分析停顿、语速和重叠")
+            self._progress(job, "features", 0.0, tr("分析停顿、语速和重叠"))
             for tag, _ in HOSTS:
                 if tag not in audio16:
                     audio16[tag] = asr_mod.decode_16k(job["tracks"][tag]["path"])
@@ -290,7 +291,7 @@ class Importer:
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
-            self._progress(job, "first_cut", 0.0, "AI 第一刀" if fc.name == "claude" else "规则第一刀（没有 Claude）")
+            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（没有 Claude）"))
             try:
                 res = fc.run(doc, duration, tokens, job["id"],
                              progress=lambda f, s: self._progress(job, "first_cut", f, s),
@@ -301,16 +302,16 @@ class Importer:
                 if isinstance(e, FirstCutError):
                     if job["id"] in self._cancel:
                         raise Cancelled()
-                    raise ImportError_(f"AI 第一刀没做完：{e}。已剪好的段落都存着，点「继续」接着剪。")
+                    raise ImportError_(tr("AI 第一刀没做完：{e}。已剪好的段落都存着，点「继续」接着剪。", e=e))
                 raise
             ops_doc = res.ops_doc
             atomic_write_json(ops_p, ops_doc)
             self._done_step(job, "first_cut", {"engine": fc.name, "ops": len(ops_doc["ops"]), "usage": res.usage})
 
         # 5. episode
-        self._progress(job, "episode", 0.0, "生成审阅（核对音频）")
+        self._progress(job, "episode", 0.0, tr("生成审阅（核对音频）"))
         media = self._media(job, d)
-        self._progress(job, "episode", 0.5, "生成审阅（精修剪辑点）")
+        self._progress(job, "episode", 0.5, tr("生成审阅（精修剪辑点）"))
         project, edits, transcript, report = build_episode(media, ops_doc, tokens,
                                                            policy=learning.review_policy(self.ws))
         engine = job["steps"].get("first_cut", {}).get("engine", "claude")
@@ -341,7 +342,7 @@ class Importer:
             for tag, name in HOSTS:
                 r = refs[name]
                 if r is None or r.sample_rate != sr:
-                    self._progress(job, "episode", 0.2, f"把 {name} 的分轨转成 {sr} Hz WAV")
+                    self._progress(job, "episode", 0.2, tr("把 {name} 的分轨转成 {sr} Hz WAV", name=name, sr=sr))
                     refs[name] = conform(job["tracks"][tag]["path"], d / "media" / f"{name}.wav", sr)
         return refs
 
@@ -365,7 +366,7 @@ def list_dir(path: str | None, default: Path) -> dict:
         p = p.resolve()
         entries = list(os.scandir(p))
     except (OSError, RuntimeError):
-        raise ImportError_(f"打不开文件夹：{p}")
+        raise ImportError_(tr("打不开文件夹：{p}", p=p))
     dirs, files = [], []
     for e in entries:
         if e.name.startswith((".", "$")):

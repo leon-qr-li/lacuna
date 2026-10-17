@@ -39,6 +39,7 @@ from lacuna_core.refine import snap_cut
 
 from .episode import APPLIED, RESTORED, Edit
 from .review import ReviewPolicy, needs_review
+from .i18n import N_, tr
 
 TRACK_NAMES = {"L": "Leon", "P": "Pei"}
 CATEGORY_MAP = {
@@ -51,8 +52,8 @@ CATEGORY_MAP = {
     "single_track_noise": "single_track",
 }
 AI_CATEGORY_LABELS = {
-    "pause": "停顿", "disfluency": "口误", "repetition": "重复", "crosstalk": "抢话",
-    "content": "内容删减", "interjection_move": "插话挪位", "single_track_noise": "单轨杂声",
+    "pause": N_("停顿"), "disfluency": N_("口误"), "repetition": N_("重复"), "crosstalk": N_("抢话"),
+    "content": N_("内容删减"), "interjection_move": N_("插话挪位"), "single_track_noise": N_("单轨杂声"),
 }
 
 
@@ -239,20 +240,20 @@ class Converter:
                 x, y = self.snap_range([TRACK_NAMES[t] for t in tags], a, b, TOKEN_SNAP_MS)
                 ops = [{"op": "cut", "start": x, "end": y, "tracks": None}]
                 if track != "both":
-                    self.report.converted["单轨 cut→双轨 cut（对方无声）"] += 1
+                    self.report.converted["单轨 cut→双轨 cut（对方无声）"] += 1  # i18n-ignore
             else:
                 tags = [track]
                 x, y = self.snap_range([TRACK_NAMES[track]], a, b, TOKEN_SNAP_MS)
                 ops = [{"op": "lift", "track": TRACK_NAMES[track], "start": x, "end": y}]
-                self.report.converted["单轨 cut→lift"] += 1
+                self.report.converted["单轨 cut→lift"] += 1  # i18n-ignore
             if (y - x) < MIN_CUT_S * self.sr:
                 raise _OpError("range vanished after snapping")
             sp = self.speech(tags, a, b)
             dur = (y - x) / self.sr
             title = self._title(ai_cat, cat, tags, dur, self.text(tags, a, b))
             if kind == "keep_flag":
-                return self._edit(oid, ops, cat, "AI 建议（未删）· " + title,
-                                  "AI 没有删这段，留给你决定。" + reason, conf, sp, ai_cat,
+                return self._edit(oid, ops, cat, "AI 建议（未删）· " + title,  # i18n-ignore
+                                  tr("AI 没有删这段，留给你决定。") + reason, conf, sp, ai_cat,
                                   status=RESTORED, review=True)
             host = TRACK_NAMES[tags[0]] if len(tags) == 1 else self.host(tags, a, b)
             return self._edit(oid, ops, cat, title, reason, conf, sp, ai_cat, host=host)
@@ -263,7 +264,7 @@ class Converter:
             tags = all_tags if track == "both" else [track]
             gaps = [self.tokens[g].gap_at(t) for g in tags]
             if any(g is None for g in gaps):
-                self.report.skip(oid, "停顿位置落在词内（与评分脚本一致，跳过）")
+                self.report.skip(oid, "停顿位置落在词内（与评分脚本一致，跳过）")  # i18n-ignore
                 return None
             ga, gb = max(g[0] for g in gaps), min(g[1] for g in gaps)
             if not np.isfinite(gb):
@@ -271,7 +272,7 @@ class Converter:
             target = max(float(o["target_s"]), 0.0)
             excess = (gb - ga) - target
             if excess < MIN_CUT_S:
-                self.report.skip(oid, "停顿已经够短")
+                self.report.skip(oid, "停顿已经够短")  # i18n-ignore
                 return None
             mid = (ga + gb) / 2
             a, b = mid - excess / 2, mid + excess / 2
@@ -279,15 +280,15 @@ class Converter:
                 return self._outside(oid)
             if track != "both":
                 if not self.other_silent(track, a, b):
-                    self.report.skip(oid, "单轨停顿收紧（需按轨重新对时，暂不支持）")
+                    self.report.skip(oid, "单轨停顿收紧（需按轨重新对时，暂不支持）")  # i18n-ignore
                     return None
-                self.report.converted["单轨停顿→双轨 cut（对方无声）"] += 1
+                self.report.converted["单轨停顿→双轨 cut（对方无声）"] += 1  # i18n-ignore
             x, y = self.snap_range([TRACK_NAMES[g] for g in all_tags], a, b, PAUSE_SNAP_MS,
                                    bounds=(ga, gb))
             if (y - x) < MIN_CUT_S * self.sr:
                 raise _OpError("range vanished after snapping")
             ops = [{"op": "cut", "start": x, "end": y, "tracks": None}]
-            title = f"停顿 {gb - ga:.1f}s → {target:.1f}s"
+            title = tr("停顿 {p0}s → {target}s", p0=f"{gb - ga:.1f}", target=f"{target:.1f}")
             return self._edit(oid, ops, cat, title, reason, conf, 0.0, ai_cat, host="none")
 
         if kind == "slip":
@@ -306,22 +307,23 @@ class Converter:
                 return self._outside(oid)
             ops = [{"op": "slip", "track": name, "start": x, "end": y, "delta": d}]
             word = self.text([track], a, b)
-            title = f"{name} 插话{'挪后' if delta > 0 else '提前'} {abs(delta):.1f} 秒" + (f" ·「{word[:10]}」" if word else "")
+            title = (tr("{name} 插话挪后 {s} 秒", name=name, s=f"{abs(delta):.1f}") if delta > 0
+                     else tr("{name} 插话提前 {s} 秒", name=name, s=f"{abs(delta):.1f}")) + (f" ·「{word[:10]}」" if word else "")
             return self._edit(oid, ops, cat, title, reason, conf, 0.0, ai_cat, host=name)
 
         raise _OpError(f"unknown op {kind!r}")
 
     def _outside(self, oid: str) -> None:
-        self.report.skip(oid, "不在所选时间窗内")
+        self.report.skip(oid, "不在所选时间窗内")  # i18n-ignore
         return None
 
     def _title(self, ai_cat: str, cat: str, tags: list[str], dur: float, text: str) -> str:
-        who = "" if len(tags) > 1 else f"{TRACK_NAMES[tags[0]]} 单轨 · "
+        who = "" if len(tags) > 1 else tr("{p0} 单轨 · ", p0=TRACK_NAMES[tags[0]])
         quote = f" ·「{text[:14]}{'…' if len(text) > 14 else ''}」" if text else ""
         if cat == "content":
-            return f"{who}删除 {dur:.1f} 秒 · 内容删减{quote}"
-        label = AI_CATEGORY_LABELS.get(ai_cat, ai_cat)
-        return f"{who}{label} · {dur:.1f} 秒{quote}"
+            return tr("{who}删除 {dur} 秒 · 内容删减{quote}", who=who, dur=f"{dur:.1f}", quote=quote)
+        label = tr(AI_CATEGORY_LABELS.get(ai_cat, ai_cat))
+        return tr("{who}{label} · {dur} 秒{quote}", who=who, label=label, dur=f"{dur:.1f}", quote=quote)
 
     def _edit(self, oid, ops, cat, title, reason, conf, speech_s, ai_cat, status=APPLIED,
               review=None, host=None) -> Edit:
@@ -339,7 +341,7 @@ class Converter:
             try:
                 e = self.convert_op(o)
             except (_OpError, KeyError, TypeError, ValueError) as ex:
-                self.report.skip(str(o.get("id", "?")), "无法解析", str(ex))
+                self.report.skip(str(o.get("id", "?")), "无法解析", str(ex))  # i18n-ignore
                 continue
             if e is not None:
                 edits.append(e)
@@ -360,10 +362,10 @@ class Converter:
             o = e.ops[0]
             if o["start"] < last_end:
                 if o["end"] - last_end < MIN_CUT_S * self.sr:
-                    self.report.skip(e.op_id or "?", "与其他删除重叠")
+                    self.report.skip(e.op_id or "?", "与其他删除重叠")  # i18n-ignore
                     continue
                 o["start"] = last_end
-                self.report.converted["重叠删除已裁短"] += 1
+                self.report.converted["重叠删除已裁短"] += 1  # i18n-ignore
             last_end = o["end"]
             out.append(e)
         return out + [e for e in edits if not e.cuts]

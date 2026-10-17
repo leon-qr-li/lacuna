@@ -34,14 +34,15 @@ from lacuna_core.master import LoudnessMeter
 from lacuna_core.media import resample_filter
 
 from .store import PathError, Workspace, atomic_write_json, inside, read_json
+from .i18n import N_, lang, tr
 
 SCHEMA = 1
 INDEX = "library.json"
 # What Leon uses an asset for (his fixed list, 2026-10-17). The music page takes the placement
 # role from it, so an intro goes to the start and a trailer is inserted like a clip.
 KINDS = {
-    "intro": "片头（播客开始）", "outro": "片尾（播客结尾）", "interlude": "休息间隙",
-    "bed": "聊天背景音", "dialogue": "电影对白 / sample", "trailer": "预告片 trailer", "other": "其他素材",
+    "intro": N_("片头（播客开始）"), "outro": N_("片尾（播客结尾）"), "interlude": N_("休息间隙"),
+    "bed": N_("聊天背景音"), "dialogue": N_("电影对白 / sample"), "trailer": N_("预告片 trailer"), "other": N_("其他素材"),
 }
 ROLE_FOR_KIND = {"intro": "intro", "outro": "outro", "interlude": "interlude", "bed": "bed",
                  "dialogue": "clip", "trailer": "clip", "other": "interlude"}
@@ -103,9 +104,9 @@ def decode(src: Path, dst: Path, sample_rate: int, layout: str) -> MediaRef:
     try:
         subprocess.run(cmd, check=True, capture_output=True)
     except FileNotFoundError as e:
-        raise LibraryError("没有找到 ffmpeg，无法读取这个音频文件") from e
+        raise LibraryError(tr("没有找到 ffmpeg，无法读取这个音频文件")) from e
     except subprocess.CalledProcessError as e:
-        raise LibraryError(f"读不了这个音频文件：{e.stderr.decode('utf-8', 'replace')[-200:].strip()}") from e
+        raise LibraryError(tr("读不了这个音频文件：{p0}", p0=e.stderr.decode('utf-8', 'replace')[-200:].strip())) from e
     os.replace(tmp, dst)
     return MediaRef.probe(dst, media_id=f"lib:{dst.stem}")
 
@@ -130,10 +131,10 @@ def credit_line(asset: dict) -> str:
     title, film = c.get("title"), c.get("film")
     who = c.get("composer") or c.get("artist")
     if not title and not film:
-        return Path(asset.get("name") or asset.get("file") or "未知曲目").stem
+        return Path(asset.get("name") or asset.get("file") or "未知曲目").stem  # i18n-ignore
     parts = []
     if film:
-        parts.append(f"《{film}》原声")
+        parts.append(f"《{film}》原声")  # i18n-ignore
     elif c.get("album"):
         parts.append(f"《{c['album']}》")
     if who:
@@ -190,9 +191,9 @@ class Library:
             raise LibraryError(f"unknown kind {kind!r}")
         src = Path(src).expanduser()
         if not src.is_file():
-            raise LibraryError(f"找不到文件：{src}")
+            raise LibraryError(tr("找不到文件：{src}", src=src))
         if src.suffix.lower() not in AUDIO_EXT:
-            raise LibraryError(f"不是支持的音频文件：{src.name}")
+            raise LibraryError(tr("不是支持的音频文件：{name}", name=src.name))
         sha = content_hash(src).split(":", 1)[1]
         aid = "a_" + sha[:12]
         with self.lock:
@@ -269,7 +270,7 @@ class Library:
         base = "".join(c for c in base if c not in '<>:"|?*' and ord(c) >= 32).strip(" .")
         stem, ext = os.path.splitext(base)
         if not stem or ext.lower() not in AUDIO_EXT:
-            raise LibraryError(f"不是支持的音频文件：{name}")
+            raise LibraryError(tr("不是支持的音频文件：{name}", name=name))
         d = self.dir / FOLDERS[kind]
         d.mkdir(parents=True, exist_ok=True)
         for n in range(1000):
@@ -282,7 +283,7 @@ class Library:
                 return part
             except FileExistsError:
                 continue
-        raise LibraryError(f"同名文件太多：{base}")
+        raise LibraryError(tr("同名文件太多：{base}", base=base))
 
     def add_upload(self, part: Path, kind: str, note: str = "") -> tuple[dict, bool]:
         """Finish an upload written to `upload_target`'s path. Returns (asset, duplicate): music
@@ -389,7 +390,7 @@ class Library:
         are placement templates (asset_id, src_in_s, src_out_s, overlap_s, gain_db)."""
         name = name.strip()
         if not name:
-            raise LibraryError("系列名不能为空")
+            raise LibraryError(tr("系列名不能为空"))
         keep = ("asset_id", "src_in_s", "src_out_s", "overlap_s", "gain_db")
         rule = {"name": name, "intro": {k: intro.get(k) for k in keep} if intro else None,
                 "outro": {k: outro.get(k) for k in keep} if outro else None, "default": default, "updated_at": _now()}
@@ -411,18 +412,18 @@ class Library:
 
     @staticmethod
     def asset_view(a: dict) -> dict:
-        return a | {"kind_label": KINDS.get(a["kind"], a["kind"]), "credit_line": credit_line(a)}
+        return a | {"kind_label": tr(KINDS.get(a["kind"], a["kind"])), "credit_line": credit_line(a)}
 
     def view(self) -> dict:
         assets = [self.asset_view(a) for a in self.assets()]
         return {"assets": sorted(assets, key=lambda a: a["added_at"], reverse=True), "series": self.series(),
-                "folder": str(self.dir), "kinds": KINDS, "kind_roles": ROLE_FOR_KIND}
+                "folder": str(self.dir), "kinds": {k: tr(v) for k, v in KINDS.items()}, "kind_roles": ROLE_FOR_KIND}
 
 
 # ===================================================================== credit lookup (Claude + web search)
 
 # Claude can't hear the audio; without Leon's note it only has the file name, so the lookup isn't worth a call
-NEED_NOTE = "先在备注里写一句这是什么曲子（比如哪部电影的配乐），Claude 听不到音乐，只能按备注去查。"
+NEED_NOTE = N_("先在备注里写一句这是什么曲子（比如哪部电影的配乐），Claude 听不到音乐，只能按备注去查。")
 
 LOOKUP_SYSTEM = """\
 You identify the music Leon uses in 《洛城二三事》, a Chinese film podcast, so the show notes can \
@@ -434,8 +435,9 @@ album, the composer (or performing artist for a song), the album, the film or se
 the release year. Use web search to confirm; prefer the official soundtrack listing, the label, \
 Apple Music / Spotify, or Wikipedia over fan pages. If the duration does not match the track you \
 found, mention it in note. Never invent a title: when you cannot identify the track with \
-reasonable confidence, return null fields and say why in note. Then call submit_credit once."""
+reasonable confidence, return null fields and say why in note. Then call submit_credit once."""  # i18n-ignore
 
+NOTE_FOR_LEON = "one short sentence in Simplified Chinese for Leon"
 CREDIT_TOOL = {
     "name": "submit_credit",
     "description": "Submit the identified track (null for anything not known).",
@@ -451,10 +453,17 @@ CREDIT_TOOL = {
             "film": {"type": ["string", "null"], "description": "film / series title in Simplified Chinese"},
             "year": {"type": ["integer", "null"]},
             "confidence": {"type": "number", "description": "0..1"},
-            "note": {"type": "string", "description": "one short sentence in Simplified Chinese for Leon"},
+            "note": {"type": "string", "description": NOTE_FOR_LEON},
         },
     },
 }
+
+
+def _credit_tool() -> dict:
+    """The note is for Leon, in the interface language; the credit itself stays Chinese (show notes)."""
+    if lang() != "en":
+        return CREDIT_TOOL
+    return json.loads(json.dumps(CREDIT_TOOL).replace(json.dumps(NOTE_FOR_LEON)[1:-1], "one short sentence for Leon, in English"))
 
 
 def lookup_request(asset: dict) -> dict:
@@ -463,7 +472,7 @@ def lookup_request(asset: dict) -> dict:
             "used_as": KINDS.get(asset.get("kind"), "")}
     return dict(model="claude-opus-5-5", max_tokens=16000, system=LOOKUP_SYSTEM,
                 output_config={"effort": "medium"},
-                tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 5}, CREDIT_TOOL],
+                tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 5}, _credit_tool()],
                 tool_choice={"type": "auto"},
                 messages=[{"role": "user", "content": json.dumps(info, ensure_ascii=False)}])
 
@@ -474,11 +483,11 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
     from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
     asset = lib.asset(asset_id)
     if not (asset.get("note") or "").strip():      # nothing to search for: don't spend a call
-        return {"asset": asset, "message": NEED_NOTE, "usage": None}
+        return {"asset": asset, "message": tr(NEED_NOTE), "usage": None}
     if client is None:
         key, _ = find_api_key()
         if not key or not sdk_installed():
-            return {"asset": asset, "message": "没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），没法查曲名。", "usage": None}
+            return {"asset": asset, "message": tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），没法查曲名。"), "usage": None}
         import anthropic
         client = anthropic.Anthropic(api_key=key, timeout=180.0, max_retries=1)
     req = lookup_request(asset)
@@ -494,7 +503,7 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
                 break
             messages = messages + [{"role": "assistant", "content": resp.content}]
     except Exception as e:      # noqa: BLE001 - every failure becomes a message
-        return {"asset": asset, "message": error_message(e).replace("这次没有改动", "曲名没有变"), "usage": None}
+        return {"asset": asset, "message": error_message(e, tail=tr("，曲名没有变。")), "usage": None}
     usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
     sources = []
     found = None
@@ -505,9 +514,9 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
             found = dict(block.input)
     if resp.stop_reason == "refusal" or found is None:
         text = "".join(getattr(b, "text", "") for b in resp.content if b.type == "text").strip()
-        return {"asset": asset, "message": text or "Claude 没有给出曲名。", "usage": usage}
+        return {"asset": asset, "message": text or tr("Claude 没有给出曲名。"), "usage": usage}
     asset = lib.set_suggestion(asset_id, found, list(dict.fromkeys(sources)))
     msg = found.get("note") or ""
     if not (found.get("title") or found.get("film")):
-        msg = msg or "没查到可靠的曲名。"
+        msg = msg or tr("没查到可靠的曲名。")
     return {"asset": Library.asset_view(asset), "message": msg, "usage": usage}

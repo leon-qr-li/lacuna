@@ -24,6 +24,7 @@ from typing import Callable
 import numpy as np
 
 from lacuna_core.media import resample_filter
+from .i18n import tr
 
 SR = 16000
 RELEASES = "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/"
@@ -67,7 +68,7 @@ def ensure_models(models_dir: Path, progress: Progress = lambda f, s: None,
             while chunk := r.read(1 << 20):
                 f.write(chunk)
                 got += len(chunk)
-                progress(min((done + got) / total, 1.0), f"下载识别模型（一次性，约 400 MB）{(done + got) / 1e6:.0f} MB")
+                progress(min((done + got) / total, 1.0), tr("下载识别模型（一次性，约 400 MB）{p0} MB", p0=f"{(done + got) / 1e6:.0f}"))
         if name.endswith(".tar.bz2"):
             with tarfile.open(part, "r:bz2") as t:
                 t.extractall(models_dir, filter="data")
@@ -75,7 +76,7 @@ def ensure_models(models_dir: Path, progress: Progress = lambda f, s: None,
         else:
             part.replace(models_dir / name)
         if not (models_dir / probe).is_file():
-            raise RuntimeError(f"模型文件不完整：{probe}")
+            raise RuntimeError(tr("模型文件不完整：{probe}", probe=probe))
         done += size
 
 
@@ -167,7 +168,7 @@ def load_recognizers(models_dir: Path, threads: int | None = None) -> Recognizer
 def transcribe(audio: np.ndarray, rec: Recognizers, progress: Progress = lambda f, s: None) -> dict:
     """VAD once, then Paraformer and SenseVoice on every segment."""
     dur = len(audio) / SR
-    segs = vad_segments(audio, rec.vad_model, progress=lambda f: progress(0.05 * f, "找说话段落"))
+    segs = vad_segments(audio, rec.vad_model, progress=lambda f: progress(0.05 * f, tr("找说话段落")))
     out = []
     for k, (s0, s1) in enumerate(segs):
         chunk = audio[int(s0 * SR):int(s1 * SR)]
@@ -186,5 +187,5 @@ def transcribe(audio: np.ndarray, rec: Recognizers, progress: Progress = lambda 
               "tokens": tokens_from_starts(list(r.tokens), list(r.timestamps), s0, s1)}
         out.append({"start": round(s0, 3), "end": round(s1, 3), "par": par, "sv": sv})
         if k % 10 == 0:
-            progress(0.05 + 0.95 * s1 / max(dur, 1e-9), f"逐字识别 {int(s1 // 60)}/{int(dur // 60)} 分钟")
+            progress(0.05 + 0.95 * s1 / max(dur, 1e-9), tr("逐字识别 {p0}/{p1} 分钟", p0=int(s1 // 60), p1=int(dur // 60)))
     return {"audio_s": round(dur, 3), "segments": out}

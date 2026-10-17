@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
 from ..upload import checklist, cover_path
+from ..i18n import tr
 
 
 def register(app, ctx) -> None:
@@ -29,7 +30,7 @@ def register(app, ctx) -> None:
         try:
             path = cover_path(posters.load(ep), posters.cover_dir(ep.id))
         except FileNotFoundError:
-            raise HTTPException(404, "还没选封面")
+            raise HTTPException(404, tr("还没选封面"))
         name = f"{ep.id}_cover.jpg"
         ascii_name = name.encode("ascii", "replace").decode().replace("?", "_")
         disp = f"attachment; filename=\"{ascii_name}\"; filename*=utf-8''{quote(name)}"

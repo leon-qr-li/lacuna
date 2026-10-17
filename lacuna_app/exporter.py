@@ -24,8 +24,9 @@ from lacuna_core.master import MasterSettings
 from .episode import Episode
 from .music import EpisodeMusic, credits
 from .store import Workspace, atomic_write_json, check_id, inside
+from .i18n import tr
 
-DEFAULT_SHOW = "洛城二三事"
+DEFAULT_SHOW = "洛城二三事"  # i18n-ignore
 FILE_SUFFIXES = (".wav", ".mp3", ".json")
 
 
@@ -67,12 +68,12 @@ class Exporter:
             title = ep.meta.get("title", ep.id)
             show = ep.meta.get("show", DEFAULT_SHOW)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        job = {"id": uuid.uuid4().hex[:12], "state": "running", "progress": 0.0, "stage": "准备",
+        job = {"id": uuid.uuid4().hex[:12], "state": "running", "progress": 0.0, "stage": tr("准备"),
                "version": version, "music_version": music_version, "formats": formats, "basename": f"{ep.id}_{stamp}",
                "started": time.time(), "finished": None, "result": None, "error": None}
         with self._lock:
             if self._running:
-                raise ExportBusy("另一个导出正在进行")
+                raise ExportBusy(tr("另一个导出正在进行"))
             self._running = ep.id
             self.jobs[ep.id] = job
         out_dir = self.dir_for(ep.id)
@@ -85,7 +86,7 @@ class Exporter:
         def run() -> None:
             pool = None
             try:
-                progress(0.0, "配乐与 ducking")
+                progress(0.0, tr("配乐与 ducking"))
                 tl, media, lay = EpisodeMusic(self.ws, ep).mix(enabled, channels)
                 pool = SourcePool(media)
                 res = export(timeline_source(pool, tl, channels), tl.sample_rate, channels, out_dir,
@@ -98,7 +99,7 @@ class Exporter:
                 atomic_write_json(out_dir / f"{job['basename']}.json", record)
                 files = {k: Path(v).name for k, v in res.files.items()}
                 with self._lock:
-                    job.update(state="done", progress=1.0, stage="完成", finished=time.time(),
+                    job.update(state="done", progress=1.0, stage=tr("完成"), finished=time.time(),
                                result={"files": files, "report": record["report"], "mp3": res.mp3,
                                        "errors": res.errors, "folder": str(out_dir)})
             except Exception as e:   # surfaced to the UI; full trace on the console

@@ -8,6 +8,7 @@ from starlette.concurrency import run_in_threadpool
 
 from ..library import Library, LibraryError, lookup_credit
 from ..store import PathError
+from ..i18n import tr
 
 MAX_UPLOAD = 4 * 1024 ** 3   # a 2-hour 48 kHz stereo WAV is ~1.4 GB
 
@@ -60,17 +61,17 @@ def register(app, ctx) -> None:
                 async for chunk in request.stream():
                     size += len(chunk)
                     if size > MAX_UPLOAD:
-                        raise HTTPException(413, "文件太大")
+                        raise HTTPException(413, tr("文件太大"))
                     f.write(chunk)
             if not size:
-                raise HTTPException(422, "文件是空的")
+                raise HTTPException(422, tr("文件是空的"))
             asset, duplicate = await run_in_threadpool(library.add_upload, part, kind, note.strip())
         except HTTPException:
             part.unlink(missing_ok=True)
             raise
         except Exception as e:
             part.unlink(missing_ok=True)
-            raise HTTPException(422, f"读不了这个音频文件：{name}" if not isinstance(e, LibraryError) else str(e))
+            raise HTTPException(422, tr("读不了这个音频文件：{name}", name=name) if not isinstance(e, LibraryError) else str(e))
         return {"asset": library.asset_view(asset), "duplicate": duplicate}
 
     @app.post("/api/library/scan")

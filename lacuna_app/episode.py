@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import bisect
 import hashlib
+import re
 import threading
 import uuid
 from collections import OrderedDict
@@ -38,20 +39,37 @@ from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
 from .store import META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
+from .i18n import N_, tr
 
 STATE_SCHEMA = 1
 APPLIED, RESTORED, PROPOSED, DISCARDED = "applied", "restored", "proposed", "discarded"
 
 CATEGORY_LABELS = {
-    "pause": "停顿收紧",
-    "filler": "口误与无意识重复",
-    "crosstalk": "单轨杂声（压在对方说话下）",
-    "single_track": "单轨删减",
-    "content": "内容删除",
-    "interjection": "插话处理",
-    "loudness": "响度匹配",
-    "chat": "聊天修改",
+    "pause": N_("停顿收紧"),
+    "filler": N_("口误与无意识重复"),
+    "crosstalk": N_("单轨杂声（压在对方说话下）"),
+    "single_track": N_("单轨删减"),
+    "content": N_("内容删除"),
+    "interjection": N_("插话处理"),
+    "loudness": N_("响度匹配"),
+    "chat": N_("聊天修改"),
 }
+
+# Undo-history labels are stored in Chinese (learning.py reads them) and shown in the interface language.
+_STEP_LABELS = {"保留": N_("保留：{title}"), "恢复": N_("恢复：{title}"), "重新应用": N_("重新应用：{title}"),
+                "应用": N_("应用：{title}"), "批准": N_("批准：{title}")}
+_BATCH_LABELS = {"全部通过": N_("全部通过（{n} 处）"), "全部保留删除": N_("全部保留删除（{n} 处）"),
+                 "全部恢复原话": N_("全部恢复原话（{n} 处）")}
+
+
+def history_label(label: str) -> str:
+    m = re.match(r"(保留|恢复|重新应用|应用|批准)：(.*)", label, re.S)
+    if m:
+        return tr(_STEP_LABELS[m.group(1)], title=m.group(2))
+    m = re.fullmatch(r"(全部通过|全部保留删除|全部恢复原话)（(\d+) 处）", label)
+    if m:
+        return tr(_BATCH_LABELS[m.group(1)], n=int(m.group(2)))
+    return label
 
 
 class ConflictError(ValueError):
@@ -204,7 +222,7 @@ class Episode:
         cs = Cuts(sorted(c for i in enabled for c in self.edits[i].cuts))
         for (a0, b0), (a1, b1) in zip(cs, cs[1:]):
             if a1 < b0:
-                raise ConflictError("两处删除重叠，不能同时应用")
+                raise ConflictError(tr("两处删除重叠，不能同时应用"))
         return cs
 
     def project_dict(self, enabled: frozenset[str]) -> dict:
@@ -220,7 +238,7 @@ class Episode:
             tl = apply_batch(self.base, [Op.from_dict(o) for o in self.ops_for(enabled)])
             validate(tl, self.media)
         except (EDLError, KeyError, TypeError) as e:
-            raise ConflictError(f"改动无法应用：{e}") from e
+            raise ConflictError(tr("改动无法应用：{e}", e=e)) from e
         return tl
 
     def timeline_for(self, enabled: frozenset[str]) -> Timeline:
@@ -361,7 +379,7 @@ class Episode:
     def _step(self, src: str, dst: str, key: str) -> str:
         with self.lock:
             if not self.history[src]:
-                raise ConflictError("没有可以撤销的操作" if src == "undo" else "没有可以重做的操作")
+                raise ConflictError(tr("没有可以撤销的操作") if src == "undo" else tr("没有可以重做的操作"))
             entry = self.history[src][-1]
             target = [{"id": c["id"], "field": c["field"], "new": c[key]} for c in entry["changes"]]
             self.timeline_for(self._enabled_after(target))
@@ -374,13 +392,17 @@ class Episode:
     def review(self, eid: str, action: str) -> None:
         e = self._edit(eid)
         if e.status not in (APPLIED, RESTORED):
-            raise ConflictError("这处改动还没有生效")
+            raise ConflictError(tr("这处改动还没有生效"))
+        # history labels stay Chinese (see history_label)
         if action == "keep":
-            self.change(f"保留：{e.title}", [(eid, "status", APPLIED), (eid, "approved", True)])
+            self.change(f"保留：{e.title}",  # i18n-ignore
+                        [(eid, "status", APPLIED), (eid, "approved", True)])
         elif action == "restore":
-            self.change(f"恢复：{e.title}", [(eid, "status", RESTORED), (eid, "approved", True)])
+            self.change(f"恢复：{e.title}",  # i18n-ignore
+                        [(eid, "status", RESTORED), (eid, "approved", True)])
         elif action == "apply":
-            self.change(f"重新应用：{e.title}", [(eid, "status", APPLIED)])
+            self.change(f"重新应用：{e.title}",  # i18n-ignore
+                        [(eid, "status", APPLIED)])
         else:
             raise ConflictError(f"unknown action {action}")
 
@@ -400,13 +422,13 @@ class Episode:
         for eid in targets:
             e = self._edit(eid)
             if e.status not in (APPLIED, RESTORED):
-                raise ConflictError("这处改动还没有生效")
+                raise ConflictError(tr("这处改动还没有生效"))
             if action != "approve":
                 changes.append((eid, "status", APPLIED if action == "keep" else RESTORED))
             changes.append((eid, "approved", True))
         n = len({i for i, f, v in changes if getattr(self.edits[i], f) != v})
-        label = {"approve": "全部通过", "keep": "全部保留删除", "restore": "全部恢复原话"}[action]
-        self.change(f"{label}（{n} 处）", changes)
+        label = {"approve": "全部通过", "keep": "全部保留删除", "restore": "全部恢复原话"}[action]  # i18n-ignore
+        self.change(f"{label}（{n} 处）", changes)  # i18n-ignore
         return n
 
     def add_edit(self, ops: list[dict], category: str, title: str, reason: str = "",
@@ -431,7 +453,8 @@ class Episode:
         """Directly apply a base-coordinate op as a new, undoable edit."""
         e = self.add_edit([op], "chat", title, reason, source="manual")
         try:
-            self.change(f"应用：{title}", [(e.id, "status", APPLIED), (e.id, "approved", True)])
+            self.change(f"应用：{title}",  # i18n-ignore
+                        [(e.id, "status", APPLIED), (e.id, "approved", True)])
         except ConflictError:
             del self.edits[e.id]
             raise
@@ -467,7 +490,7 @@ class Episode:
         with self.lock:
             if self.enabled != view["enabled"]:
                 proposal = None
-                notes.append("刚才时间线有变化，这个建议作废了，请再说一次。")
+                notes.append(tr("刚才时间线有变化，这个建议作废了，请再说一次。"))
             else:
                 proposal, why = self._make_proposal(prop, view["cuts"], view["mix"], view["lo"])
                 if why:
@@ -589,7 +612,7 @@ class Episode:
         changes: list[dict] = []
         target = None
         if ops:
-            e = self.add_edit(ops, p.category, p.title or "聊天修改", p.reason, p.confidence, source="chat")
+            e = self.add_edit(ops, p.category, p.title or tr("聊天修改"), p.reason, p.confidence, source="chat")
             changes += [{"id": e.id, "field": "status", "new": APPLIED},
                         {"id": e.id, "field": "approved", "new": True}]
             target = e.id
@@ -601,12 +624,12 @@ class Episode:
         except ConflictError:
             if ops:
                 self.edits[target].status = DISCARDED
-            return None, "这个改动和已有的改动冲突，没法应用。"
+            return None, tr("这个改动和已有的改动冲突，没法应用。")
         for old in [k for k, v in self.proposals.items() if v["state"] == "pending"]:
             self.discard_proposal(old)          # a new instruction supersedes the last one
         self.proposals = {k: v for k, v in self.proposals.items() if v["state"] == "pending"}
         pid = uuid.uuid4().hex[:10]
-        self.proposals[pid] = {"id": pid, "title": p.title or "聊天修改", "message": p.message, "target": target,
+        self.proposals[pid] = {"id": pid, "title": p.title or tr("聊天修改"), "message": p.message, "target": target,
                                "changes": changes, "state": "pending"}
         self.save()
         return self.proposals[pid], None
@@ -614,8 +637,9 @@ class Episode:
     def approve_proposal(self, pid: str) -> None:
         p = self._proposal(pid)
         if p["state"] != "pending":
-            raise ConflictError("这个建议已经处理过了")
-        self.change(f"批准：{p['title']}", [(c["id"], c["field"], c["new"]) for c in p["changes"]])
+            raise ConflictError(tr("这个建议已经处理过了"))
+        self.change(f"批准：{p['title']}",  # i18n-ignore
+                    [(c["id"], c["field"], c["new"]) for c in p["changes"]])
         p["state"] = "approved"
         self._turn_state(pid, "approved")
         self.save()
@@ -698,7 +722,7 @@ class Episode:
         removed = sum(b - a for a, b in e.cuts) or (sum(o["end"] - o["start"] for o in e.ops if o["op"] == "lift"))
         off = float(self.meta.get("raw_offset_s", 0.0))
         return {
-            "id": e.id, "category": e.category, "category_label": CATEGORY_LABELS.get(e.category, e.category),
+            "id": e.id, "category": e.category, "category_label": tr(CATEGORY_LABELS.get(e.category, e.category)),
             "title": e.title, "reason": e.reason, "confidence": e.confidence,
             "consequential": e.consequential, "status": e.status, "approved": e.approved,
             "source": e.source, "t": round(t, 3), "len": round(removed / self.sr, 3),
@@ -723,15 +747,15 @@ class Episode:
                     r["seconds"] = round(r["seconds"] + d["len"], 2)
                     r["restored"] += d["status"] == RESTORED
             tracks = []
-            for tr in tl.tracks:
+            for trk in tl.tracks:
                 spans: list[list[float]] = []
-                for c in tr.clips:
+                for c in trk.clips:
                     s, en = c.start / self.sr, c.end / self.sr
                     if spans and abs(spans[-1][1] - s) < 1e-6:
                         spans[-1][1] = round(en, 3)
                     else:
                         spans.append([round(s, 3), round(en, 3)])
-                tracks.append({"name": tr.name, "gain_db": tr.gain_db, "clips": spans})
+                tracks.append({"name": trk.name, "gain_db": trk.gain_db, "clips": spans})
             undo, redo = self.history["undo"], self.history["redo"]
             pending_review = sum(1 for d in edits if d["consequential"] and not d["approved"])
             review = [d["id"] for d in sorted((d for d in edits if d["consequential"]), key=review_sort_key)]
@@ -742,8 +766,8 @@ class Episode:
                 "raw_offset_s": float(self.meta.get("raw_offset_s", 0.0)),
                 "version": key, "audio_url": f"/api/episodes/{self.id}/audio/{key}.wav",
                 "can_undo": bool(undo), "can_redo": bool(redo),
-                "undo_label": undo[-1]["label"] if undo else None,
-                "redo_label": redo[-1]["label"] if redo else None,
+                "undo_label": history_label(undo[-1]["label"]) if undo else None,
+                "redo_label": history_label(redo[-1]["label"]) if redo else None,
                 "tracks": tracks, "topics": self.meta.get("topics", []),
                 "edits": edits, "routine": sorted(routine.values(), key=lambda r: -r["count"]),
                 "pending_review": pending_review, "review": review,

@@ -31,7 +31,7 @@ class ChatBody(BaseModel):
 
 class OpBody(PlayheadBody):
     op: dict
-    title: str = Field("手动修改", max_length=200)
+    title: str = Field("手动修改", max_length=200)  # i18n-ignore
     reason: str = Field("", max_length=2000)
 
 

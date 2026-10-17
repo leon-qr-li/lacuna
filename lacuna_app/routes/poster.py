@@ -10,10 +10,11 @@ from pydantic import BaseModel, Field
 from ..episode import Episode
 from ..poster import PosterBusy, PosterError, Posters
 from .publish import publisher_of
+from ..i18n import tr
 
 
 class PosterReviseBody(BaseModel):
-    instruction: str = Field(min_length=1, max_length=500, description="Leon's change, e.g. 换成暖色")
+    instruction: str = Field(min_length=1, max_length=500, description="Leon's change, e.g. 换成暖色")  # i18n-ignore
 
 
 def register(app, ctx) -> None:
@@ -29,7 +30,7 @@ def register(app, ctx) -> None:
         except PosterError as e:
             raise HTTPException(400, str(e))
         except KeyError:
-            raise HTTPException(404, "没有这一版海报")
+            raise HTTPException(404, tr("没有这一版海报"))
         return posters.view(ep)
 
     @app.get("/api/episodes/{episode_id}/poster")
@@ -59,7 +60,7 @@ def register(app, ctx) -> None:
         try:
             path = posters.preview(ep, variant)
         except KeyError:
-            raise HTTPException(404, "没有这一版海报")
+            raise HTTPException(404, tr("没有这一版海报"))
         except PosterError as e:
             raise HTTPException(500, str(e))
         return FileResponse(path, media_type="image/png", headers={"Cache-Control": "private, max-age=86400"})
