@@ -468,7 +468,7 @@ export interface AppInfo {
     published: string | null;
     error: string | null;
     job: { state: "running" | "ready" | "error"; version: string; progress: number; error: string | null } | null;
-    last_update: { at: string; ok: boolean; message: string } | null;
+    last_update: { at: string; ok: boolean; message: string; from?: string | null; to?: string } | null;
   };
 }
 
