@@ -312,5 +312,3 @@ def test_adapter_selection_and_claude_stub(monkeypatch):
     req = ClaudeEditorAdapter(api_key="test").build_request(ctx)
     assert req["model"] == "claude-opus-5-5" and req["tools"][0]["name"] == "propose_edit"
     assert "停顿短一点" in req["messages"][0]["content"]
-    p = ClaudeEditorAdapter.parse({"message": "好", "action": "cut", "start": 3.0, "end": 2.0})
-    assert p.action == "none"

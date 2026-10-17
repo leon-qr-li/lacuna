@@ -76,10 +76,26 @@ export interface AB {
   after: ABSide;
 }
 
+export interface Usage {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  seconds: number;
+  cost_usd: number;
+}
+
 export interface ChatReply {
   reply: string;
+  notes?: string[];
   adapter: string;
   proposal: Proposal | null;
+  usage?: Usage | null;
+}
+
+export interface Health {
+  ok: boolean;
+  editor: string; // "claude" | "mock"
+  editor_note: string; // why it is not Claude, if not
 }
 
 export interface TextLine {
@@ -136,6 +152,7 @@ async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
 const ep = (id: string) => `/api/episodes/${encodeURIComponent(id)}`;
 
 export const api = {
+  health: () => req<Health>("GET", "/api/health"),
   episodes: () => req<{ episodes: EpisodeListItem[]; editor: string }>("GET", "/api/episodes"),
   episode: (id: string) => req<Episode>("GET", ep(id)),
   editAB: (id: string, eid: string) => req<AB>("GET", `${ep(id)}/edits/${eid}/ab`),

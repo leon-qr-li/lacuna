@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import type { AB, Episode, Proposal } from "../api";
+import { useEffect, useRef, useState } from "react";
+import type { AB, Episode, Health, Proposal, Usage } from "../api";
 import { api, fmt } from "../api";
 import { ABPlayer } from "./ABPlayer";
 
@@ -7,6 +7,8 @@ interface Msg {
   id: number;
   role: "ai" | "user";
   text: string;
+  notes?: string[];
+  usage?: Usage | null;
   at?: number;
   proposal?: Proposal;
   pstate?: "pending" | "approved" | "discarded";
@@ -35,9 +37,25 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [abs, setAbs] = useState<Record<string, AB | "loading">>({});
+  const [health, setHealth] = useState<Health | null>(null);
   const [hint, setHint] = useState("比如：停顿短一点 / 恢复这处 / 删掉这句");
+  const claude = health?.editor === "claude";
   const input = useRef<HTMLInputElement>(null);
   const log = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api
+      .health()
+      .then((h) => {
+        setHealth(h);
+        if (h.editor === "claude") setHint("比如：这段跑题了删掉 / 停顿短一点 / 把刚才删的那句恢复");
+        else push({ role: "ai", text: `现在用的是演示规则（${h.editor_note}），只听得懂几种固定说法。` });
+      })
+      .catch(() => {
+        /* the chat still works; the badge just stays unknown */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const push = (m: Omit<Msg, "id">) => {
     setMsgs((ms) => [...ms, { ...m, id: nextId++ }]);
@@ -57,7 +75,14 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
     setBusy(true);
     try {
       const r = await api.chat(ep.id, t, at);
-      push({ role: "ai", text: r.reply, proposal: r.proposal ?? undefined, pstate: r.proposal ? "pending" : undefined });
+      push({
+        role: "ai",
+        text: r.reply,
+        notes: r.notes,
+        usage: r.usage,
+        proposal: r.proposal ?? undefined,
+        pstate: r.proposal ? "pending" : undefined,
+      });
       onEpisode(await api.episode(ep.id));
     } catch (err) {
       push({ role: "ai", text: `出错了：${(err as Error).message}` });
@@ -102,12 +127,33 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
 
   return (
     <section className="chat" aria-label="AI 制作人对话">
-      <h2 className="chat-title">AI 制作人</h2>
+      <h2 className="chat-title">
+        AI 制作人{" "}
+        {health && (
+          <span
+            className={`chip small ${claude ? "chip-ok" : ""}`}
+            data-testid="editor-badge"
+            title={claude ? "接的是 Claude API（只发送逐字稿和数字，不发送音频）" : health.editor_note}
+          >
+            {claude ? "Claude" : "演示规则"}
+          </span>
+        )}
+      </h2>
       <div className="chat-log" ref={log} aria-live="polite" data-testid="chat-log">
         {msgs.map((m) => (
           <div key={m.id} className={`msg msg-${m.role}`}>
             {m.at !== undefined && <span className="at mono">@ {fmt(m.at)}</span>}
             <div>{m.text}</div>
+            {m.notes?.map((n, i) => (
+              <div key={i} className="note small">
+                {n}
+              </div>
+            ))}
+            {m.usage && (
+              <div className="meta muted small mono" data-testid="usage">
+                Claude · {m.usage.seconds.toFixed(1)} 秒 · ≈${m.usage.cost_usd.toFixed(3)}
+              </div>
+            )}
             {m.proposal && (
               <ProposalCard
                 p={m.proposal}
@@ -121,7 +167,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             )}
           </div>
         ))}
-        {busy && <div className="msg msg-ai muted">正在看这附近…</div>}
+        {busy && <div className="msg msg-ai muted">{claude ? "Claude 正在看这附近的逐字稿…" : "正在看这附近…"}</div>}
       </div>
       <form className="chat-form" onSubmit={send}>
         <label htmlFor="say" className="sr-only">

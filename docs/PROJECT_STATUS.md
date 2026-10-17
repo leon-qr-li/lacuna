@@ -23,7 +23,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.
 - Content-trim selection is taste: needs ranked review + learning from Leon's restores (D27), not more rules.
 - Pause shaping too uniform (keeps 2 vs Leon's 41 pauses >1 s); interjection moves should come from asymmetric per-track pause cuts.
-- Chat is mock only until ClaudeEditorAdapter is wired with Leon's API key (key stays on his PC).
+- Phase 3 (real Claude chat, D37) merged; real-key check on Leon's PC via `scripts/ai_chat_smoke.py`. Cost per chat turn is logged to `<workspace>/ai_usage.jsonl`.
 - One-track `tighten_pause` while the other host talks is skipped (needs per-track re-timing in the episode model); counted in `ai_report`. No per-track loudness edit in the AI path yet (D31).
 - Review threshold (D33) tuned to v3: 114 of 646 edits to review. AI confidences are poorly calibrated (almost all 0.5–0.6); recalibrate from Leon's first full review.
 - Mastering: MP3 comes out ~0.4 LU quieter than the WAV (LAME low-pass); app preview still soft-clips (preview is not mastered). Tuning of compressor/limiter awaits Leon's listening verdict.
