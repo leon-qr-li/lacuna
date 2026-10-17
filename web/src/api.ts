@@ -96,6 +96,14 @@ export interface Health {
   ok: boolean;
   editor: string; // "claude" | "mock"
   editor_note: string; // why it is not Claude, if not
+  dictation?: boolean; // local voice input available
+  dictation_note?: string; // why not, if not
+}
+
+export interface Dictated {
+  text: string;
+  audio_s: number;
+  seconds: number;
 }
 
 export interface TextLine {
@@ -215,7 +223,27 @@ async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
 
 const ep = (id: string) => `/api/episodes/${encodeURIComponent(id)}`;
 
+async function dictate(audio: Blob): Promise<Dictated> {
+  const res = await fetch("/api/dictation", {
+    method: "POST",
+    headers: { "Content-Type": audio.type || "application/octet-stream" },
+    body: audio,
+  });
+  if (!res.ok) {
+    let msg = res.statusText;
+    try {
+      msg = (await res.json()).detail ?? msg;
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(String(msg));
+  }
+  return res.json() as Promise<Dictated>;
+}
+
 export const api = {
+  dictate,
+  dictationWarm: () => req<{ ok: boolean }>("POST", "/api/dictation/warm"),
   health: () => req<Health>("GET", "/api/health"),
   episodes: () => req<{ episodes: EpisodeListItem[]; editor: string }>("GET", "/api/episodes"),
   episode: (id: string) => req<Episode>("GET", ep(id)),

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { AB, Episode, Health, Proposal, Usage } from "../api";
 import { api, fmt } from "../api";
 import { ABPlayer } from "./ABPlayer";
+import { MicButton } from "./MicButton";
 
 interface Msg {
   id: number;
@@ -184,6 +185,17 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
           placeholder={hint}
           onChange={(e) => setText(e.target.value)}
           autoComplete="off"
+        />
+        <MicButton
+          available={!!health?.dictation}
+          note={health?.dictation_note}
+          disabled={busy}
+          onStart={onPauseMain}
+          onText={(t) => {
+            setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${t}` : t));
+            input.current?.focus();
+          }}
+          onError={(msg) => push({ role: "ai", text: msg })}
         />
         <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>
           发送
