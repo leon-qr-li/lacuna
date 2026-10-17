@@ -62,4 +62,9 @@ export const en: Dict = {
   "第 {from}–{to} 条，共 {total} 条": "{from}–{to} of {total}",
   "上一页": "Previous",
   "下一页": "Next",
+  "已删除「{title}」，以后不会再出现。": "Deleted “{title}”. It won't come back.",
+  "删除": "Delete",
+  "确认删除": "Confirm delete",
+  "删除后这条规则再也不会出现，确定吗？": "Once deleted, this rule never shows up again. Sure?",
+  "确定删除": "Delete",
 };

@@ -543,6 +543,8 @@ class Learning:
         for r in learn(ds) + ChatAsks(self.ws).rules():
             s = st["rules"].get(r.id, {})
             state = s.get("state", "candidate")
+            if state == "deleted":
+                continue                     # Leon deleted it: never shown again, even if re-learned
             approved = s.get("approved")
             changed = state == "approved" and approved and approved.get("digest") != r.digest()
             rules.append(asdict(r) | {"state": state, "updated": bool(changed),
@@ -559,8 +561,9 @@ class Learning:
                 "pending": sum(r["state"] == "candidate" or bool(r.get("updated")) for r in rules)}
 
     def decide(self, rule_id: str, action: str, episodes: Iterable = ()) -> dict:
-        """approve / reject / reset one rule. Approving freezes the rule as it reads now."""
-        if action not in ("approve", "reject", "reset"):
+        """approve / reject / reset / delete one rule. Approving freezes the rule as it reads now;
+        deleting (only offered for rejected rules) hides it for good, however often it is re-learned."""
+        if action not in ("approve", "reject", "reset", "delete"):
             raise ValueError(f"unknown action {action}")
         ov = self.overview(episodes)
         rule = next((r for r in ov["rules"] if r["id"] == rule_id), None)
@@ -571,6 +574,8 @@ class Learning:
             st["rules"].pop(rule_id, None)
         elif action == "reject":
             st["rules"][rule_id] = {"state": "rejected", "at": _now()}
+        elif action == "delete":
+            st["rules"][rule_id] = {"state": "deleted", "at": _now()}
         else:
             core = {k: rule[k] for k in Rule.__dataclass_fields__}
             st["rules"][rule_id] = {"state": "approved", "at": _now(),
