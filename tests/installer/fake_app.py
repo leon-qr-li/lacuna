@@ -5,7 +5,8 @@ import json
 import sys
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import socketserver
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
 port, root = int(sys.argv[1]), Path(sys.argv[2])
@@ -29,7 +30,10 @@ class H(BaseHTTPRequestHandler):
         pass
 
 
-srv = ThreadingHTTPServer(("127.0.0.1", port), H)
+# plain TCP server: HTTPServer.server_bind calls socket.getfqdn(), a reverse DNS lookup that
+# hangs for half a minute on macOS CI runners
+socketserver.ThreadingTCPServer.allow_reuse_address = True
+srv = socketserver.ThreadingTCPServer(("127.0.0.1", port), H)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
 (root / "fake_app.log").open("a").write(f"serving {version}\n")
 control = root / "control"
