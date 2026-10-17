@@ -32,7 +32,7 @@ input.time { width: 150px; }
 .note-line { margin: 0; padding: 8px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); align-self: flex-start; }
 .mstrip { position: relative; height: 64px; margin: 4px 0 26px; }
 .mstrip-voice { position: absolute; left: 0; right: 0; top: 26px; height: 12px; border-radius: 9px; background: repeating-linear-gradient(90deg, var(--line-2) 0 2px, transparent 2px 5px); }
-.mstrip-block { position: absolute; top: 12px; height: 40px; padding: 0 8px; overflow: hidden; border: 0; border-radius: 10px; background: var(--grad); color: #fff; font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 6px 16px rgb(91 108 255 / 0.25); }
+.mstrip-block { position: absolute; top: 12px; height: 40px; padding: 0 8px; overflow: hidden; border: 0; border-radius: 10px; background: var(--grad); color: #fff; font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 6px 16px var(--glow); }
 .mstrip-block.role-bed { top: 22px; height: 20px; opacity: 0.6; }
 .mstrip-block.is-on { outline: 3px solid var(--ink); outline-offset: 2px; }
 .mstrip-ticks { position: absolute; left: 0; right: 0; bottom: -22px; display: flex; justify-content: space-between; }
