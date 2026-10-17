@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { GrowText } from "../../components/GrowText";
 import type { Health } from "../../api";
 import type { PosterVariant, PosterView as View } from "./api";
 import { api } from "../../api";
@@ -193,19 +194,17 @@ function PosterCard(props: {
         {v.cost_usd ? <span className="muted small">约 ${v.cost_usd.toFixed(2)}</span> : null}
       </div>
       <form
-        className="row gap8"
+        className="row gap8 align-end"
         onSubmit={async (e) => {
           e.preventDefault();
           if (text.trim() && (await props.onRevise(text.trim()))) setText("");
         }}
       >
-        <input
-          type="text"
-          className="grow"
+        <GrowText
           aria-label={`改一改 ${v.name}`}
           placeholder="一句话改，如：换成暖色"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={setText}
           disabled={busy}
         />
         <MicButton

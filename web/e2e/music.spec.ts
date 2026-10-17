@@ -67,14 +67,14 @@ test("media library → credits → music on the episode → series rule", async
   await expect(page.getByRole("heading", { name: "配乐", exact: true })).toBeVisible();
   await expect(page.getByText("BGM：未设置")).toBeVisible();
   const voice = await page.getByText(/人声剪辑 .* → 成品 /).innerText();
-  await page.getByLabel("选择素材").selectOption({ label: "“洛城二三事 片头”（洛城片头.wav） · 片头（播客开始）" });
+  await page.getByLabel("选择素材").selectOption({ label: "“洛城二三事 片头” · 片头（播客开始）" });
   await expect(page.getByLabel("用途")).toHaveValue("intro"); // taken from the asset's use
   await page.getByRole("button", { name: "放进去" }).click();
   await expect(page.getByTestId("placement")).toHaveCount(1);
   await expect(page.getByText(/人声剪辑 .* → 成品 /)).not.toHaveText(voice); // the intro adds time
 
   // an interlude at 0:20 of the final cut
-  await page.getByLabel("选择素材").selectOption({ label: "《奥德赛》原声 · Ludwig Göransson — “Odysseus”（odyssey_theme.mp3） · 其他素材" });
+  await page.getByLabel("选择素材").selectOption({ label: "《奥德赛》原声 · Ludwig Göransson — “Odysseus” · 其他素材" });
   await page.getByLabel("用途").selectOption("interlude");
   await page.getByRole("button", { name: "放进去" }).click();
   await expect(page.getByText("请写位置")).toBeVisible();

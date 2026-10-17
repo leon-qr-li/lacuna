@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { GrowText } from "./GrowText";
 import type { AB, Episode, Health, Proposal, Usage } from "../api";
 import { api, fmt } from "../api";
 import { ABPlayer } from "./ABPlayer";
@@ -41,7 +42,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
   const [health, setHealth] = useState<Health | null>(null);
   const [hint, setHint] = useState("比如：停顿短一点 / 恢复这处 / 删掉这句");
   const claude = health?.editor === "claude";
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
   const log = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -174,32 +175,34 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
         <label htmlFor="say" className="sr-only">
           对 AI 制作人说（锚定在当前播放位置）
         </label>
-        <span className="at-chip mono" title="指令锚定在当前播放位置">
-          @ {fmt(time)}
-        </span>
-        <input
+        <GrowText
           id="say"
           ref={input}
-          type="text"
           value={text}
           placeholder={hint}
-          onChange={(e) => setText(e.target.value)}
+          onChange={setText}
           autoComplete="off"
         />
-        <MicButton
-          available={!!health?.dictation}
-          note={health?.dictation_note}
-          disabled={busy}
-          onStart={onPauseMain}
-          onText={(t) => {
-            setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${t}` : t));
-            input.current?.focus();
-          }}
-          onError={(msg) => push({ role: "ai", text: msg })}
-        />
-        <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>
-          发送
-        </button>
+        <div className="chat-form-row">
+          <span className="at-chip mono" title="指令锚定在当前播放位置">
+            @ {fmt(time)}
+          </span>
+          <span className="grow" />
+          <MicButton
+            available={!!health?.dictation}
+            note={health?.dictation_note}
+            disabled={busy}
+            onStart={onPauseMain}
+            onText={(t) => {
+              setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${t}` : t));
+              input.current?.focus();
+            }}
+            onError={(msg) => push({ role: "ai", text: msg })}
+          />
+          <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>
+            发送
+          </button>
+        </div>
       </form>
     </section>
   );

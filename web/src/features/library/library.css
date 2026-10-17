@@ -43,3 +43,4 @@ input.time { width: 150px; }
 .music-tune input.num { background: var(--panel); }
 .role-chip.role-interlude, .role-chip.role-clip { background: var(--warn-soft); color: var(--warn); }
 .role-chip.role-bed { background: var(--hover); color: var(--ink-2); }
+.music-pick { flex: 1 1 320px; min-width: 0; max-width: 100%; text-overflow: ellipsis; }
