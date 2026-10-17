@@ -1,6 +1,6 @@
 # LACUNA Studio — Project Status
 
-_Last updated: 2026-10-17 02:10Z_
+_Last updated: 2026-10-17 02:20Z_
 
 ## Current phase
 POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速: batch approve, auto-advance) in progress; 母带与导出 in a parallel thread.
@@ -17,6 +17,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - **AI first cut in the app** (2026-10-17): `lacuna_app/ai_cut.py` + `scripts/make_ai_episode.py` turn S5 edit ops into reviewable edits (title "EP001 · AI 第一刀", no demo marks). Review = content / interjection / > 1.5 s speech / non-pause conf < 0.4, content first then by duration (`lacuna_app/review.py`, D33). v2 held-out ops on full EP001: 384 ops → 367 edits (163 to review), 17 skipped (same pause positions the S5 scorer rejects), 73:32 → 67:08. Episode timeline now derived in one batch sweep (`lacuna_core.apply_batch`): ~570-edit episode opens in ~150 ms, restore/undo ~90 ms, A/B ≤ 0.4 s, server RSS < 0.5 GB. Screenshot `screenshots/04_ai_cut_review.png`.
 
 - **On Leon's PC** (2026-10-17, main 7bc041e): episode `EP001_AI` ("EP001 · AI 第一刀", v3 ops) built in `C:\Projects\LACUNA_Workspace`: 646 edits, 114 to review, 73:32 → 59:43; 107/107 pytest there. Start with `C:\Projects\LACUNA_Start.bat`.
+- **Mastering + export** (2026-10-17, D36): top-bar 导出 → stereo 24-bit WAV + 128 kbps MP3 in `<workspace>/exports/<episode>/` (+ JSON record), -16 LUFS / ≤ -1 dBTP, gentle chain (`lacuna_core/master.py`, `export.py`, `lacuna_app/exporter.py`). Validated on Leon's PC with full raw EP001 (Leon +7 dB): in -17.4 LUFS / +5.5 dBTP → out -16.14 LUFS / -1.30 dBTP; compressor mean 0.95 dB; limiter active 0.5 %; MP3 -16.6 LUFS / -1.46 dBTP; 73.5 min in ~5 min, ~145 MB RAM. Leon's own 最终成品.mp3 measures -17.9 LUFS / +4.4 dBTP (clipping). Listening pair in `exports\EP001_mastering_test\` (A_before_preview / B_after_master, from 60:22).
 
 ## Open issues
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.
@@ -25,10 +26,11 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - Chat is mock only until ClaudeEditorAdapter is wired with Leon's API key (key stays on his PC).
 - One-track `tighten_pause` while the other host talks is skipped (needs per-track re-timing in the episode model); counted in `ai_report`. No per-track loudness edit in the AI path yet (D31).
 - Review threshold (D33) tuned to v3: 114 of 646 edits to review. AI confidences are poorly calibrated (almost all 0.5–0.6); recalibrate from Leon's first full review.
-- Missing: export + mastering/LUFS (in progress, separate thread), task panel, asset inbox, topic labels, stereo music bus. macOS is verified only by CI (no real Mac run yet).
+- Mastering: MP3 comes out ~0.4 LU quieter than the WAV (LAME low-pass); app preview still soft-clips (preview is not mastered). Tuning of compressor/limiter awaits Leon's listening verdict.
+- Missing: task panel, asset inbox, topic labels, stereo music bus. macOS is verified only by CI (no real Mac run yet).
 
 ## Next action
 0. App phase 1 → merge, update Leon's PC, Leon validates (see ROADMAP). Then phase 2/3 per their dependencies.
 1. Leon reviews "EP001 · AI 第一刀" (v3, full episode) on his PC; learn from his restores/approvals (D27) and recalibrate review threshold + content-trim taste.
 2. Leon sets ANTHROPIC_API_KEY (steps given 2026-10-17; anthropic SDK installed on his PC) → verify real chat end to end.
-3. Export with mastering (leveller + LUFS/true-peak).
+3. Leon listens to the mastering A/B and an exported EP001_AI; tune chain if needed.
