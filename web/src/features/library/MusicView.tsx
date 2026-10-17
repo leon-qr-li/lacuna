@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Asset, Kind, MusicView as Music, Placement, PlacementPatch, Role } from "../api";
-import { api, fmt, parseTime } from "../api";
+import type { Asset, Kind, MusicView as Music, Placement, PlacementPatch, Role } from "./api";
+import { fmt, parseTime } from "../../api";
 import { CREDIT_LABEL } from "./LibraryView";
+import { libraryApi } from "./api";
 
 const ROLE_HELP: Record<Role, string> = {
   intro: "从头放，人声在音乐结束前进来，重叠处音乐自动压低淡出",
@@ -171,7 +172,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const mixRef = useRef<HTMLAudioElement | null>(null);
 
   const load = useCallback(() => {
-    Promise.all([api.music(id), api.library()])
+    Promise.all([libraryApi.music(id), libraryApi.library()])
       .then(([mm, lib]) => {
         setM(mm);
         setAssets(lib.assets);
@@ -203,7 +204,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     }
     onPauseMain();
     mixRef.current?.pause();
-    a.src = api.placementPreviewUrl(id, pid);
+    a.src = libraryApi.placementPreviewUrl(id, pid);
     setPreview(pid);
     void a.play().catch(() => setPreview(null));
   };
@@ -222,10 +223,10 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
       {m.series_suggestion && (
         <div className="card banner-card row gap8 wrap" data-testid="series-suggestion">
           <span className="grow">系列「{m.series_suggestion.name}」有固定的片头片尾，要用在这一集吗？</span>
-          <button type="button" className="btn btn-primary" onClick={() => void run(api.applySeries(id, m.series_suggestion!.name), "已放好系列片头片尾")}>
+          <button type="button" className="btn btn-primary" onClick={() => void run(libraryApi.applySeries(id, m.series_suggestion!.name), "已放好系列片头片尾")}>
             用系列片头片尾
           </button>
-          <button type="button" className="btn btn-outline" onClick={() => void run(api.dismissSeries(id))}>
+          <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.dismissSeries(id))}>
             这一集不用
           </button>
         </div>
@@ -255,17 +256,17 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             p={p}
             previewing={preview === p.id}
             onPreview={() => playPreview(p.id)}
-            onSave={(patch) => run(api.updatePlacement(id, p.id, patch), "已保存")}
-            onRemove={() => void run(api.removePlacement(id, p.id), `已去掉${p.role_label}`)}
+            onSave={(patch) => run(libraryApi.updatePlacement(id, p.id, patch), "已保存")}
+            onRemove={() => void run(libraryApi.removePlacement(id, p.id), `已去掉${p.role_label}`)}
           />
         ))}
       </ul>
       {m.placements.length === 0 && <p className="muted">这一集还没有配乐。</p>}
-      <AddPlacement assets={assets} kindRoles={kindRoles} onAdd={(body) => run(api.addPlacement(id, body), "已放进去，可以点「试听这一处」")} />
+      <AddPlacement assets={assets} kindRoles={kindRoles} onAdd={(body) => run(libraryApi.addPlacement(id, body), "已放进去，可以点「试听这一处」")} />
       {m.placements.some((p) => p.role === "intro" || p.role === "outro") && (
         <div className="row gap8 wrap">
           <input value={series} onChange={(e) => setSeries(e.target.value)} aria-label="系列名" className="time" />
-          <button type="button" className="btn btn-outline" onClick={() => void run(api.saveSeries(id, series), `已记住：以后「${series}」都用这个片头片尾`)}>
+          <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.saveSeries(id, series), `已记住：以后「${series}」都用这个片头片尾`)}>
             记成系列片头片尾
           </button>
         </div>

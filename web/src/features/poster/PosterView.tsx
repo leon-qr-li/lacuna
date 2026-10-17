@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { Health, PosterVariant, PosterView as View } from "../api";
-import { api } from "../api";
-import { MicButton } from "./MicButton";
+import type { Health } from "../../api";
+import type { PosterVariant, PosterView as View } from "./api";
+import { api } from "../../api";
+import { MicButton } from "../../components/MicButton";
+import { posterApi } from "./api";
 
 /** 海报: Claude draws several square covers (SVG) from the publish pack, rendered on this machine;
  *  Leon picks one (rendered at 3000×3000 into the publish folder) or changes one with a sentence. */
@@ -15,7 +17,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   const timer = useRef<number | null>(null);
 
   const load = () =>
-    api
+    posterApi
       .poster(id)
       .then((v) => {
         setView(v);
@@ -63,7 +65,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   const chosen = view.variants.find((v) => v.id === view.chosen) ?? null;
   const generate = () => {
     if (view.variants.length && !window.confirm(`再画 ${n} 版？之前的版本都会留着。（会再花一次 Claude 的钱）`)) return;
-    void act(api.generatePoster(id));
+    void act(posterApi.generatePoster(id));
   };
 
   return (
@@ -105,7 +107,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
 
       {view.cover && chosen && (
         <section className="card cover-card" aria-label="选定的封面" data-testid="poster-cover">
-          <img src={api.posterPreview(id, chosen.id)} alt={`选定的封面 ${chosen.name}`} />
+          <img src={posterApi.posterPreview(id, chosen.id)} alt={`选定的封面 ${chosen.name}`} />
           <div className="grow">
             <strong>已选：{chosen.name}</strong>
             <p className="small">
@@ -131,8 +133,8 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
               busy={busy || running}
               health={health}
               onBig={() => setBig(v.id)}
-              onChoose={() => act(api.choosePoster(id, v.id))}
-              onRevise={(text) => act(api.revisePoster(id, v.id, text))}
+              onChoose={() => act(posterApi.choosePoster(id, v.id))}
+              onRevise={(text) => act(posterApi.revisePoster(id, v.id, text))}
               onPauseMain={onPauseMain}
               flash={flash}
             />
@@ -142,7 +144,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
 
       {big && (
         <div className="poster-zoom" role="dialog" aria-label="大图" onClick={() => setBig(null)}>
-          <img src={api.posterPreview(id, big)} alt="大图" />
+          <img src={posterApi.posterPreview(id, big)} alt="大图" />
         </div>
       )}
     </main>
@@ -166,7 +168,7 @@ function PosterCard(props: {
   return (
     <article className={`card poster-card${chosen ? " is-chosen" : ""}`} data-testid="poster-card" aria-label={`海报 ${v.name}`}>
       <button type="button" className="poster-img" onClick={props.onBig} title="看大图">
-        <img src={api.posterPreview(id, v.id)} alt={v.name} loading="lazy" />
+        <img src={posterApi.posterPreview(id, v.id)} alt={v.name} loading="lazy" />
       </button>
       <div className="row wrap gap8">
         <strong className="grow">{v.name}</strong>

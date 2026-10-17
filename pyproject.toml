@@ -22,7 +22,7 @@ asr = ["sherpa-onnx>=1.12"]
 lacuna = "lacuna_app.__main__:main"
 
 [tool.setuptools]
-packages = ["lacuna_core", "lacuna_app"]
+packages = ["lacuna_core", "lacuna_app", "lacuna_app.routes"]
 
 [tool.setuptools.package-data]
 lacuna_app = ["prompts/*", "prompts/poster_examples/*", "fonts/*"]
