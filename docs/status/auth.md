@@ -13,3 +13,6 @@ Thread「登录与 Resend 邮件」. Decision: `docs/decisions/2026-10-17-local-
 ## Update notes
 After updating, the app opens on「创建你的账号」(first account, no code). Then 设置 → 账号与邮件: paste the
 Resend key (re_…), 发测试邮件. No extra install steps.
+
+## Validated
+- 2026-10-17 20:23Z: Leon validated sign-in on his PC (「没问题，验收通过」).
