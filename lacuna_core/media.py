@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import subprocess
 from dataclasses import dataclass
+from functools import cache
 from pathlib import Path
 
 import numpy as np
@@ -57,17 +58,31 @@ class MediaRef:
         return cls(**d)
 
 
+@cache
+def ffmpeg_has_soxr() -> bool:
+    """Some ffmpeg builds (e.g. common static macOS builds) ship without libsoxr."""
+    out = subprocess.run(["ffmpeg", "-hide_banner", "-buildconf"], capture_output=True, text=True)
+    return "--enable-libsoxr" in out.stdout + out.stderr
+
+
+def resample_filter(sample_rate: int) -> str:
+    if ffmpeg_has_soxr():
+        return f"aresample={sample_rate}:resampler=soxr"
+    # swr with a long windowed-sinc filter: transparent for podcast speech/music
+    return f"aresample={sample_rate}:resampler=swr:filter_size=64:phase_shift=10:cutoff=0.97"
+
+
 def conform(src: str | Path, dst: str | Path, sample_rate: int, channels: int = 1) -> MediaRef:
     """Convert foreign media (e.g. a 48 kHz stereo music file) once to a project-rate WAV.
 
     The renderer requires all sources at the timeline rate; this is where sample-rate
-    conversion happens (ffmpeg soxr), so the hot render path stays sample-exact.
+    conversion happens (ffmpeg soxr, or high-quality swr where soxr is missing), so the hot render path stays sample-exact.
     """
     dst = Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
     tmp = dst.with_suffix(".tmp.wav")
     cmd = ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y", "-i", str(src),
-           "-ac", str(channels), "-af", f"aresample={sample_rate}:resampler=soxr",
+           "-ac", str(channels), "-af", resample_filter(sample_rate),
            "-c:a", "pcm_f32le", str(tmp)]
     subprocess.run(cmd, check=True)
     tmp.replace(dst)
