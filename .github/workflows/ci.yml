@@ -13,8 +13,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Decide what this change can affect, so a docs edit or a UI label tweak doesn't run everything.
+  #   docs only (*.md, docs/, design/)      -> nothing runs
+  #   web/ only                             -> UI build + E2E (pytest skipped)
+  #   Python (engine, app, tests, scripts)  -> pytest + UI build + E2E (E2E drives the real backend)
+  #   CI config or any unknown path         -> everything
+  # Whatever runs, runs on all three OSes: Mac-only bugs have shown up in both Python and UI code.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.classify.outputs.python }}
+      web: ${{ steps.classify.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: classify
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python=false; web=false
+          if [ "${{ github.event_name }}" = workflow_dispatch ] || [ -z "$BASE" ] \
+             || [ "$BASE" = 0000000000000000000000000000000000000000 ] \
+             || ! files=$(git diff --name-only "$BASE"...HEAD); then
+            python=true; web=true; files="(full run)"
+          fi
+          echo "$files"
+          for f in $files; do
+            case "$f" in
+              *.md|docs/*|design/*|.gitignore) ;;
+              web/*) web=true ;;
+              lacuna_core/*|lacuna_app/*|tests/*|scripts/*|spikes/*|pyproject.toml) python=true ;;
+              *) python=true; web=true ;;
+            esac
+          done
+          echo "python=$python web=$web"
+          echo "python=$python" >> "$GITHUB_OUTPUT"
+          echo "web=$web" >> "$GITHUB_OUTPUT"
+
   test:
     name: ${{ matrix.os }}
+    needs: changes
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.web == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -52,6 +92,7 @@ jobs:
         run: uv pip install --system -e ".[test,claude]"
 
       - name: Engine + API tests
+        if: needs.changes.outputs.python == 'true'
         run: python -m pytest -q -rs --durations=8 tests
 
       - name: Build UI
@@ -95,3 +136,16 @@ jobs:
             web/test-results
             web/playwright-report
           if-no-files-found: ignore
+
+  # The one check to read before merging: green when every job that had to run passed,
+  # including when the change was docs-only and nothing needed to run.
+  ci-ok:
+    name: CI ok
+    needs: [changes, test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "changes=${{ needs.changes.result }} test=${{ needs.test.result }}"
+          [ "${{ needs.changes.result }}" = success ] || exit 1
+          case "${{ needs.test.result }}" in success|skipped) ;; *) exit 1 ;; esac
