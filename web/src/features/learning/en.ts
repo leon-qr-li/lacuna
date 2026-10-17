@@ -1,6 +1,8 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "记住": "Remember",
+  "把这句当成长期要求记下来（进「学到的规则」等你确认），不改这一期": "Save this as a standing request (it waits in Learned rules for you to adopt); this episode is not changed",
   "少删": "Cut less",
   "你在 {ep} 的对话里说的（{reason}）": "You said it in the {ep} chat ({reason})",
   "你说过的": "You said",
@@ -25,10 +27,10 @@ export const en: Dict = {
   "还没有": "none yet",
   "审阅里逐条决定 {considered} 个；所有来源合计保留 {kept}、恢复或没删 {restored}、补删 {added}。":
     "{considered} decided one by one in review; across all sources {kept} kept, {restored} restored or not cut, {added} cut by you.",
-  "规则是从你的决定和你在 AI 制作人里说的话推断的（每次导出后总结一次对话；说「记住：……」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。":
-    "Rules are inferred from your decisions and from what you tell the AI producer (the chat is summarised after each export; saying \"记住：…\" (remember: …) records one right away). They only affect the next episode after you click Adopt, and you can withdraw them any time.",
-  "还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。也可以在 AI 制作人里说「记住：……」，直接记一条。":
-    "Not enough evidence for a rule yet. Review a few more edits one by one (keep / restore) or ask the AI in chat to cut more, and rules will show up here. You can also tell the AI producer \"记住：…\" (remember: …) to record one directly.",
+  "规则是从你的决定和你在 AI 制作人里说的话推断的（每次导出后总结一次对话；在 AI 制作人里写好一句点「记住」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。":
+    "Rules are inferred from your decisions and from what you tell the AI producer (the chat is summarised after each export; typing a sentence in the AI producer and clicking Remember records one right away). They only affect the next episode after you click Adopt, and you can withdraw them any time.",
+  "还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。也可以在 AI 制作人里写一句长期要求，点「记住」直接记一条。":
+    "Not enough evidence for a rule yet. Review a few more edits one by one (keep / restore) or ask the AI in chat to cut more, and rules will show up here. You can also type a standing request in the AI producer and click Remember to record it directly.",
   "有新证据，待你重新确认": "New evidence, please confirm again",
   "采用后：{effect}。": "If adopted: {effect}.",
   "新的审阅记录里已经看不出这个规律了，但它仍按你当初采用的样子生效。":

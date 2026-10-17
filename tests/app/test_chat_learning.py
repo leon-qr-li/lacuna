@@ -83,6 +83,23 @@ def test_remember_in_chat_makes_candidate_rule_without_ai(ai_ws):
     assert sum(x["kind"] == "ask" for x in c.get("/api/learning").json()["rules"]) == 1
 
 
+def test_remember_button_takes_the_text_as_is(ai_ws):
+    class NoAI(MockEditorAdapter):
+        def propose(self, ctx):
+            raise AssertionError("the 记住 button must not call the AI")
+
+    c = TestClient(create_app(ai_ws, NoAI(), web_dist=Path("/nonexistent")))
+    url = f"/api/episodes/{AI_EPISODE}/remember"
+    r = c.post(url, json={"text": "我跑题的地方剪狠点", "playhead": 5.0}).json()   # no 记住 prefix needed
+    assert r["proposal"] is None and "我跑题的地方剪狠点" in r["reply"]
+    c.post(url, json={"text": "记住：Pei 的笑声留着", "playhead": 6.0})            # a typed prefix is dropped
+    titles = sorted(x["title"] for x in c.get("/api/learning").json()["rules"] if x["kind"] == "ask")
+    assert titles == ["Pei 的笑声留着", "我跑题的地方剪狠点"]
+    assert [t["said"] for t in episode(ai_ws).chat_log()][-1] == "记住：Pei 的笑声留着"
+    assert c.post(url, json={"text": "   ", "playhead": 1.0}).status_code == 422
+    assert c.post("/api/episodes/nope/remember", json={"text": "x", "playhead": 1.0}).status_code == 404
+
+
 # ---------------------------------------------------------------- the chat log is kept with the episode
 
 def test_chat_log_survives_restart_with_outcome(tmp_path):
