@@ -100,13 +100,15 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   };
 
   const run = useCallback(
-    async (p: Promise<Episode>, msg?: string) => {
+    async (p: Promise<Episode>, msg?: string | ((next: Episode) => string)): Promise<boolean> => {
       try {
         const next = await p;
         setEp(next);
-        if (msg) flash(msg);
+        if (msg) flash(typeof msg === "function" ? msg(next) : msg);
+        return true;
       } catch (e) {
         flash(`操作失败：${(e as Error).message}`);
+        return false;
       }
     },
     [],
@@ -115,7 +117,12 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const undo = () => ep?.can_undo && run(api.undo(id, player.time), `已撤销：${ep.undo_label}`);
   const redo = () => ep?.can_redo && run(api.redo(id, player.time), `已重做：${ep.redo_label}`);
   const review = (e: EditInfo, action: "keep" | "restore" | "apply") =>
-    run(api.review(id, e.id, action, player.time), action === "restore" ? "已恢复原话" : action === "keep" ? "已保留" : "已重新应用");
+    run(
+      api.review(id, e.id, action, player.time),
+      action === "restore" ? (e.status === "restored" ? "已确认不删" : "已恢复原话") : action === "keep" ? "已保留" : "已重新应用",
+    );
+  const approveAll = () =>
+    run(api.reviewAll(id, "approve", player.time), (n) => `已全部通过 ${(n as Episode & { changed: number }).changed} 处，可撤销`);
 
   // global keys: space play/pause and arrows (listen mode), ctrl/cmd+z undo
   useEffect(() => {
@@ -202,6 +209,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
                 player.seek(e.t); // keep the shared playhead on the edit under review
               }}
               onReview={review}
+              onApproveAll={approveAll}
               onPauseMain={player.pause}
             />
           )}

@@ -383,6 +383,31 @@ class Episode:
         else:
             raise ConflictError(f"unknown action {action}")
 
+    def pending_ids(self) -> list[str]:
+        """Edits that still wait for Leon's judgement (in effect or not): what `pending_review` counts."""
+        return [i for i, e in self.edits.items()
+                if e.consequential and not e.approved and e.status in (APPLIED, RESTORED)]
+
+    def review_all(self, action: str, ids: list[str] | None = None) -> int:
+        """Batch review as ONE undoable step. `approve` signs off each edit's current state (an applied cut stays
+        cut, an unapplied AI suggestion stays unapplied); `keep` / `restore` force every edit to applied /
+        restored. `ids` defaults to every edit still pending review. Returns how many edits changed."""
+        if action not in ("approve", "keep", "restore"):
+            raise ConflictError(f"unknown action {action}")
+        targets = self.pending_ids() if ids is None else list(dict.fromkeys(ids))
+        changes: list[tuple[str, str, object]] = []
+        for eid in targets:
+            e = self._edit(eid)
+            if e.status not in (APPLIED, RESTORED):
+                raise ConflictError("这处改动还没有生效")
+            if action != "approve":
+                changes.append((eid, "status", APPLIED if action == "keep" else RESTORED))
+            changes.append((eid, "approved", True))
+        n = len({i for i, f, v in changes if getattr(self.edits[i], f) != v})
+        label = {"approve": "全部通过", "keep": "全部保留删除", "restore": "全部恢复原话"}[action]
+        self.change(f"{label}（{n} 处）", changes)
+        return n
+
     def add_edit(self, ops: list[dict], category: str, title: str, reason: str = "",
                  confidence: float = 1.0, source: str = "manual", status: str = PROPOSED) -> Edit:
         for o in ops:

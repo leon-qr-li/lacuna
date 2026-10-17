@@ -25,6 +25,11 @@ class ReviewBody(PlayheadBody):
     action: str = Field(pattern="^(keep|restore|apply)$")
 
 
+class BatchReviewBody(PlayheadBody):
+    action: str = Field(pattern="^(approve|keep|restore)$")
+    ids: list[str] | None = Field(None, max_length=5000, description="defaults to every edit still pending review")
+
+
 class ChatBody(BaseModel):
     text: str = Field(min_length=1, max_length=2000)
     playhead: float = Field(ge=0)
@@ -137,6 +142,11 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     def review(episode_id: str, eid: str, body: ReviewBody):
         ep = get(episode_id)
         return mutate(ep, body.playhead, lambda: ep.review(eid, body.action))
+
+    @app.post("/api/episodes/{episode_id}/review")
+    def review_batch(episode_id: str, body: BatchReviewBody):
+        ep = get(episode_id)
+        return mutate(ep, body.playhead, lambda: {"changed": ep.review_all(body.action, body.ids)})
 
     @app.post("/api/episodes/{episode_id}/ops")
     def apply_op(episode_id: str, body: OpBody):
