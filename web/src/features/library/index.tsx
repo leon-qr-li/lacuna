@@ -2,13 +2,14 @@ import type { Feature } from "../registry";
 import { LibraryView } from "./LibraryView";
 import { MusicView } from "./MusicView";
 import "./library.css";
+import { t } from "../../i18n";
 
 export const feature: Feature = {
-  pages: [{ path: "library", title: "素材库", render: () => <LibraryView /> }],
+  pages: [{ path: "library", title: t("素材库"), render: () => <LibraryView /> }],
   tabs: [
     {
       mode: "music",
-      label: "配乐",
+      label: t("配乐"),
       order: 30,
       render: ({ id, ep, pauseMain }) => <MusicView key={ep.version} id={id} onPauseMain={pauseMain} />,
     },
@@ -19,7 +20,7 @@ export const feature: Feature = {
       path: "library",
       render: () => (
         <a className="btn btn-outline row" href="#/library">
-          素材库
+          {t("素材库")}
         </a>
       ),
       on: ["home", "episode", "page"],

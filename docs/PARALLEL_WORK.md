@@ -12,6 +12,7 @@ cannot merge, so every conflict costs a fix plus a full CI run. These rules keep
 | Web page / episode tab / top-bar link | new `web/src/features/<feature>/index.tsx` exporting `feature` | `web/src/App.tsx` |
 | Web API calls + types | `web/src/features/<feature>/api.ts` | `web/src/api.ts` (core only) |
 | Styles | `web/src/features/<feature>/<feature>.css`, imported by its `index.tsx` | `web/src/styles.css` (core only) |
+| Interface text | Chinese wrapped in `t("中文")` (`web/src/i18n`), English in `web/src/features/<feature>/en.ts`; `npm run build` fails on bare Chinese or missing English | `web/src/i18n/en.ts` (shell + shared components only) |
 | E2E server fakes | new `tests/app/e2e/<feature>.py` with `configure(mode, ws, svc)` | `tests/app/serve_e2e.py` |
 | Fake Claude for a feature | a new file under `tests/app/` (e.g. `fake_<feature>.py`) | the end of `tests/app/fake_claude.py` |
 | Progress, build notes, open issues | the phase's own `docs/status/phase-…md` | `docs/PROJECT_STATUS.md`, `docs/ROADMAP.md` |

@@ -3,6 +3,7 @@ import type { Feature } from "../registry";
 import { learningApi } from "./api";
 import { LearningView } from "./LearningView";
 import "./learning.css";
+import { t } from "../../i18n";
 
 function LearningLink() {
   const [pending, setPending] = useState<number | null>(null);
@@ -14,12 +15,12 @@ function LearningLink() {
   }, []);
   return (
     <a className="btn btn-outline row" href="#/learning">
-      学到的规则{pending ? ` · ${pending} 条待确认` : ""}
+      {t("学到的规则")}{pending ? t(" · {pending} 条待确认", { pending }) : ""}
     </a>
   );
 }
 
 export const feature: Feature = {
-  pages: [{ path: "learning", title: "学到的规则", render: () => <LearningView /> }],
+  pages: [{ path: "learning", title: t("学到的规则"), render: () => <LearningView /> }],
   nav: [{ order: 20, path: "learning", render: () => <LearningLink />, on: ["home", "episode", "page"] }],
 };

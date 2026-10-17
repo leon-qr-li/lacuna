@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
+import { t } from "../i18n";
 
 const MAX_S = 120; // stop on its own after two minutes
 
@@ -45,10 +46,10 @@ export function MicButton({ available, note, disabled, onStart, onText, onError 
       const name = (err as DOMException).name;
       onError(
         name === "NotAllowedError" || name === "SecurityError"
-          ? "浏览器没允许用麦克风：点地址栏左边的图标，把麦克风改成「允许」再试"
+          ? t("浏览器没允许用麦克风：点地址栏左边的图标，把麦克风改成「允许」再试")
           : name === "NotFoundError"
-            ? "没找到麦克风，插上再试"
-            : `打不开麦克风：${(err as Error).message}`,
+            ? t("没找到麦克风，插上再试")
+            : t("打不开麦克风：{message}", { message: (err as Error).message }),
       );
       return;
     }
@@ -66,9 +67,9 @@ export function MicButton({ available, note, disabled, onStart, onText, onError 
       try {
         const out = await api.dictate(new Blob(chunks, { type: r.mimeType }));
         if (out.text) onText(out.text);
-        else onError("没听清，再说一次试试");
+        else onError(t("没听清，再说一次试试"));
       } catch (err) {
-        onError(`语音识别失败：${(err as Error).message}`);
+        onError(t("语音识别失败：{message}", { message: (err as Error).message }));
       } finally {
         setState("idle");
       }
@@ -91,17 +92,17 @@ export function MicButton({ available, note, disabled, onStart, onText, onError 
 
   const can = supported && available;
   const title = !supported
-    ? "这个浏览器不支持录音"
+    ? t("这个浏览器不支持录音")
     : !available
-      ? `语音输入暂不可用：${note ?? ""}`
+      ? t("语音输入暂不可用：{p0}", { p0: note ?? "" })
       : state === "recording"
-        ? "再点一下结束，识别成文字"
-        : "点一下开始说话（在本机识别，声音不上传）";
+        ? t("再点一下结束，识别成文字")
+        : t("点一下开始说话（在本机识别，声音不上传）");
   const label =
     state === "recording"
       ? `● ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`
       : state === "busy"
-        ? "识别中…"
+        ? t("识别中…")
         : "🎤";
   return (
     <button
@@ -110,7 +111,7 @@ export function MicButton({ available, note, disabled, onStart, onText, onError 
       onClick={click}
       disabled={!can || disabled || state === "starting" || state === "busy"}
       title={title}
-      aria-label={state === "recording" ? "结束录音" : "语音输入"}
+      aria-label={state === "recording" ? t("结束录音") : t("语音输入")}
       aria-pressed={state === "recording"}
       data-testid="mic"
     >

@@ -1,3 +1,4 @@
+import { t } from "./i18n";
 export type EditStatus = "applied" | "restored" | "proposed" | "discarded";
 
 export interface EditInfo {
@@ -263,12 +264,12 @@ export function parseTime(s: string): number | null {
 }
 
 export function statusLabel(e: EditInfo): string {
-  if (e.status === "restored") return e.approved ? "已恢复原样" : "AI 未应用，等你决定";
-  if (e.source !== "first_cut") return "聊天修改 · 已批准";
-  if (e.approved) return "已确认保留";
-  return e.consequential ? "待你过目" : "常规清理 · 已自动应用";
+  if (e.status === "restored") return e.approved ? t("已恢复原样") : t("AI 未应用，等你决定");
+  if (e.source !== "first_cut") return t("聊天修改 · 已批准");
+  if (e.approved) return t("已确认保留");
+  return e.consequential ? t("待你过目") : t("常规清理 · 已自动应用");
 }
 
 export function confidenceLabel(c: number): string {
-  return c >= 0.8 ? "高" : c >= 0.6 ? "中" : "低";
+  return c >= 0.8 ? t("高") : c >= 0.6 ? t("中") : t("低");
 }

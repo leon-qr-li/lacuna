@@ -1,8 +1,9 @@
 import type { Feature } from "../registry";
 import { SettingsLink, SettingsView } from "./SettingsView";
 import "./settings.css";
+import { t } from "../../i18n";
 
 export const feature: Feature = {
-  pages: [{ path: "settings", title: "设置", render: () => <SettingsView /> }],
+  pages: [{ path: "settings", title: t("设置"), render: () => <SettingsView /> }],
   nav: [{ order: 30, path: "settings", render: () => <SettingsLink />, on: ["home", "episode", "page"] }],
 };

@@ -12,6 +12,7 @@ import { navLinks, pages, tabs } from "./features/registry";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
+import { t } from "./i18n";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -38,7 +39,7 @@ function useRoute() {
 }
 
 /** Labels of tab groups in the episode flow (see EpisodeTab.group). */
-const GROUPS: Record<string, string> = { publish: "发布" };
+const GROUPS: Record<string, string> = { publish: t("发布") };
 
 const readPref = (k: string) => {
   try {
@@ -123,12 +124,12 @@ function Home() {
       </header>
       <main className="home">
         <div className="home-hero">
-          <h1>剧集</h1>
-          <p className="muted">导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。</p>
+          <h1>{t("剧集")}</h1>
+          <p className="muted">{t("导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。")}</p>
         </div>
         <ImportPanel onEpisodesChanged={reload} onOpen={open} />
         {err && <p className="error">{err}</p>}
-        {list?.length === 0 && <p className="muted">工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。</p>}
+        {list?.length === 0 && <p className="muted">{t("工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。")}</p>}
         <ul className="ep-list">
           {list?.map((e) => (
             <li key={e.id}>
@@ -139,15 +140,15 @@ function Home() {
                 <span className="ep-body">
                   <strong>{e.title}</strong>
                   {e.error ? (
-                    <span className="error small">无法打开：{e.error}</span>
+                    <span className="error small">{t("无法打开：")}{e.error}</span>
                   ) : (
                     <>
                       <span className="muted small mono">
                         {fmt(e.raw_duration ?? 0)} → {fmt(e.duration ?? 0)}
-                        {e.demo && " · 演示数据"}
+                        {e.demo && t(" · 演示数据")}
                       </span>
                       <span className={`chip ${e.pending_review ? "chip-warn" : "chip-ok"}`}>
-                        {e.pending_review ? `${e.pending_review} 处待过目` : "都过目了"}
+                        {e.pending_review ? t("{n} 处待过目", { n: e.pending_review }) : t("都过目了")}
                       </span>
                     </>
                   )}
@@ -195,22 +196,22 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         if (msg) flash(typeof msg === "function" ? msg(next) : msg);
         return true;
       } catch (e) {
-        flash(`操作失败：${(e as Error).message}`);
+        flash(t("操作失败：{message}", { message: (e as Error).message }));
         return false;
       }
     },
     [],
   );
 
-  const undo = () => ep?.can_undo && run(api.undo(id, player.time), `已撤销：${ep.undo_label}`);
-  const redo = () => ep?.can_redo && run(api.redo(id, player.time), `已重做：${ep.redo_label}`);
+  const undo = () => ep?.can_undo && run(api.undo(id, player.time), t("已撤销：{undo_label}", { undo_label: ep.undo_label }));
+  const redo = () => ep?.can_redo && run(api.redo(id, player.time), t("已重做：{redo_label}", { redo_label: ep.redo_label }));
   const review = (e: EditInfo, action: "keep" | "restore" | "apply") =>
     run(
       api.review(id, e.id, action, player.time),
-      action === "restore" ? (e.status === "restored" ? "已确认不删" : "已恢复原话") : action === "keep" ? "已保留" : "已重新应用",
+      action === "restore" ? (e.status === "restored" ? t("已确认不删") : t("已恢复原话")) : action === "keep" ? t("已保留") : t("已重新应用"),
     );
   const approveAll = () =>
-    run(api.reviewAll(id, "approve", player.time), (n) => `已全部通过 ${(n as Episode & { changed: number }).changed} 处，可撤销`);
+    run(api.reviewAll(id, "approve", player.time), (n) => t("已全部通过 {changed} 处，可撤销", { changed: (n as Episode & { changed: number }).changed }));
 
   // global keys: space play/pause and arrows (listen mode), ctrl/cmd+z undo
   useEffect(() => {
@@ -233,15 +234,15 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  if (err) return <p className="error pad">无法打开剧集：{err}</p>;
+  if (err) return <p className="error pad">{t("无法打开剧集：")}{err}</p>;
 
   const pending = ep?.proposals[0]?.edit ?? null;
   const href = (m: Mode) => `#/ep/${encodeURIComponent(id)}/${m}`;
   // the episode flow: built-in steps, then feature tabs; a tab group (发布) is one step with sub-tabs
   const curGroup = tabs.find((t) => t.mode === mode)?.group;
   const steps: { mode: Mode; label: string; on: boolean; badge?: number }[] = [
-    { mode: "review", label: "审阅改动", on: mode === "review", badge: ep?.pending_review ?? 0 },
-    { mode: "listen", label: "整集试听", on: mode === "listen" },
+    { mode: "review", label: t("审阅改动"), on: mode === "review", badge: ep?.pending_review ?? 0 },
+    { mode: "listen", label: t("整集试听"), on: mode === "listen" },
   ];
   for (const t of tabs) {
     if (!t.group) steps.push({ mode: t.mode, label: t.label, on: mode === t.mode });
@@ -274,7 +275,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             onClick={() => setChatOpen((o) => !o)}
             data-testid="chat-toggle"
           >
-            <Icon name="chat" /> {chatOpen ? "收起 AI 制作人" : "AI 制作人"}
+            <Icon name="chat" /> {chatOpen ? t("收起 AI 制作人") : t("AI 制作人")}
           </button>
         )}
       </header>
@@ -282,23 +283,23 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         <div className="ep-head-row">
           {ep && (
             <span className="chip">
-              第一刀{ep.demo ? "（演示）" : ""}已完成 · {ep.pending_review} 处待你过目
+              {ep.demo ? t("第一刀（演示）已完成 · {n} 处待你过目", { n: ep.pending_review }) : t("第一刀已完成 · {n} 处待你过目", { n: ep.pending_review })}
             </span>
           )}
           <span className="grow" />
           <button type="button" className="btn btn-ghost btn-small" onClick={undo} disabled={!ep?.can_undo} title={ep?.undo_label ?? ""}>
-            <Icon name="undo" /> 撤销
+            <Icon name="undo" /> {t("撤销")}
           </button>
           <button type="button" className="btn btn-ghost btn-small" onClick={redo} disabled={!ep?.can_redo} title={ep?.redo_label ?? ""}>
-            <Icon name="redo" /> 重做
+            <Icon name="redo" /> {t("重做")}
           </button>
           {mode !== "export" && (
             <a className="btn btn-primary btn-small linkbtn" href={href("export")} data-testid="export-toggle">
-              导出
+              {t("导出")}
             </a>
           )}
         </div>
-        <nav aria-label="制作流程" className="modes">
+        <nav aria-label={t("制作流程")} className="modes">
           {steps.map((s, i) => (
             <Fragment key={s.mode}>
               {i > 0 && (
@@ -325,7 +326,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           </nav>
         )}
       </div>
-      {ep?.demo && <p className="banner">{ep.demo_note || "演示数据"}</p>}
+      {ep?.demo && <p className="banner">{ep.demo_note || t("演示数据")}</p>}
       {toast && (
         <div className="toast" role="status">
           {toast}
@@ -334,7 +335,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       {/* one audio element shared by both modes: the playhead is common */}
       <audio ref={raw.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (
-        <p className="pad muted">加载中…</p>
+        <p className="pad muted">{t("加载中…")}</p>
       ) : (
         <>
           {/* Full Listen stays mounted in review mode so the conversation is kept */}
@@ -368,9 +369,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             ))}
           {next && (
             <div className="next-step">
-              <span className="muted small">这一步做完了？</span>
+              <span className="muted small">{t("这一步做完了？")}</span>
               <a className="btn linkbtn" href={href(next.mode)}>
-                下一步：{next.label} <Icon name="chev" />
+                {t("下一步：")}{next.label} <Icon name="chev" />
               </a>
             </div>
           )}

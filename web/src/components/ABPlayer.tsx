@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { AB, ABSide } from "../api";
+import { t } from "../i18n";
 
 type Side = "before" | "after";
 
@@ -76,7 +77,7 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
       aria-pressed={side === s}
       disabled={!ab || loading}
       onClick={() => (side === s && playing ? audio.current?.pause() : start(s))}
-      title={`快捷键 ${key}`}
+      title={t("快捷键 {key}", { key })}
     >
       {side === s && playing ? "❚❚" : "▶"} {label}
     </button>
@@ -86,12 +87,12 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
     <div
       className={compact ? "ab ab-seg" : "ab"}
       role="group"
-      aria-label="前后对比试听"
-      title={compact ? (loading ? "正在渲染…" : "前后各约 10 秒，切换时位置同步") : undefined}
+      aria-label={t("前后对比试听")}
+      title={compact ? (loading ? t("正在渲染…") : t("前后各约 10 秒，切换时位置同步")) : undefined}
     >
       {btn("before", labels[0], "A")}
       {btn("after", labels[1], "B")}
-      {!compact && <span className="muted small">{loading ? "正在渲染…" : "前后各约 10 秒，切换时位置同步"}</span>}
+      {!compact && <span className="muted small">{loading ? t("正在渲染…") : t("前后各约 10 秒，切换时位置同步")}</span>}
       <audio
         ref={audio}
         data-testid="ab-audio"

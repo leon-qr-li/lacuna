@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ExportJob } from "../api";
 import { api } from "../api";
+import { t } from "../i18n";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
@@ -60,23 +61,23 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
         }}
         data-testid="export-toggle"
       >
-        {running ? `导出中 ${Math.round((job?.progress ?? 0) * 100)}%` : "导出"}
+        {running ? t("导出中 {p0}%", { p0: Math.round((job?.progress ?? 0) * 100) }) : t("导出")}
       </button>
       )}
       {open && (
-        <div className={inline ? "export-page card" : "export-pop"} role={inline ? undefined : "dialog"} aria-label="导出成品">
-          <h2>导出成品</h2>
-          <p className="muted small">母带处理：轻压缩 + 响度 −16 LUFS + 真峰值 ≤ −1 dBTP（播客平台标准）。导出的是当前版本，原始录音不变。</p>
+        <div className={inline ? "export-page card" : "export-pop"} role={inline ? undefined : "dialog"} aria-label={t("导出成品")}>
+          <h2>{t("导出成品")}</h2>
+          <p className="muted small">{t("母带处理：轻压缩 + 响度 −16 LUFS + 真峰值 ≤ −1 dBTP（播客平台标准）。导出的是当前版本，原始录音不变。")}</p>
           <div className="row gap8">
             <label>
-              <input type="checkbox" checked={mp3} onChange={(e) => setMp3(e.target.checked)} disabled={running} /> MP3（体积小，分享 / 备用）
+              <input type="checkbox" checked={mp3} onChange={(e) => setMp3(e.target.checked)} disabled={running} /> {t("MP3（体积小，分享 / 备用）")}
             </label>
             <label>
-              <input type="checkbox" checked={wav} onChange={(e) => setWav(e.target.checked)} disabled={running} /> WAV（上传平台用，音质最好）
+              <input type="checkbox" checked={wav} onChange={(e) => setWav(e.target.checked)} disabled={running} /> {t("WAV（上传平台用，音质最好）")}
             </label>
           </div>
           <button type="button" className="btn btn-primary" onClick={start} disabled={running || (!mp3 && !wav)} data-testid="export-start">
-            {running ? "导出中…" : job ? "重新导出" : "开始导出"}
+            {running ? t("导出中…") : job ? t("重新导出") : t("开始导出")}
           </button>
           {running && (
             <div className="export-progress" data-testid="export-progress">
@@ -84,21 +85,25 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
             </div>
           )}
           {err && <p className="error small">{err}</p>}
-          {job?.state === "error" && <p className="error small">导出失败：{job.error}</p>}
+          {job?.state === "error" && <p className="error small">{t("导出失败：")}{job.error}</p>}
           {job?.state === "done" && job.result && (
             <div className="export-result" data-testid="export-result">
-              {stale && <p className="small warn">这是之前版本的导出，之后又有改动；要最新版请重新导出。</p>}
+              {stale && <p className="small warn">{t("这是之前版本的导出，之后又有改动；要最新版请重新导出。")}</p>}
               <dl className="small">
-                <dt>响度</dt>
-                <dd>{num(rep?.output_lufs, "LUFS")}（原始 {num(rep?.input_lufs, "LUFS")}）</dd>
-                <dt>真峰值</dt>
+                <dt>{t("响度")}</dt>
+                <dd>{t("{out}（原始 {in}）", { out: num(rep?.output_lufs, "LUFS"), in: num(rep?.input_lufs, "LUFS") })}</dd>
+                <dt>{t("真峰值")}</dt>
                 <dd>
-                  {num(rep?.output_true_peak_db, "dBTP")}（原始 {num(rep?.input_true_peak_db, "dBTP")}）
+                  {t("{out}（原始 {in}）", { out: num(rep?.output_true_peak_db, "dBTP"), in: num(rep?.input_true_peak_db, "dBTP") })}
                   {job.result.mp3?.true_peak_db != null && <> · MP3 {num(job.result.mp3.true_peak_db, "dBTP")}</>}
                 </dd>
-                <dt>压缩</dt>
+                <dt>{t("压缩")}</dt>
                 <dd>
-                  平均 {num(rep?.comp_mean_gr_db, "dB")}，最多 {num(rep?.comp_max_gr_db, "dB")} · 限幅只碰了 {(rep?.limiter_active_pct ?? 0).toFixed(2)}% 的时间
+                  {t("平均 {mean}，最多 {max} · 限幅只碰了 {pct}% 的时间", {
+                    mean: num(rep?.comp_mean_gr_db, "dB"),
+                    max: num(rep?.comp_max_gr_db, "dB"),
+                    pct: (rep?.limiter_active_pct ?? 0).toFixed(2),
+                  })}
                 </dd>
               </dl>
               <ul className="export-files">
@@ -116,7 +121,7 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
                 </p>
               ))}
               <button type="button" className="btn btn-outline btn-small" onClick={() => api.openExports(id).catch(() => {})}>
-                打开导出文件夹
+                {t("打开导出文件夹")}
               </button>
             </div>
           )}
