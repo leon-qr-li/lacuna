@@ -51,9 +51,14 @@ def main(argv=None):
     ap.add_argument("--workspace", required=True)
     ap.add_argument("--episode", default="EP001_AI")
     ap.add_argument("--alignment", default=str(ALIGNMENT))
+    ap.add_argument("--accepted-as-is", action="store_true",
+                    help="Leon's review clicks in this episode were tests: count the first cut as accepted as is")
     ap.add_argument("--dry-run", action="store_true", help="print, write nothing")
     args = ap.parse_args(argv)
-    ds = run(Workspace(args.workspace), args.episode, Path(args.alignment), write=not args.dry_run)
+    ws = Workspace(args.workspace)
+    if args.accepted_as_is and not args.dry_run:
+        Learning(ws).accept_as_is(args.episode)
+    ds = run(ws, args.episode, Path(args.alignment), write=not args.dry_run)
     print(f"{len(ds)} labelled:", dict(Counter(d.verdict for d in ds)))
     for r in learn(ds):
         print(f"- [{r.kind}] {r.title}\n    {r.detail}")

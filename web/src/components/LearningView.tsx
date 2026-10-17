@@ -51,7 +51,7 @@ export function LearningView() {
       <h1>学到的规则</h1>
       <p className="muted">
         来源：{s.episodes.length ? s.episodes.map((e) => (e.endsWith(".hand_edit") ? `${e.replace(".hand_edit", "")}（你手剪的成品）` : e)).join("、") : "还没有"}。
-        审阅里逐条决定 {s.considered} 个，保留 {s.kept}、恢复 {s.restored}、补删 {s.added}；没动过的 {s.untouched} 处不算。
+        审阅里逐条决定 {s.considered} 个；所有来源合计保留 {s.kept}、恢复或没删 {s.restored}、补删 {s.added}。
       </p>
       <p className="muted small">规则是从你的决定里推断的，只有你点「采用」之后才会影响下一集。随时可以撤回。</p>
       {ov.rules.length === 0 && (

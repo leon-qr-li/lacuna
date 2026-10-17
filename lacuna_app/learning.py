@@ -146,8 +146,12 @@ def _text(ep, e, host: str, limit: int = 40) -> str:
     return txt[:limit] + ("…" if len(txt) > limit else "")
 
 
-def decisions(ep) -> list[Decision]:
-    """Leon's verdict on every edit of an open `Episode` (read-only)."""
+def decisions(ep, accepted_as_is: bool = False) -> list[Decision]:
+    """Leon's verdict on every edit of an open `Episode` (read-only). `accepted_as_is`: Leon said his
+    clicks in this episode were only trying the app; count the AI first cut as he received it as
+    signed off (a batch keep of every cut, suggestions left uncut), and ignore the clicks."""
+    if accepted_as_is:
+        return _as_received(ep)
     with ep.lock:
         last = _last_touch(ep.history)
         first = _first_status(ep.history)
@@ -398,6 +402,27 @@ def _spans_overlap(spans: list[tuple[float, float]], a: float, b: float) -> floa
     return sum(max(0.0, min(b, y) - max(a, x)) for x, y in spans[max(0, i - 64):i])
 
 
+def _as_received(ep) -> list[Decision]:
+    with ep.lock:
+        first = _first_status(ep.history)
+        out: list[Decision] = []
+        for e in ep.edits.values():
+            if e.source != "first_cut":
+                continue
+            initial = first.get(e.id, RESTORED if e.title.startswith(SUGGESTION_PREFIX) else e.status)
+            if initial not in (APPLIED, RESTORED):
+                continue
+            host, _, _ = _host(ep, e)
+            j = ep.edit_json(e, [])
+            out.append(Decision(
+                episode=ep.id, edit_id=e.id, source=e.source, kind=e.ai_category or e.category, category=e.category,
+                host=host, verdict=KEPT if initial == APPLIED else DECLINED, how="batch",
+                confidence=float(e.confidence), length_s=j["len"], speech_s=float(e.speech_s),
+                text=_text(ep, e, host), reason=(e.reason or "")[:120], raw=j["raw"],
+                consequential=e.consequential))
+        return out
+
+
 def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list] | None = None,
                         tol: float = 0.1) -> list[Decision]:
     """Label the episode's first-cut edits with what Leon did in his OWN edit of the same recording
@@ -507,7 +532,7 @@ class Learning:
         for ep in episodes:
             if ep.meta.get("demo"):
                 continue                 # demo data is not Leon's taste
-            ds = decisions(ep)
+            ds = decisions(ep, accepted_as_is=ep.id in self._state().get("accepted_as_is", []))
             try:
                 self.save_decisions(ep.id, ds)
             except OSError:
@@ -553,6 +578,14 @@ class Learning:
         self._save(st)
         return self.overview()
 
+    def accept_as_is(self, episode_id: str, on: bool = True) -> None:
+        """Count this episode's first cut as accepted as delivered; its review clicks were tests."""
+        st = self._state()
+        eps = set(st.get("accepted_as_is", []))
+        (eps.add if on else eps.discard)(check_id(episode_id))
+        st["accepted_as_is"] = sorted(eps)
+        self._save(st)
+
     def active(self) -> list[dict]:
         """Approved rules exactly as Leon approved them."""
         return [s["approved"]["rule"] for s in self._state()["rules"].values()
@@ -565,7 +598,7 @@ def stats(ds: list[Decision]) -> dict:
     for d in ds:
         by[d.verdict] += 1
     eps = sorted({d.episode for d in ds})
-    considered = sum(1 for d in ds if d.how != "none")
+    considered = sum(1 for d in ds if d.how == "single")
     return {"episodes": eps, "decisions": len(ds), "considered": considered, **{k: by[k] for k in
             (KEPT, RESTORED_V, ACCEPTED, DECLINED, ADDED, UNTOUCHED)}}
 

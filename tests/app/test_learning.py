@@ -313,3 +313,23 @@ def test_hand_edit_script_writes_snapshot_and_page_uses_it(ai_ws, tmp_path):
     eps = Learning(ws).overview()["stats"]["episodes"]
     assert eps == [f"{AI_EPISODE}.hand_edit"]
     assert H.run(ws, AI_EPISODE, align, write=False) == ds
+
+
+def test_episode_accepted_as_is_ignores_review_clicks(ai_ws):
+    ws = Workspace(ai_ws)
+    ep = Episode(ws, AI_EPISODE)
+    content = next(e for e in ep.edits.values() if e.category == "content" and e.status == "applied")
+    sugg = next(e for e in ep.edits.values() if e.title.startswith("AI 建议"))
+    ep.review(content.id, "restore")                   # Leon only trying the app
+    ep.review(sugg.id, "apply")
+    lr = Learning(ws)
+    assert lr.overview([ep])["stats"]["restored"] == 1
+    lr.accept_as_is(AI_EPISODE)
+    st = lr.overview([ep])["stats"]
+    assert st["restored"] == 0 and st["accepted"] == 0 and st["untouched"] == 0
+    ds = {d.edit_id: d for d in decisions(ep, accepted_as_is=True)}
+    assert ds[content.id].verdict == "kept" and ds[content.id].how == "batch"
+    assert ds[sugg.id].verdict == "declined"
+    lr.accept_as_is(AI_EPISODE, on=False)
+    assert lr.overview([ep])["stats"]["restored"] == 1
+    ep.close()
