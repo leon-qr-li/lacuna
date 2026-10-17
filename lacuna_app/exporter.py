@@ -16,6 +16,7 @@ import traceback
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Callable
 
 from lacuna_core import SourcePool
 from lacuna_core.export import FORMATS, export, timeline_source
@@ -40,6 +41,7 @@ class Exporter:
         self.jobs: dict[str, dict] = {}        # episode id -> latest job
         self._lock = threading.Lock()
         self._running: str | None = None
+        self.on_done: list[Callable[[Episode], None]] = []   # e.g. chat learning; must not raise
 
     def dir_for(self, episode_id: str) -> Path:
         return inside(self.ws.root, "exports", check_id(episode_id))
@@ -102,6 +104,11 @@ class Exporter:
                     job.update(state="done", progress=1.0, stage=tr("完成"), finished=time.time(),
                                result={"files": files, "report": record["report"], "mp3": res.mp3,
                                        "errors": res.errors, "folder": str(out_dir)})
+                for hook in self.on_done:
+                    try:
+                        hook(ep)
+                    except Exception:   # an after-export extra never turns a finished export red
+                        traceback.print_exc()
             except Exception as e:   # surfaced to the UI; full trace on the console
                 traceback.print_exc()
                 with self._lock:

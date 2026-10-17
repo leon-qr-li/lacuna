@@ -48,6 +48,8 @@ def register(app, ctx) -> None:
             m = musics.get(episode_id)
             if m is None or m.ep is not ep:
                 m = musics[episode_id] = EpisodeMusic(ctx.ws, ep, library)
+            for eid in [e for e in musics if e not in ctx.episodes]:
+                del musics[eid]       # rebuilt from music.json when needed; lets closed episodes go
             return m
 
     @app.get("/api/episodes/{episode_id}/music")

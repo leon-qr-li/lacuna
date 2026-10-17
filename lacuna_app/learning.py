@@ -189,7 +189,7 @@ def decisions(ep, accepted_as_is: bool = False) -> list[Decision]:
 @dataclass
 class Rule:
     id: str
-    kind: str                # protect / review / trust / missed / timid / taste / threshold
+    kind: str                # protect / review / trust / missed / timid / taste / threshold / ask (chat)
     title: str               # one line for Leon
     detail: str              # the evidence, in words
     prompt: str              # what the AI first-cut editor is told once approved
@@ -539,7 +539,8 @@ class Learning:
         ds = self.all_decisions()
         st = self._state()
         rules = []
-        for r in learn(ds):
+        from .chat_learning import ChatAsks      # it builds on Rule, so imported here
+        for r in learn(ds) + ChatAsks(self.ws).rules():
             s = st["rules"].get(r.id, {})
             state = s.get("state", "candidate")
             approved = s.get("approved")
@@ -610,7 +611,7 @@ def prompt_rules(ws: Workspace | str | Path) -> str:
     lines = [r["prompt"] for r in Learning(ws).active() if r.get("prompt")]
     if not lines:
         return ""
-    return ("LEARNED FROM LEON'S REVIEWS (approved by Leon; these override the generic brief where they "
+    return ("LEARNED FROM LEON'S REVIEWS AND CHAT (approved by Leon; these override the generic brief where they "
             "conflict):\n" + "\n".join(f"- {x}" for x in lines))
 
 
