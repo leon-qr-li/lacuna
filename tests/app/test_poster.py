@@ -86,7 +86,7 @@ def test_sanitize_removes_anything_reaching_outside_the_file():
     ('<svg xmlns="http://www.w3.org/2000/svg"/>', "不是正方形"),
     ('<!DOCTYPE svg [<!ENTITY a "aaaa">]><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"/>', "DOCTYPE"),
     ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' + "<g/>" * 80_000 + "</svg>", "太大"),
-])
+], ids=["garbage", "html", "not-square", "no-viewbox", "doctype", "too-big"])
 def test_sanitize_rejects_unusable_svg(svg, msg):
     with pytest.raises(PosterError, match=msg):
         sanitize(svg)

@@ -33,10 +33,13 @@ WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 USAGE_LOG = "ai_usage.jsonl"     # one line per Claude call: tokens, seconds, estimated cost
 
 
+_USAGE_LOCK = threading.Lock()     # parallel calls (4 covers at once): appends are not atomic on Windows
+
+
 def log_usage(path: Path, episode_id: str, usage: dict) -> None:
     line = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "episode": episode_id, **usage}
     try:
-        with open(path, "a", encoding="utf-8") as f:
+        with _USAGE_LOCK, open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(line, ensure_ascii=False) + "\n")
     except OSError:
         pass      # bookkeeping must never break the chat
