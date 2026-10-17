@@ -10,7 +10,8 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
-  await page.getByRole("link", { name: "发布资料" }).click();
+  await page.getByRole("link", { name: "发布", exact: true }).click(); // 发布 step opens its first sub-tab
+  await expect(page.getByRole("link", { name: "发布资料", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page).toHaveURL(/\/publish$/);
   await expect(page.getByRole("heading", { name: "发布资料" })).toBeVisible();
   await expect(page.getByText(/只发文字/)).toBeVisible();

@@ -20,6 +20,8 @@ export interface EpisodeTab {
   mode: string;
   label: string;
   order: number;
+  /** Tabs sharing a group show as one step in the episode flow, with sub-tabs (e.g. "publish"). */
+  group?: string;
   render: (p: EpisodeTabProps) => ReactNode;
 }
 

@@ -11,7 +11,7 @@ test("AI first cut: no demo marks, review list in timeline order", async ({ page
   await expect(page.locator(".banner")).toHaveCount(0);
   await expect(page.getByText("演示")).toHaveCount(0);
 
-  await page.getByRole("link", { name: /改动审阅/ }).click();
+  await page.getByRole("link", { name: /审阅改动/ }).click();
   await expect(page).toHaveURL(/\/review$/);
   const items = page.getByTestId("review-list").locator(".ritem");
   await expect(items).toHaveCount(4);
@@ -35,7 +35,7 @@ test("AI first cut: no demo marks, review list in timeline order", async ({ page
 
 test("review: decide → jump to next pending; Y shortcut; 全部通过 in one step, one undo", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: /改动审阅/ }).click();
+  await page.getByRole("link", { name: /审阅改动/ }).click();
   const items = page.getByTestId("review-list").locator(".ritem");
   await expect(items).toHaveCount(4);
   await expect(page.getByTestId("review-progress")).toContainText("已过目 0 / 4");
@@ -66,7 +66,7 @@ test("review: decide → jump to next pending; Y shortcut; 全部通过 in one s
   await expect(page.locator(".toast")).toHaveText("已全部通过 2 处，可撤销");
   await expect(page.getByTestId("review-progress")).toContainText("已过目 4 / 4");
   await expect(page.getByRole("button", { name: /全部通过/ })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /改动审阅/ })).toHaveText("改动审阅 · 0");
+  await expect(page.getByRole("link", { name: /审阅改动/ })).toHaveText("审阅改动 · 0");
 
   // one undo takes back exactly the batch, then the two single decisions
   await page.getByRole("button", { name: "撤销" }).click();

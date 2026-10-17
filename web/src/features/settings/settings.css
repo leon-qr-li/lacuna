@@ -1,6 +1,7 @@
 /* 设置 (phase 7) */
+.settings { max-width: 860px; }
+.settings > h1 { margin: 8px 0 20px; }
 .settings .card { margin-bottom: 16px; }
 .settings .gap { gap: 8px; }
-.settings input { min-height: 40px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); font: inherit; }
-.settings .notes { white-space: pre-wrap; font: inherit; background: var(--sunk); padding: 10px 12px; border-radius: 8px; }
+.settings .notes { white-space: pre-wrap; font: inherit; background: var(--sunk); padding: 10px 12px; border-radius: 12px; }
 .settings .plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
