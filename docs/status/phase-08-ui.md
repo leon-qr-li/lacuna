@@ -1,6 +1,6 @@
 # Phase 8 — UI 审美（大改版）
 
-State: **in progress** — PR 1 (fonts + theme + base styles) open
+State: **first pass done, merged; awaiting the batch update + Leon's iteration**
 
 What Leon gets: a modern, calmer UI ("C 轻盈"): a clear 5-step flow per episode, buttons next to the work they do,
 bundled fonts that look right on his PC, and a dark / light theme. Functions and logic do not change.
@@ -9,21 +9,22 @@ Decision: `docs/decisions/2026-10-17-ui-redesign-c-focus.md`.
 ## Progress
 - 2026-10-17 15:51Z round 1 mockups (A / B / C / D) → Leon picked C. 16:00Z round 2 (every page, light / dark /
   English) → Leon: "先按这版本改，待会儿再 iterate".
-- PR 1: fonts bundled (Inter + MiSans VF + JetBrains Mono, no Google Fonts), token-based light / dark theme
-  (`web/src/features/theme/`, toggle in the top bar, remembered, follows the OS by default), all base styles
-  restyled; E2E `web/e2e/theme.spec.ts`.
+- PR #48: fonts bundled (Inter + MiSans VF + JetBrains Mono, no Google Fonts), token-based light / dark theme
+  (`web/src/features/theme/`, toggle in the top bar, remembered, follows the OS by default), base styles restyled;
+  E2E `web/e2e/theme.spec.ts`.
+- PR #50: shell. Top bar = crumb + 素材库 / 学到的规则 / 设置 / theme (+ 「AI 制作人」 toggle in 整集试听).
+  Under the title: status chip, ghost 撤销 / 重做, primary 导出. Step pill 审阅改动 → 整集试听 → 配乐 → 导出 → 发布;
+  tabs can declare `group` (registry) and grouped tabs become one step with sub-tabs (发布 = 发布资料 / 海报 /
+  上传喜马拉雅). 导出 is its own step (`features/export`, ExportPanel `inline`). Each step ends with 「下一步：…」.
+  设置 → 外观 (浅色 / 深色 / 跟随系统; language row, English disabled until i18n).
+- PR #51: 审阅改动 floating dock (prev / A·B pill / 恢复原话 R / 保留这个删除 Y / next), cleaner detail cards;
+  配乐 header with 按用途自动放好, whole-episode music strip (click a block to hear it), tuning box per placement.
+- PR 4: home hero + episode cards with a cover tile and status chip; 设置 link on every screen; 上传喜马拉雅 step
+  numbers.
 
-## Plan (small PRs)
-1. Foundation (this PR).
-2. Shell: top bar, episode pipeline (with 导出 as a step, 发布 sub-tabs), floating dock, AI drawer; registry gets
-   step metadata. Touches `App.tsx`, `features/registry.ts`, `PlayerBar`, `ChatPanel`.
-3. Pages: review (after the 6a thread's 「带配乐听」 PR B), music + export panel (after PR #47), publish / poster /
-   upload / library / rules / settings (appearance section with theme + language placeholder).
+## Next
+- Batch update (coordinator), then Leon validates and we iterate on colours / spacing / layout.
+- Then the i18n thread resumes (labels already flexible; English mockups checked in round 2).
 
 ## Coordination
-- 6a thread (素材库与配乐) owns MusicView / library and is adding a toggle to the review player: wait for its merges
-  before touching those files (coordinator relays each merge).
-- i18n thread paused until this lands; keep labels flexible (no fixed widths) — English mockups checked.
-
-## Open
-- Leon to iterate on colours / spacing after he sees it on his PC (batch update).
+- 6a thread no longer touches App.tsx, the review player, MusicView or ExportPanel (done with #47 / #49).

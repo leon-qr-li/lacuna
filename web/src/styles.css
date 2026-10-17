@@ -323,11 +323,16 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 
 /* ---------- home */
 .home { width: 100%; max-width: 1080px; margin: 0 auto; padding: 32px 28px 60px; }
-.home > h1 { margin: 8px 0 14px; }
+.home-hero { margin: 8px 0 18px; }
+.home-hero h1 { margin: 0 0 6px; font-size: 32px; letter-spacing: -0.01em; }
+.home-hero p { margin: 0; }
 .ep-list { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
-.ep-list a { display: flex; flex-direction: column; gap: 6px; padding: 18px 20px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); text-decoration: none; color: var(--ink); transition: transform 0.15s, box-shadow 0.15s; }
+.ep-list a { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); text-decoration: none; color: var(--ink); transition: transform 0.15s, box-shadow 0.15s; }
 .ep-list a:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); color: var(--ink); }
 .ep-list strong { font-size: 16px; }
+.ep-cover { flex: none; width: 64px; height: 64px; border-radius: 16px; display: grid; place-items: center; background: var(--grad); color: #fff; font-size: 26px; font-weight: 700; box-shadow: 0 8px 20px rgb(91 108 255 / 0.28); }
+.ep-body { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.ep-body .chip { margin-top: 4px; }
 
 /* ---------- export popover */
 .export { position: relative; }

@@ -66,7 +66,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
 
       <section className="card upload-step" aria-label="音频">
         <div className="card-head">
-          <strong>1. 音频（WAV）</strong>
+          <strong className="upload-h"><span className="step-n" aria-hidden="true">1</span>音频（WAV）</strong>
         </div>
         {view.audio ? (
           <>
@@ -95,7 +95,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
 
       <section className="card upload-step" aria-label="标题">
         <div className="card-head">
-          <strong>2. 标题</strong>
+          <strong className="upload-h"><span className="step-n" aria-hidden="true">2</span>标题</strong>
           {pack && (
             <button type="button" className="btn btn-outline btn-small" onClick={() => copy(false, pack.title, "标题已复制")}>
               复制标题
@@ -115,7 +115,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
 
       <section className="card upload-step" aria-label="简介">
         <div className="card-head">
-          <strong>3. 简介（show notes）</strong>
+          <strong className="upload-h"><span className="step-n" aria-hidden="true">3</span>简介（show notes）</strong>
           {pack && (
             <span className="row wrap gap8">
               <button type="button" className="btn btn-primary btn-small" onClick={() => copy(true, pack.markdown, "show notes 已复制（带格式），直接贴进简介框")}>
@@ -146,7 +146,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
 
       <section className="card upload-step" aria-label="封面">
         <div className="card-head">
-          <strong>4. 封面</strong>
+          <strong className="upload-h"><span className="step-n" aria-hidden="true">4</span>封面</strong>
         </div>
         {view.cover ? (
           <div className="upload-cover-row">

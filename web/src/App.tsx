@@ -122,23 +122,36 @@ function Home() {
         <Nav on="home" />
       </header>
       <main className="home">
+        <div className="home-hero">
+          <h1>剧集</h1>
+          <p className="muted">导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。</p>
+        </div>
         <ImportPanel onEpisodesChanged={reload} onOpen={open} />
-        <h1>剧集</h1>
         {err && <p className="error">{err}</p>}
         {list?.length === 0 && <p className="muted">工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。</p>}
         <ul className="ep-list">
           {list?.map((e) => (
             <li key={e.id}>
               <a href={`#/ep/${encodeURIComponent(e.id)}/listen`}>
-                <strong>{e.title}</strong>
-                {e.error ? (
-                  <span className="error small">无法打开：{e.error}</span>
-                ) : (
-                  <span className="muted small">
-                    {fmt(e.raw_duration ?? 0)} → {fmt(e.duration ?? 0)} · {e.pending_review} 处待过目
-                    {e.demo && " · 演示数据"}
-                  </span>
-                )}
+                <span className="ep-cover" aria-hidden="true">
+                  {e.title.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 1)}
+                </span>
+                <span className="ep-body">
+                  <strong>{e.title}</strong>
+                  {e.error ? (
+                    <span className="error small">无法打开：{e.error}</span>
+                  ) : (
+                    <>
+                      <span className="muted small mono">
+                        {fmt(e.raw_duration ?? 0)} → {fmt(e.duration ?? 0)}
+                        {e.demo && " · 演示数据"}
+                      </span>
+                      <span className={`chip ${e.pending_review ? "chip-warn" : "chip-ok"}`}>
+                        {e.pending_review ? `${e.pending_review} 处待过目` : "都过目了"}
+                      </span>
+                    </>
+                  )}
+                </span>
               </a>
             </li>
           ))}
