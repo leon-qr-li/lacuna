@@ -15,7 +15,7 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 1 | 审阅提速 | 剩下全部通过（一步可撤销）、决定后自动跳到下一条、Y/R 快捷键、过目进度、只看没过目的、AI 未删建议可以“不删，保持原话” | — | 母带与导出 (thread) | **done, validated by Leon 2026-10-17** |
 | 2 | 导出成品 | 一个按钮导出整集 WAV / MP3（-16 LUFS / -1 dBTP），带进度，导出后能在文件夹里找到 | 母带与导出 thread merged (`lacuna_core`) | 3 | **done with #4** (top-bar 导出 button; validation by Leon pending listening verdict) |
 | 3 | 真 AI 对话 | 聊天框接 Claude API：在任意位置说“这段删掉 / 停顿短一点”，AI 给出可试听的修改 | Leon's API key (set 2026-10-17) | 2 | **done, validated by Leon 2026-10-17** |
-| 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **built** (D40); full run with EP001 raw on Leon's PC next; formal acceptance needs a second episode's raw tracks |
+| 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **built** (D41); full run with EP001 raw on Leon's PC next; formal acceptance needs a second episode's raw tracks |
 | 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | **built (D39)**; Leon's EP001 review = 5 single decisions + 1 batch of 110 → hand edit added as 2nd source; install + validation pending |
 | 6 | 片头、配乐与 ducking | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 5 | — |
 | 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
@@ -40,7 +40,7 @@ Parallel set (2026-10-17): phase 3 merged (#8), awaiting Leon's validation. Expo
 - Real-key check without touching the episode: `scripts/ai_chat_smoke.py`.
 - Tests: `tests/app/test_claude_chat.py` (fake client), `web/e2e/claude.spec.ts` (AI E2E server answers through `ClaudeEditorAdapter` with `tests/app/fake_claude.py`).
 
-## Phase 4 — 新一集导入 (2026-10-17, D40)
+## Phase 4 — 新一集导入 (2026-10-17, D41)
 - UI: Home → 「导入新一集」: episode id (next free EPnnn), optional title, Leon's / Pei's track picked in a local folder browser (`GET /api/fs`; Pei's file is guessed from the same folder). Task panel under it: stage, progress bar, elapsed, 取消 / 继续 / 开始审阅 / 从列表移除; a job that finishes while Home is open opens its review.
 - API: `POST /api/imports {id, title, leon, pei}`, `GET /api/imports` (+ `next_id`), `GET /api/imports/{id}`, `POST …/resume`, `POST …/cancel`, `DELETE …`.
 - Pipeline (`lacuna_app/importer.py`): models (first time, ~400 MB from the sherpa-onnx GitHub releases into `<workspace>/models`) → ASR per track (`asr.py`) → features + editor document (`features.py`) → AI first cut (`first_cut.py`, windows of ~10 min, cached per window) → episode (`ai_cut.build_episode`). Cache: `<workspace>/imports/<id>/` (asr_L/P.json, tokens/features.json, editor_input.md, ai_windows/, ops.json, job.json).
