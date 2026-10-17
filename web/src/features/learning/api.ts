@@ -18,6 +18,9 @@ export interface LearnedRule {
   approved_at: string | null;
 }
 
+/** delete: only offered for rejected rules; hides the rule for good. */
+export type Action = "approve" | "reject" | "reset" | "delete";
+
 export interface LearningOverview {
   rules: LearnedRule[];
   pending: number;
@@ -37,7 +40,7 @@ export interface LearningOverview {
 
 export const learningApi = {
   learning: () => req<LearningOverview>("GET", "/api/learning"),
-  decideRule: (id: string, action: "approve" | "reject" | "reset") =>
+  decideRule: (id: string, action: Action) =>
     req<LearningOverview>("POST", "/api/learning/rules", { id, action }),
   remember: (episodeId: string, text: string, playhead: number) =>
     req<ChatReply>("POST", `/api/episodes/${encodeURIComponent(episodeId)}/remember`, { text, playhead }),

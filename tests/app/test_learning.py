@@ -216,6 +216,21 @@ def test_rules_need_approval_and_approved_snapshot_is_what_counts(tmp_path, monk
     assert json.loads((ws.root / "learning" / "rules.json").read_text(encoding="utf-8"))["rules"][RULE["id"]]["state"] == "rejected"
 
 
+def test_deleted_rule_never_comes_back(tmp_path, monkeypatch):
+    ws = Workspace(tmp_path).ensure()
+    fake_rules(monkeypatch, [RULE])
+    lr = Learning(ws)
+    lr.decide(RULE["id"], "reject")
+    ov = lr.decide(RULE["id"], "delete")
+    assert ov["rules"] == [] and ov["pending"] == 0
+    # re-learned from the same (or new) evidence on the next visit: still gone
+    fake_rules(monkeypatch, [RULE | {"evidence": {"restored": 9}, "prompt": "Never cut Pei."}])
+    assert Learning(ws).overview()["rules"] == []
+    assert prompt_rules(ws) == "" and review_policy(ws) is None
+    with pytest.raises(KeyError):
+        lr.decide(RULE["id"], "reset")
+
+
 def test_decide_unknown_rule_and_action(tmp_path, monkeypatch):
     ws = Workspace(tmp_path).ensure()
     fake_rules(monkeypatch, [RULE])

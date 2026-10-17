@@ -40,6 +40,22 @@ test("learning: candidate rule from review decisions → 采用 → in force, su
   await again.getByRole("button", { name: "重新考虑" }).click();
   await page.getByRole("tab", { name: /待你决定/ }).click();
   await expect(again).toContainText("待你确认");
+
+  // a rejected rule can be deleted for good (two steps); it stays gone after the page re-learns
+  await again.getByRole("button", { name: "不采用", exact: true }).click();
+  await page.getByRole("tab", { name: /已不采用/ }).click();
+  await again.getByRole("button", { name: "删除", exact: true }).click();
+  await again.getByRole("button", { name: "取消" }).click();
+  await expect(again).toBeVisible();
+  await again.getByRole("button", { name: "删除", exact: true }).click();
+  await again.getByRole("button", { name: "确定删除" }).click();
+  await expect(again).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText("以后不会再出现");
+  await page.reload();
+  for (const g of [/待你决定/, /已生效/, /已不采用/]) {
+    await page.getByRole("tab", { name: g }).click();
+    await expect(page.getByTestId("rule").filter({ hasText: "Pei的口误" })).toHaveCount(0);
+  }
 });
 
 // many rules: each group pages 10 at a time (the overview is stubbed so the counts are known)

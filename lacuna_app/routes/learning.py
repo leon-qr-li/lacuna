@@ -12,7 +12,7 @@ from .episodes import remember
 
 class RuleBody(BaseModel):
     id: str = Field(min_length=1, max_length=200)
-    action: str = Field(pattern="^(approve|reject|reset)$")
+    action: str = Field(pattern="^(approve|reject|reset|delete)$")
 
 
 class RememberBody(BaseModel):

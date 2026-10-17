@@ -24,6 +24,7 @@ Depends on: Leon's full review of EP001; 3 · Parallel with: 4
 - 「学到的规则」 opens on **待你决定** (candidates + adopted rules with new evidence); **已生效** and **已不采用** are the other two tabs, each with a count. Deciding a rule moves it out of the current tab with a one-line notice and a 「去看看」 link to where it went.
 - Each tab pages 10 rules at a time (`web/src/features/learning/Pager.tsx`: prev / numbers with gaps / next, "第 1–10 条，共 23 条"); the pager hides when one page is enough. Paging is client-side: the overview already returns every rule and the cost is recomputing it, not the payload.
 - Tests: `web/e2e/learning.spec.ts` (groups, move on decide, 23-rule stubbed paging), `web/e2e/chat_learning.spec.ts`. Screenshots `/mnt/project-files/lacuna/screenshots/learning/`.
+- Delete (Leon 2026-10-17 20:22Z): a rejected rule has 「删除」 (two-step confirm). `Learning.decide(id, "delete")` stores state `deleted` in `learning/rules.json`; `overview` skips it, so it never comes back even when re-learned. Also more space between 看例子 and the buttons.
 
 ## Open issues
 - Chat asks (kind `ask`) feed only the AI first cut, not the chat producer itself; if Leon wants an adopted ask to also steer chat answers, pass `learning.prompt_rules` into the chat scene.

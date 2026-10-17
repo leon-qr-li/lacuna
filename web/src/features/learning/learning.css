@@ -24,3 +24,12 @@
 .pager-num:hover { background: var(--hover); }
 .pager-num.on { border-color: var(--line-2); background: var(--solid); color: var(--ink); font-weight: 600; }
 .pager-gap { padding: 0 4px; }
+
+/* delete a rejected rule for good (two steps) */
+.rule-delete { color: var(--danger); }
+.rule-confirm .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+/* breathing room between 看例子 and the decision buttons */
+.rule > details { margin-bottom: 6px; }
+.rule > details > summary { cursor: pointer; width: max-content; }
+.rule > .row:last-child { margin-top: 10px; }
