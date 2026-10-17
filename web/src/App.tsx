@@ -11,18 +11,20 @@ import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
 import { PublishView } from "./components/PublishView";
 import { ReviewView } from "./components/ReviewView";
+import { SettingsLink, SettingsView } from "./components/SettingsView";
 import { Lanes, Overview } from "./components/Timeline";
 import { usePlayer } from "./usePlayer";
 
 type Mode = "listen" | "review" | "music" | "publish";
 
-function parseHash(): { id: string | null; mode: Mode; learning: boolean; library: boolean } {
+function parseHash(): { id: string | null; mode: Mode; learning: boolean; library: boolean; settings: boolean } {
   const m = /^#\/ep\/([^/]+)(?:\/(listen|review|music|publish))?/.exec(window.location.hash);
   return {
     id: m ? decodeURIComponent(m[1]) : null,
     mode: (m?.[2] as Mode) ?? "listen",
     learning: window.location.hash.startsWith("#/learning"),
     library: window.location.hash.startsWith("#/library"),
+    settings: window.location.hash.startsWith("#/settings"),
   };
 }
 
@@ -41,10 +43,26 @@ const go = (id: string, mode: Mode = "listen") => {
 };
 
 export default function App() {
-  const { id, mode, learning, library } = useRoute();
+  const { id, mode, learning, library, settings } = useRoute();
+  if (settings) return <SettingsScreen />;
   if (learning) return <LearningScreen />;
   if (library) return <LibraryScreen />;
   return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home />;
+}
+
+function SettingsScreen() {
+  return (
+    <div className="app">
+      <header className="topbar">
+        <a className="brand" href="#/">
+          LACUNA
+        </a>
+        <span className="muted">/</span>
+        <span className="ep-title">设置</span>
+      </header>
+      <SettingsView />
+    </div>
+  );
 }
 
 function LearningScreen() {
@@ -126,6 +144,7 @@ function Home() {
         <span className="grow" />
         <LibraryLink />
         <LearningLink />
+        <SettingsLink />
       </header>
       <main className="home">
         <ImportPanel onEpisodesChanged={reload} onOpen={open} />

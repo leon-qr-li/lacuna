@@ -4,7 +4,9 @@
                                                   # by a scripted fake Claude (tests/app/fake_claude.py)
                                                   # and a fake voice-input recogniser
     python tests/app/serve_e2e.py <port> --import # empty workspace + two raw tracks in <ws>/recordings;
-                                                  # imports use a fake ASR and a fake Claude first cut
+                                                  # imports use a fake ASR and a fake Claude first cut;
+                                                  # runs as installed 2026.10.17.1 with a local feed
+                                                  # offering 2026.10.18.1 (设置 page, phase 7)
 """
 import sys
 import tempfile
@@ -27,13 +29,18 @@ if __name__ == "__main__":
         from tests.app.fake_claude import FakeFirstCutAnthropic
         from tests.app.synth import fake_asr, write_recordings
 
-        root = Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws"
+        from lacuna_app.appinfo import Updater
+        from tests.app.test_appinfo import make_feed
+
+        tmp = Path(tempfile.mkdtemp(prefix="lacuna-e2e-"))
+        root = tmp / "ws"
         write_recordings(root / "recordings")
         ws = Workspace(root).ensure()
         imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic(delay=1.5)),
                        asr_backend=fake_asr)
-        uvicorn.run(create_app(root, MockEditorAdapter(), importer=imp), host="127.0.0.1", port=int(port),
-                    log_level="warning")
+        upd = Updater(home=tmp / "home", feed_url=make_feed(tmp, "2026.10.18.1"), version="2026.10.17.1")
+        uvicorn.run(create_app(root, MockEditorAdapter(), importer=imp, updater=upd), host="127.0.0.1",
+                    port=int(port), log_level="warning")
     elif "--ai" in sys.argv:
         import uvicorn
 

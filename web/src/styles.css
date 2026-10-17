@@ -261,3 +261,10 @@ input[type="text"] { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; b
 input.num { width: 72px; }
 input.time { width: 150px; }
 select, input:not([type]), input[type="number"] { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+
+/* 设置 (phase 7) */
+.settings .card { margin-bottom: 16px; }
+.settings .gap { gap: 8px; }
+.settings input { min-height: 40px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); font: inherit; }
+.settings .notes { white-space: pre-wrap; font: inherit; background: var(--sunk); padding: 10px 12px; border-radius: 8px; }
+.settings .plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }

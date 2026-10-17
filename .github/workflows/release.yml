@@ -1,0 +1,70 @@
+name: Release
+
+# Publishes what Leon's and Pei's apps update to (phase 7, D48). Run by hand from main once a batch
+# is merged and CI is green ("统一发版"): Actions -> Release -> Run workflow, with Chinese notes that
+# the 设置 page shows. Version = UTC date + running number of that day, e.g. 2026.10.17.2.
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: "更新内容（App 里显示）"
+        required: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Only from main
+        run: '[ "$GITHUB_REF" = refs/heads/main ] || { echo "release only from main"; exit 1; }'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build UI
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Version
+        id: v
+        run: |
+          day=$(date -u +%Y.%-m.%-d)
+          n=1
+          while git rev-parse -q --verify "refs/tags/v$day.$n" >/dev/null; do n=$((n+1)); done
+          echo "version=$day.$n" >> "$GITHUB_OUTPUT"
+
+      - name: Build release
+        env:
+          NOTES: ${{ inputs.notes }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          printf '%s\n' "$NOTES" > notes.txt
+          python installer/build_release.py --version "$VERSION" --out dist --notes-file notes.txt \
+            --url-base "https://github.com/${GITHUB_REPOSITORY}/releases/download/v$VERSION"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          gh release create "v$VERSION" --target "$GITHUB_SHA" --title "LACUNA $VERSION" --notes-file notes.txt --latest \
+            dist/lacuna.zip dist/version.json dist/lacuna_launcher.py dist/install.sh dist/install.ps1 dist/LACUNA-Setup.cmd

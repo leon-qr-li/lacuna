@@ -18,7 +18,7 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **done**, validated by Leon 2026-10-17 (D41, D44) |
 | 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | **done, validated by Leon 2026-10-17** (D39) |
 | 6 | 片头、配乐与 ducking (= 6a) | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 9 | **built (D45)**; install with the next batch update, then Leon validates |
-| 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
+| 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | **built (D48)**; first Release + Leon's PC migration with the next batch update, then Pei installs on her Mac |
 | 8 | UI 审美迭代 | 视觉与布局打磨 | flows stable (after 4) | 5–6 | — |
 | 9 | 发布资料包 | 标题（可换候选）、一句话简介、show notes（D40 样式）、成品时间线上的章节、专有名词核对，一键复制（富文本 + Markdown） | 2 | 6a | **done, validated by Leon 2026-10-17** (D46) |
 | 10 | 海报 | Claude 按本期内容写 3–4 版极简 SVG 海报，本地渲染 PNG，Leon 挑一版或一句话改 | 9 | 6a | — (direction set, D38) |
@@ -71,3 +71,14 @@ Parallel set (2026-10-17): phase 3 merged (#8), awaiting Leon's validation. Expo
 - Files: `<episode>/publish.json` (schema 1, via `store`), `<workspace>/exports/<episode>/publish/notes.md` (rewritten on every save), `<workspace>/names.json` (names Leon corrected; applied to the next transcript and listed in the prompt). Cost logged to `ai_usage.jsonl` (`kind: publish`).
 - Real-key check: `scripts/publish_smoke.py --workspace … --episode …`.
 - Tests: `tests/app/test_publish.py` (fake client), `web/e2e/publish.spec.ts`.
+
+## Phase 7 — 打包与更新 (2026-10-17, D48)
+- Install: `installer/install.sh` (macOS/Linux, `curl … | bash`), `installer/install.ps1` + `LACUNA-Setup.cmd` (Windows) download uv → uv installs Python 3.12 → `installer/lacuna_launcher.py install`: release zip from `releases/latest/download/version.json` (sha256), venv + `.[claude,asr]`, ffmpeg/ffprobe 6.1.1 static (pinned sha256) in `<root>/ffmpeg`, config, shortcuts (Windows Desktop + Start menu → `LACUNA.cmd`; macOS `~/Applications/LACUNA.app` → Terminal running `LACUNA.command`). Roots: `%LOCALAPPDATA%\LACUNA`, `~/Library/Application Support/LACUNA`. Workspace default: `C:\Projects\LACUNA_Workspace` if present, else `~/LACUNA_Workspace`.
+- Run: `lacuna_launcher.py run` starts `python -m lacuna_app` from `versions/<current>/` with `LACUNA_HOME`, `LACUNA_UPDATE_FEED` and the bundled ffmpeg first on PATH; already running → opens the browser only.
+- Update: page 「设置」(`#/settings`, top-bar link shows 「有新版本」): 检查更新 / 下载新版本 (background, sha256, unpack to `versions/<v>/`) / 更新并重启 (refused while an import, export or publish pack runs) → server exits 75 → launcher installs the new version's packages, starts it, waits ≤ 180 s for `/api/app` to report the new version, else reinstalls and starts the previous one and logs it (`update_log.json`, shown on the page). Keeps current + previous. Exit 76 = plain restart.
+- API key on 设置: Windows → `HKCU\Environment` (same as `setx`); macOS → login Keychain (service `LACUNA`); else a 0600 file in the install root. `find_api_key` reads env → registry → Keychain → file. Saving restarts the installed app so the AI clients pick it up.
+- Release: Actions → **Release** (workflow_dispatch from main, Chinese notes) → tag `vYYYY.M.D.N`, assets `lacuna.zip`, `version.json`, installers, launcher (`installer/build_release.py`).
+- API: `GET /api/app`, `POST /api/app/update/check|prepare|apply`, `POST /api/app/api-key`. Engine `lacuna_app/appinfo.py`.
+- Tests: `tests/installer/test_launcher.py` (install, update, broken release rollback, failed package install, restart; fake uv + fake app), `tests/app/test_appinfo.py`, `web/e2e/settings.spec.ts`, CI job `install` = `tests/installer/smoke_install.py` on Windows / macOS / Linux (real installer, uv, Python, packages, ffmpeg download, in-app update, rollback).
+- Steps for Leon / Pei: `docs/INSTALL.md`.
+
