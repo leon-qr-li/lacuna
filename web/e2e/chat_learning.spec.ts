@@ -23,9 +23,12 @@ test("chat 记住 button → candidate rule in his words → 采用 → 撤回",
   await expect(rule).toContainText("的对话里说的");
 
   await rule.getByRole("button", { name: "采用", exact: true }).click();
+  await page.getByRole("tab", { name: /已生效/ }).click();
   await expect(rule).toContainText("已生效");
   await rule.getByRole("button", { name: "撤回" }).click();
-  await expect(rule).toContainText("不采用");
+  await page.getByRole("tab", { name: /已不采用/ }).click();
+  await expect(rule).toContainText("已不采用");
   await rule.getByRole("button", { name: "重新考虑" }).click();
+  await page.getByRole("tab", { name: /待你决定/ }).click();
   await expect(rule).toContainText("待你确认");
 });

@@ -18,13 +18,63 @@ test("learning: candidate rule from review decisions → 采用 → in force, su
   await rule.getByText(/看例子/).click();
   await expect(rule).toContainText("对这也就就");
 
+  // by default only rules waiting for a decision show; a decided one moves to its own group
+  await expect(page.getByRole("tab", { name: /待你决定/ })).toHaveAttribute("aria-selected", "true");
   await rule.getByRole("button", { name: "采用", exact: true }).click();
+  await expect(rule).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText("在「已生效」里能找到");
+  await page.getByRole("status").getByRole("button", { name: "去看看" }).click();
+  await expect(page.getByRole("tab", { name: /已生效/ })).toHaveAttribute("aria-selected", "true");
   await expect(rule).toContainText("已生效");
+
   await page.reload();
+  await expect(page.getByRole("tab", { name: /待你决定/ })).toHaveAttribute("aria-selected", "true");
   const again = page.getByTestId("rule").filter({ hasText: "Pei的口误" });
+  await expect(again).toHaveCount(0);
+  await page.getByRole("tab", { name: /已生效/ }).click();
   await expect(again).toContainText("已生效");
   await again.getByRole("button", { name: "撤回" }).click();
-  await expect(again).toContainText("不采用");
+  await expect(again).toHaveCount(0);
+  await page.getByRole("tab", { name: /已不采用/ }).click();
+  await expect(again).toContainText("已不采用");
   await again.getByRole("button", { name: "重新考虑" }).click();
+  await page.getByRole("tab", { name: /待你决定/ }).click();
   await expect(again).toContainText("待你确认");
+});
+
+// many rules: each group pages 10 at a time (the overview is stubbed so the counts are known)
+test("learning: groups count, filter and page through many rules", async ({ page }) => {
+  const rule = (i: number, state: string) => ({
+    id: `r${i}`, kind: "protect", title: `规则${String(i).padStart(2, "0")}`, detail: "细节", prompt: "", key: {}, evidence: {},
+    examples: [], policy: null, state, updated: false, approved_at: null,
+  });
+  const rules = [
+    ...Array.from({ length: 23 }, (_, i) => rule(i, "candidate")),
+    ...Array.from({ length: 3 }, (_, i) => rule(30 + i, "approved")),
+    rule(40, "rejected"),
+  ];
+  const stats = { episodes: ["EP001"], decisions: 0, considered: 0, kept: 0, restored: 0, accepted: 0, declined: 0, added: 0, untouched: 0 };
+  await page.route("**/api/learning", (r) => r.fulfill({ json: { rules, pending: 23, stats } }));
+  await page.goto("/#/learning");
+  await expect(page.getByRole("tab", { name: /待你决定/ })).toContainText("23");
+  await expect(page.getByRole("tab", { name: /已生效/ })).toContainText("3");
+  await expect(page.getByRole("tab", { name: /已不采用/ })).toContainText("1");
+  const cards = page.getByTestId("rule");
+  await expect(cards).toHaveCount(10);
+  await expect(cards.first()).toContainText("规则00");
+  await expect(page.getByText("第 1–10 条，共 23 条")).toBeVisible();
+  await expect(page.getByRole("button", { name: "上一页" })).toBeDisabled();
+  await page.getByRole("button", { name: "3", exact: true }).click();
+  await expect(cards).toHaveCount(3);
+  await expect(cards.first()).toContainText("规则20");
+  await expect(page.getByRole("button", { name: "下一页" })).toBeDisabled();
+  await page.getByRole("button", { name: "上一页" }).click();
+  await expect(cards.first()).toContainText("规则10");
+
+  await page.getByRole("tab", { name: /已生效/ }).click();
+  await expect(cards).toHaveCount(3);
+  await expect(page.getByRole("navigation", { name: "翻页" })).toHaveCount(0); // one page: no pager
+  await page.getByRole("tab", { name: /已不采用/ }).click();
+  await expect(cards).toHaveCount(1);
+  await expect(cards).toContainText("规则40");
 });
