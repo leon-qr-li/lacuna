@@ -1,4 +1,5 @@
 import { t } from "./i18n";
+import { track } from "./features/loading/activity";
 export type EditStatus = "applied" | "restored" | "proposed" | "discarded";
 
 export interface EditInfo {
@@ -132,6 +133,7 @@ export interface ExportJob {
   music_version?: string;
   music_stale?: boolean; // the episode's music changed after this export
   basename: string;
+  started?: number;
   error: string | null;
   result: {
     files: Record<string, string>;
@@ -156,6 +158,7 @@ export interface ImportJob {
   state: "queued" | "running" | "done" | "error" | "interrupted" | "cancelled";
   progress: number;
   step: string | null;
+  steps?: Record<string, unknown>; // finished steps, by importer STEPS key
   stage: string;
   created: string;
   started: string | null;
@@ -175,6 +178,11 @@ export interface FsListing {
 }
 
 export async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
+  // anything the person started (not a GET) moves the thin line under the top bar
+  return method === "GET" ? send<T>(method, url, body) : track(send<T>(method, url, body));
+}
+
+async function send<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },

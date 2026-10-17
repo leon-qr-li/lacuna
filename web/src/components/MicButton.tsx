@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api";
 import { t } from "../i18n";
+import { BusyLabel } from "../features/loading/Loading";
 
 const MAX_S = 120; // stop on its own after two minutes
 
@@ -102,7 +103,7 @@ export function MicButton({ available, note, disabled, onStart, onText, onError 
     state === "recording"
       ? `● ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`
       : state === "busy"
-        ? t("识别中…")
+        ? <BusyLabel busy label={t("识别中…")} />
         : "🎤";
   return (
     <button

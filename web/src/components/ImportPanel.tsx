@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { FsListing, ImportJob } from "../api";
 import { api, fmt } from "../api";
 import { t } from "../i18n";
+import { JobProgress } from "../features/loading/Loading";
+import type { JobStep } from "../features/loading/Loading";
 
 const RUNNING = new Set(["queued", "running"]);
 const STATE_LABEL: Record<ImportJob["state"], string> = {
@@ -13,10 +15,30 @@ const STATE_LABEL: Record<ImportJob["state"], string> = {
   cancelled: t("已取消"),
 };
 
-function elapsed(j: ImportJob, now: number): number {
-  // elapsed_s = finished runs; plus the current run while it is going
-  const prev = j.elapsed_s ?? 0;
-  return RUNNING.has(j.state) && j.run_started ? prev + Math.max(0, (now - Date.parse(j.run_started)) / 1000) : prev;
+// the importer's steps and their share of the progress (lacuna_app/importer.py STEPS)
+const STEPS: [string, number, string][] = [
+  ["models", 0.04, t("准备识别模型")],
+  ["asr_L", 0.34, t("识别 Leon 的分轨")],
+  ["asr_P", 0.34, t("识别 Pei 的分轨")],
+  ["features", 0.04, t("分析停顿、语速和重叠")],
+  ["first_cut", 0.2, t("AI 第一刀")],
+  ["episode", 0.04, t("生成审阅")],
+];
+
+function jobSteps(j: ImportJob): JobStep[] {
+  let before = 0;
+  return STEPS.map(([key, w, label]) => {
+    const from = before;
+    before += w;
+    if (j.steps?.[key]) return { label, state: "done" };
+    if (j.step === key) return { label, state: "now", progress: Math.min(Math.max((j.progress - from) / w, 0), 1) };
+    return { label, state: "todo" };
+  });
+}
+
+/** When the work started, counting earlier runs of a resumed import (elapsed_s) as time already used. */
+function startedAt(j: ImportJob): number | undefined {
+  return j.run_started ? Date.parse(j.run_started) - (j.elapsed_s ?? 0) * 1000 : undefined;
 }
 
 /** Folder browser on the local machine (the server only lists folders and audio files). */
@@ -184,7 +206,7 @@ function NewImport({ nextId, onStarted, onCancel }: { nextId: string; onStarted:
   );
 }
 
-function JobRow({ j, now, onChange }: { j: ImportJob; now: number; onChange: () => void }) {
+function JobRow({ j, onChange }: { j: ImportJob; onChange: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const act = (p: Promise<unknown>) => p.then(onChange).catch((e) => setErr((e as Error).message));
   const running = RUNNING.has(j.state);
@@ -192,7 +214,7 @@ function JobRow({ j, now, onChange }: { j: ImportJob; now: number; onChange: () 
     <li className={`job job-${j.state}`} data-testid="import-job" data-state={j.state}>
       <div className="row gap8 wrap">
         <strong>{j.title}</strong>
-        <span className={`chip ${j.state === "done" ? "chip-ok" : ""}`}>{STATE_LABEL[j.state]}</span>
+        {!running && <span className={`chip ${j.state === "done" ? "chip-ok" : ""}`}>{STATE_LABEL[j.state]}</span>}
         <span className="muted small">
           {j.tracks.L.name} + {j.tracks.P.name}
           {j.tracks.L.duration ? ` · ${fmt(j.tracks.L.duration)}` : ""}
@@ -200,15 +222,15 @@ function JobRow({ j, now, onChange }: { j: ImportJob; now: number; onChange: () 
       </div>
       {running && (
         <>
-          <div className="bar" role="progressbar" aria-valuenow={Math.round(j.progress * 100)} aria-valuemin={0} aria-valuemax={100}>
-            <span style={{ width: `${Math.round(j.progress * 100)}%` }} />
-          </div>
-          <div className="row gap8 small">
-            <span data-testid="import-stage">{j.stage}</span>
-            <span className="muted">
-              {t("{pct}% · 已用 {time}", { pct: Math.round(j.progress * 100), time: fmt(elapsed(j, now)) })}
-            </span>
-          </div>
+          <JobProgress
+            flat
+            title={j.state === "queued" ? t("排队中，马上开始") : t("正在导入")}
+            stage={j.stage}
+            progress={j.progress}
+            steps={jobSteps(j)}
+            started={startedAt(j)}
+            stepTestId="import-stage"
+          />
         </>
       )}
       {j.state === "done" && j.result && (
@@ -251,7 +273,6 @@ export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: 
   const [jobs, setJobs] = useState<ImportJob[] | null>(null);
   const [nextId, setNextId] = useState("EP001");
   const [form, setForm] = useState(false);
-  const [now, setNow] = useState(Date.now());
   const prev = useRef<Map<string, string>>(new Map());
 
   const refresh = useCallback(async () => {
@@ -259,7 +280,6 @@ export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: 
       const r = await api.imports();
       setJobs(r.jobs);
       setNextId(r.next_id);
-      setNow(Date.now());
       const seen = prev.current;
       for (const j of r.jobs) {
         if (j.state === "done" && seen.has(j.id) && RUNNING.has(seen.get(j.id)!)) {
@@ -305,7 +325,7 @@ export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: 
           <h2 className="sub">{t("导入任务")}</h2>
           <ul className="jobs">
             {jobs.map((j) => (
-              <JobRow key={j.id} j={j} now={now} onChange={() => void refresh()} />
+              <JobRow key={j.id} j={j} onChange={() => void refresh()} />
             ))}
           </ul>
         </section>

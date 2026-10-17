@@ -3,6 +3,7 @@ import type { PublishView as View } from "./api";
 import { copyRich, copyText, markdownToHtml } from "../../markdown";
 import { publishApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
+import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
 /** 发布资料: title, one-line blurb, show notes (Markdown, approved D40 format), chapters and the
  *  names to check, all for the version of the cut that will be published. */
@@ -12,7 +13,6 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState(Date.now());
   const timer = useRef<number | null>(null);
 
   const load = () =>
@@ -34,11 +34,6 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   }, [id, version]);
 
   const running = view?.job?.state === "running";
-  useEffect(() => {
-    if (!running) return;
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, [running]);
 
   const act = async (p: Promise<View>, msg?: string) => {
     setBusy(true);
@@ -69,7 +64,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const html = useMemo(() => (pack ? markdownToHtml(pack.markdown) : ""), [pack]);
 
   if (err) return <p className="error pad">{t("发布资料打不开：")}{err}</p>;
-  if (!view) return <p className="pad muted">{t("加载中…")}</p>;
+  if (!view) return <PageLoading label={t("正在打开发布资料…")} />;
 
   const generate = () => {
     if (pack && !window.confirm(pack.edited ? t("重新生成会覆盖你手改过的 show notes，确定吗？") : t("重新生成一版？（会再花一次 Claude 的钱）"))) return;
@@ -90,7 +85,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
         </div>
         <span className="grow" />
         <button type="button" className={pack ? "btn btn-outline" : "btn btn-primary"} onClick={generate} disabled={busy || running}>
-          {pack ? t("重新生成") : t("生成发布资料")}
+          <BusyLabel busy={running} label={pack ? t("重新生成") : t("生成发布资料")} busyLabel={t("生成中…")} />
         </button>
       </div>
 
@@ -102,9 +97,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
         </p>
       )}
       {running && (
-        <p className="card" role="status" data-testid="publish-running">
-          {t("{stage}… 已用 {s} 秒", { stage: job?.stage, s: Math.max(0, Math.round((now - (job?.started ?? 0) * 1000) / 1000)) })}
-        </p>
+        <JobProgress title={t("正在写发布资料")} stage={job?.stage} started={job?.started} typical={90} testId="publish-running" />
       )}
       {job?.state === "error" && <p className="card error">{t("没生成出来：{error}。可以再点一次「生成发布资料」。", { error: job.error })}</p>}
 

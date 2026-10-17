@@ -5,6 +5,7 @@ import { CREDIT_LABEL } from "./LibraryView";
 import { libraryApi } from "./api";
 import { DraftCard, MusicChatBox } from "./MusicAssist";
 import { t } from "../../i18n";
+import { PageLoading } from "../loading/Loading";
 
 const ROLE_HELP: Record<Role, string> = {
   intro: t("从头放，人声在音乐结束前进来，重叠处音乐自动压低淡出"),
@@ -269,7 +270,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   };
 
   if (err) return <p className="error pad">{err}</p>;
-  if (!m) return <p className="pad muted">{t("加载中…")}</p>;
+  if (!m) return <PageLoading label={t("正在打开配乐…")} />;
   return (
     <main className="home music">
       <header className="music-hero">

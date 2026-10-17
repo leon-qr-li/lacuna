@@ -5,6 +5,7 @@ import { ABPlayer, type ABHandle } from "./ABPlayer";
 import { GrowText } from "./GrowText";
 import { Icon } from "./Icon";
 import { t } from "../i18n";
+import { Skel, Waiting } from "../features/loading/Loading";
 
 interface Props {
   ep: Episode;
@@ -35,6 +36,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
   const [lines, setLines] = useState<TextLine[] | null>(null);
   const [tweak, setTweak] = useState("");
   const [reply, setReply] = useState<string | null>(null);
+  const [tweaking, setTweaking] = useState(false);
   const abRef = useRef<ABHandle>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -45,9 +47,10 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
     let live = true;
     setAb(null);
     setReply(null);
+    setLines(null);
     api.editAB(ep.id, cur.id).then((r) => live && setAb(r)).catch(() => undefined);
     if (ep.has_transcript)
-      api.editText(ep.id, cur.id).then((r) => live && setLines(r.lines)).catch(() => setLines(null));
+      api.editText(ep.id, cur.id).then((r) => live && setLines(r.lines)).catch(() => live && setLines([]));
     return () => {
       live = false;
     };
@@ -98,10 +101,17 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
 
   const sendTweak = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cur || !tweak.trim()) return;
-    const r = await api.chat(ep.id, tweak.trim(), cur.t);
-    setReply(r.reply + (r.proposal ? t("（建议已放到「整集试听」的对话里，试听后批准）") : ""));
-    setTweak("");
+    if (!cur || !tweak.trim() || tweaking) return;
+    setTweaking(true);
+    try {
+      const r = await api.chat(ep.id, tweak.trim(), cur.t);
+      setReply(r.reply + (r.proposal ? t("（建议已放到「整集试听」的对话里，试听后批准）") : ""));
+      setTweak("");
+    } catch (err) {
+      setReply(t("操作失败：{message}", { message: (err as Error).message }));
+    } finally {
+      setTweaking(false);
+    }
   };
 
   return (
@@ -203,6 +213,13 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 </div>
               </div>
             </section>
+            {ep.has_transcript && !lines && (
+              <section className="card rv-lines" aria-label={t("原文对照")} data-testid="lines-loading">
+                <Skel w="22%" h={12} />
+                <Skel w="92%" h={12} style={{ marginTop: 14 }} />
+                <Skel w="78%" h={12} style={{ marginTop: 10 }} />
+              </section>
+            )}
             {lines && lines.length > 0 && (
               <section className="card prose rv-lines" aria-label={t("原文对照")}>
                 <div className="card-head">
@@ -234,7 +251,8 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 placeholder={t("或者直接说：恢复这处 / 停顿短一点")}
               />
             </form>
-            {reply && <p className="note">{reply}</p>}
+            {tweaking && <Waiting label={t("Claude 正在看这附近的逐字稿…")} />}
+            {reply && !tweaking && <p className="note">{reply}</p>}
             <p className="muted small">{t("快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。")}</p>
 
             {/* the floating dock: listen, compare, decide; everything for this edit in one place */}

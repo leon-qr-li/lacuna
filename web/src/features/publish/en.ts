@@ -4,7 +4,6 @@ export const en: Dict = {
   "操作失败：{message}": "That didn't work: {message}",
   "复制失败：{message}": "Copy failed: {message}",
   "发布资料打不开：": "Can't open the publish pack: ",
-  "加载中…": "Loading…",
   "重新生成会覆盖你手改过的 show notes，确定吗？": "Regenerating replaces the show notes you edited by hand. Continue?",
   "重新生成一版？（会再花一次 Claude 的钱）": "Generate a new version? (costs another Claude call)",
   "发布资料": "Publish pack",
@@ -16,7 +15,6 @@ export const en: Dict = {
     "Claude reads the edited transcript (text only) and writes the title, blurb and show notes. About 1–2 minutes, roughly $0.2–0.3.",
   "没有接上 Claude（{p0}），只能生成按时间切的草稿。": "Claude isn't connected ({p0}), so only a time-based draft can be generated.",
   "没找到 API key": "no API key found",
-  "{stage}… 已用 {s} 秒": "{stage}… {s} s elapsed",
   "没生成出来：{error}。可以再点一次「生成发布资料」。": "Generation failed: {error}. You can click “Generate publish pack” again.",
   "剪辑在生成之后又改过，时间戳和配乐可能不准了。更新只在本机重新对时间，不花钱，你改过的文字会保留。":
     "The cut changed after this was generated, so timestamps and music may be off. Updating re-times it on this computer, free, and keeps your text edits.",

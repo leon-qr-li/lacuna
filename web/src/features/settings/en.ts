@@ -11,13 +11,11 @@ export const en: Dict = {
   "正在更新并重启，页面会自己刷新…": "Updating and restarting; the page will reload by itself…",
   "已保存，正在重启让它生效…": "Saved. Restarting to apply it…",
   "已保存。重启 LACUNA 后生效。": "Saved. Takes effect after LACUNA restarts.",
-  "读取中…": "Loading…",
   "版本": "Version",
   "开发版": "development build",
   "这是从源码直接运行的开发版，不在 App 里更新。": "This is a development build run from source; it doesn't update from the app.",
   "上次更新（{at}）：{message}": "Last update ({at}): {message}",
   "有新版本": "New version",
-  "下载中 {pct}%": "Downloading {pct}%",
   "{tasks}还在进行，做完才能更新。": "{tasks} still running; update once it's done.",
   "更新并重启": "Update and restart",
   "大约一两分钟。正在编辑的内容都已经自动保存。新版本起不来会自动回到现在的版本。":
