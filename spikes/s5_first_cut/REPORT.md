@@ -113,3 +113,31 @@ The rules came from raw 0–2200 s only (`learned_rules_calib.txt`). The blind e
 4. **Interjection moves cannot be learned as slips.**
    - They mostly follow from asymmetric per-track pause cuts.
    - Model them that way instead.
+
+## v3: full-episode cut shown in the app (2026-10-17)
+
+`out/ai_v3_full_ops.json`: 646 ops in total, which become 646 app edits.
+
+| Op type | Count |
+|---|---|
+| Pause | 320 |
+| Disfluency | 170 |
+| Repetition | 90 |
+| Content | 36 |
+| Crosstalk | 26 |
+
+**Outcome**
+- Estimated final length: 59.3 min (Leon: 58.6).
+- Leon's own speech is cut by 21 %, Pei's by 3.7 %.
+- 114 of the 646 edits go to Leon for review (the D33 threshold, tuned).
+
+**Held-out half, v3 compared with v2**
+
+| | v3 | v2 |
+|---|---|---|
+| Content-trim precision | 0.44 | 0.44 |
+| Speech precision on Leon's track | 0.46 | 0.46 |
+| Long pauses kept (Leon kept 41) | 24 | 2 |
+| False deletions on Pei's track | 25 s | 29 s |
+
+Content-trim precision and Leon's speech precision did not change. Long pauses are better, and there are fewer false deletions on Pei. Choosing which tangents to cut is still the limit; the next lever is Leon's review loop (D27).

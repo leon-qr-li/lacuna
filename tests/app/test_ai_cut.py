@@ -171,7 +171,10 @@ def test_transcript_window():
 
 def test_needs_review_rule():
     assert needs_review("content", 0.95, 0.0)
-    assert needs_review("filler", 0.59, 0.2)
+    assert needs_review("filler", 0.39, 0.2)
+    assert not needs_review("filler", 0.59, 0.2)
+    assert needs_review("interjection", 0.9, 0.0)
+    assert not needs_review("pause", 0.3, 0.0)
     assert needs_review("filler", 0.9, 1.6)
     assert not needs_review("filler", 0.9, 0.4)
     assert not needs_review("pause", 0.6, 0.0)
