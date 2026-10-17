@@ -1,9 +1,9 @@
 # LACUNA Studio — Project Status
 
-_Last updated: 2026-10-17 02:20Z_
+_Last updated: 2026-10-17 02:55Z (phase 3 validated); prev 2026-10-17 02:20Z_
 
 ## Current phase
-POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速) done and validated by Leon on his PC (main a719a8a). Mastering + export merged (#4). Phase 3 (real AI chat) merged (#8); to be installed on Leon's PC together with the phase 1 playhead fix (#7).
+POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速) done and validated by Leon on his PC (main a719a8a). Mastering + export merged (#4). Phase 3 (real AI chat, #8/#9) installed on Leon's PC (main 5b13662) and validated by Leon 2026-10-17.
 
 ## Done
 - Assessment `docs/00_TECH_LEAD_ASSESSMENT.md`; decisions `docs/DECISIONS.md` (D23–D32); hardware `docs/HARDWARE_PROFILE.md`; editorial rules `docs/EDITORIAL_RULES.md` (R001–R003).
@@ -12,7 +12,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - S5 AI first cut: v1 blind (too conservative) → v2 with rules learned from first half, scored on held-out half: length 1830 s vs Leon 1806 s, event recall L/P 0.71/0.79, but content-trim precision 0.44. See `spikes/s5_first_cut/REPORT.md`.
 - App vertical slice (`lacuna_app/` + `web/`): full listen, voice/chat change → A/B preview → approve, edit review, restore/undo. Demo episode = EP001 10:00–20:00 with Leon's real cut positions.
 - **Installed and running on Leon's Windows PC** (2026-10-17): `C:\Projects\lacuna`, start with `C:\Projects\LACUNA_Start.bat` → http://127.0.0.1:8765/. 57/57 tests pass there incl. EP001 integration. Windows fixes in PR #1 (awaiting Leon's merge).
-- CI (`.github/workflows/ci.yml`): every PR/push to main runs pytest, UI build and Playwright E2E on windows-latest, macos-latest (Apple Silicon) and ubuntu-latest. First Mac run caught ffmpeg builds without libsoxr; `conform()` now falls back to high-quality swr.
+- CI (`.github/workflows/ci.yml`): runs only what a change can affect: docs-only → nothing; `web/` only → UI build + E2E; Python → pytest + build + E2E; CI config/unknown → all. Whatever runs, runs on windows/macos (Apple Silicon)/ubuntu. Merge gate = the single **CI ok** check (green also when nothing needed to run). Claude merges its own PRs when CI ok is green (Leon, 2026-10-17).
 - UX wireframes: https://claude.ai/artifact/1BvHmxW54dWCS9kFPyumqV (`design/wireframes/`).
 - **AI first cut in the app** (2026-10-17): `lacuna_app/ai_cut.py` + `scripts/make_ai_episode.py` turn S5 edit ops into reviewable edits (title "EP001 · AI 第一刀", no demo marks). Review = content / interjection / > 1.5 s speech / non-pause conf < 0.4, content first then by duration (`lacuna_app/review.py`, D33). v2 held-out ops on full EP001: 384 ops → 367 edits (163 to review), 17 skipped (same pause positions the S5 scorer rejects), 73:32 → 67:08. Episode timeline now derived in one batch sweep (`lacuna_core.apply_batch`): ~570-edit episode opens in ~150 ms, restore/undo ~90 ms, A/B ≤ 0.4 s, server RSS < 0.5 GB. Screenshot `screenshots/04_ai_cut_review.png`.
 
