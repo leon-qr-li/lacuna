@@ -1,6 +1,8 @@
 # LACUNA Decision Log (append-only)
 
-延续 Handoff `07_DECISION_LOG.md` 的 D01–D22（全部继承，原文见 `handoff/`）。新决策从 D23 开始。
+延续 Handoff `07_DECISION_LOG.md` 的 D01–D22（全部继承，原文见 `handoff/`）。D23–D50 在下表，**此表已冻结，不再追加**。
+
+**新决策**（2026-10-17 起）：每条一个文件，放 `docs/decisions/<YYYY-MM-DD>-<slug>.md`，不用连续编号（并行线程曾抢同一个 D 号：D49、D50 各撞过一次）。引用时写文件名里的 slug，如 `decision one-file-per-feature`。格式见 `docs/decisions/README.md`。
 
 | ID | 日期 | 决策 | 状态 | 说明 / 取代关系 |
 |---|---|---|---|---|
