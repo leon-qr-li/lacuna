@@ -6,7 +6,8 @@
 
 - The AI producer chat log is saved with the episode: `<episode>/chat.json` (store: atomic write + .bak), what
   Leon said, where, the producer's reply and whether he approved. A restart keeps the chat history.
-- 「记住：……」 (also 记一下 / 帮我记住 / remember:) in the chat makes a candidate rule at once, in his own words,
+- A 「记住」 button next to 发送 (Leon 18:57Z: typing the prefix is error-prone) records what is typed as is
+  (`POST /api/episodes/<id>/remember`, `features/learning/RememberButton.tsx`). The typed prefix 「记住：……」 (also 记一下 / 帮我记住 / remember:) in the chat makes a candidate rule at once, in his own words,
   with no AI call.
 - After each export (Exporter `on_done` hook, in the background, never affects the export): one Claude call
   (`claude-sonnet-5-5`, forced tool `submit_long_term_asks`, ~1–2 ¢) reads the chat turns since the last summary

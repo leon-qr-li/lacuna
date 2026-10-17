@@ -1,4 +1,5 @@
 // API of this feature (moved out of src/api.ts so features don't all edit one file)
+import type { ChatReply } from "../../api";
 import { req } from "../../api";
 
 export interface LearnedRule {
@@ -38,4 +39,6 @@ export const learningApi = {
   learning: () => req<LearningOverview>("GET", "/api/learning"),
   decideRule: (id: string, action: "approve" | "reject" | "reset") =>
     req<LearningOverview>("POST", "/api/learning/rules", { id, action }),
+  remember: (episodeId: string, text: string, playhead: number) =>
+    req<ChatReply>("POST", `/api/episodes/${encodeURIComponent(episodeId)}/remember`, { text, playhead }),
 };
