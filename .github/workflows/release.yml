@@ -1,6 +1,6 @@
 name: Release
 
-# Publishes what Leon's and Pei's apps update to (phase 7, D49). Run by hand from main once a batch
+# Publishes what Leon's and Pei's apps update to (phase 7, D50). Run by hand from main once a batch
 # is merged and CI is green ("统一发版"): Actions -> Release -> Run workflow, with Chinese notes that
 # the 设置 page shows. Version = UTC date + running number of that day, e.g. 2026.10.17.2.
 on:

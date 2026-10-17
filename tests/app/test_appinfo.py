@@ -1,4 +1,4 @@
-"""In-app version / update / settings (phase 7, D49): feed check, background download with sha256,
+"""In-app version / update / settings (phase 7, D50): feed check, background download with sha256,
 apply refused while work runs, restart codes, API key saving."""
 import hashlib
 import io
