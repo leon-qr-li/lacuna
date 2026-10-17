@@ -55,7 +55,7 @@ for (const theme of ["light", "dark"] as const) {
 
     for (const [k, v] of Object.entries(res.ratios)) expect(v, k).toBeGreaterThanOrEqual(4.5);
     // the brand gradient is the logo's sunset, and the accent is warm (red channel leads, not blue)
-    expect(res.grad.toLowerCase()).toContain("#ff7a3d");
+    expect(res.grad.toLowerCase()).toContain("#df4a22");
     expect(res.accent[0]).toBeGreaterThan(res.accent[2] + 80);
     // light theme: primary buttons are the logo navy; dark theme: near-white
     if (theme === "light") expect(res.primary.map(Math.round)).toEqual([22, 27, 69]);

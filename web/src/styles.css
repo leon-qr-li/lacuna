@@ -16,7 +16,8 @@
   --ink-3: #6f7389;
   --on-ink: #ffffff;
   /* brand (logo V3): its navy carries structure (primary buttons, selected items), its sunset is the highlight */
-  --grad: linear-gradient(120deg, #ffc24b, #ff7a3d 40%, #ff4f7b 75%, #a35cff);
+  /* the logo sunset, deepened so white text on it stays readable (≥ 4:1 on every stop) */
+  --grad: linear-gradient(120deg, #df4a22, #d93366 55%, #8f45f0);
   --glow: rgb(255 106 61 / 0.30);
   --primary: #161b45;
   --on-primary: #ffffff;
@@ -181,7 +182,12 @@ a.btn, a.btn:hover { text-decoration: none; color: var(--ink); }
 .btn-block { width: 100%; justify-content: center; }
 .linkish { border: 0; background: none; padding: 0; color: var(--muted); cursor: pointer; text-decoration: underline dotted; }
 .linkbtn { display: inline-flex; align-items: center; text-decoration: none; }
-.linkbtn.btn-primary, .linkbtn.btn-primary:hover { color: var(--on-ink); }
+.linkbtn.btn-primary, .linkbtn.btn-primary:hover { color: var(--on-primary); }
+/* a link styled as a button keeps its variant's text color (a.btn above would paint it --ink) */
+a.btn-primary, a.btn-primary:hover, a.btn-ondark.is-on, a.btn-outline.is-on { color: var(--on-primary); }
+a.btn-grad, a.btn-grad:hover { color: #fff; }
+a.btn-outline-accent, a.btn-outline-accent:hover { color: var(--accent-ink); }
+a.btn-ghost, a.btn-ghost:hover { color: var(--ink-2); }
 
 input[type="text"], input[type="password"], input:not([type]), input[type="number"], select, textarea {
   min-height: 42px; padding: 0 12px; font-size: 15px;

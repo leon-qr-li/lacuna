@@ -10,3 +10,5 @@ A 日落橙 (orange primary buttons, warm neutrals) · B 夜航 (logo navy for p
 - Attention (`--warn`, 待过目 / struck text) moves to amber so it doesn't merge with the orange accent; `--danger` stays red.
 - Pei's track color moves from peach to the logo's violet (peach would blur into orange cut marks); Leon stays blue.
 - Every text/background token pair is ≥ 4.5:1 in both themes (`web/e2e/palette.spec.ts`).
+
+**Follow-up (Leon's validation, 21:18Z).** 「下载 WAV」 on the upload page was navy text on navy: `a.btn` painted every link-button `--ink`, overriding `.btn-primary` (pre-existing; before it was black on black). Link-buttons now keep their variant's text color. `--grad` is the logo sunset deepened (#df4a22 → #d93366 → #8f45f0) so white button text clears 4:1 on every stop; the logo and loading bar keep the bright original. `web/e2e/contrast.spec.ts` scans every enabled button on 11 screens, light and dark, plus a hovered link-button.
