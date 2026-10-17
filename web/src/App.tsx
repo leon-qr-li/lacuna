@@ -7,14 +7,15 @@ import { ImportPanel } from "./components/ImportPanel";
 import { LearningView } from "./components/LearningView";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
+import { PublishView } from "./components/PublishView";
 import { ReviewView } from "./components/ReviewView";
 import { Lanes, Overview } from "./components/Timeline";
 import { usePlayer } from "./usePlayer";
 
-type Mode = "listen" | "review";
+type Mode = "listen" | "review" | "publish";
 
 function parseHash(): { id: string | null; mode: Mode; learning: boolean } {
-  const m = /^#\/ep\/([^/]+)(?:\/(listen|review))?/.exec(window.location.hash);
+  const m = /^#\/ep\/([^/]+)(?:\/(listen|review|publish))?/.exec(window.location.hash);
   return {
     id: m ? decodeURIComponent(m[1]) : null,
     mode: (m?.[2] as Mode) ?? "listen",
@@ -214,6 +215,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           <a href={`#/ep/${encodeURIComponent(id)}/review`} aria-current={mode === "review" ? "page" : undefined}>
             改动审阅 · {ep?.pending_review ?? 0}
           </a>
+          <a href={`#/ep/${encodeURIComponent(id)}/publish`} aria-current={mode === "publish" ? "page" : undefined}>
+            发布资料
+          </a>
         </nav>
         <div className="row gap8">
           <button type="button" className="btn btn-outline" onClick={undo} disabled={!ep?.can_undo} title={ep?.undo_label ?? ""}>
@@ -248,6 +252,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
               <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
             </main>
           </div>
+          {mode === "publish" && <PublishView id={id} version={ep.version} flash={flash} />}
           {mode === "review" && (
             <ReviewView
               ep={ep}

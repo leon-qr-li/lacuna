@@ -195,6 +195,52 @@ export interface LearningOverview {
   };
 }
 
+export interface PublishChapter {
+  t: number;
+  time: string;
+  heading: string;
+}
+
+export interface PublishName {
+  heard: string;
+  suggested: string;
+  why: string;
+  state: "open" | "applied" | "ignored";
+}
+
+export interface PublishPack {
+  title: string;
+  alt_titles: string[];
+  blurb: string;
+  markdown: string;
+  edited: boolean;
+  chapters: PublishChapter[];
+  names: PublishName[];
+  stale: boolean;
+  gone: string[];
+  notes: string[];
+  adapter: string;
+  usage: Partial<Usage>;
+  generated_at: string;
+  library: boolean;
+}
+
+export interface PublishJob {
+  state: "running" | "done" | "error";
+  stage: string;
+  started: number;
+  finished: number | null;
+  error: string | null;
+}
+
+export interface PublishView {
+  pack: PublishPack | null;
+  job: PublishJob | null;
+  notes_path: string;
+  editor: string;
+  editor_note: string;
+}
+
 async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
@@ -247,6 +293,13 @@ export const api = {
   decideRule: (id: string, action: "approve" | "reject" | "reset") =>
     req<LearningOverview>("POST", "/api/learning/rules", { id, action }),
   openExports: (id: string) => req<{ folder: string }>("POST", `${ep(id)}/exports/open`),
+  publish: (id: string) => req<PublishView>("GET", `${ep(id)}/publish`),
+  generatePublish: (id: string) => req<PublishView>("POST", `${ep(id)}/publish/generate`),
+  retimePublish: (id: string) => req<PublishView>("POST", `${ep(id)}/publish/retime`),
+  editPublish: (id: string, body: { markdown?: string | null; title?: string }) =>
+    req<PublishView>("PUT", `${ep(id)}/publish`, body),
+  publishName: (id: string, heard: string, action: "apply" | "ignore") =>
+    req<PublishView>("POST", `${ep(id)}/publish/names`, { heard, action }),
 };
 
 export function fmt(s: number): string {
