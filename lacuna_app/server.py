@@ -16,6 +16,7 @@ from .audio import parse_range
 from .editor import EditorAdapter, editor_status, make_adapter
 from .episode import ConflictError, Episode
 from .exporter import ExportBusy, Exporter
+from .learning import Learning
 from .store import PathError, Workspace
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
@@ -55,6 +56,11 @@ class ExportBody(BaseModel):
     channels: int = Field(2, ge=1, le=2)
 
 
+class RuleBody(BaseModel):
+    id: str = Field(min_length=1, max_length=200)
+    action: str = Field(pattern="^(approve|reject|reset)$")
+
+
 class OpBody(PlayheadBody):
     op: dict
     title: str = Field("手动修改", max_length=200)
@@ -68,6 +74,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     episodes: dict[str, Episode] = {}
     lock = threading.Lock()
     exporter = Exporter(ws)
+    learning = Learning(ws)
 
     def get(episode_id: str) -> Episode:
         try:
@@ -247,6 +254,27 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     def open_exports(episode_id: str):
         get(episode_id)
         return {"folder": exporter.open_folder(episode_id)}
+
+    # ------------------------------------------------------------------ learning (D27)
+    def open_episodes() -> list[Episode]:
+        out = []
+        for eid in ws.episode_ids():
+            try:
+                out.append(get(eid))
+            except Exception:     # a broken episode must not hide what the others teach
+                continue
+        return out
+
+    @app.get("/api/learning")
+    def learning_overview():
+        return learning.overview(open_episodes())
+
+    @app.post("/api/learning/rules")
+    def learning_decide(body: RuleBody):
+        try:
+            return learning.decide(body.id, body.action, open_episodes())
+        except KeyError:
+            raise HTTPException(404, "no such rule")
 
     # ------------------------------------------------------------------ web UI
     if (web_dist / "index.html").is_file():

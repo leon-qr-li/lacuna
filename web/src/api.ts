@@ -131,6 +131,38 @@ export interface ExportJob {
   } | null;
 }
 
+export interface LearnedRule {
+  id: string;
+  kind: string;
+  title: string;
+  detail: string;
+  prompt: string;
+  key: Record<string, string | number>;
+  evidence: Record<string, unknown>;
+  examples: { text: string; raw: [number, number] | null; verdict: string; episode: string; reason: string }[];
+  policy: { review?: boolean; confidence?: number } | null;
+  state: "candidate" | "approved" | "rejected";
+  updated: boolean;
+  stale?: boolean;
+  approved_at: string | null;
+}
+
+export interface LearningOverview {
+  rules: LearnedRule[];
+  pending: number;
+  stats: {
+    episodes: string[];
+    decisions: number;
+    considered: number;
+    kept: number;
+    restored: number;
+    accepted: number;
+    declined: number;
+    added: number;
+    untouched: number;
+  };
+}
+
 async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
@@ -172,6 +204,9 @@ export const api = {
     req<Episode>("POST", `${ep(id)}/proposals/${pid}/discard`, { playhead }),
   startExport: (id: string, formats: string[]) => req<{ job: ExportJob }>("POST", `${ep(id)}/export`, { formats }),
   exportStatus: (id: string) => req<{ job: ExportJob | null }>("GET", `${ep(id)}/export`),
+  learning: () => req<LearningOverview>("GET", "/api/learning"),
+  decideRule: (id: string, action: "approve" | "reject" | "reset") =>
+    req<LearningOverview>("POST", "/api/learning/rules", { id, action }),
   openExports: (id: string) => req<{ folder: string }>("POST", `${ep(id)}/exports/open`),
 };
 
