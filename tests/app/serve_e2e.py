@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from tests.app.synth import make_ai_workspace, make_workspace  # noqa: E402
+from tests.app.synth import make_ai_workspace, make_workspace, seed_learning  # noqa: E402
 from lacuna_app.__main__ import main  # noqa: E402
 
 if __name__ == "__main__":
@@ -41,6 +41,7 @@ if __name__ == "__main__":
         from tests.app.fake_claude import FakeAnthropic
 
         ws = make_ai_workspace(Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws")
+        seed_learning(ws)
         uvicorn.run(create_app(ws, ClaudeEditorAdapter(client=FakeAnthropic())), host="127.0.0.1",
                     port=int(port), log_level="warning")
     else:

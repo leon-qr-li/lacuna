@@ -130,6 +130,17 @@ def make_ai_workspace(root: str | Path, episode_id: str = AI_EPISODE) -> Path:
     return root
 
 
+def seed_learning(root: str | Path) -> None:
+    """A decision snapshot from an earlier (imaginary) episode: Leon restored four of Pei's small
+    stumbles, which is enough for one candidate rule on the learning page."""
+    from lacuna_app.learning import Decision, Learning
+    ds = [Decision(episode="EP_旧一集", edit_id=f"a{i:04d}", source="first_cut", kind="disfluency", category="filler",
+                   host="Pei", verdict="restored", how="single", confidence=0.6, length_s=0.6, speech_s=0.5,
+                   text=t, reason="口误", raw=[60.0 * i, 60.0 * i + 0.6])
+          for i, t in enumerate(("呃就是", "对这也就就", "嗯那个", "我我觉得"), 1)]
+    Learning(Workspace(root)).save_decisions("EP_旧一集", ds)
+
+
 def make_workspace(root: str | Path, episode_id: str = EPISODE) -> Path:
     root = Path(root)
     refs = write_raw(root / "episodes" / episode_id / "raw")

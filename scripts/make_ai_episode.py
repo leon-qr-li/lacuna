@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT))
 from lacuna_core import MediaRef  # noqa: E402
 from lacuna_app.ai_cut import build_episode, load_tokens, report_dict  # noqa: E402
 from lacuna_app.episode import create_episode  # noqa: E402
+from lacuna_app.learning import review_policy  # noqa: E402
 from lacuna_app.store import Workspace  # noqa: E402
 
 TOKENS = ROOT / "spikes/s5_first_cut/out/ep001_tokens.json"
@@ -40,9 +41,9 @@ def find_raw(raw_dir: Path) -> dict[str, Path]:
     return out
 
 
-def build(media: dict[str, MediaRef], ops_doc: dict, tokens, w0: float, w1: float | None):
+def build(media: dict[str, MediaRef], ops_doc: dict, tokens, w0: float, w1: float | None, policy=None):
     """(project, edits, transcript, report) for raw window [w0, w1) (w1 None = to the end)."""
-    return build_episode(media, ops_doc, tokens, w0, w1)
+    return build_episode(media, ops_doc, tokens, w0, w1, policy)
 
 
 def main(argv=None):
@@ -69,7 +70,8 @@ def main(argv=None):
     tokens = load_tokens(args.tokens)
     w0 = args.start
     w1 = None if args.minutes is None else w0 + args.minutes * 60
-    project, edits, transcript, report = build(media, ops_doc, tokens, w0, w1)
+    # what goes to review follows the learned rules Leon approved (phase 5), defaults otherwise
+    project, edits, transcript, report = build(media, ops_doc, tokens, w0, w1, review_policy(args.workspace))
     meta = {"title": args.title, "demo": False, "raw_offset_s": w0,
             "source": f"ai_cut:{Path(args.ops).name}",
             "ai_model": ops_doc.get("model", "") if isinstance(ops_doc, dict) else "",

@@ -171,12 +171,15 @@ def test_rules_fallback_without_claude(ws, rec):
     assert job["result"]["engine"] == "rules" and job["result"]["edits"] > 0 and job["result"]["to_review"] == 0
 
 
-def test_learned_rules_reach_the_prompt(ws, rec):
-    (ws.root / "rules").mkdir()
-    (ws.root / "rules" / "first_cut_learned.md").write_text("- Leon 恢复了所有关于猫的题外话：别剪猫。", encoding="utf-8")
+def test_learned_rules_reach_the_prompt(ws, rec, monkeypatch):
+    from lacuna_app import learning
+    seen = []
+    monkeypatch.setattr(learning, "prompt_rules", lambda w: "- Leon 恢复了所有关于猫的题外话：别剪猫。")
+    monkeypatch.setattr(learning, "review_policy", lambda w: seen.append(w) or None)
     fake = FakeFirstCutAnthropic()
     importer(ws, fake).start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
     assert "别剪猫" in fake.requests[0]["system"][0]["text"]
+    assert seen                                      # review thresholds come from approved rules too
 
 
 # ---------------------------------------------------------------- units

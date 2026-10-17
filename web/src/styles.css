@@ -215,3 +215,9 @@ input[type="text"] { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; b
 .linkbtn { display: inline-flex; align-items: center; text-decoration: none; }
 .linkbtn.btn-primary, .linkbtn.btn-primary:hover { color: #fff; }
 @media (max-width: 600px) { .import-grid { grid-template-columns: 1fr; } }
+/* learning page (phase 5) */
+.learning { max-width: 880px; width: 100%; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.rules { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.rule-approved { border-color: var(--accent); }
+.rule-rejected { opacity: .65; }
+.examples { margin: 8px 0; padding-left: 18px; line-height: 1.7; }

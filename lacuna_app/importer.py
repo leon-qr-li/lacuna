@@ -23,6 +23,7 @@ import soundfile as sf
 from lacuna_core.media import MediaRef, conform
 
 from . import asr as asr_mod
+from . import learning
 from .ai_cut import TrackTokens, build_episode, report_dict
 from .episode import create_episode
 from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json
@@ -30,7 +31,6 @@ from .store import PathError, Workspace, atomic_write_json, check_id, inside, re
 AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", ".aac"}
 HOSTS = (("L", "Leon"), ("P", "Pei"))
 JOB_FILE = "job.json"
-LEARNED_RULES = Path("rules") / "first_cut_learned.md"     # written by the learning module (phase 5)
 STEPS = (("models", 0.04), ("asr_L", 0.34), ("asr_P", 0.34), ("features", 0.04), ("first_cut", 0.20),
          ("episode", 0.04))
 STEP_LABELS = {"models": "准备识别模型", "asr_L": "识别 Leon 的分轨", "asr_P": "识别 Pei 的分轨",
@@ -286,8 +286,7 @@ class Importer:
         else:
             fc = self.first_cut_factory()
             duration = max(a["audio_s"] for a in asr.values())
-            rules_p = self.ws.root / LEARNED_RULES
-            extra = rules_p.read_text(encoding="utf-8") if rules_p.is_file() else ""
+            extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
             self._progress(job, "first_cut", 0.0, "AI 第一刀" if fc.name == "claude" else "规则第一刀（没有 Claude）")
             try:
                 res = fc.run(doc, duration, tokens, job["id"],
@@ -311,7 +310,8 @@ class Importer:
         self._progress(job, "episode", 0.0, "生成审阅（核对音频）")
         media = self._media(job, d)
         self._progress(job, "episode", 0.5, "生成审阅（精修剪辑点）")
-        project, edits, transcript, report = build_episode(media, ops_doc, tokens)
+        project, edits, transcript, report = build_episode(media, ops_doc, tokens,
+                                                           policy=learning.review_policy(self.ws))
         engine = job["steps"].get("first_cut", {}).get("engine", "claude")
         meta = {"title": job["title"], "demo": False, "raw_offset_s": 0.0, "source": "import",
                 "ai_model": ops_doc.get("model", ""), "ai_notes": ops_doc.get("notes", ""),

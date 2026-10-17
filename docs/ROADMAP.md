@@ -15,13 +15,13 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 1 | 审阅提速 | 剩下全部通过（一步可撤销）、决定后自动跳到下一条、Y/R 快捷键、过目进度、只看没过目的、AI 未删建议可以“不删，保持原话” | — | 母带与导出 (thread) | **done, validated by Leon 2026-10-17** |
 | 2 | 导出成品 | 一个按钮导出整集 WAV / MP3（-16 LUFS / -1 dBTP），带进度，导出后能在文件夹里找到 | 母带与导出 thread merged (`lacuna_core`) | 3 | **done with #4** (top-bar 导出 button; validation by Leon pending listening verdict) |
 | 3 | 真 AI 对话 | 聊天框接 Claude API：在任意位置说“这段删掉 / 停顿短一点”，AI 给出可试听的修改 | Leon's API key (set 2026-10-17) | 2 | **done, validated by Leon 2026-10-17** |
-| 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **built** (D38); full run with EP001 raw on Leon's PC next; formal acceptance needs a second episode's raw tracks |
-| 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | — |
+| 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **built** (D40); full run with EP001 raw on Leon's PC next; formal acceptance needs a second episode's raw tracks |
+| 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | **built (D39)**; Leon's EP001 review = 5 single decisions + 1 batch of 110 → hand edit added as 2nd source; install + validation pending |
 | 6 | 片头、配乐与 ducking | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 5 | — |
 | 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
 | 8 | UI 审美迭代 | 视觉与布局打磨 | flows stable (after 4) | 5–6 | — |
 | 9 | 发布资料包 | 标题候选、简介、show notes、成品时间线上的章节、专有名词核对，一键复制 | 2 | 6a | — (plan: `docs/BEYOND_AUDIO_PLAN.md`) |
-| 10 | 海报模板 | 节目版式模板 + Leon 的剧照 + 资料包标题 → 封面 PNG | 9 | 6a | — (direction awaits Leon) |
+| 10 | 海报 | Claude 按本期内容写 3–4 版极简 SVG 海报，本地渲染 PNG，Leon 挑一版或一句话改 | 9 | 6a | — (direction set, D38) |
 | 11 | 辅助发布 | 发布页（文件、文字、海报、清单、打开上传页）+ 发布/同步状态核实；之后再试浏览器代填 | 9, 10 | — | — |
 | 6b | AI 推荐配乐 | AI 提议放音乐/台词的位置，从库里原声的真实分析中给 2–3 个候选片段 | 6, 5 | — | after MVP |
 
@@ -40,9 +40,18 @@ Parallel set (2026-10-17): phase 3 merged (#8), awaiting Leon's validation. Expo
 - Real-key check without touching the episode: `scripts/ai_chat_smoke.py`.
 - Tests: `tests/app/test_claude_chat.py` (fake client), `web/e2e/claude.spec.ts` (AI E2E server answers through `ClaudeEditorAdapter` with `tests/app/fake_claude.py`).
 
-## Phase 4 — 新一集导入 (2026-10-17, D38)
+## Phase 4 — 新一集导入 (2026-10-17, D40)
 - UI: Home → 「导入新一集」: episode id (next free EPnnn), optional title, Leon's / Pei's track picked in a local folder browser (`GET /api/fs`; Pei's file is guessed from the same folder). Task panel under it: stage, progress bar, elapsed, 取消 / 继续 / 开始审阅 / 从列表移除; a job that finishes while Home is open opens its review.
 - API: `POST /api/imports {id, title, leon, pei}`, `GET /api/imports` (+ `next_id`), `GET /api/imports/{id}`, `POST …/resume`, `POST …/cancel`, `DELETE …`.
 - Pipeline (`lacuna_app/importer.py`): models (first time, ~400 MB from the sherpa-onnx GitHub releases into `<workspace>/models`) → ASR per track (`asr.py`) → features + editor document (`features.py`) → AI first cut (`first_cut.py`, windows of ~10 min, cached per window) → episode (`ai_cut.build_episode`). Cache: `<workspace>/imports/<id>/` (asr_L/P.json, tokens/features.json, editor_input.md, ai_windows/, ops.json, job.json).
 - Needs `pip install -e ".[asr]"` (sherpa-onnx) and ffmpeg. Without a key the first cut is rules-only (pause targets), labelled as such.
 - Tests: `tests/app/test_import.py` (fake ASR + fake Claude, real decoding/features/conversion/episode), `tests/test_asr_real.py` (real models; set `LACUNA_ASR_MODELS`), `web/e2e/import.spec.ts`.
+
+## Phase 5 — 从审阅里学习 (2026-10-17, D39)
+- Evidence: (1) review decisions per first-cut edit, read from each episode's `state.json` + undo history (`lacuna_app/learning.py: decisions`): kept / restored / accepted / declined / added (chat) / untouched, and how (single decision, batch sign-off, none); (2) Leon's own hand edit of the same recording (`scripts/learn_from_hand_edit.py`, S4 alignment) labels every speech edit and finds long passages he cut that the AI left in. Snapshots in `<workspace>/learning/decisions/` (demo episodes ignored).
+- Rules (`learn`): protect (AI cuts a kind too much), review (routine kind he restores → goes to review), trust (consequential kind always agreed → auto-apply up to 5 s speech), timid (AI suggestions he cut), missed (cuts he asked for in chat), taste (content passages he cut vs kept, as examples), threshold (confidence calibration). Weights: single 1, batch 0.5, untouched 0.25, hand edit 0.5. Explicit rules win: hand-edit evidence never argues for cutting Pei's stumbles less (R002).
+- Approval (D17): every rule starts as a candidate on the page 「学到的规则」(`#/learning`, link in the top bar). Only approved rules act, frozen as approved; new evidence that changes a rule shows as an update to re-approve.
+- Consumers: `learning.prompt_rules(workspace)` → text block for the AI first-cut prompt (phase 4); `learning.review_policy(workspace)` → `convert_ops(..., policy=)` / `needs_review(..., kind, host, policy)` (used by `scripts/make_ai_episode.py`).
+- Leon (2026-10-17): his EP001_AI review clicks were tests of the app; count the first cut as accepted as delivered (`Learning.accept_as_is`, `learn_from_hand_edit.py --accepted-as-is`) plus his hand edit. He will produce every coming episode in the app and expects learning to iterate slowly.
+- EP001 result (cloud preview: v3 ops accepted as is + hand edit): 1 candidate, Leon's content taste (26 cut / 16 kept examples, incl. passages the AI missed). Review threshold unchanged.
+- Tests: `tests/app/test_learning.py`, `web/e2e/learning.spec.ts`.

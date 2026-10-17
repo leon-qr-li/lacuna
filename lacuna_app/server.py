@@ -17,6 +17,7 @@ from .editor import EditorAdapter, editor_status, make_adapter
 from .episode import ConflictError, Episode
 from .exporter import ExportBusy, Exporter
 from .importer import ImportBusy, ImportError_, Importer, list_dir
+from .learning import Learning
 from .store import PathError, Workspace
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
@@ -68,6 +69,9 @@ class ImportBody(BaseModel):
     title: str = Field("", max_length=200)
     leon: str = Field(min_length=1, max_length=2000, description="path of Leon's raw track")
     pei: str = Field(min_length=1, max_length=2000, description="path of Pei's raw track")
+class RuleBody(BaseModel):
+    id: str = Field(min_length=1, max_length=200)
+    action: str = Field(pattern="^(approve|reject|reset)$")
 
 
 class OpBody(PlayheadBody):
@@ -85,6 +89,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     lock = threading.Lock()
     exporter = Exporter(ws)
     importer = importer or Importer(ws)
+    learning = Learning(ws)
 
     def get(episode_id: str) -> Episode:
         try:
@@ -319,6 +324,26 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         except ImportBusy as e:
             raise HTTPException(409, str(e))
         return {"ok": True}
+    # ------------------------------------------------------------------ learning (D27)
+    def open_episodes() -> list[Episode]:
+        out = []
+        for eid in ws.episode_ids():
+            try:
+                out.append(get(eid))
+            except Exception:     # a broken episode must not hide what the others teach
+                continue
+        return out
+
+    @app.get("/api/learning")
+    def learning_overview():
+        return learning.overview(open_episodes())
+
+    @app.post("/api/learning/rules")
+    def learning_decide(body: RuleBody):
+        try:
+            return learning.decide(body.id, body.action, open_episodes())
+        except KeyError:
+            raise HTTPException(404, "no such rule")
 
     # ------------------------------------------------------------------ web UI
     if (web_dist / "index.html").is_file():
