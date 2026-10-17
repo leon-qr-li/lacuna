@@ -96,6 +96,7 @@ def test_episode_music_and_mix_stream(client, tmp_path):
     assert m["placements"] == [] and m["duration"] == pytest.approx(base, abs=0.01) and m["credits"] == []
     m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "intro", "overlap_s": 2}).json()
     assert m["duration"] == pytest.approx(base + 4.0, abs=0.01)
+    assert m["inserts"] == [[0.0, pytest.approx(4.0, abs=0.01)]]      # for 「带配乐听」 in the review player
     # interlude at 20 s *of the final mix* = 16 s of the voice cut (intro adds 4 s)
     m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "interlude", "at_s": 20.0, "overlap_s": 1}).json()
     mid = next(p for p in m["placements"] if p["role"] == "interlude")
@@ -147,3 +148,65 @@ def test_export_includes_music_and_credits(client, ws, tmp_path):
     rec = json.loads((folder / job["result"]["files"]["json"]).read_text("utf-8")) if "json" in job["result"]["files"] \
         else json.loads(next(folder.glob("*.json")).read_text("utf-8"))
     assert [c["role"] for c in rec["music"]] == ["intro"]
+
+
+def _wait_export(client):
+    t = time.time()
+    while (job := client.get(f"{EP}/export").json()["job"])["state"] == "running":
+        assert time.time() - t < 120
+        time.sleep(0.05)
+    assert job["state"] == "done", job
+    return job
+
+
+def test_suggestions_chat_nudge_and_stale_export(ws, tmp_path):
+    from .fake_music import FakeMusicAnthropic
+    fake = FakeMusicAnthropic()
+    client = TestClient(create_app(ws, MockEditorAdapter(), web_dist=Path("/nonexistent"), music_client=fake))
+    for name, kind, secs in (("i.wav", "intro", 6.0), ("m.wav", "interlude", 5.0), ("o.wav", "outro", 7.0)):
+        upload(client, write_music(tmp_path / "in" / name, secs), kind)
+    # export first, with no music
+    client.post(f"{EP}/export", json={"formats": ["wav"]})
+    job = _wait_export(client)
+    assert job["music_stale"] is False
+    # place by use: a suggestion, not yet in the music (nor in the export)
+    m = client.post(f"{EP}/music/auto").json()
+    d = m["draft"]
+    assert m["placements"] == [] and len(d["changes"]) == 3 and "试听" in m["message"]
+    mid = next(p for p in d["placements"] if p["role"] == "interlude")
+    pv = client.get(f"{EP}/music/draft/{mid['id']}/preview")
+    assert pv.status_code == 200 and pv.content[:4] == b"RIFF"
+    assert client.get(f"{EP}/music/draft/mu_nope/preview").status_code == 404
+    assert client.get(f"{EP}/export").json()["job"]["music_stale"] is False
+    assert client.post(f"{EP}/music/draft/move", json={"pid": "mu_nope", "voice_s": 3}).status_code == 404
+    assert client.post(f"{EP}/music/draft/dr_nope/accept").status_code == 404
+    m = client.post(f"{EP}/music/draft/{d['id']}/accept").json()
+    assert sorted(p["role"] for p in m["placements"]) == ["interlude", "intro", "outro"] and m["draft"] is None
+    # the export made before is now out of date, here and on the upload page
+    assert client.get(f"{EP}/export").json()["job"]["music_stale"] is True
+    assert client.get(f"{EP}/upload").json()["audio"]["stale"] is True
+    # nudge: 1 s later on the final mix, exactly
+    mid = next(p for p in m["placements"] if p["role"] == "interlude")
+    m = client.patch(f"{EP}/music/{mid['id']}", json={"at_s": mid["at_s"] + 1}).json()
+    moved = next(p for p in m["placements"] if p["id"] == mid["id"])
+    assert moved["at_s"] == pytest.approx(mid["at_s"] + 1, abs=0.01)
+    # talk: a suggestion that changes the level; then discarded
+    m = client.post(f"{EP}/music/chat", json={"text": "间奏小 3 dB"}).json()
+    assert m["draft"]["source"] == "chat" and "-3" in m["draft"]["changes"][0]["text"]
+    assert next(p for p in m["placements"] if p["id"] == mid["id"])["gain_db"] == 0
+    m = client.post(f"{EP}/music/draft/discard").json()
+    assert m["draft"] is None
+    # talk: "片尾去掉", accepted
+    m = client.post(f"{EP}/music/chat", json={"text": "片尾去掉"}).json()
+    m = client.post(f"{EP}/music/draft/{m['draft']['id']}/accept").json()
+    assert "outro" not in {p["role"] for p in m["placements"]}
+    assert client.post(f"{EP}/music/chat", json={"text": ""}).status_code == 422
+    from lacuna_app.server import USAGE_LOG
+    usage = [json.loads(x) for x in (ws / USAGE_LOG).read_text("utf-8").splitlines()]
+    assert [u["kind"] for u in usage] == ["music_chat", "music_chat"] and len(fake.calls) == 2
+    # a fresh export carries exactly the accepted music and is current again
+    client.post(f"{EP}/export", json={"formats": ["wav"]})
+    job = _wait_export(client)
+    assert job["music_stale"] is False
+    rec = json.loads(next(Path(job["result"]["folder"]).glob(f"{job['basename']}*.json")).read_text("utf-8"))
+    assert [c["role"] for c in rec["music"]] == ["intro", "interlude"] and rec["music_version"] == job["music_version"]

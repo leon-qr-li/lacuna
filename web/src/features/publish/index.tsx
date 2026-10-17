@@ -7,6 +7,7 @@ export const feature: Feature = {
     {
       mode: "publish",
       label: "发布资料",
+      group: "publish",
       order: 40,
       render: ({ id, ep, flash }) => <PublishView id={id} version={ep.version} flash={flash} />,
     },

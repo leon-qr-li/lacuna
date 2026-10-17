@@ -56,12 +56,12 @@ test.describe.serial("LACUNA Studio", () => {
 
   test("switch modes shares the playhead; review keyboard works", async ({ page }) => {
     await openEpisode(page);
-    await page.getByRole("link", { name: /改动审阅/ }).click();
+    await page.getByRole("link", { name: /审阅改动/ }).click();
     await expect(page).toHaveURL(/\/review$/);
     await expect(page.getByTestId("review-title")).toHaveText("删除 4.4 秒 · 题外话");
-    await expect(page.getByText("原话（只显示，不改写；划线部分被剪掉）")).toBeVisible();
+    await expect(page.getByRole("region", { name: "原文对照" })).toBeVisible();
     await expect(page.locator(".struck").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /原始（前后 10 秒）/ })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /A · 原始/ })).toBeEnabled();
     // shared playhead: selecting an edit moves the main player there
     await expect.poll(() => audioTime(page)).toBeCloseTo(25.2, 0);
     // R restores, undo brings the cut back
@@ -70,7 +70,7 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.getByRole("button", { name: "重新应用这个删除" })).toBeVisible();
     await page.getByRole("button", { name: "撤销" }).click();
     await expect(page.getByRole("button", { name: "保留这个删除" })).toBeVisible();
-    await page.getByRole("link", { name: "整集试听" }).click();
+    await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect(page.getByTestId("play")).toBeVisible();
     await expect.poll(() => audioTime(page)).toBeCloseTo(25.2, 0);
   });
@@ -84,14 +84,14 @@ test.describe.serial("LACUNA Studio", () => {
       await route.continue();
     });
     await openEpisode(page);
-    await page.getByRole("link", { name: /改动审阅/ }).click();
+    await page.getByRole("link", { name: /审阅改动/ }).click();
     await expect(page.getByTestId("review-title")).toHaveText("删除 4.4 秒 · 题外话");
     await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
     await page.keyboard.press("r");
     await expect(page.locator(".toast")).toHaveText("已恢复原话");
     await page.getByRole("button", { name: "撤销" }).click();
     await expect(page.getByRole("button", { name: "保留这个删除" })).toBeVisible();
-    await page.getByRole("link", { name: "整集试听" }).click();
+    await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
     await expect(page.getByTestId("clock")).toContainText("0:25");
   });
@@ -127,15 +127,16 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.getByTestId("clock")).toContainText("/ 0:52");
 
     // the conversation survives a round trip through Edit Review
-    await page.getByRole("link", { name: /改动审阅/ }).click();
-    await page.getByRole("link", { name: "整集试听" }).click();
+    await page.getByRole("link", { name: /审阅改动/ }).click();
+    await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect(page.getByTestId("chat-log")).toContainText("✓ 已批准并应用");
   });
 
   test("export the current version as MP3 + WAV", async ({ page }) => {
     await openEpisode(page);
-    await page.getByTestId("export-toggle").click();
-    const pop = page.getByRole("dialog", { name: "导出成品" });
+    await page.getByTestId("export-toggle").click(); // 导出 is a step of the flow (phase 8)
+    await expect(page.getByRole("navigation", { name: "制作流程" }).locator('[aria-current="page"]')).toHaveText("导出");
+    const pop = page.locator('[aria-label="导出成品"]');
     await expect(pop).toContainText("−16 LUFS");
     await pop.getByTestId("export-start").click();
     const result = pop.getByTestId("export-result");

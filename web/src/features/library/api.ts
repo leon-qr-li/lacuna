@@ -63,6 +63,7 @@ export interface Placement {
   start_s: number | null;
   end_s: number | null;
   voice_at_s?: number | null;
+  at_s?: number | null; // where it sits on the final mix (interlude / bed / clip)
   inserted_s?: number;
   missing: boolean;
 }
@@ -86,6 +87,22 @@ export interface MusicView {
   series: string | null;
   series_suggestion: { name: string } | null;
   roles: Record<Role, string>;
+  draft: MusicDraft | null;
+  inserts: [number, number][]; // time added to the conversation: (voice seconds, seconds)
+  export_key: string;
+  message?: string; // reply to "按用途自动放好" / the chat
+}
+
+/** A suggested set of music (by use, or from talking to Claude). Heard first; applied only when accepted. */
+export interface MusicDraft {
+  id: string;
+  source: "auto" | "chat";
+  message: string;
+  changes: { pid: string; kind: "add" | "move" | "set" | "remove"; text: string; previewable: boolean }[];
+  placements: Placement[];
+  duration: number;
+  alternatives: Record<string, { voice_s: number; final_s: number }[]>;
+  stale: boolean;
 }
 
 export type PlacementPatch = Partial<{
@@ -138,5 +155,12 @@ export const libraryApi = {
   applySeries: (id: string, name: string) => req<MusicView>("POST", `${ep(id)}/music/series/apply`, { name }),
   saveSeries: (id: string, name: string) => req<MusicView>("POST", `${ep(id)}/music/series/save`, { name }),
   dismissSeries: (id: string) => req<MusicView>("POST", `${ep(id)}/music/series/dismiss`),
+  autoPlace: (id: string) => req<MusicView>("POST", `${ep(id)}/music/auto`),
+  musicChat: (id: string, text: string) => req<MusicView>("POST", `${ep(id)}/music/chat`, { text }),
+  acceptDraft: (id: string, did: string) => req<MusicView>("POST", `${ep(id)}/music/draft/${did}/accept`),
+  discardDraft: (id: string) => req<MusicView>("POST", `${ep(id)}/music/draft/discard`),
+  moveDraft: (id: string, pid: string, voice_s: number) =>
+    req<MusicView>("POST", `${ep(id)}/music/draft/move`, { pid, voice_s }),
+  draftPreviewUrl: (id: string, pid: string) => `${ep(id)}/music/draft/${pid}/preview?t=${Date.now()}`,
   placementPreviewUrl: (id: string, pid: string) => `${ep(id)}/music/${pid}/preview?t=${Date.now()}`,
 };

@@ -1,6 +1,6 @@
 /* ---- 上传喜马拉雅 (phase 11) */
 .upload { flex: 1; width: 100%; max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding: 24px; }
-.upload h1 { margin: 0 0 4px; font-size: 20px; }
+.upload h1 { margin: 0 0 6px; font-size: 28px; }
 .upload-step { display: flex; flex-direction: column; gap: 8px; }
 .upload-missing { color: var(--muted); }
 .upload-cover { width: 160px; height: 160px; border-radius: 8px; object-fit: cover; border: 1px solid var(--line-soft); }
@@ -8,3 +8,6 @@
 .upload-col { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .upload a.btn { text-decoration: none; }
 .upload-cover-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.upload-h { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; }
+.step-n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--grad); color: #fff; font: 600 13px var(--mono); }
+.upload-cover { border-radius: 14px; border-color: var(--line); }

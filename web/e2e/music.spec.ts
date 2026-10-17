@@ -118,3 +118,106 @@ test("media library → credits → music on the episode → series rule", async
   await page.getByRole("button", { name: "这一集不用" }).click();
   await expect(page.getByTestId("placement")).toHaveCount(0);
 });
+
+// Music suggestions: music placed by its use, heard as a suggestion first, nudged, and changed by talking to Claude
+test("place by use → hear the suggestion → accept → nudge → change it by talking", async ({ page }) => {
+  // the theme becomes a break interlude in the library; the jingle is already an intro
+  await page.goto("/#/library");
+  const theme = page.getByTestId("asset-row").filter({ hasText: "odyssey_theme.mp3" });
+  await theme.getByLabel("用途").selectOption("interlude");
+  await expect(theme.getByLabel("用途")).toHaveValue("interlude");
+
+  await page.goto(`/#/ep/${EP}/music`);
+  await expect(page.getByTestId("placement")).toHaveCount(0);
+  await page.getByRole("button", { name: "按用途自动放好" }).click();
+  const draft = page.getByTestId("music-draft");
+  await expect(draft.getByTestId("draft-change")).toHaveCount(2);
+  await expect(draft).toContainText("片头：“洛城二三事 片头”");
+  await expect(draft).toContainText("间奏：《奥德赛》原声");
+  await expect(page.getByTestId("placement")).toHaveCount(0); // only a suggestion so far
+  await expect(page.getByText("BGM：未设置")).toBeVisible();
+
+  // hear the suggested interlude before deciding
+  const change = draft.getByTestId("draft-change").filter({ hasText: "间奏" });
+  await change.getByRole("button", { name: "试听" }).click();
+  await expect.poll(() => page.getByTestId("placement-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.2);
+  await change.getByRole("button", { name: "停止" }).click();
+  await draft.getByRole("button", { name: "采用" }).click();
+  await expect(page.getByTestId("music-draft")).toHaveCount(0);
+  await expect(page.getByTestId("placement")).toHaveCount(2);
+  await expect(page.getByTestId("credits")).toContainText("间奏：《奥德赛》原声");
+
+  // one second later, exactly
+  const mid = page.getByTestId("placement").filter({ hasText: "间奏" });
+  const pos = mid.getByLabel("位置（成品时间）");
+  const before = await pos.inputValue();
+  const secs = (t: string) => t.split(":").reduce((a, x) => a * 60 + Number(x), 0);
+  await mid.getByRole("button", { name: "晚 1 秒" }).click();
+  await expect.poll(async () => secs(await pos.inputValue())).toBe(secs(before) + 1);
+  await mid.getByRole("button", { name: "早 1 秒" }).click();
+  await expect.poll(async () => secs(await pos.inputValue())).toBe(secs(before));
+
+  // talk: quieter interlude → a suggestion → accepted
+  const box = page.getByLabel("跟 Claude 说配乐怎么改");
+  await box.fill("间奏小 3 dB");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByTestId("music-draft")).toContainText("间奏：音量 -3 dB");
+  await expect(mid.getByLabel("音量（dB）")).toHaveValue("0"); // not applied yet
+  await page.getByTestId("music-draft").getByRole("button", { name: "采用" }).click();
+  await expect(mid.getByLabel("音量（dB）")).toHaveValue("-3");
+
+  // talk about music that isn't there: Claude asks instead of guessing
+  await box.fill("片尾去掉");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByTestId("music-msg")).toContainText("现在没有这段配乐");
+  await expect(page.getByTestId("music-draft")).toHaveCount(0);
+
+  // talk: a suggestion can be turned down
+  await box.fill("间奏晚两秒");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByTestId("music-draft")).toContainText("间奏从");
+  await page.getByTestId("music-draft").getByRole("button", { name: "不要" }).click();
+  await expect(page.getByTestId("music-draft")).toHaveCount(0);
+  await expect.poll(async () => secs(await pos.inputValue())).toBe(secs(before));
+
+  // leave the shared episode and library as they were
+  for (const name of ["片头", "间奏"]) {
+    await page.getByTestId("placement").filter({ hasText: name }).getByRole("button", { name: "去掉" }).click();
+  }
+  await expect(page.getByTestId("placement")).toHaveCount(0);
+  await page.goto("/#/library");
+  await theme.getByLabel("用途").selectOption("other");
+  await expect(theme.getByLabel("用途")).toHaveValue("other");
+});
+
+// 「带配乐听」: the review player plays the final mix, while the page keeps voice-cut time
+test("listen with music in the review player", async ({ page }) => {
+  const lib = await (await page.request.get("/api/library")).json();
+  const jingle = lib.assets.find((a: { name: string }) => a.name === "洛城片头.wav");
+  const m = await (await page.request.post(`/api/episodes/${EP}/music`, { data: { asset_id: jingle.id, role: "intro" } })).json();
+  const intro = m.inserts[0][1] as number; // seconds the intro adds before the voice
+  expect(m.inserts[0][0]).toBe(0);
+  expect(intro).toBeGreaterThan(1);
+
+  await page.goto(`/#/ep/${EP}/listen`);
+  const audio = page.getByTestId("main-audio");
+  const toggle = page.getByTestId("listen-with-music");
+  await expect(toggle).not.toBeChecked();
+  await expect(audio).toHaveAttribute("src", /\/audio\//);
+  await toggle.check();
+  await expect(audio).toHaveAttribute("src", /\/mix\/[0-9a-f]+\.wav$/);
+  // voice-cut 0:00 is where the voice comes in on the mix, after the intro
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeCloseTo(intro, 1);
+  await expect(page.getByTestId("clock")).toContainText("0:00 /");
+  await expect(page.getByText(/成品 0:0\d/)).toBeVisible();
+  // seeking on the page speaks voice-cut time
+  await page.getByRole("slider", { name: "播放位置" }).fill("10");
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeCloseTo(10 + intro, 1);
+  await expect(page.getByTestId("clock")).toContainText("0:10 /");
+  await toggle.uncheck();
+  await expect(audio).toHaveAttribute("src", /\/audio\//);
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeCloseTo(10, 1);
+
+  // leave the shared episode as it was
+  await page.request.delete(`/api/episodes/${EP}/music/${m.placements[0].id}`);
+});

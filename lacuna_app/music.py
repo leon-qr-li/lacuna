@@ -72,6 +72,7 @@ class Placed:
     length: int
     gap_at: int | None = None   # voice-timeline sample where time was inserted
     gap: int = 0
+    anchor: int | None = None   # final-mix sample of the placement's position (anchored roles)
 
     @property
     def end(self) -> int:
@@ -151,16 +152,16 @@ def layout(placements: list[dict], assets: dict[str, dict], sr: int, voice_len: 
             it = Placed(p, a, 0, n, 0, max(n - ov, 0))
         elif r == "interlude":
             gap = max(n - 2 * ov, 0)
-            it = Placed(p, a, max(gap_start(T, i) - ov, 0), n, T, gap)
+            it = Placed(p, a, max(gap_start(T, i) - ov, 0), n, T, gap, gap_start(T, i))
         elif r == "clip":
             lead = int(round(float(p.get("lead_s", LEAD_S)) * sr))
-            it = Placed(p, a, gap_start(T, i) + lead, n, T, lead + n + lead)
+            it = Placed(p, a, gap_start(T, i) + lead, n, T, lead + n + lead, gap_start(T, i))
         elif r == "bed":
             s = lay.final(T)
             if p.get("until_base") is not None:
                 e = lay.final(min(max(to_voice(int(p["until_base"])), T), voice_len))
                 n = max(min(n, e - s), int(0.05 * sr))
-            it = Placed(p, a, s, n)
+            it = Placed(p, a, s, n, anchor=s)
         else:   # outro
             it = Placed(p, a, max(lay.final(voice_len) - ov, 0), n)
         lay.items.append(it)
@@ -210,7 +211,7 @@ class EpisodeMusic:
     # ------------------------------------------------------------------ storage
     def load(self) -> dict:
         if not self.path.exists() and not self.path.with_name(FILE + ".bak").exists():
-            return {"schema": SCHEMA, "placements": [], "series": None, "series_dismissed": False}
+            return {"schema": SCHEMA, "placements": [], "series": None, "series_dismissed": False, "draft": None}
         doc = read_json(self.path)
         if doc.get("schema") != SCHEMA:
             raise ValueError(f"unsupported music schema {doc.get('schema')}")
@@ -222,10 +223,20 @@ class EpisodeMusic:
     def placements(self) -> list[dict]:
         return self.load()["placements"]
 
-    def digest(self) -> str:
-        doc = self.load()
+    def digest(self, placements: list[dict] | None = None) -> str:
+        ps = self.placements() if placements is None else placements
         assets = {a["id"]: (a.get("lufs"), a["duration_s"]) for a in self.lib.assets()}
-        return hashlib.sha1(json.dumps([doc["placements"], assets], sort_keys=True).encode()).hexdigest()[:12]
+        return hashlib.sha1(json.dumps([ps, assets], sort_keys=True).encode()).hexdigest()[:12]
+
+    def export_key(self) -> str:
+        """Changes exactly when the music in an export would change (applied placements + their
+        assets' levels), so an older export can be flagged as stale."""
+        ps = [p for p in self.placements() if p.get("status", APPLIED) == APPLIED]
+        used = {p["asset_id"] for p in ps}
+        assets = {a["id"]: (a.get("lufs"), a["duration_s"]) for a in self.lib.assets() if a["id"] in used}
+        keep = ("asset_id", "role", "at_base", "until_base", "src_in_s", "src_out_s", "overlap_s", "gain_db", "lead_s")
+        return hashlib.sha1(json.dumps([[{k: p.get(k) for k in keep} for p in ps], assets],
+                                       sort_keys=True).encode()).hexdigest()[:12]
 
     # ------------------------------------------------------------------ editing
     def _voice_to_base(self, at_s: float, enabled=None) -> int:
@@ -235,8 +246,12 @@ class EpisodeMusic:
         t = min(max(int(round(at_s * self.ep.sr)), 0), tl.length)
         return to_base(t, cuts)
 
-    def final_to_voice_s(self, at_final_s: float) -> float:
-        lay = self.layout()
+    def final_to_voice_s(self, at_final_s: float, exclude: str | None = None,
+                         placements: list[dict] | None = None) -> float:
+        """Final-mix seconds -> voice-timeline seconds. `exclude`: the placement being moved, so
+        its own inserted time doesn't count."""
+        ps = self.placements() if placements is None else placements
+        lay = self.layout(placements=[p for p in ps if p["id"] != exclude])
         return lay.voice(int(round(at_final_s * self.ep.sr))) / self.ep.sr
 
     def _clean(self, p: dict, asset: dict) -> dict:
@@ -312,6 +327,70 @@ class EpisodeMusic:
             doc["placements"] = [x for x in doc["placements"] if x["id"] != pid]
             self.save(doc)
 
+    # ------------------------------------------------------------------ suggestions (draft)
+    # A suggestion from "按用途自动放好" or from Claude is a full alternative placement list, kept
+    # next to the real one. It is heard with `preview(..., placements=draft)` and only becomes the
+    # music of the episode (and so of the export) when Leon accepts it.
+    def draft(self) -> dict | None:
+        return self.load().get("draft")
+
+    def set_draft(self, placements: list[dict], changes: list[dict], message: str, source: str,
+                  alternatives: dict | None = None) -> dict:
+        with self.lock:
+            doc = self.load()
+            for p in placements:
+                self._clean(p, self.lib.asset(p["asset_id"]))
+            d = {"id": "dr_" + uuid.uuid4().hex[:8], "source": source, "message": message, "changes": changes,
+                 "placements": placements, "alternatives": alternatives or {}, "base": self.digest(doc["placements"]),
+                 "created_at": _now()}
+            doc["draft"] = d
+            self.save(doc)
+            return d
+
+    def accept_draft(self, draft_id: str) -> None:
+        with self.lock:
+            doc = self.load()
+            d = doc.get("draft")
+            if not d or d["id"] != draft_id:
+                raise KeyError(draft_id)
+            if d["base"] != self.digest(doc["placements"]):
+                raise ConflictError("这条建议之后配乐又改过了，建议已经过期，请重新让 Claude 看一次")
+            doc["placements"] = [dict(p, status=APPLIED) for p in d["placements"]]
+            doc["draft"] = None
+            self.save(doc)
+
+    def discard_draft(self) -> None:
+        with self.lock:
+            doc = self.load()
+            doc["draft"] = None
+            self.save(doc)
+
+    def move_draft(self, pid: str, voice_s: float) -> dict:
+        """Pick another position (one of the offered alternatives) for a suggested placement."""
+        with self.lock:
+            doc = self.load()
+            d = doc.get("draft")
+            p = next((x for x in (d or {}).get("placements", []) if x["id"] == pid), None)
+            if p is None or p["role"] not in ANCHORED:
+                raise KeyError(pid)
+            p["at_base"] = self._voice_to_base(voice_s)
+            self.save(doc)
+            return d
+
+    def draft_view(self) -> dict | None:
+        d = self.draft()
+        if not d:
+            return None
+        lay = self.layout(placements=d["placements"])
+        sr = self.ep.sr
+        alts = {pid: [{"voice_s": v, "final_s": round(lay.final(int(round(v * sr))) / sr, 3)} for v in vs]
+                for pid, vs in d.get("alternatives", {}).items()}
+        live = {p["id"] for p in d["placements"]}
+        return {"id": d["id"], "source": d["source"], "message": d["message"],
+                "changes": [dict(c, previewable=c.get("pid") in live) for c in d["changes"]],
+                "placements": self.items_json(lay, include_proposed=False), "duration": round(lay.length / sr, 3),
+                "alternatives": alts, "stale": d["base"] != self.digest()}
+
     # ------------------------------------------------------------------ series rule
     def series_suggestion(self) -> dict | None:
         """The default series intro/outro, offered while this episode has neither."""
@@ -360,14 +439,15 @@ class EpisodeMusic:
             return None
 
     # ------------------------------------------------------------------ layout + mix
-    def layout(self, enabled=None) -> Layout:
+    def layout(self, enabled=None, placements: list[dict] | None = None) -> Layout:
         ep = self.ep
         enabled = ep.enabled if enabled is None else enabled
         with ep.lock:
             tl = ep.timeline_for(enabled)
             cuts = ep.cuts_for(enabled)
         assets = {a["id"]: a for a in self.lib.assets()}
-        return layout(self.placements(), assets, ep.sr, tl.length, lambda b: to_tl(b, cuts))
+        ps = self.placements() if placements is None else placements
+        return layout(ps, assets, ep.sr, tl.length, lambda b: to_tl(b, cuts))
 
     def voice_lufs(self, enabled) -> float:
         """Loudness of the voice cut, from up to 12 ten-second windows spread over it."""
@@ -386,17 +466,19 @@ class EpisodeMusic:
             self._voice_lufs[key] = v if math.isfinite(v) else -20.0
         return self._voice_lufs[key]
 
-    def mix(self, enabled=None, channels: int = 1) -> tuple[Timeline, dict[str, MediaRef], Layout]:
+    def mix(self, enabled=None, channels: int = 1,
+            placements: list[dict] | None = None) -> tuple[Timeline, dict[str, MediaRef], Layout]:
         """Final mix timeline (voice with inserted time + music tracks with fades and ducking),
-        the media table it needs, and the layout. Cached per voice version + music state."""
+        the media table it needs, and the layout. Cached per voice version + music state.
+        `placements` replaces the saved ones (to hear a suggestion before it is accepted)."""
         ep = self.ep
         enabled = ep.enabled if enabled is None else enabled
-        key = (enabled, self.digest(), channels)
+        key = (enabled, self.digest(placements), channels)
         with self.lock:
             hit = self._mixes.get(key)
             if hit:
                 return hit
-            lay = self.layout(enabled)
+            lay = self.layout(enabled, placements)
             with ep.lock:
                 voice = ep.timeline_for(enabled)
             sr = ep.sr
@@ -467,15 +549,15 @@ class EpisodeMusic:
         return out
 
     # ------------------------------------------------------------------ listening
-    def mix_key(self, enabled=None) -> str:
+    def mix_key(self, enabled=None, placements: list[dict] | None = None) -> str:
         enabled = self.ep.enabled if enabled is None else enabled
-        return hashlib.sha1(("|".join(sorted(enabled)) + self.digest()).encode()).hexdigest()[:16]
+        return hashlib.sha1(("|".join(sorted(enabled)) + self.digest(placements)).encode()).hexdigest()[:16]
 
-    def _player(self, enabled) -> tuple[Timeline, Previewer]:
-        k = self.mix_key(enabled)
+    def _player(self, enabled, placements: list[dict] | None = None) -> tuple[Timeline, Previewer]:
+        k = self.mix_key(enabled, placements)
         hit = self._players.get(k)
         if hit is None:
-            tl, media, _ = self.mix(enabled, 1)
+            tl, media, _ = self.mix(enabled, 1, placements)
             for _, (_, pv, pool) in list(self._players.items()):
                 pool.close()
             self._players.clear()
@@ -484,9 +566,9 @@ class EpisodeMusic:
             hit = self._players[k] = (tl, pv, pool)
         return hit[0], hit[1]
 
-    def render(self, enabled, a: int, b: int) -> np.ndarray:
+    def render(self, enabled, a: int, b: int, placements: list[dict] | None = None) -> np.ndarray:
         with self.lock:
-            tl, pv = self._player(enabled)
+            tl, pv = self._player(enabled, placements)
             return pv.render(tl, a, b).audio
 
     def wav_size(self, enabled) -> int:
@@ -513,10 +595,12 @@ class EpisodeMusic:
             hi = min(d1 - s * SAMPLE_BYTES, len(data))
             yield data[lo:hi]
 
-    def preview(self, pid: str, ctx_s: float = 8.0, max_s: float = 75.0) -> tuple[bytes, float]:
-        """WAV of the final mix around one placement's transitions; returns (wav, start seconds)."""
+    def preview(self, pid: str, ctx_s: float = 8.0, max_s: float = 75.0,
+                placements: list[dict] | None = None) -> tuple[bytes, float]:
+        """WAV of the final mix around one placement's transitions; returns (wav, start seconds).
+        `placements`: hear a suggested set instead of the saved one."""
         enabled = self.ep.enabled
-        tl, _, lay = self.mix(enabled, 1)
+        tl, _, lay = self.mix(enabled, 1, placements)
         it = next((x for x in lay.items if x.p["id"] == pid), None)
         if it is None:
             raise KeyError(pid)
@@ -528,10 +612,10 @@ class EpisodeMusic:
                 a = max(b - int(max_s * sr), 0)
             else:
                 b = a + int(max_s * sr)
-        return wav_bytes(self.render(enabled, a, b), sr), a / sr
+        return wav_bytes(self.render(enabled, a, b, placements), sr), a / sr
 
     # ------------------------------------------------------------------ views
-    def items_json(self, lay: Layout) -> list[dict]:
+    def items_json(self, lay: Layout, include_proposed: bool = True) -> list[dict]:
         sr = self.ep.sr
         out = []
         for it in lay.items:
@@ -541,11 +625,12 @@ class EpisodeMusic:
                         "credit_status": (a.get("credit") or {}).get("status", "unknown"),
                         "start_s": round(it.start / sr, 3), "end_s": round(it.end / sr, 3),
                         "voice_at_s": round(it.gap_at / sr, 3) if it.gap_at is not None else None,
+                        "at_s": round(it.anchor / sr, 3) if it.anchor is not None else None,
                         "inserted_s": round(it.gap / sr, 3), "missing": False})
         for p in lay.skipped:
             out.append({**p, "role_label": ROLES.get(p["role"], p["role"]), "missing": True,
                         "asset_name": None, "credit_line": "素材已不在库里", "start_s": None, "end_s": None})
-        proposed = [p for p in self.placements() if p.get("status") == PROPOSED]
+        proposed = [p for p in self.placements() if p.get("status") == PROPOSED] if include_proposed else []
         for p in proposed:
             a = self._asset_or_none(p["asset_id"]) or {}
             out.append({**p, "role_label": ROLES.get(p["role"], p["role"]), "missing": not a,
@@ -563,7 +648,11 @@ class EpisodeMusic:
                 "voice_duration": round(lay.voice_len / sr, 3), "duration": round(lay.length / sr, 3),
                 "mix_version": key, "mix_url": f"/api/episodes/{ep.id}/mix/{key}.wav",
                 "credits": credits(lay), "series": self.load().get("series"),
-                "series_suggestion": rule, "roles": ROLES}
+                "series_suggestion": rule, "roles": ROLES, "draft": self.draft_view(),
+                # time added to the conversation, (voice seconds, seconds), so the review player can map
+                # its voice-cut playhead onto the final mix when listening with music
+                "inserts": [[round(T / sr, 4), round(n / sr, 4)] for T, _, n in lay.inserts if n > 0],
+                "export_key": self.export_key()}
 
 
 def credits(lay: Layout) -> list[dict]:

@@ -7,6 +7,7 @@ export const feature: Feature = {
     {
       mode: "poster",
       label: "海报",
+      group: "publish",
       order: 50,
       render: ({ id, flash, pauseMain }) => <PosterView id={id} flash={flash} onPauseMain={pauseMain} />,
     },

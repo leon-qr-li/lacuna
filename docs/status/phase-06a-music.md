@@ -1,6 +1,6 @@
 # Phase 6a — 片头、配乐与 ducking (= 6a)
 
-State: **built (D45)**; install with the next batch update, then Leon validates
+State: **done, validated by Leon 2026-10-17** (D45)
 
 What Leon gets: 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库
 
@@ -10,6 +10,7 @@ Depends on: 2 (mix bus + export) · Parallel with: 9
 - **Phase 6a media library + music** (2026-10-17, D45): 素材库 page, Claude credit lookup, 配乐 tab with intro / interlude / outro / bed / clip, measured levels and voice-driven ducking, series intro rule, export with music. Merged with the batch; Leon's PC update + validation pending (batch update run by the coordinator). Nothing extra to install (uses ffmpeg/ffprobe already needed). Leon needs to add his EP001 intro / interlude (45:59) / outro music files to the library.
 - **6a follow-up: upload + fixed uses** (2026-10-17, D48, Leon's asks while validating): drag files onto 素材库 or pick with the system dialog (server-side folder browser removed there); fixed 用途 dropdown (片头 / 片尾 / 休息间隙 / 聊天背景音 / 电影对白·sample / 预告片 / 其他) that sets the placement role on the 配乐 tab; after a Claude lookup the filled credit fields open for editing. `scripts/make_demo_music.py` makes 3 test tracks (on Leon's PC already; re-run after updating so their uses become 片头 / 休息间隙 / 片尾).
 - **6a follow-up: credit lookup needs a note** (2026-10-17, D50): 「让 Claude 查正式曲名」 is disabled until the 备注 has text; the backend also refuses an empty note without calling Claude (no usage spent).
+- **6a follow-up: music joined to review / chat / export** (2026-10-17, decision `music-suggestions`, Leon's "有一个重要的地方没连上"): 「按用途自动放好」, suggestions heard before 采用 / 不要, 「换个位置」 chips, 「跟 Claude 说配乐怎么改」 chat, position field + 早 1 秒 / 晚 1 秒 per placement, export stale hint counts music. Code: `lacuna_app/music_assist.py`, `web/src/features/library/MusicAssist.tsx`; tests `tests/app/test_music_assist.py`, `tests/app/test_music_api.py::test_suggestions_*`, second test in `web/e2e/music.spec.ts`. Plus 「带配乐听」 in the review player (`useMusicListen.tsx`): the main audio plays the final mix, the page keeps voice-cut time (mapped through the summary's `inserts`); the choice is remembered per browser.
 
 ## How it is built (素材库与配乐 (2026-10-17, D45))
 - Library page 「素材库」(`#/library`, link in every top bar): add a file through the local folder browser (copied into `<workspace>/library/music|jingles|clips/`) or drop files there and 「扫描文件夹」; per file: player, duration, LUFS, Leon's note, BGM credit with state (已确认 / 待确认 / 还不知道曲名), 「让 Claude 查正式曲名」 (API + web search; text only), 「对，就是这首」, 「手动改」, 「移出素材库」 (file moved to `_removed/`).
@@ -19,4 +20,4 @@ Depends on: 2 (mix bus + export) · Parallel with: 9
 - Tests: `tests/app/test_music.py`, `tests/app/test_music_api.py`, `tests/test_edl.py::test_insert_gap_*`, `web/e2e/music.spec.ts`.
 
 ## Open issues
-- Music (6a): no undo for music placements (remove + add again); chat cannot place music yet ("这里放《XX》的主题曲" via chat is a follow-up); the export popover's "stale" hint ignores music changes. Ducking depth / levels (LEVEL_LU, DUCK_DB in `music.py`) await Leon's listening verdict.
+- Music (6a): no undo for music placements (remove + add again); music chat lives on the 配乐 tab, not in the review chat; Ducking depth / levels (LEVEL_LU, DUCK_DB in `music.py`) await Leon's listening verdict.

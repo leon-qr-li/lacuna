@@ -3,6 +3,7 @@ import type { Asset, Kind, MusicView as Music, Placement, PlacementPatch, Role }
 import { fmt, parseTime } from "../../api";
 import { CREDIT_LABEL } from "./LibraryView";
 import { libraryApi } from "./api";
+import { DraftCard, MusicChatBox } from "./MusicAssist";
 
 const ROLE_HELP: Record<Role, string> = {
   intro: "从头放，人声在音乐结束前进来，重叠处音乐自动压低淡出",
@@ -36,10 +37,13 @@ function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
   );
   const dirty = d.src_in_s !== p.src_in_s || d.src_out_s !== p.src_out_s || d.overlap_s !== p.overlap_s || d.gain_db !== p.gain_db;
   const save = () => void onSave({ ...d });
+  const [pos, setPos] = useState(p.at_s != null ? fmt(p.at_s) : "");
+  useEffect(() => setPos(p.at_s != null ? fmt(p.at_s) : ""), [p.at_s]);
+  const moveTo = (t: number | null) => t != null && void onSave({ at_s: Math.max(0, Math.round(t * 1000) / 1000) });
   return (
     <li className="card music-row" data-testid="placement">
       <div className="row gap12 wrap">
-        <span className="chip">{p.role_label}</span>
+        <span className={`chip role-chip role-${p.role}`}>{p.role_label}</span>
         <strong className="grow">{p.missing ? "素材已不在库里" : p.asset_name}</strong>
         {p.start_s != null && (
           <span className="mono small">
@@ -53,7 +57,7 @@ function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
         {p.credit_status && <span className={`badge badge-${p.credit_status}`}>{CREDIT_LABEL[p.credit_status]}</span>}
       </div>
       {!p.missing && (
-        <div className="row gap12 wrap">
+        <div className="row gap12 wrap music-tune">
           <Num label="从（秒）" value={d.src_in_s} onChange={(v) => setD({ ...d, src_in_s: v })} />
           <Num label="到（秒）" value={d.src_out_s} onChange={(v) => setD({ ...d, src_out_s: v })} />
           {p.role !== "bed" && p.role !== "clip" && <Num label="和人声重叠（秒）" value={d.overlap_s} onChange={(v) => setD({ ...d, overlap_s: v })} />}
@@ -63,9 +67,25 @@ function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
           </button>
         </div>
       )}
-      <div className="row gap8">
-        {ANCHORED.includes(p.role) && p.start_s != null && (
-          <span className="small muted">位置：{fmt(p.start_s)}（成品时间）</span>
+      <div className="row gap8 wrap">
+        {ANCHORED.includes(p.role) && p.at_s != null && (
+          <span className="row gap4 wrap small" data-testid="placement-position">
+            位置
+            <input
+              className="time"
+              value={pos}
+              onChange={(e) => setPos(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && moveTo(parseTime(pos))}
+              onBlur={() => parseTime(pos) !== null && parseTime(pos) !== Math.floor(p.at_s!) && moveTo(parseTime(pos))}
+              aria-label="位置（成品时间）"
+            />
+            <button type="button" className="btn btn-small btn-outline" onClick={() => moveTo(p.at_s! - 1)}>
+              早 1 秒
+            </button>
+            <button type="button" className="btn btn-small btn-outline" onClick={() => moveTo(p.at_s! + 1)}>
+              晚 1 秒
+            </button>
+          </span>
         )}
         <span className="grow" />
         {!p.missing && p.start_s != null && (
@@ -160,6 +180,39 @@ function AddPlacement({ assets, kindRoles, onAdd }: {
   );
 }
 
+/** The whole final episode at a glance: the voice, and each piece of music where it sits. Click a block to hear it. */
+function MusicStrip({ m, previewing, onPreview }: { m: Music; previewing: string | null; onPreview: (pid: string) => void }) {
+  const total = Math.max(m.duration, 1);
+  const placed = m.placements.filter((p) => !p.missing && p.start_s != null);
+  return (
+    <div className="mstrip" aria-hidden="true">
+      <div className="mstrip-voice" />
+      {placed.map((p) => {
+        const left = (100 * p.start_s!) / total;
+        const width = Math.max(1.2, (100 * ((p.end_s ?? p.start_s!) - p.start_s!)) / total);
+        return (
+          <button
+            key={p.id}
+            type="button"
+            className={`mstrip-block role-${p.role} ${previewing === p.id ? "is-on" : ""}`}
+            style={{ left: `${Math.min(left, 100 - width)}%`, width: `${width}%` }}
+            title={`${p.role_label} · ${fmt(p.start_s!)} – ${fmt(p.end_s ?? 0)} · 点一下试听`}
+            tabIndex={-1}
+            onClick={() => onPreview(p.id)}
+          >
+            {p.role_label}
+          </button>
+        );
+      })}
+      <div className="mstrip-ticks small mono muted">
+        <span>0:00</span>
+        <span>{fmt(total / 2)}</span>
+        <span>{fmt(total)}</span>
+      </div>
+    </div>
+  );
+}
+
 export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => void }) {
   const [m, setM] = useState<Music | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -185,8 +238,9 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
 
   const run = async (p: Promise<Music>, done?: string): Promise<boolean> => {
     try {
-      setM(await p);
-      setMsg(done ?? null);
+      const mm = await p;
+      setM(mm);
+      setMsg(mm.message ?? done ?? null);
       return true;
     } catch (e) {
       setMsg(`失败：${(e as Error).message}`);
@@ -194,18 +248,19 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     }
   };
 
-  const playPreview = (pid: string) => {
+  const playPreview = (pid: string, draft = false) => {
     const a = clipRef.current;
     if (!a) return;
-    if (preview === pid) {
+    const key = (draft ? "draft:" : "") + pid;
+    if (preview === key) {
       a.pause();
       setPreview(null);
       return;
     }
     onPauseMain();
     mixRef.current?.pause();
-    a.src = libraryApi.placementPreviewUrl(id, pid);
-    setPreview(pid);
+    a.src = draft ? libraryApi.draftPreviewUrl(id, pid) : libraryApi.placementPreviewUrl(id, pid);
+    setPreview(key);
     void a.play().catch(() => setPreview(null));
   };
 
@@ -213,13 +268,34 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   if (!m) return <p className="pad muted">加载中…</p>;
   return (
     <main className="home music">
-      <div className="row gap8 wrap baseline">
-        <h1 className="grow">配乐</h1>
-        <span className="muted small">
-          人声剪辑 {fmt(m.voice_duration)} → 成品 {fmt(m.duration)}
-        </span>
-      </div>
-      {msg && <p className="small">{msg}</p>}
+      <header className="music-hero">
+        <div className="grow">
+          <h1>配乐</h1>
+          <p className="muted small">
+            <span className="mono">
+              人声剪辑 {fmt(m.voice_duration)} → 成品 {fmt(m.duration)}
+            </span>
+            <span className="music-hero-sep">·</span>时间都按成品算；音乐会在人声下自动压低
+          </p>
+        </div>
+        <div className="music-auto">
+          <button type="button" className="btn btn-grad" onClick={() => void run(libraryApi.autoPlace(id))}>
+            按用途自动放好
+          </button>
+          <span className="small muted">片头片尾直接放，间奏放在话题之间的停顿。先给建议，试听后再采用。</span>
+        </div>
+      </header>
+      {msg && <p className="small note-line" data-testid="music-msg">{msg}</p>}
+      {m.draft && (
+        <DraftCard
+          d={m.draft}
+          previewing={preview?.startsWith("draft:") ? preview.slice(6) : null}
+          onPreview={(pid) => playPreview(pid, true)}
+          onMove={(pid, v) => void run(libraryApi.moveDraft(id, pid, v), "换好了位置，可以再试听")}
+          onAccept={() => void run(libraryApi.acceptDraft(id, m.draft!.id), "已采用，导出会用这一版")}
+          onDiscard={() => void run(libraryApi.discardDraft(id), "没有采用这条建议")}
+        />
+      )}
       {m.series_suggestion && (
         <div className="card banner-card row gap8 wrap" data-testid="series-suggestion">
           <span className="grow">系列「{m.series_suggestion.name}」有固定的片头片尾，要用在这一集吗？</span>
@@ -231,8 +307,12 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
           </button>
         </div>
       )}
-      <div className="card">
-        <h2>成品试听（含配乐）</h2>
+      <section className="card music-whole">
+        <div className="card-head">
+          <h2>成品试听（含配乐）</h2>
+          <span className="small muted">导出也是这一版</span>
+        </div>
+        <MusicStrip m={m} previewing={preview} onPreview={(pid) => playPreview(pid)} />
         <audio
           ref={mixRef}
           controls
@@ -246,8 +326,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             setPreview(null);
           }}
         />
-        <p className="small muted">这里听的是加了配乐和 ducking 的成品（导出也是这一版）。时间都按成品算。</p>
-      </div>
+      </section>
       <audio ref={clipRef} onEnded={() => setPreview(null)} data-testid="placement-audio" />
       <ul className="music-list">
         {m.placements.map((p) => (
@@ -262,6 +341,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
         ))}
       </ul>
       {m.placements.length === 0 && <p className="muted">这一集还没有配乐。</p>}
+      <MusicChatBox onSend={(text) => run(libraryApi.musicChat(id, text))} />
       <AddPlacement assets={assets} kindRoles={kindRoles} onAdd={(body) => run(libraryApi.addPlacement(id, body), "已放进去，可以点「试听这一处」")} />
       {m.placements.some((p) => p.role === "intro" || p.role === "outro") && (
         <div className="row gap8 wrap">

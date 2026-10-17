@@ -18,7 +18,9 @@ def register(app, ctx) -> None:
     def upload_get(episode_id: str):
         ep = ctx.get(episode_id)
         publisher, posters, exporter = services()
-        return checklist(ep, exporter.dir_for(ep.id), publisher.view(ep), posters.load(ep))
+        from ..music import EpisodeMusic
+        return checklist(ep, exporter.dir_for(ep.id), publisher.view(ep), posters.load(ep),
+                         EpisodeMusic(ctx.ws, ep).export_key())
 
     @app.get("/api/episodes/{episode_id}/upload/cover.jpg")
     def upload_cover(episode_id: str):

@@ -1,5 +1,5 @@
 /* media library + music (phase 6a) */
-.library, .music { display: flex; flex-direction: column; gap: 12px; }
+.library, .music { display: flex; flex-direction: column; gap: 16px; }
 .lib-list, .music-list, .credits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .lib-row, .music-row, .lib-add, .music-add { display: flex; flex-direction: column; gap: 8px; }
 .lib-audio, .mix-audio { width: 100%; height: 36px; }
@@ -13,10 +13,33 @@
 .banner-card { background: var(--banner); }
 input.num { width: 72px; }
 input.time { width: 150px; }
-select, input:not([type]), input[type="number"] { padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
-.lib-drop { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 28px 16px; border: 2px dashed var(--line); background: var(--surface-2); transition: border-color .15s, background .15s; }
+.lib-drop { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 32px 16px; border: 2px dashed var(--line-2); background: var(--panel); transition: border-color .15s, background .15s; }
 .lib-drop-active { border-color: var(--accent); background: var(--accent-soft); }
 .lib-drop-title { margin: 0; font-size: 16px; color: var(--ink-2); }
 .lib-uploads { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .chip-select { padding: 3px 8px; border-radius: 999px; border: 1px solid var(--accent-mid); background: var(--accent-soft); color: var(--accent); font-size: 12px; }
 .lib-drop-actions { flex-wrap: wrap; justify-content: center; }
+.music-draft, .music-chat { display: flex; flex-direction: column; gap: 8px; }
+.draft-changes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.music-listen { align-self: flex-start; }
+
+/* phase 8: music page in the C design */
+.music-hero { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 28px; margin-bottom: 4px; }
+.music-hero h1 { margin: 0 0 6px; font-size: 28px; }
+.music-hero p { margin: 0; }
+.music-hero-sep { margin: 0 8px; }
+.music-auto { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; max-width: 360px; text-align: right; }
+.note-line { margin: 0; padding: 8px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); align-self: flex-start; }
+.mstrip { position: relative; height: 64px; margin: 4px 0 26px; }
+.mstrip-voice { position: absolute; left: 0; right: 0; top: 26px; height: 12px; border-radius: 9px; background: repeating-linear-gradient(90deg, var(--line-2) 0 2px, transparent 2px 5px); }
+.mstrip-block { position: absolute; top: 12px; height: 40px; padding: 0 8px; overflow: hidden; border: 0; border-radius: 10px; background: var(--grad); color: #fff; font: inherit; font-size: 12px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; box-shadow: 0 6px 16px rgb(91 108 255 / 0.25); }
+.mstrip-block.role-bed { top: 22px; height: 20px; opacity: 0.6; }
+.mstrip-block.is-on { outline: 3px solid var(--ink); outline-offset: 2px; }
+.mstrip-ticks { position: absolute; left: 0; right: 0; bottom: -22px; display: flex; justify-content: space-between; }
+.music-whole .mix-audio { margin-top: 4px; }
+.music-row { gap: 12px; }
+.music-row strong { font-size: 15px; }
+.music-tune { padding: 10px 14px; border-radius: 14px; background: var(--hover); }
+.music-tune input.num { background: var(--panel); }
+.role-chip.role-interlude, .role-chip.role-clip { background: var(--warn-soft); color: var(--warn); }
+.role-chip.role-bed { background: var(--hover); color: var(--ink-2); }

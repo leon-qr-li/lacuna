@@ -32,7 +32,8 @@ def latest_wav(exports_dir: Path) -> tuple[Path, dict] | None:
     return wav, record
 
 
-def checklist(ep: Episode, exports_dir: Path, publish_view: dict, poster_doc: dict) -> dict:
+def checklist(ep: Episode, exports_dir: Path, publish_view: dict, poster_doc: dict,
+              music_version: str | None = None) -> dict:
     """What is ready for the upload form. ``publish_view`` is ``Publisher.view``; ``poster_doc`` is
     ``Posters.load``."""
     version = ep.version_key()
@@ -43,7 +44,9 @@ def checklist(ep: Episode, exports_dir: Path, publish_view: dict, poster_doc: di
         audio = {"name": wav.name, "bytes": wav.stat().st_size,
                  "exported_at": record.get("exported_at"),
                  # an export without a record is from before records existed: we can't tell, so not stale
-                 "stale": bool(record.get("version")) and record["version"] != version}
+                 "stale": (bool(record.get("version")) and record["version"] != version)
+                 or (bool(record.get("music_version")) and music_version is not None
+                     and record["music_version"] != music_version)}
 
     pack = publish_view.get("pack")
     cover = poster_doc.get("cover")

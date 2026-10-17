@@ -2,7 +2,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import type { EditInfo, Episode, EpisodeListItem } from "./api";
 import { api, fmt } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
-import { ExportPanel } from "./components/ExportPanel";
+import { Icon } from "./components/Icon";
 import { ImportPanel } from "./components/ImportPanel";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
@@ -11,6 +11,7 @@ import { Lanes, Overview } from "./components/Timeline";
 import { navLinks, pages, tabs } from "./features/registry";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
+import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -35,6 +36,24 @@ function useRoute() {
   }, []);
   return route;
 }
+
+/** Labels of tab groups in the episode flow (see EpisodeTab.group). */
+const GROUPS: Record<string, string> = { publish: "发布" };
+
+const readPref = (k: string) => {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const writePref = (k: string, v: string) => {
+  try {
+    localStorage.setItem(k, v);
+  } catch {
+    /* private mode */
+  }
+};
 
 const go = (id: string, mode: Mode = "listen") => {
   window.location.hash = `#/ep/${encodeURIComponent(id)}/${mode}`;
@@ -66,7 +85,9 @@ function PageScreen({ path }: { path: string }) {
         <a className="brand" href="#/">
           LACUNA
         </a>
-        <span className="muted">/</span>
+        <span className="crumb-sep" aria-hidden="true">
+          /
+        </span>
         <span className="ep-title">{page.title}</span>
         <span className="grow" />
         <Nav on="page" except={path} />
@@ -101,23 +122,36 @@ function Home() {
         <Nav on="home" />
       </header>
       <main className="home">
+        <div className="home-hero">
+          <h1>剧集</h1>
+          <p className="muted">导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。</p>
+        </div>
         <ImportPanel onEpisodesChanged={reload} onOpen={open} />
-        <h1>剧集</h1>
         {err && <p className="error">{err}</p>}
         {list?.length === 0 && <p className="muted">工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。</p>}
         <ul className="ep-list">
           {list?.map((e) => (
             <li key={e.id}>
               <a href={`#/ep/${encodeURIComponent(e.id)}/listen`}>
-                <strong>{e.title}</strong>
-                {e.error ? (
-                  <span className="error small">无法打开：{e.error}</span>
-                ) : (
-                  <span className="muted small">
-                    {fmt(e.raw_duration ?? 0)} → {fmt(e.duration ?? 0)} · {e.pending_review} 处待过目
-                    {e.demo && " · 演示数据"}
-                  </span>
-                )}
+                <span className="ep-cover" aria-hidden="true">
+                  {e.title.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 1)}
+                </span>
+                <span className="ep-body">
+                  <strong>{e.title}</strong>
+                  {e.error ? (
+                    <span className="error small">无法打开：{e.error}</span>
+                  ) : (
+                    <>
+                      <span className="muted small mono">
+                        {fmt(e.raw_duration ?? 0)} → {fmt(e.duration ?? 0)}
+                        {e.demo && " · 演示数据"}
+                      </span>
+                      <span className={`chip ${e.pending_review ? "chip-warn" : "chip-ok"}`}>
+                        {e.pending_review ? `${e.pending_review} 处待过目` : "都过目了"}
+                      </span>
+                    </>
+                  )}
+                </span>
               </a>
             </li>
           ))}
@@ -132,7 +166,11 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const player = usePlayer();
+  const raw = usePlayer();
+  const listen = useMusicListen(id, `${ep?.version ?? ""}|${mode}`, raw);
+  const player = listen.player; // voice-cut time, also while listening with music
+  const [chatOpen, setChatOpen] = useState(() => readPref("lacuna.chat") !== "closed");
+  useEffect(() => writePref("lacuna.chat", chatOpen ? "open" : "closed"), [chatOpen]);
 
   useEffect(() => {
     api.episode(id).then(setEp).catch((e) => setErr(String(e.message ?? e)));
@@ -198,43 +236,95 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   if (err) return <p className="error pad">无法打开剧集：{err}</p>;
 
   const pending = ep?.proposals[0]?.edit ?? null;
+  const href = (m: Mode) => `#/ep/${encodeURIComponent(id)}/${m}`;
+  // the episode flow: built-in steps, then feature tabs; a tab group (发布) is one step with sub-tabs
+  const curGroup = tabs.find((t) => t.mode === mode)?.group;
+  const steps: { mode: Mode; label: string; on: boolean; badge?: number }[] = [
+    { mode: "review", label: "审阅改动", on: mode === "review", badge: ep?.pending_review ?? 0 },
+    { mode: "listen", label: "整集试听", on: mode === "listen" },
+  ];
+  for (const t of tabs) {
+    if (!t.group) steps.push({ mode: t.mode, label: t.label, on: mode === t.mode });
+    else if (!steps.some((x) => x.mode === t.group))
+      steps.push({ mode: t.group, label: GROUPS[t.group] ?? t.group, on: curGroup === t.group });
+  }
+  const stepHref = (m: Mode) => href(tabs.find((t) => t.group === m)?.mode ?? m);
+  // every page in flow order (groups expanded), for the "下一步" button at the bottom
+  const flow = steps.flatMap((x) =>
+    GROUPS[x.mode] ? tabs.filter((t) => t.group === x.mode).map((t) => ({ mode: t.mode, label: t.label })) : [x],
+  );
+  const next = flow[flow.findIndex((x) => x.mode === mode) + 1];
   return (
     <div className="app">
       <header className="topbar">
         <a className="brand" href="#/">
           LACUNA
         </a>
-        <span className="muted">/</span>
+        <span className="crumb-sep" aria-hidden="true">
+          /
+        </span>
         <span className="ep-title">{ep?.title ?? "…"}</span>
-        {ep && (
-          <span className="chip">
-            第一刀{ep.demo ? "（演示）" : ""}已完成 · {ep.pending_review} 处待你过目
-          </span>
+        <span className="grow" />
+        <Nav on="episode" />
+        {mode === "listen" && (
+          <button
+            type="button"
+            className={`btn btn-small ${chatOpen ? "btn-outline" : "btn-grad"}`}
+            aria-pressed={chatOpen}
+            onClick={() => setChatOpen((o) => !o)}
+            data-testid="chat-toggle"
+          >
+            <Icon name="chat" /> {chatOpen ? "收起 AI 制作人" : "AI 制作人"}
+          </button>
         )}
-        <nav aria-label="审阅模式" className="modes">
-          <a href={`#/ep/${encodeURIComponent(id)}/listen`} aria-current={mode === "listen" ? "page" : undefined}>
-            整集试听
-          </a>
-          <a href={`#/ep/${encodeURIComponent(id)}/review`} aria-current={mode === "review" ? "page" : undefined}>
-            改动审阅 · {ep?.pending_review ?? 0}
-          </a>
-          {tabs.map((t) => (
-            <a key={t.mode} href={`#/ep/${encodeURIComponent(id)}/${t.mode}`} aria-current={mode === t.mode ? "page" : undefined}>
-              {t.label}
+      </header>
+      <div className="ep-head">
+        <div className="ep-head-row">
+          {ep && (
+            <span className="chip">
+              第一刀{ep.demo ? "（演示）" : ""}已完成 · {ep.pending_review} 处待你过目
+            </span>
+          )}
+          <span className="grow" />
+          <button type="button" className="btn btn-ghost btn-small" onClick={undo} disabled={!ep?.can_undo} title={ep?.undo_label ?? ""}>
+            <Icon name="undo" /> 撤销
+          </button>
+          <button type="button" className="btn btn-ghost btn-small" onClick={redo} disabled={!ep?.can_redo} title={ep?.redo_label ?? ""}>
+            <Icon name="redo" /> 重做
+          </button>
+          {mode !== "export" && (
+            <a className="btn btn-primary btn-small linkbtn" href={href("export")} data-testid="export-toggle">
+              导出
             </a>
+          )}
+        </div>
+        <nav aria-label="制作流程" className="modes">
+          {steps.map((s, i) => (
+            <Fragment key={s.mode}>
+              {i > 0 && (
+                <span className="mode-sep">
+                  <Icon name="chev" size={14} />
+                </span>
+              )}
+              <a href={stepHref(s.mode)} aria-current={s.on ? "page" : undefined}>
+                {s.label}
+                {s.badge !== undefined && <span className={`mode-badge ${s.badge ? "" : "is-zero"}`}> · {s.badge}</span>}
+              </a>
+            </Fragment>
           ))}
         </nav>
-        <div className="row gap8">
-          <button type="button" className="btn btn-outline" onClick={undo} disabled={!ep?.can_undo} title={ep?.undo_label ?? ""}>
-            撤销
-          </button>
-          <button type="button" className="btn btn-outline" onClick={redo} disabled={!ep?.can_redo} title={ep?.redo_label ?? ""}>
-            重做
-          </button>
-          {ep && <ExportPanel id={id} version={ep.version} />}
-          <Nav on="episode" />
-        </div>
-      </header>
+        {curGroup && (
+          <nav aria-label={GROUPS[curGroup] ?? curGroup} className="subtabs">
+            {tabs
+              .filter((t) => t.group === curGroup)
+              .map((t) => (
+                <a key={t.mode} href={href(t.mode)} aria-current={mode === t.mode ? "page" : undefined}>
+                  {t.label}
+                </a>
+              ))}
+          </nav>
+        )}
+      </div>
       {ep?.demo && <p className="banner">{ep.demo_note || "演示数据"}</p>}
       {toast && (
         <div className="toast" role="status">
@@ -242,18 +332,19 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         </div>
       )}
       {/* one audio element shared by both modes: the playhead is common */}
-      <audio ref={player.ref} preload="auto" data-testid="main-audio" />
+      <audio ref={raw.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (
         <p className="pad muted">加载中…</p>
       ) : (
         <>
           {/* Full Listen stays mounted in review mode so the conversation is kept */}
-          <div className="workspace" hidden={mode !== "listen"}>
+          <div className={`workspace ${chatOpen ? "" : "chat-closed"}`} hidden={mode !== "listen"}>
             <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} />
             <main className="center">
               <Overview ep={ep} time={player.time} onSeek={player.seek} />
               <Lanes ep={ep} time={player.time} onSeek={player.seek} highlight={pending} />
               <PlayerBar player={player} duration={ep.duration} />
+              <MusicListenToggle listen={listen} />
               <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
             </main>
           </div>
@@ -275,6 +366,14 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             .map((t) => (
               <Fragment key={t.mode}>{t.render({ id, ep, flash, pauseMain: player.pause })}</Fragment>
             ))}
+          {next && (
+            <div className="next-step">
+              <span className="muted small">这一步做完了？</span>
+              <a className="btn linkbtn" href={href(next.mode)}>
+                下一步：{next.label} <Icon name="chev" />
+              </a>
+            </div>
+          )}
         </>
       )}
     </div>

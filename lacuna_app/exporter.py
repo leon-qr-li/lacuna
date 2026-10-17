@@ -63,11 +63,12 @@ class Exporter:
             enabled = ep.enabled
             ep.timeline_for(enabled)           # refuses an invalid state before anything starts
             version = ep.version_key(enabled)
+            music_version = EpisodeMusic(self.ws, ep).export_key()
             title = ep.meta.get("title", ep.id)
             show = ep.meta.get("show", DEFAULT_SHOW)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         job = {"id": uuid.uuid4().hex[:12], "state": "running", "progress": 0.0, "stage": "准备",
-               "version": version, "formats": formats, "basename": f"{ep.id}_{stamp}",
+               "version": version, "music_version": music_version, "formats": formats, "basename": f"{ep.id}_{stamp}",
                "started": time.time(), "finished": None, "result": None, "error": None}
         with self._lock:
             if self._running:
@@ -91,7 +92,7 @@ class Exporter:
                              job["basename"], tuple(formats), MasterSettings(), tl.length,
                              mp3_kbps, {"title": title, "artist": show, "album": show},
                              progress)
-                record = {"episode": ep.id, "title": title, "version": version,
+                record = {"episode": ep.id, "title": title, "version": version, "music_version": music_version,
                           "applied_edits": sorted(enabled), "exported_at": datetime.now().isoformat(),
                           "channels": channels, "music": credits(lay), **res.to_dict()}
                 atomic_write_json(out_dir / f"{job['basename']}.json", record)
