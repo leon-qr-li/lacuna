@@ -1,6 +1,6 @@
 # 统一的加载提示 (unified loading)
 
-State: **built, PR open** · thread「统一的加载提示」 · decision `docs/decisions/2026-10-17-unified-loading.md`
+State: **merged in PR #64, waiting for the batch update** · thread「统一的加载提示」 · decision `docs/decisions/2026-10-17-unified-loading.md`
 
 What shipped (style A「声波」, picked by Leon 2026-10-17 18:58Z):
 - `web/src/features/loading/`: `Loading.tsx` (Wave, Skel, EpisodeListSkeleton, PageLoading, Waiting, BusyLabel,
