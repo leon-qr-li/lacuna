@@ -1,9 +1,9 @@
 # LACUNA Studio — Project Status
 
-_Last updated: 2026-10-17 02:20Z_
+_Last updated: 2026-10-17 02:55Z (phase 3 validated); prev 2026-10-17 02:20Z_
 
 ## Current phase
-POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速) done and validated by Leon on his PC (main a719a8a). Mastering + export merged (#4). Phase 3 (real AI chat) merged (#8); to be installed on Leon's PC together with the phase 1 playhead fix (#7).
+POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速) done and validated by Leon on his PC (main a719a8a). Mastering + export merged (#4). Phase 3 (real AI chat, #8/#9) installed on Leon's PC (main 5b13662) and validated by Leon 2026-10-17.
 
 ## Done
 - Assessment `docs/00_TECH_LEAD_ASSESSMENT.md`; decisions `docs/DECISIONS.md` (D23–D32); hardware `docs/HARDWARE_PROFILE.md`; editorial rules `docs/EDITORIAL_RULES.md` (R001–R003).
