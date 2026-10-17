@@ -7,6 +7,7 @@ import threading
 from datetime import datetime, timezone
 from urllib.parse import quote
 from pathlib import Path
+from typing import Callable
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
@@ -14,9 +15,11 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
+from . import appinfo
+from .asr import models_present
 from .audio import parse_range
 from .dictation import Dictation, DictationError
-from .editor import EditorAdapter, editor_status, make_adapter
+from .editor import EditorAdapter, editor_status, find_api_key, make_adapter, sdk_installed
 from .episode import ConflictError, Episode
 from .exporter import ExportBusy, Exporter
 from .importer import ImportBusy, ImportError_, Importer, list_dir
@@ -132,7 +135,8 @@ class OpBody(PlayheadBody):
 
 def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST,
                importer: Importer | None = None, dictation: Dictation | None = None,
-               publisher: Publisher | None = None, credit_client=None, posters: Posters | None = None) -> FastAPI:
+               publisher: Publisher | None = None, credit_client=None, posters: Posters | None = None,
+               updater: "appinfo.Updater | None" = None, restart: Callable[[int], None] | None = None) -> FastAPI:
     """`credit_client`: an Anthropic-like client for the library's credit lookup (tests inject a fake)."""
     ws = Workspace(workspace).ensure()
     adapter = adapter or make_adapter("auto")
@@ -178,6 +182,27 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         if playhead is not None:
             out["playhead"] = ep.map_playhead(playhead, before, ep.enabled)
         return out
+
+    # ------------------------------------------------------------------ app: version, update, settings (D51)
+    def busy() -> list[str]:
+        """Work an update restart would cut off."""
+        out = []
+        if importer._running:
+            out.append(f"导入（{importer._running}）")
+        if exporter._running:
+            out.append(f"导出（{exporter._running}）")
+        if any(j.get("state") == "running" for j in list(publisher.jobs.values())):
+            out.append("生成发布资料")
+        return out
+
+    def key_status() -> dict:
+        key, where = find_api_key()
+        return {"present": bool(key), "source": where if key else None, "editor": adapter.name,
+                "sdk": sdk_installed()}
+
+    app.state.restart = restart or (lambda code: None)
+    appinfo.register(app, updater or appinfo.Updater(), ws.root, busy, key_status,
+                     lambda: models_present(ws.root / "models"))
 
     # ------------------------------------------------------------------ API
     @app.get("/api/health")

@@ -282,3 +282,10 @@ select, input:not([type]), input[type="number"] { padding: 6px 8px; border: 1px 
 .cover-card p { margin: 4px 0 8px; }
 .poster-zoom { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .78); cursor: zoom-out; }
 .poster-zoom img { width: min(92vw, 92vh); aspect-ratio: 1; }
+
+/* 设置 (phase 7) */
+.settings .card { margin-bottom: 16px; }
+.settings .gap { gap: 8px; }
+.settings input { min-height: 40px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); font: inherit; }
+.settings .notes { white-space: pre-wrap; font: inherit; background: var(--sunk); padding: 10px 12px; border-radius: 8px; }
+.settings .plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }

@@ -11,9 +11,11 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Protocol
 
 from .analysis import Span
@@ -175,7 +177,72 @@ def find_api_key() -> tuple[str | None, str]:
         found = _windows_registry_key()
         if found:
             return found
+    if sys.platform == "darwin":
+        found = _macos_keychain_key()
+        if found:
+            return found
+    found = _file_key()
+    if found:
+        return found
     return None, "missing"
+
+
+# Where the 设置 page saves a key (phase 7): Windows = the user environment in the registry (what
+# `setx` writes, read above); macOS = the login Keychain (a Mac app started from the Dock gets no
+# shell environment); elsewhere = a 0600 file in the install root.
+KEYCHAIN_SERVICE = "LACUNA"
+KEYCHAIN_ACCOUNT = "ANTHROPIC_API_KEY"
+
+
+def _macos_keychain_key() -> tuple[str, str] | None:
+    try:
+        out = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", KEYCHAIN_ACCOUNT, "-w"],
+                             capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    v = out.stdout.strip()
+    return (v, "keychain") if out.returncode == 0 and v else None
+
+
+def _key_file() -> Path:
+    home = os.environ.get("LACUNA_HOME")
+    return (Path(home) if home else Path.home() / ".config" / "lacuna") / "api_key"
+
+
+def _file_key() -> tuple[str, str] | None:
+    try:
+        v = _key_file().read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return (v, "file") if v else None
+
+
+def save_api_key(key: str) -> str:
+    """Store the key where `find_api_key` looks for it on this OS; returns where. Never logs it."""
+    key = key.strip().strip('"')
+    if len(key) < 20 or any(c.isspace() for c in key):
+        raise ValueError("这不像一个 API key（应该是 sk-ant- 开头的一长串）")
+    if sys.platform == "win32":
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as k:
+            winreg.SetValueEx(k, "ANTHROPIC_API_KEY", 0, winreg.REG_SZ, key)
+        where = "registry-user"
+    elif sys.platform == "darwin":
+        out = subprocess.run(["security", "add-generic-password", "-U", "-s", KEYCHAIN_SERVICE, "-a", KEYCHAIN_ACCOUNT,
+                              "-w", key], capture_output=True, text=True, timeout=20)
+        if out.returncode != 0:
+            raise OSError(f"存进钥匙串失败：{out.stderr.strip()}")
+        where = "keychain"
+    else:
+        f = _key_file()
+        f.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(f, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(key)
+        where = "file"
+    # this process (and what it starts) sees it at once; a running Claude client is made at startup
+    os.environ.pop("ANTHROPIC_API_KEY", None)
+    return where
 
 
 def _windows_registry_key() -> tuple[str, str] | None:

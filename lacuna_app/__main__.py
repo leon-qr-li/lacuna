@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 import threading
 import webbrowser
 from pathlib import Path
@@ -30,12 +31,27 @@ def main(argv: list[str] | None = None) -> None:
     from .editor import make_adapter
     from .server import create_app
 
-    app = create_app(ws, make_adapter(args.editor))
+    from .appinfo import current_version
+
+    exit_code = 0
+    server: uvicorn.Server | None = None
+
+    def restart(code: int) -> None:
+        """Stop serving and exit with `code`: the launcher swaps in an update (75) or restarts (76)."""
+        nonlocal exit_code
+        exit_code = code
+        if server is not None:
+            server.should_exit = True
+
+    app = create_app(ws, make_adapter(args.editor), restart=restart)
     url = f"http://{HOST}:{args.port}/"
-    print(f"LACUNA Studio → {url}  (workspace: {ws.resolve()}, editor: {args.editor})")
+    print(f"LACUNA Studio {current_version()} → {url}  (workspace: {ws.resolve()}, editor: {args.editor})")
     if not args.no_browser:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    uvicorn.run(app, host=HOST, port=args.port, log_level="warning")
+    server = uvicorn.Server(uvicorn.Config(app, host=HOST, port=args.port, log_level="warning"))
+    server.run()
+    if exit_code:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":

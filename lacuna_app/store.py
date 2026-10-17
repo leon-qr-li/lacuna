@@ -39,10 +39,22 @@ def check_id(name: str) -> str:
     return name
 
 
+def _resolve(p: Path) -> Path:
+    """`Path.resolve()` without the Windows verbatim prefix.
+
+    On Windows, resolving a path that does not exist yet can come back as ``\\\\?\\C:\\...`` when
+    another thread creates part of it in between (ntpath.realpath keeps the prefix if the two
+    lookups it makes fail differently), and that path is then not "inside" the plain root."""
+    s = str(p.resolve())
+    if s.startswith("\\\\?\\") and not s.startswith("\\\\?\\UNC\\"):
+        s = s[4:]
+    return Path(s)
+
+
 def inside(root: Path, *parts: str) -> Path:
     """Join `parts` under `root` and prove the result stays inside it (symlinks resolved)."""
-    root = root.resolve()
-    p = root.joinpath(*parts).resolve()
+    root = _resolve(root)
+    p = _resolve(root.joinpath(*parts))
     if p != root and root not in p.parents:
         raise PathError(f"path escapes {root}")
     return p
