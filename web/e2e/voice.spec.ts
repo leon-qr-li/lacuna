@@ -6,7 +6,10 @@ import { expect, test } from "@playwright/test";
 test.use({ baseURL: "http://127.0.0.1:8798", permissions: ["microphone"] });
 
 test("voice input: talk, stop, text lands in the box, send as usual", async ({ page }) => {
-  await page.goto("/");
+  // don't wait for "load": the episode <audio> holds it until its WAV metadata arrives, which on a
+  // slow macOS runner after earlier tests changed the cut can take most of the timeout; the mic
+  // doesn't need the audio
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   const mic = page.getByTestId("mic");
   await expect(mic).toBeEnabled();
   await expect(mic).toHaveAttribute("title", /本机识别/);
