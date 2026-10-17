@@ -1,7 +1,9 @@
 """FastAPI app: JSON API + streamed audio + the built web UI. Bind to 127.0.0.1 only."""
 from __future__ import annotations
 
+import json
 import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -10,11 +12,21 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from .audio import parse_range
-from .editor import EditorAdapter, make_adapter
+from .editor import EditorAdapter, editor_status, make_adapter
 from .episode import ConflictError, Episode
 from .store import PathError, Workspace
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
+USAGE_LOG = "ai_usage.jsonl"     # one line per Claude call: tokens, seconds, estimated cost
+
+
+def log_usage(path: Path, episode_id: str, usage: dict) -> None:
+    line = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "episode": episode_id, **usage}
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    except OSError:
+        pass      # bookkeeping must never break the chat
 
 
 class PlayheadBody(BaseModel):
@@ -80,7 +92,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     # ------------------------------------------------------------------ API
     @app.get("/api/health")
     def health():
-        return {"ok": True, "workspace": str(ws.root), "editor": adapter.name}
+        return {"ok": True, "workspace": str(ws.root)} | editor_status(adapter)
 
     @app.get("/api/episodes")
     def list_episodes():
@@ -91,7 +103,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
                 out.append({k: s[k] for k in ("id", "title", "demo", "duration", "raw_duration", "pending_review")})
             except Exception as e:   # a broken episode must not hide the others
                 out.append({"id": eid, "title": eid, "error": str(e)})
-        return {"episodes": out, "editor": adapter.name}
+        return {"episodes": out} | editor_status(adapter)
 
     @app.get("/api/episodes/{episode_id}")
     def load_episode(episode_id: str):
@@ -170,7 +182,10 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
 
     @app.post("/api/episodes/{episode_id}/chat")
     def chat(episode_id: str, body: ChatBody):
-        return get(episode_id).chat(body.text, body.playhead, adapter)
+        out = get(episode_id).chat(body.text, body.playhead, adapter)
+        if out.get("usage"):
+            log_usage(ws.root / USAGE_LOG, episode_id, out["usage"])
+        return out
 
     @app.get("/api/episodes/{episode_id}/proposals/{pid}/ab")
     def proposal_ab(episode_id: str, pid: str):
