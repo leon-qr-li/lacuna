@@ -11,6 +11,7 @@ const KIND_LABEL: Record<string, string> = {
   missed: "漏删",
   taste: "品味例子",
   threshold: "把握度",
+  ask: "你说过的",
 };
 
 const STATE_LABEL: Record<string, string> = { candidate: "待你确认", approved: "已生效", rejected: "不采用" };
@@ -54,9 +55,11 @@ export function LearningView() {
         来源：{s.episodes.length ? s.episodes.map((e) => (e.endsWith(".hand_edit") ? `${e.replace(".hand_edit", "")}（你手剪的成品）` : e)).join("、") : "还没有"}。
         审阅里逐条决定 {s.considered} 个；所有来源合计保留 {s.kept}、恢复或没删 {s.restored}、补删 {s.added}。
       </p>
-      <p className="muted small">规则是从你的决定里推断的，只有你点「采用」之后才会影响下一集。随时可以撤回。</p>
+      <p className="muted small">
+        规则是从你的决定和你在 AI 制作人里说的话推断的（每次导出后总结一次对话；说「记住：……」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。
+      </p>
       {ov.rules.length === 0 && (
-        <p className="card">还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。</p>
+        <p className="card">还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。也可以在 AI 制作人里说「记住：……」，直接记一条。</p>
       )}
       <ul className="rules" aria-label="学到的规则">
         {ov.rules.map((r) => (
@@ -81,7 +84,9 @@ export function LearningView() {
                       「{x.text || "（停顿）"}」
                       <span className="muted">
                         {" "}
-                        {x.verdict === "restored" || x.verdict === "declined" ? "你留下了" : "你删了"}
+                        {x.verdict === "said"
+                          ? `你在 ${x.episode} 的对话里说的（${x.reason}）`
+                          : x.verdict === "restored" || x.verdict === "declined" ? "你留下了" : "你删了"}
                         {x.episode.endsWith(".hand_edit") ? "（手剪成品）" : ""}
                       </span>
                     </li>

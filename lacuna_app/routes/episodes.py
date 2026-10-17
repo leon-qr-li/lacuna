@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from ..audio import parse_range
 from ..dictation import Dictation
 from ..editor import editor_status
+from ..chat_learning import remember_text
 from ..episode import ConflictError
 
 
@@ -131,6 +132,8 @@ def register(app, ctx) -> None:
 
     @app.post("/api/episodes/{episode_id}/chat")
     def chat(episode_id: str, body: ChatBody):
+        if (ask := remember_text(body.text)) is not None:      # "记住：……" -> a candidate rule, no AI call
+            return remember(ctx, get(episode_id), ask, body.playhead)
         out = get(episode_id).chat(body.text, body.playhead, adapter)
         if out.get("usage"):
             ctx.log_usage(episode_id, out["usage"])
@@ -152,3 +155,10 @@ def register(app, ctx) -> None:
     def discard(episode_id: str, pid: str, body: PlayheadBody):
         ep = get(episode_id)
         return mutate(ep, body.playhead, lambda: ep.discard_proposal(pid))
+
+
+def remember(ctx, ep, ask: str, playhead: float) -> dict:
+    ctx.provide("chat_learner").asks.remember(ep.id, ask, playhead)   # built by routes/learning.py
+    reply = f"记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。"
+    ep.log_turn(f"记住：{ask}", playhead, reply, remember=True)
+    return {"reply": reply, "notes": [], "adapter": "remember", "proposal": None, "usage": None}
