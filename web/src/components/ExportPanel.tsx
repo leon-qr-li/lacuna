@@ -62,10 +62,10 @@ export function ExportPanel({ id, version }: { id: string; version: string }) {
           <p className="muted small">母带处理：轻压缩 + 响度 −16 LUFS + 真峰值 ≤ −1 dBTP（播客平台标准）。导出的是当前版本，原始录音不变。</p>
           <div className="row gap8">
             <label>
-              <input type="checkbox" checked={mp3} onChange={(e) => setMp3(e.target.checked)} disabled={running} /> MP3（发布用）
+              <input type="checkbox" checked={mp3} onChange={(e) => setMp3(e.target.checked)} disabled={running} /> MP3（体积小，分享 / 备用）
             </label>
             <label>
-              <input type="checkbox" checked={wav} onChange={(e) => setWav(e.target.checked)} disabled={running} /> WAV（存档用）
+              <input type="checkbox" checked={wav} onChange={(e) => setWav(e.target.checked)} disabled={running} /> WAV（上传平台用，音质最好）
             </label>
           </div>
           <button type="button" className="btn btn-primary" onClick={start} disabled={running || (!mp3 && !wav)} data-testid="export-start">
