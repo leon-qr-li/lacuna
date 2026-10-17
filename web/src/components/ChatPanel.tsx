@@ -4,6 +4,7 @@ import type { AB, Episode, Health, Proposal, Usage } from "../api";
 import { api, fmt } from "../api";
 import { ABPlayer } from "./ABPlayer";
 import { MicButton } from "./MicButton";
+import { t } from "../i18n";
 
 interface Msg {
   id: number;
@@ -31,16 +32,18 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
       id: nextId++,
       role: "ai",
       text:
-        `第一刀${ep.demo ? "（演示）" : ""}做好了：${fmt(ep.raw_duration)} → ${fmt(ep.duration)}。` +
-        `有 ${ep.pending_review} 处删得比较多或者动了插话，排在「改动审阅」最前面。` +
-        `听到哪里不对，暂停后直接跟我说。`,
+        (ep.demo
+          ? t("第一刀（演示）做好了：{raw} → {cut}。", { raw: fmt(ep.raw_duration), cut: fmt(ep.duration) })
+          : t("第一刀做好了：{raw} → {cut}。", { raw: fmt(ep.raw_duration), cut: fmt(ep.duration) })) +
+        t("有 {n} 处删得比较多或者动了插话，排在「改动审阅」最前面。", { n: ep.pending_review }) +
+        t("听到哪里不对，暂停后直接跟我说。"),
     },
   ]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [abs, setAbs] = useState<Record<string, AB | "loading">>({});
   const [health, setHealth] = useState<Health | null>(null);
-  const [hint, setHint] = useState("比如：停顿短一点 / 恢复这处 / 删掉这句");
+  const [hint, setHint] = useState(t("比如：停顿短一点 / 恢复这处 / 删掉这句"));
   const claude = health?.editor === "claude";
   const input = useRef<HTMLTextAreaElement>(null);
   const log = useRef<HTMLDivElement>(null);
@@ -50,8 +53,8 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
       .health()
       .then((h) => {
         setHealth(h);
-        if (h.editor === "claude") setHint("比如：这段跑题了删掉 / 停顿短一点 / 把刚才删的那句恢复");
-        else push({ role: "ai", text: `现在用的是演示规则（${h.editor_note}），只听得懂几种固定说法。` });
+        if (h.editor === "claude") setHint(t("比如：这段跑题了删掉 / 停顿短一点 / 把刚才删的那句恢复"));
+        else push({ role: "ai", text: t("现在用的是演示规则（{editor_note}），只听得懂几种固定说法。", { editor_note: h.editor_note }) });
       })
       .catch(() => {
         /* the chat still works; the badge just stays unknown */
@@ -68,15 +71,15 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
-    const t = text.trim();
-    if (!t || busy) return;
+    const said = text.trim();
+    if (!said || busy) return;
     const at = time;
     setMsgs((ms) => ms.map((m) => (m.pstate === "pending" ? { ...m, pstate: "discarded" } : m)));
-    push({ role: "user", text: t, at });
+    push({ role: "user", text: said, at });
     setText("");
     setBusy(true);
     try {
-      const r = await api.chat(ep.id, t, at);
+      const r = await api.chat(ep.id, said, at);
       push({
         role: "ai",
         text: r.reply,
@@ -87,7 +90,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
       });
       onEpisode(await api.episode(ep.id));
     } catch (err) {
-      push({ role: "ai", text: `出错了：${(err as Error).message}` });
+      push({ role: "ai", text: t("出错了：{message}", { message: (err as Error).message }) });
     } finally {
       setBusy(false);
     }
@@ -103,7 +106,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
         const { [p.id]: _drop, ...rest } = a;
         return rest;
       });
-      push({ role: "ai", text: `试听渲染失败：${(err as Error).message}` });
+      push({ role: "ai", text: t("试听渲染失败：{message}", { message: (err as Error).message }) });
     }
   };
 
@@ -112,7 +115,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
       onEpisode(await api.approve(ep.id, p.id, time));
       setP(p.id, "approved");
     } catch (err) {
-      push({ role: "ai", text: `没能应用：${(err as Error).message}` });
+      push({ role: "ai", text: t("没能应用：{message}", { message: (err as Error).message }) });
     }
   };
 
@@ -123,21 +126,21 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
       /* already gone */
     }
     setP(p.id, "discarded");
-    setHint("说说要怎么改，比如：再短一点 / 只删后半句");
+    setHint(t("说说要怎么改，比如：再短一点 / 只删后半句"));
     input.current?.focus();
   };
 
   return (
-    <section className="chat" aria-label="AI 制作人对话">
+    <section className="chat" aria-label={t("AI 制作人对话")}>
       <h2 className="chat-title">
-        AI 制作人{" "}
+        {t("AI 制作人")}{" "}
         {health && (
           <span
             className={`chip small ${claude ? "chip-ok" : ""}`}
             data-testid="editor-badge"
-            title={claude ? "接的是 Claude API（只发送逐字稿和数字，不发送音频）" : health.editor_note}
+            title={claude ? t("接的是 Claude API（只发送逐字稿和数字，不发送音频）") : health.editor_note}
           >
-            {claude ? "Claude" : "演示规则"}
+            {claude ? "Claude" : t("演示规则")}
           </span>
         )}
       </h2>
@@ -153,7 +156,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             ))}
             {m.usage && (
               <div className="meta muted small mono" data-testid="usage">
-                Claude · {m.usage.seconds.toFixed(1)} 秒 · ≈${m.usage.cost_usd.toFixed(3)}
+                Claude · {t("{s} 秒 · ≈${cost}", { s: m.usage.seconds.toFixed(1), cost: m.usage.cost_usd.toFixed(3) })}
               </div>
             )}
             {m.proposal && (
@@ -169,11 +172,11 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             )}
           </div>
         ))}
-        {busy && <div className="msg msg-ai muted">{claude ? "Claude 正在看这附近的逐字稿…" : "正在看这附近…"}</div>}
+        {busy && <div className="msg msg-ai muted">{claude ? t("Claude 正在看这附近的逐字稿…") : t("正在看这附近…")}</div>}
       </div>
       <form className="chat-form" onSubmit={send}>
         <label htmlFor="say" className="sr-only">
-          对 AI 制作人说（锚定在当前播放位置）
+          {t("对 AI 制作人说（锚定在当前播放位置）")}
         </label>
         <GrowText
           id="say"
@@ -184,7 +187,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
           autoComplete="off"
         />
         <div className="chat-form-row">
-          <span className="at-chip mono" title="指令锚定在当前播放位置">
+          <span className="at-chip mono" title={t("指令锚定在当前播放位置")}>
             @ {fmt(time)}
           </span>
           <span className="grow" />
@@ -200,7 +203,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             onError={(msg) => push({ role: "ai", text: msg })}
           />
           <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>
-            发送
+            {t("发送")}
           </button>
         </div>
       </form>
@@ -225,28 +228,28 @@ function ProposalCard({
   onAgain: () => void;
   onPlay: () => void;
 }) {
-  if (state === "approved") return <div className="pstate ok">✓ 已批准并应用：{p.title}</div>;
-  if (state === "discarded") return <div className="pstate muted">已放弃这个建议</div>;
+  if (state === "approved") return <div className="pstate ok">{t("✓ 已批准并应用：{title}", { title: p.title })}</div>;
+  if (state === "discarded") return <div className="pstate muted">{t("已放弃这个建议")}</div>;
   return (
     <div className="proposal" data-testid="proposal">
       <div className="row wrap gap8">
         {!ab && (
           <button type="button" className="btn btn-outline-accent" onClick={onPreview}>
-            试听前后对比
+            {t("试听前后对比")}
           </button>
         )}
         <button type="button" className="btn btn-primary" onClick={onApprove}>
-          批准
+          {t("批准")}
         </button>
         <button type="button" className="btn btn-outline" onClick={onAgain}>
-          再改
+          {t("再改")}
         </button>
       </div>
       {ab && (
         <ABPlayer
           ab={ab === "loading" ? null : ab}
           loading={ab === "loading"}
-          labels={["现在", "改后"]}
+          labels={[t("现在"), t("改后")]}
           onPlay={onPlay}
         />
       )}

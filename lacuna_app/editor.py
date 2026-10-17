@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .analysis import Span
+from .i18n import in_reply_language, tr
 
 TARGET_PAUSE_S = 0.4
 MAX_SENTENCE_S = 25.0
@@ -119,47 +120,45 @@ class MockEditorAdapter:
         for kind, rx in self.RULES:
             if rx.search(text):
                 return getattr(self, f"_{kind}")(ctx)
-        return Proposal("我（演示用规则引擎）目前只听得懂：「停顿短一点」「恢复这处」「删掉这句」。"
-                        "接上 Claude 之后可以说更自由的话。")
+        return Proposal(tr("我（演示用规则引擎）目前只听得懂：「停顿短一点」「恢复这处」「删掉这句」。接上 Claude 之后可以说更自由的话。"))
 
     def _restore(self, ctx: ChatContext) -> Proposal:
         cands = [e for e in ctx.nearby_edits if e["status"] == "applied" and e["category"] != "loudness"]
         if not cands:
-            return Proposal("这附近 20 秒内没有已应用的改动可以恢复。")
+            return Proposal(tr("这附近 20 秒内没有已应用的改动可以恢复。"))
         # prefer the closest edit at or before the playhead ("前面那句"), else the closest after
         before = [e for e in cands if e["t"] <= ctx.playhead + 0.5]
         e = (max(before, key=lambda e: e["t"]) if before
              else min(cands, key=lambda e: abs(e["t"] - ctx.playhead)))
-        return Proposal(f"恢复 {_fmt(e['t'])} 的「{e['title']}」，原话放回去。", action="restore",
-                        edit_id=e["id"], title=f"恢复：{e['title']}",
-                        reason="按你的指令恢复", confidence=1.0)
+        return Proposal(tr("恢复 {p0} 的「{title}」，原话放回去。", p0=_fmt(e['t']), title=e['title']), action="restore",
+                        edit_id=e["id"], title=tr("恢复：{title}", title=e['title']),
+                        reason=tr("按你的指令恢复"), confidence=1.0)
 
     def _pause(self, ctx: ChatContext) -> Proposal:
         long = [p for p in ctx.pauses if p.length >= TARGET_PAUSE_S + 0.3]
         if not long:
-            return Proposal("附近没有明显偏长的停顿（都在 0.7 秒以内），先不动。")
+            return Proposal(tr("附近没有明显偏长的停顿（都在 0.7 秒以内），先不动。"))
         p = min(long, key=lambda p: (abs((p.start + p.end) / 2 - ctx.playhead)))
         cut = p.length - TARGET_PAUSE_S
         a = round(p.start + TARGET_PAUSE_S / 2, 3)
-        return Proposal(f"把 {_fmt(p.start)} 的停顿从 {p.length:.1f} 秒收到 {TARGET_PAUSE_S} 秒。",
+        return Proposal(tr("把 {p0} 的停顿从 {length} 秒收到 {TARGET_PAUSE_S} 秒。", p0=_fmt(p.start), length=f"{p.length:.1f}", TARGET_PAUSE_S=TARGET_PAUSE_S),
                         action="cut", start=a, end=round(a + cut, 3), category="pause",
-                        title=f"停顿 {p.length:.1f}s → {TARGET_PAUSE_S}s",
-                        reason="按你的指令收紧停顿", confidence=0.9)
+                        title=tr("停顿 {length}s → {TARGET_PAUSE_S}s", length=f"{p.length:.1f}", TARGET_PAUSE_S=TARGET_PAUSE_S),
+                        reason=tr("按你的指令收紧停顿"), confidence=0.9)
 
     def _sentence(self, ctx: ChatContext) -> Proposal:
         s = ctx.sentence
         if s is None:
-            return Proposal("没找到播放点附近的这句话。")
+            return Proposal(tr("没找到播放点附近的这句话。"))
         if s.length > MAX_SENTENCE_S:
-            return Proposal(f"这段连续说了 {s.length:.0f} 秒，太长了，不确定你说的是哪一句。"
-                            "可以停在那句话开头再说一次。")
+            return Proposal(tr("这段连续说了 {length} 秒，太长了，不确定你说的是哪一句。可以停在那句话开头再说一次。", length=f"{s.length:.0f}"))
         after = [p for p in ctx.pauses if p.start >= s.end - 0.01]
         gap = after[0].length if after else 0.0
         end = s.end + max(0.0, gap - TARGET_PAUSE_S)       # take the following pause down too
-        return Proposal(f"删掉 {_fmt(s.start)} 开始的这句（{s.length:.1f} 秒）。", action="cut",
+        return Proposal(tr("删掉 {p0} 开始的这句（{length} 秒）。", p0=_fmt(s.start), length=f"{s.length:.1f}"), action="cut",
                         start=round(s.start, 3), end=round(end, 3), category="content",
-                        title=f"删除 {end - s.start:.1f} 秒 · 按指令删句",
-                        reason="按你的指令删除这句话", confidence=0.6)
+                        title=tr("删除 {p0} 秒 · 按指令删句", p0=f"{end - s.start:.1f}"),
+                        reason=tr("按你的指令删除这句话"), confidence=0.6)
 
 
 # ---------------------------------------------------------------------------- Claude
@@ -221,7 +220,7 @@ def save_api_key(key: str) -> str:
     """Store the key where `find_api_key` looks for it on this OS; returns where. Never logs it."""
     key = key.strip().strip('"')
     if len(key) < 20 or any(c.isspace() for c in key):
-        raise ValueError("这不像一个 API key（应该是 sk-ant- 开头的一长串）")
+        raise ValueError(tr("这不像一个 API key（应该是 sk-ant- 开头的一长串）"))
     if sys.platform == "win32":
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as k:
@@ -231,7 +230,7 @@ def save_api_key(key: str) -> str:
         out = subprocess.run(["security", "add-generic-password", "-U", "-s", KEYCHAIN_SERVICE, "-a", KEYCHAIN_ACCOUNT,
                               "-w", key], capture_output=True, text=True, timeout=20)
         if out.returncode != 0:
-            raise OSError(f"存进钥匙串失败：{out.stderr.strip()}")
+            raise OSError(tr("存进钥匙串失败：{p0}", p0=out.stderr.strip()))
         where = "keychain"
     else:
         f = _key_file()
@@ -305,7 +304,7 @@ use it for one host's interjection or noise over the other host's speech.
 - restore: undo nearby edit `edit` so the original audio comes back.
 Use an empty actions list when nothing should change. The host previews every proposal before \
 it is applied. `message` says in one or two short sentences what will change and where (m:ss); \
-`title` is a short label of the change; confidence is how sure you are this is what the host wants."""
+`title` is a short label of the change; confidence is how sure you are this is what the host wants."""  # i18n-ignore
 
 _ID = {"type": ["string", "null"]}
 TOOL = {
@@ -397,14 +396,14 @@ class ClaudeEditorAdapter:
         return self._client
 
     def build_request(self, ctx: ChatContext) -> dict:
-        return dict(model=self.model, max_tokens=8000, system=SYSTEM,
+        return dict(model=self.model, max_tokens=8000, system=in_reply_language(SYSTEM),
                     output_config={"effort": self.effort},
-                    tools=[TOOL], tool_choice={"type": "auto"},
+                    tools=[in_reply_language(TOOL)], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": json.dumps(scene(ctx), ensure_ascii=False)}])
 
     def propose(self, ctx: ChatContext) -> Proposal:
         if not self.available:
-            return Proposal("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），AI 制作人暂时不可用。")
+            return Proposal(tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），AI 制作人暂时不可用。"))
         t0 = time.monotonic()
         try:
             resp = self._call(ctx)
@@ -412,7 +411,7 @@ class ClaudeEditorAdapter:
             return Proposal(error_message(e))
         usage = self._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            p = Proposal("Claude 没有处理这条指令，这次没有改动。")
+            p = Proposal(tr("Claude 没有处理这条指令，这次没有改动。"))
         else:
             p = None
             for block in resp.content:
@@ -421,8 +420,8 @@ class ClaudeEditorAdapter:
                     break
             if p is None:
                 text = "".join(b.text for b in resp.content if b.type == "text").strip()
-                p = Proposal(text or ("回答被截断了，这次没有改动。" if resp.stop_reason == "max_tokens"
-                                      else "Claude 没有给出改动建议。"))
+                p = Proposal(text or (tr("回答被截断了，这次没有改动。") if resp.stop_reason == "max_tokens"
+                                      else tr("Claude 没有给出改动建议。")))
         p.usage = usage
         return p
 
@@ -445,31 +444,34 @@ class ClaudeEditorAdapter:
                 "request_id": getattr(resp, "_request_id", None)}
 
 
-def error_message(e: Exception) -> str:
-    """A short Chinese explanation of an API failure (nothing was changed)."""
+def error_message(e: Exception, tail: str | None = None) -> str:
+    """A short explanation of an API failure, in the interface language. `tail` defaults to
+    "nothing was changed"; pass "" to leave it off or another sentence to replace it."""
     try:
         import anthropic
     except ImportError:
-        return f"调用 Claude 失败（{type(e).__name__}），这次没有改动。"
-    tail = "，这次没有改动。"
+        anthropic = None
+    tail = tr("，这次没有改动。") if tail is None else tail
+    if anthropic is None:
+        return tr("调用 Claude 失败（{name}）", name=type(e).__name__) + tail
     if isinstance(e, anthropic.APITimeoutError):
-        return "Claude 太久没有回应（超时）" + tail
+        return tr("Claude 太久没有回应（超时）") + tail
     if isinstance(e, anthropic.APIConnectionError):
-        return "连不上 Claude（网络问题）" + tail
+        return tr("连不上 Claude（网络问题）") + tail
     if isinstance(e, anthropic.AuthenticationError):
-        return "API key 无效或已被撤销（401），请在 Console 检查 key" + tail
+        return tr("API key 无效或已被撤销（401），请在 Console 检查 key") + tail
     if isinstance(e, anthropic.PermissionDeniedError):
-        return "这个 API key 没有调用权限（403）" + tail
+        return tr("这个 API key 没有调用权限（403）") + tail
     if isinstance(e, anthropic.RateLimitError):
-        return "请求太频繁，被限流了（429），等一会儿再说" + tail
+        return tr("请求太频繁，被限流了（429），等一会儿再说") + tail
     if isinstance(e, anthropic.APIStatusError):
         msg = str(getattr(e, "message", "") or e).lower()
         if "credit" in msg or "billing" in msg or "balance" in msg:
-            return "API 额度用完了（或账单未开通），请在 Console 的 Billing 查看" + tail
+            return tr("API 额度用完了（或账单未开通），请在 Console 的 Billing 查看") + tail
         if e.status_code in (500, 502, 503, 504, 529):
-            return f"Claude 暂时繁忙（{e.status_code}），稍后再试" + tail
-        return f"Claude 返回错误（{e.status_code}）" + tail
-    return f"调用 Claude 失败（{type(e).__name__}）" + tail
+            return tr("Claude 暂时繁忙（{status_code}），稍后再试", status_code=e.status_code) + tail
+        return tr("Claude 返回错误（{status_code}）", status_code=e.status_code) + tail
+    return tr("调用 Claude 失败（{name}）", name=type(e).__name__) + tail
 
 
 # ---------------------------------------------------------------------------- resolving ids
@@ -506,7 +508,7 @@ class _Unresolved(ValueError):
 def _select(a: dict, utts: dict[str, Utterance]) -> tuple[Utterance, int, Utterance, int]:
     u1 = utts.get(a.get("from_utterance") or "")
     if u1 is None:
-        raise _Unresolved(f"没有片段 {a.get('from_utterance')}")
+        raise _Unresolved(tr("没有片段 {p0}", p0=a.get('from_utterance')))
     u2 = utts.get(a.get("to_utterance") or "") or u1
     if u2.start < u1.start:
         u1, u2 = u2, u1
@@ -514,15 +516,15 @@ def _select(a: dict, utts: dict[str, Utterance]) -> tuple[Utterance, int, Uttera
     if a.get("start_text"):
         loc = _locate(u1, a["start_text"])
         if loc is None:
-            raise _Unresolved(f"在 {u1.id} 里找不到「{a['start_text']}」")
+            raise _Unresolved(tr("在 {id} 里找不到「{start_text}」", id=u1.id, start_text=a['start_text']))
         i1 = loc[0]
     if a.get("end_text"):
         loc = _locate(u2, a["end_text"], after=i1 if u2 is u1 else 0)
         if loc is None:
-            raise _Unresolved(f"在 {u2.id} 里找不到「{a['end_text']}」")
+            raise _Unresolved(tr("在 {id} 里找不到「{end_text}」", id=u2.id, end_text=a['end_text']))
         j2 = loc[1]
     if u1 is u2 and j2 < i1:
-        raise _Unresolved("起止文字顺序反了")
+        raise _Unresolved(tr("起止文字顺序反了"))
     return u1, i1, u2, j2
 
 
@@ -546,14 +548,14 @@ def _range_cut(a: dict, ctx: ChatContext, utts: dict[str, Utterance]) -> tuple[d
     note = None
     if caught:
         other = next(sp for sp, _ in allw if sp not in speakers)
-        note = f"注意：这段里 {other} 也有「{caught[:16]}{'…' if len(caught) > 16 else ''}」会一起删掉。"
+        note = tr("注意：这段里 {other} 也有「{words}」会一起删掉。", other=other, words=caught[:16] + ('…' if len(caught) > 16 else ''))
     return cut, note
 
 
 def _track_cut(a: dict, ctx: ChatContext, utts: dict[str, Utterance]) -> dict:
     u1, i1, u2, j2 = _select(a, utts)
     if u1.speaker != u2.speaker:
-        raise _Unresolved("单轨删除只能选同一个人的话")
+        raise _Unresolved(tr("单轨删除只能选同一个人的话"))
     start, end = u1.words[i1].start, u2.words[j2].end
     return {"start": round(max(0.0, start - 0.03), 3), "end": round(end + 0.03, 3), "track": u1.speaker}
 
@@ -571,7 +573,7 @@ def resolve(d: dict, ctx: ChatContext) -> Proposal:
         p.category = "chat"
     actions = [a for a in (d.get("actions") or []) if isinstance(a, dict)]
     if len(actions) > MAX_ACTIONS:
-        p.notes.append(f"一次最多 {MAX_ACTIONS} 处，后面的先不动。")
+        p.notes.append(tr("一次最多 {MAX_ACTIONS} 处，后面的先不动。", MAX_ACTIONS=MAX_ACTIONS))
         actions = actions[:MAX_ACTIONS]
     utts = {u.id: u for u in ctx.utterances}
     edits = {e["id"]: e for e in ctx.nearby_edits}
@@ -589,31 +591,31 @@ def resolve(d: dict, ctx: ChatContext) -> Proposal:
             elif kind == "shorten_pause":
                 m = re.fullmatch(r"p(\d+)", str(a.get("pause") or ""))
                 if not m or not 1 <= int(m.group(1)) <= len(ctx.pauses):
-                    raise _Unresolved(f"没有停顿 {a.get('pause')}")
+                    raise _Unresolved(tr("没有停顿 {p0}", p0=a.get('pause')))
                 sp = ctx.pauses[int(m.group(1)) - 1]
                 target = a.get("target_s")
                 target = TARGET_PAUSE_S if target is None else max(0.15, min(2.0, float(target)))
                 if sp.length - target < 0.1:
-                    raise _Unresolved(f"{_fmt(sp.start)} 的停顿只有 {sp.length:.1f} 秒，已经够短")
+                    raise _Unresolved(tr("{p0} 的停顿只有 {length} 秒，已经够短", p0=_fmt(sp.start), length=f"{sp.length:.1f}"))
                 p.cuts.append({"start": round(sp.start + target / 2, 3), "end": round(sp.end - target / 2, 3),
                                "track": None})
             elif kind == "restore":
                 e = edits.get(a.get("edit") or "")
                 if e is None:
-                    raise _Unresolved(f"附近没有改动 {a.get('edit')}")
+                    raise _Unresolved(tr("附近没有改动 {p0}", p0=a.get('edit')))
                 if e.get("status") != "applied":
-                    raise _Unresolved(f"「{e.get('title')}」已经是原话了")
+                    raise _Unresolved(tr("「{p0}」已经是原话了", p0=e.get('title')))
                 if e["id"] not in p.restores:
                     p.restores.append(e["id"])
             else:
-                raise _Unresolved(f"不认识的动作 {kind}")
+                raise _Unresolved(tr("不认识的动作 {kind}", kind=kind))
         except (_Unresolved, TypeError, ValueError) as err:
             failed += 1
-            p.notes.append(f"有一处没对上（{err}），没有采用。")
+            p.notes.append(tr("有一处没对上（{err}），没有采用。", err=err))
     if actions and failed == len(actions):
-        p.notes.append("这次没有改动，可以换个说法再试。")
+        p.notes.append(tr("这次没有改动，可以换个说法再试。"))
     if not p.message:
-        p.message = "好的。" if (p.cuts or p.restores) else "这次没有改动。"
+        p.message = tr("好的。") if (p.cuts or p.restores) else tr("这次没有改动。")
     return p
 
 
@@ -623,11 +625,11 @@ def editor_status(adapter: EditorAdapter) -> dict:
         return {"editor": "claude", "editor_note": ""}
     key, _ = find_api_key()
     if key and not sdk_installed():
-        note = "找到了 API key，但没装 anthropic 包（pip install -e \".[claude]\"）"
+        note = tr("找到了 API key，但没装 anthropic 包（pip install -e \".[claude]\"）")
     elif not key:
-        note = "没找到 ANTHROPIC_API_KEY"
+        note = tr("没找到 ANTHROPIC_API_KEY")
     else:
-        note = "以演示规则启动（--editor mock）"
+        note = tr("以演示规则启动（--editor mock）")
     return {"editor": adapter.name, "editor_note": note}
 
 

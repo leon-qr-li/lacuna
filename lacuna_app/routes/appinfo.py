@@ -7,6 +7,7 @@ from ..editor import find_api_key, sdk_installed
 from ..exporter import Exporter
 from ..importer import Importer
 from .publish import publisher_of
+from ..i18n import tr
 
 
 def register(app, ctx) -> None:
@@ -19,11 +20,11 @@ def register(app, ctx) -> None:
         """Work an update restart would cut off."""
         out = []
         if importer._running:
-            out.append(f"导入（{importer._running}）")
+            out.append(tr("导入（{_running}）", _running=importer._running))
         if exporter._running:
-            out.append(f"导出（{exporter._running}）")
+            out.append(tr("导出（{_running}）", _running=exporter._running))
         if any(j.get("state") == "running" for j in list(publisher.jobs.values())):
-            out.append("生成发布资料")
+            out.append(tr("生成发布资料"))
         return out
 
     def key_status() -> dict:

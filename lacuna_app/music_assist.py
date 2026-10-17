@@ -22,6 +22,7 @@ from typing import Any
 from .episode import ConflictError, to_tl
 from .library import KINDS, ROLE_FOR_KIND, credit_line
 from .music import ANCHORED, APPLIED, ROLES, EpisodeMusic
+from .i18n import N_, in_reply_language, join_list, lang, tr
 
 MIN_BREAK_S = 0.6          # a pause this long between utterances can take an interlude
 SNAP_WINDOW_S = 4.0
@@ -139,7 +140,7 @@ def auto_place(m: EpisodeMusic) -> dict:
             p.update(src_in_s=t.get("src_in_s"), src_out_s=t.get("src_out_s"), overlap_s=t.get("overlap_s"),
                      gain_db=t.get("gain_db") or 0.0)
         ps.append(p)
-        changes.append({"pid": p["id"], "kind": "add", "text": f"{ROLES[role]}：{credit_line(a)}"})
+        changes.append({"pid": p["id"], "kind": "add", "text": tr("{role}：{credit}", role=tr(ROLES[role]), credit=credit_line(a))})
     a = pick("interlude")
     if "interlude" not in have and a is not None:
         cands = break_candidates(m)
@@ -147,20 +148,20 @@ def auto_place(m: EpisodeMusic) -> dict:
         p["at_base"] = m._voice_to_base(cands[0])
         ps.append(p)
         alternatives[p["id"]] = cands[1:]
-        why = "话题之间的停顿" if chapter_starts(m) else "对话里较长的停顿"
-        changes.append({"pid": p["id"], "kind": "add", "text": f"间奏：{credit_line(a)}，放在{why}处",
+        why = tr("话题之间的停顿") if chapter_starts(m) else tr("对话里较长的停顿")
+        changes.append({"pid": p["id"], "kind": "add", "text": tr("间奏：{p0}，放在{why}处", p0=credit_line(a), why=why),
                         "voice_s": cands[0]})
     for kind in ("bed", "dialogue", "trailer"):
         if any(x.get("kind") == kind for x in assets) and ROLE_FOR_KIND[kind] not in have:
-            left.append(KINDS[kind])
+            left.append(tr(KINDS[kind]))
     if not changes:
-        msg = "按用途能自动放的都已经放好了。" if have else "素材库里还没有标成片头、片尾或休息间隙的音乐。"
+        msg = tr("按用途能自动放的都已经放好了。") if have else tr("素材库里还没有标成片头、片尾或休息间隙的音乐。")
         if left:
-            msg += f"{'、'.join(left)}要放在哪由你定，可以在下面跟 Claude 说。"
+            msg += tr("{p0}要放在哪由你定，可以在下面跟 Claude 说。", p0=join_list(left))
         return {"draft": None, "message": msg}
-    msg = "按素材的用途放好了，先试听，满意再点「采用」。"
+    msg = tr("按素材的用途放好了，先试听，满意再点「采用」。")
     if left:
-        msg += f"{'、'.join(left)}放哪要你定，可以在下面跟 Claude 说。"
+        msg += tr("{p0}放哪要你定，可以在下面跟 Claude 说。", p0=join_list(left))
     m.set_draft(ps, changes, msg, "auto", alternatives)
     return {"draft": m.draft_view(), "message": msg}
 
@@ -190,7 +191,7 @@ Leave unused fields null. Use an empty list when nothing should change, and when
 which music or where, ask one short question in `message` instead of guessing. Positions are \
 snapped to the nearest pause automatically. `message` (Simplified Chinese, one or two short \
 sentences) says what will change and where (m:ss). The host hears your suggestion before it is \
-applied."""
+applied."""  # i18n-ignore
 
 _N = {"type": ["number", "null"]}
 _S = {"type": ["string", "null"]}
@@ -277,11 +278,11 @@ def apply_actions(m: EpisodeMusic, actions: list[dict]) -> tuple[list[dict], lis
             asset = assets.get(a.get("asset_id") or "")
             role = a.get("role")
             if asset is None or role not in ROLES:
-                raise ValueError("要放的音乐或用途不对")
+                raise ValueError(tr("要放的音乐或用途不对"))
             p = _new(asset["id"], role, "chat")
             if role in ANCHORED:
                 if a.get("at_s") is None:
-                    raise ValueError(f"{ROLES[role]}需要一个位置")
+                    raise ValueError(tr("{p0}需要一个位置", p0=tr(ROLES[role])))
                 p["at_base"] = m._voice_to_base(voice_at(a["at_s"], None))
                 if role == "bed" and a.get("until_s") is not None:
                     p["until_base"] = m._voice_to_base(voice_at(a["until_s"], None))
@@ -292,38 +293,40 @@ def apply_actions(m: EpisodeMusic, actions: list[dict]) -> tuple[list[dict], lis
                     p[k] = a[k]
             ps.append(p)
             by[p["id"]] = p
-            changes.append({"pid": p["id"], "kind": "add", "text": f"加{ROLES[role]}：{credit_line(asset)}"
-                            + (f"，在 {_mmss(a['at_s'])}" if a.get("at_s") is not None else "")})
+            changes.append({"pid": p["id"], "kind": "add", "text": tr("加{p0}：{p1}", p0=tr(ROLES[role]), p1=credit_line(asset))
+                            + (tr("，在 {p0}", p0=_mmss(a['at_s'])) if a.get("at_s") is not None else "")})
             continue
         p = by.get(a.get("placement_id") or "")
         if p is None:
-            raise ValueError(f"没有这段配乐：{a.get('placement_id')}")
-        label = ROLES[p["role"]]
+            raise ValueError(tr("没有这段配乐：{p0}", p0=a.get('placement_id')))
+        label = tr(ROLES[p["role"]])
         if t == "remove":
             ps = [x for x in ps if x["id"] != p["id"]]
-            changes.append({"pid": p["id"], "kind": "remove", "text": f"去掉{label}"})
+            changes.append({"pid": p["id"], "kind": "remove", "text": tr("去掉{label}", label=label)})
         elif t == "move":
             if p["role"] not in ANCHORED:
-                raise ValueError(f"{label}的位置是固定的（开头 / 结尾），可以改重叠时间")
+                raise ValueError(tr("{label}的位置是固定的（开头 / 结尾），可以改重叠时间", label=label))
             old = (anchors.get(p["id"]) or 0) / sr
             to = a["at_s"] if a.get("at_s") is not None else old + float(a.get("shift_s") or 0.0)
             p["at_base"] = m._voice_to_base(voice_at(max(to, 0.0), p["id"]))
-            changes.append({"pid": p["id"], "kind": "move", "text": f"{label}从 {_mmss(old)} 挪到约 {_mmss(to)}"})
+            changes.append({"pid": p["id"], "kind": "move", "text": tr("{label}从 {p1} 挪到约 {p2}", label=label, p1=_mmss(old), p2=_mmss(to))})
         elif t == "set":
             bits = []
             if a.get("gain_db") is not None or a.get("gain_change_db") is not None:
                 g = a["gain_db"] if a.get("gain_db") is not None else float(p.get("gain_db") or 0) + a["gain_change_db"]
                 p["gain_db"] = round(min(max(g, -30.0), 12.0), 1)
-                bits.append(f"音量 {p['gain_db']:+.0f} dB")
-            for k, name in (("src_in_s", "从文件第"), ("src_out_s", "到文件第"), ("overlap_s", "和人声重叠")):
+                bits.append(tr("音量 {gain_db} dB", gain_db=f"{p['gain_db']:+.0f}"))
+            for k, what in (("src_in_s", N_("从文件第 {s} 秒")), ("src_out_s", N_("到文件第 {s} 秒")),
+                             ("overlap_s", N_("和人声重叠 {s} 秒"))):
                 if a.get(k) is not None:
                     p[k] = a[k]
-                    bits.append(f"{name} {a[k]:.1f} 秒")
+                    bits.append(tr(what, s=f"{a[k]:.1f}"))
             if not bits:
-                raise ValueError("没有说要改什么")
-            changes.append({"pid": p["id"], "kind": "set", "text": f"{label}：{'，'.join(bits)}"})
+                raise ValueError(tr("没有说要改什么"))
+            changes.append({"pid": p["id"], "kind": "set", "text": tr("{label}：{changes}", label=label,
+                                                                changes=(", " if lang() == "en" else "，").join(bits))})
         else:
-            raise ValueError(f"不认识的动作 {t}")
+            raise ValueError(tr("不认识的动作 {t}", t=t))
     return ps, changes
 
 
@@ -350,10 +353,10 @@ class MusicChat:
         """-> {"message", "draft" (or None), "usage"}. Failures come back as a message."""
         from .editor import ClaudeEditorAdapter, error_message
         if not self.available():
-            return {"message": "没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），Claude 暂时不能改配乐。",
+            return {"message": tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），Claude 暂时不能改配乐。"),
                     "draft": None, "usage": None}
-        req = dict(model=self.model, max_tokens=4000, system=SYSTEM, output_config={"effort": "low"},
-                   tools=[TOOL], tool_choice={"type": "tool", "name": "arrange_music"},
+        req = dict(model=self.model, max_tokens=4000, system=in_reply_language(SYSTEM), output_config={"effort": "low"},
+                   tools=[in_reply_language(TOOL)], tool_choice={"type": "tool", "name": "arrange_music"},
                    messages=[{"role": "user", "content": json.dumps(context(m, instruction), ensure_ascii=False)}])
         t0 = time.monotonic()
         try:
@@ -365,13 +368,13 @@ class MusicChat:
         out = next((dict(b.input) for b in resp.content if b.type == "tool_use" and b.name == "arrange_music"), None)
         if out is None:
             text = "".join(getattr(b, "text", "") for b in resp.content if b.type == "text").strip()
-            return {"message": text or "Claude 没有给出修改。", "draft": None, "usage": usage}
+            return {"message": text or tr("Claude 没有给出修改。"), "draft": None, "usage": usage}
         msg = out.get("message") or ""
         if not out.get("actions"):
-            return {"message": msg or "没有要改的。", "draft": None, "usage": usage}
+            return {"message": msg or tr("没有要改的。"), "draft": None, "usage": usage}
         try:
             ps, changes = apply_actions(m, out["actions"])
             m.set_draft(ps, changes, msg, "chat")
         except (ValueError, ConflictError, KeyError) as e:
-            return {"message": f"{msg}（没法照做：{e}）" if msg else f"没法照做：{e}", "draft": None, "usage": usage}
+            return {"message": tr("{msg}（没法照做：{e}）", msg=msg, e=e) if msg else tr("没法照做：{e}", e=e), "draft": None, "usage": usage}
         return {"message": msg, "draft": m.draft_view(), "usage": usage}

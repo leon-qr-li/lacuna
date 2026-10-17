@@ -11,6 +11,7 @@ from ..editor import editor_status
 from ..chat_learning import remember_text
 from ..episode import ConflictError
 from ..episode_index import EpisodeIndex
+from ..i18n import tr
 
 
 class PlayheadBody(BaseModel):
@@ -33,7 +34,7 @@ class ChatBody(BaseModel):
 
 class OpBody(PlayheadBody):
     op: dict
-    title: str = Field("手动修改", max_length=200)
+    title: str = Field("手动修改", max_length=200)  # i18n-ignore
     reason: str = Field("", max_length=2000)
 
 
@@ -154,6 +155,6 @@ def register(app, ctx) -> None:
 
 def remember(ctx, ep, ask: str, playhead: float) -> dict:
     ctx.provide("chat_learner").asks.remember(ep.id, ask, playhead)   # built by routes/learning.py
-    reply = f"记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。"
-    ep.log_turn(f"记住：{ask}", playhead, reply, remember=True)
+    reply = tr("记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。", ask=ask)
+    ep.log_turn(f"记住：{ask}", playhead, reply, remember=True)  # i18n-ignore
     return {"reply": reply, "notes": [], "adapter": "remember", "proposal": None, "usage": None}

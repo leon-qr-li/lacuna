@@ -35,6 +35,7 @@ from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_instal
 from .episode import Episode
 from .publish import Publisher, episode_label
 from .store import POSTER_FILE, Workspace, atomic_write_json, inside, read_json
+from .i18n import N_, tr
 
 POSTER_SCHEMA = 1
 PROMPTS = Path(__file__).resolve().parent / "prompts"
@@ -48,21 +49,21 @@ MAX_INSTRUCTION = 500
 
 # (key, label for Leon, brief for Claude)
 DIRECTIONS: list[tuple[str, str, str]] = [
-    ("emblem", "一个意象",
+    ("emblem", N_("一个意象"),
      "ONE EMBLEM: a single iconic object or symbol, centred and large, that fuses the episode's main "
      "film with what the hosts made of it (like the OBSESSION and THE ODYSSEY examples)."),
-    ("pairing", "并置",
+    ("pairing", N_("并置"),
      "SIDE BY SIDE: the films of this episode placed next to each other (grid, diptych, split frame or "
      "mirrored halves), one clear motif each, so the cover shows how the episode connects them "
      "(like the EP001 example)."),
-    ("geometry", "色块与几何",
+    ("geometry", N_("色块与几何"),
      "PURE GEOMETRY: no literal objects; colour fields, lines, circles, rhythm and one small precise "
      "detail carry the mood of the episode (think Saul Bass, Swiss posters, Kieslowski's Three Colours)."),
-    ("free", "自由发挥",
+    ("free", N_("自由发挥"),
      "YOUR OWN IDEA: the cover you would pick for this episode, as long as it is different from the "
      "three other directions (one emblem / films side by side / pure geometry)."),
 ]
-DIRECTION_LABELS = {k: label for k, label, _ in DIRECTIONS} | {"revision": "按你的话改"}
+DIRECTION_LABELS = {k: label for k, label, _ in DIRECTIONS} | {"revision": N_("按你的话改")}
 
 _STR = {"type": "string"}
 TOOL = {
@@ -118,18 +119,18 @@ def sanitize(svg: str) -> tuple[str, list[str]]:
     Raises PosterError when it is not a usable SVG at all."""
     notes: list[str] = []
     if len(svg.encode("utf-8")) > MAX_SVG_BYTES:
-        raise PosterError("海报文件太大")
+        raise PosterError(tr("海报文件太大"))
     if re.search(r"<!(DOCTYPE|ENTITY)", svg, re.I):
-        raise PosterError("海报里有不允许的 DOCTYPE")
+        raise PosterError(tr("海报里有不允许的 DOCTYPE"))
     try:
         root = ET.fromstring(svg.strip())
     except ET.ParseError as e:
-        raise PosterError(f"海报 SVG 解析不了（{e}）") from e
+        raise PosterError(tr("海报 SVG 解析不了（{e}）", e=e)) from e
     if root.tag != f"{{{SVG_NS}}}svg":
-        raise PosterError("交回的不是 SVG")
+        raise PosterError(tr("交回的不是 SVG"))
     vb = [float(x) for x in re.split(r"[\s,]+", (root.get("viewBox") or "").strip()) if x]
     if len(vb) != 4 or vb[2] <= 0 or abs(vb[2] - vb[3]) > 0.5:
-        raise PosterError("海报不是正方形（viewBox）")
+        raise PosterError(tr("海报不是正方形（viewBox）"))
     root.set("width", str(CANVAS))
     root.set("height", str(CANVAS))
 
@@ -165,7 +166,7 @@ def sanitize(svg: str) -> tuple[str, list[str]]:
 
     clean(root)
     if dropped_cjk:
-        notes.append("Claude 在海报上写了中文，已经去掉（只用英文）。")
+        notes.append(tr("Claude 在海报上写了中文，已经去掉（只用英文）。"))
     return ET.tostring(root, encoding="unicode"), notes
 
 
@@ -176,13 +177,13 @@ def render_png(svg: str, px: int) -> bytes:
     try:
         import resvg_py
     except ImportError as e:      # pragma: no cover - a dependency of the package
-        raise PosterError("缺少 resvg-py（pip install -e . 会装上）") from e
+        raise PosterError(tr("缺少 resvg-py（pip install -e . 会装上）")) from e
     try:
         return resvg_py.svg_to_bytes(svg_string=svg, width=px, height=px, skip_system_fonts=True,
                                      font_dirs=[str(FONTS)], font_family="Inter", sans_serif_family="Inter",
                                      serif_family="Inter", monospace_family="Inter")
     except Exception as e:      # noqa: BLE001 - resvg raises ValueError on bad SVG
-        raise PosterError(f"海报渲染失败（{e}）") from e
+        raise PosterError(tr("海报渲染失败（{e}）", e=e)) from e
 
 
 def png_to_jpeg(png: bytes, quality: int = JPEG_QUALITY) -> bytes:
@@ -210,13 +211,13 @@ def _md_plain(s: str) -> str:
 def brief_context(episode_id: str, pack: dict) -> str:
     """What Claude knows about the episode: the publish pack's text (phase 9)."""
     d = pack["draft"]
-    films = "\n".join(f"- {f['name']}：{f['note']}" for f in d.get("films", [])) or "（没有列出）"
-    shows = "、".join(d.get("shows", [])) or "（无）"
-    heads = "\n".join(f"- {s['heading']}" for s in d.get("sections", [])) or "（无）"
-    return (f"节目：《洛城二三事》 {episode_label(episode_id)}（cover text: \"EP {_num(episode_id)}\"）\n"
-            f"标题：{d['title']}\n一句话简介：{d.get('blurb', '')}\n\n"
-            f"开场介绍：\n{_md_plain(d.get('intro', ''))[:3000]}\n\n"
-            f"聊到的电影：\n{films}\n\n聊到的剧集：{shows}\n\n章节：\n{heads}")
+    films = "\n".join(f"- {f['name']}：{f['note']}" for f in d.get("films", [])) or "（没有列出）"  # i18n-ignore
+    shows = "、".join(d.get("shows", [])) or "（无）"  # i18n-ignore
+    heads = "\n".join(f"- {s['heading']}" for s in d.get("sections", [])) or "（无）"  # i18n-ignore
+    return (f"节目：《洛城二三事》 {episode_label(episode_id)}（cover text: \"EP {_num(episode_id)}\"）\n"  # i18n-ignore
+            f"标题：{d['title']}\n一句话简介：{d.get('blurb', '')}\n\n"  # i18n-ignore
+            f"开场介绍：\n{_md_plain(d.get('intro', ''))[:3000]}\n\n"  # i18n-ignore
+            f"聊到的电影：\n{films}\n\n聊到的剧集：{shows}\n\n章节：\n{heads}")  # i18n-ignore
 
 
 def _num(episode_id: str) -> str:
@@ -275,17 +276,17 @@ class ClaudeDesigner:
                                                   **self.request(user)) as s:
                 resp = s.get_final_message()
         except Exception as e:      # noqa: BLE001
-            raise PosterError(error_message(e).replace("，这次没有改动。", "")) from e
+            raise PosterError(error_message(e, tail="")) from e
         usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            raise PosterError("Claude 没有处理这次请求")
+            raise PosterError(tr("Claude 没有处理这次请求"))
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_poster":
                 d = dict(block.input)
                 return Design(str(d.get("name", ""))[:60], str(d.get("concept", ""))[:600], str(d.get("svg", "")), usage)
         if resp.stop_reason == "max_tokens":
-            raise PosterError("海报太复杂，回答被截断了")
-        raise PosterError("Claude 没有交回海报")
+            raise PosterError(tr("海报太复杂，回答被截断了"))
+        raise PosterError(tr("Claude 没有交回海报"))
 
     def design(self, context: str, direction: str) -> Design:
         brief = dict((k, b) for k, _, b in DIRECTIONS)[direction]
@@ -362,7 +363,7 @@ class Posters:
                "error": None}
         with self._lock:
             if (self.jobs.get(ep.id) or {}).get("state") == "running":
-                raise PosterBusy("这一集的海报正在生成")
+                raise PosterBusy(tr("这一集的海报正在生成"))
             self.jobs[ep.id] = job
 
         def set_stage(s: str) -> None:
@@ -373,7 +374,7 @@ class Posters:
             try:
                 fn(set_stage)
                 with self._lock:
-                    job.update(state="done", stage="完成", finished=time.time())
+                    job.update(state="done", stage=tr("完成"), finished=time.time())
             except Exception as e:     # noqa: BLE001 - surfaced to the UI
                 if not isinstance(e, PosterError):
                     traceback.print_exc()
@@ -389,13 +390,13 @@ class Posters:
     def _context(self, ep: Episode) -> str:
         pack = self.publisher.load(ep)
         if pack is None:
-            raise PosterError("先在「发布资料」里生成标题和简介，海报按它来设计")
+            raise PosterError(tr("先在「发布资料」里生成标题和简介，海报按它来设计"))
         return brief_context(ep.id, pack)
 
     def _designer(self):
         d = self.factory()
         if not getattr(d, "available", True):
-            raise PosterError("没有接上 Claude（没找到 API key 或没装 anthropic 包），画不了海报")
+            raise PosterError(tr("没有接上 Claude（没找到 API key 或没装 anthropic 包），画不了海报"))
         return d
 
     def _add(self, ep: Episode, design: Design, direction: str, parent: str | None = None,
@@ -421,7 +422,7 @@ class Posters:
 
         def work(stage: Callable[[str], None]) -> None:
             done, errors = [], []
-            stage(f"Claude 在画 {len(keys)} 版海报")
+            stage(tr("Claude 在画 {p0} 版海报", p0=len(keys)))
 
             def one(k: str) -> None:
                 try:
@@ -430,47 +431,47 @@ class Posters:
                         self.on_usage(ep.id, d.usage)
                     self._add(ep, d, k)
                     done.append(k)
-                    stage(f"Claude 在画 {len(keys)} 版海报（已完成 {len(done)}）")
+                    stage(tr("Claude 在画 {p0} 版海报（已完成 {p1}）", p0=len(keys), p1=len(done)))
                 except Exception as e:  # noqa: BLE001 - one bad version must not lose the others
                     if not isinstance(e, PosterError):
                         traceback.print_exc()
-                    errors.append(f"{DIRECTION_LABELS[k]}：{e}")
+                    errors.append(tr("{direction}：{error}", direction=tr(DIRECTION_LABELS[k]), error=e))
 
             with ThreadPoolExecutor(max_workers=len(keys)) as ex:
                 list(ex.map(one, keys))
             if not done:
-                raise PosterError("；".join(errors) or "一版也没画出来")
+                raise PosterError("；".join(errors) or tr("一版也没画出来"))
             with ep.lock:       # also clears the errors of an earlier round
                 if errors or self.load(ep).get("last_errors"):
                     doc = self.load(ep)
                     doc["last_errors"] = errors
                     self.save(ep, doc)
 
-        return self._run(ep, "generate", "准备", work, wait)
+        return self._run(ep, "generate", tr("准备"), work, wait)
 
     def revise(self, ep: Episode, vid: str, instruction: str, wait: bool = False) -> dict:
         instruction = instruction.strip()[:MAX_INSTRUCTION]
         if not instruction:
-            raise PosterError("说一句想怎么改")
+            raise PosterError(tr("说一句想怎么改"))
         base = self._variant(self.load(ep), vid)
         context = self._context(ep)
         designer = self._designer()
 
         def work(stage: Callable[[str], None]) -> None:
-            stage(f"Claude 在按你的话改「{base['name']}」")
+            stage(tr("Claude 在按你的话改「{name}」", name=base['name']))
             d = designer.revise(context, base["svg"], instruction)
             if d.usage:
                 self.on_usage(ep.id, d.usage)
             self._add(ep, d, "revision", parent=vid, instruction=instruction)
 
-        return self._run(ep, "revise", "准备", work, wait)
+        return self._run(ep, "revise", tr("准备"), work, wait)
 
     def choose(self, ep: Episode, vid: str, wait: bool = False) -> dict:
         """Render the chosen version at full size into the episode's publish folder."""
         v = self._variant(self.load(ep), vid)
 
         def work(stage: Callable[[str], None]) -> None:
-            stage("渲染 3000×3000 封面")
+            stage(tr("渲染 3000×3000 封面"))
             png = render_png(v["svg"], COVER_PX)
             jpg = png_to_jpeg(png)
             out = self.cover_dir(ep.id)
@@ -486,7 +487,7 @@ class Posters:
                                 "rendered_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
                 self.save(ep, doc)
 
-        return self._run(ep, "choose", "准备", work, wait)
+        return self._run(ep, "choose", tr("准备"), work, wait)
 
     @staticmethod
     def _variant(doc: dict, vid: str) -> dict:
@@ -503,7 +504,7 @@ class Posters:
         for v in reversed(doc["variants"]):        # newest first
             variants.append({k: v[k] for k in ("id", "direction", "name", "concept", "parent", "instruction",
                                                 "notes", "created_at")}
-                            | {"direction_label": DIRECTION_LABELS.get(v["direction"], v["direction"]),
+                            | {"direction_label": tr(DIRECTION_LABELS.get(v["direction"], v["direction"])),
                                "cost_usd": (v.get("usage") or {}).get("cost_usd")})
         try:
             available = bool(getattr(self.factory(), "available", True))
@@ -511,4 +512,4 @@ class Posters:
             available = False
         return {"variants": variants, "chosen": doc.get("chosen"), "cover": doc.get("cover"), "available": available,
                 "errors": doc.get("last_errors", []), "job": self.status(ep.id), "has_pack": has_pack,
-                "directions": [{"key": k, "label": label} for k, label, _ in DIRECTIONS]}
+                "directions": [{"key": k, "label": tr(label)} for k, label, _ in DIRECTIONS]}

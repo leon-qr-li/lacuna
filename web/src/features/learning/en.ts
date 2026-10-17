@@ -1,0 +1,47 @@
+import type { Dict } from "../../i18n";
+
+export const en: Dict = {
+  "少删": "Cut less",
+  "你在 {ep} 的对话里说的（{reason}）": "You said it in the {ep} chat ({reason})",
+  "你说过的": "You said",
+  "改为过目": "Review instead",
+  "不用过目": "No review needed",
+  "该直接删": "Just cut it",
+  "漏删": "Missed cut",
+  "品味例子": "Taste example",
+  "把握度": "Confidence",
+  "待你确认": "Waiting for you",
+  "已生效": "Active",
+  "不采用": "Reject",
+  "下一集 AI 第一刀会照这条剪": "the next AI first cut follows this rule",
+  "这类改动以后进审阅列表": "edits like this go to the review list",
+  "这类改动以后直接应用、不用逐条过目": "edits like this are applied without review",
+  "把握度低于 {confidence} 的进审阅": "edits below confidence {confidence} go to review",
+  "学习页打不开：": "Can't open this page: ",
+  "正在从你的审阅记录里学习…": "Learning from your review decisions…",
+  "学到的规则": "Learned rules",
+  "来源：{sources}。": "Sources: {sources}.",
+  "{ep}（你手剪的成品）": "{ep} (your hand edit)",
+  "还没有": "none yet",
+  "审阅里逐条决定 {considered} 个；所有来源合计保留 {kept}、恢复或没删 {restored}、补删 {added}。":
+    "{considered} decided one by one in review; across all sources {kept} kept, {restored} restored or not cut, {added} cut by you.",
+  "规则是从你的决定和你在 AI 制作人里说的话推断的（每次导出后总结一次对话；说「记住：……」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。":
+    "Rules are inferred from your decisions and from what you tell the AI producer (the chat is summarised after each export; saying \"记住：…\" (remember: …) records one right away). They only affect the next episode after you click Adopt, and you can withdraw them any time.",
+  "还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。也可以在 AI 制作人里说「记住：……」，直接记一条。":
+    "Not enough evidence for a rule yet. Review a few more edits one by one (keep / restore) or ask the AI in chat to cut more, and rules will show up here. You can also tell the AI producer \"记住：…\" (remember: …) to record one directly.",
+  "有新证据，待你重新确认": "New evidence, please confirm again",
+  "采用后：{effect}。": "If adopted: {effect}.",
+  "新的审阅记录里已经看不出这个规律了，但它仍按你当初采用的样子生效。":
+    "Recent reviews no longer show this pattern, but it stays active as you adopted it.",
+  "看例子（{n}）": "Examples ({n})",
+  "原始": "raw",
+  "（停顿）": "(pause)",
+  "你留下了": "you kept it",
+  "你删了": "you cut it",
+  "（手剪成品）": "(hand edit)",
+  "采用新版本": "Adopt new version",
+  "采用": "Adopt",
+  "撤回": "Withdraw",
+  "重新考虑": "Reconsider",
+  " · {pending} 条待确认": " · {pending} to confirm",
+};

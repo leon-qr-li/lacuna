@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from ..importer import ImportBusy, ImportError_, Importer, list_dir
 from ..server import next_episode_id
+from ..i18n import tr
 
 
 class ImportBody(BaseModel):
@@ -60,7 +61,7 @@ def register(app, ctx) -> None:
         try:
             importer.cancel(episode_id)
         except KeyError:
-            raise HTTPException(409, "这一集没有在导入")
+            raise HTTPException(409, tr("这一集没有在导入"))
         return {"job": importer.status(episode_id)}
 
     @app.delete("/api/imports/{episode_id}")

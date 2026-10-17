@@ -34,7 +34,7 @@ class DraftMoveBody(BaseModel):
 
 
 class SeriesBody(BaseModel):
-    name: str = Field("洛城二三事", min_length=1, max_length=80)
+    name: str = Field("洛城二三事", min_length=1, max_length=80)  # i18n-ignore
 
 
 def register(app, ctx) -> None:

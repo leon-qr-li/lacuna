@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import type { AppInfo } from "./api";
 import { settingsApi } from "./api";
 import { ThemeSetting } from "../theme/ThemeSetting";
+import { joinList, t } from "../../i18n";
 
 const KEY_SOURCE: Record<string, string> = {
-  env: "环境变量",
-  "registry-user": "Windows 用户环境变量",
-  "registry-machine": "Windows 系统环境变量",
-  keychain: "macOS 钥匙串",
-  file: "本机文件",
+  env: t("环境变量"),
+  "registry-user": t("Windows 用户环境变量"),
+  "registry-machine": t("Windows 系统环境变量"),
+  keychain: t("macOS 钥匙串"),
+  file: t("本机文件"),
 };
 
 /** Polls /api/app until the server has gone down and answers again (a plain restart). */
@@ -53,7 +54,7 @@ export function SettingsLink() {
   }, []);
   return (
     <a className="btn btn-outline row" href="#/settings">
-      设置{update ? " · 有新版本" : ""}
+      {t("设置")}{update ? t(" · 有新版本") : ""}
     </a>
   );
 }
@@ -97,7 +98,7 @@ export function SettingsView() {
     run("apply", async () => {
       const lastAt = info!.update.last_update?.at;
       const r = await settingsApi.applyUpdate();
-      setMsg("正在更新并重启，页面会自己刷新…");
+      setMsg(t("正在更新并重启，页面会自己刷新…"));
       await waitForUpdate(r.version, lastAt);
       window.location.reload();
     });
@@ -106,36 +107,36 @@ export function SettingsView() {
       const r = await settingsApi.saveApiKey(key.trim());
       setKey("");
       if (r.restarting) {
-        setMsg("已保存，正在重启让它生效…");
+        setMsg(t("已保存，正在重启让它生效…"));
         await waitForRestart();
         window.location.reload();
       } else {
-        setMsg("已保存。重启 LACUNA 后生效。");
+        setMsg(t("已保存。重启 LACUNA 后生效。"));
         load();
       }
     });
 
-  if (!info) return <p className={err ? "error pad" : "pad muted"}>{err ?? "读取中…"}</p>;
+  if (!info) return <p className={err ? "error pad" : "pad muted"}>{err ?? t("读取中…")}</p>;
   const u = info.update;
   return (
     <main className="home settings">
-      <h1>设置</h1>
+      <h1>{t("设置")}</h1>
       {msg && <p className="card" role="status">{msg}</p>}
       {err && <p className="error">{err}</p>}
 
       <ThemeSetting />
 
-      <section className="card" aria-label="版本">
+      <section className="card" aria-label={t("版本")}>
         <div className="card-head">
-          <h2>版本</h2>
+          <h2>{t("版本")}</h2>
           <span className="badge" data-testid="app-version">
-            {info.installed ? info.version : "开发版"}
+            {info.installed ? info.version : t("开发版")}
           </span>
         </div>
-        {!info.installed && <p className="muted small">这是从源码直接运行的开发版，不在 App 里更新。</p>}
+        {!info.installed && <p className="muted small">{t("这是从源码直接运行的开发版，不在 App 里更新。")}</p>}
         {u.last_update && (
           <p className={u.last_update.ok ? "muted small" : "error"}>
-            上次更新（{u.last_update.at}）：{u.last_update.message}
+            {t("上次更新（{at}）：{message}", { at: u.last_update.at, message: u.last_update.message })}
           </p>
         )}
         {info.installed && (
@@ -143,33 +144,33 @@ export function SettingsView() {
             {u.available ? (
               <div data-testid="update-available">
                 <p>
-                  有新版本 <strong>{u.latest}</strong>
+                  {t("有新版本")} <strong>{u.latest}</strong>
                 </p>
                 {u.notes && <pre className="notes">{u.notes}</pre>}
                 {job?.state === "running" ? (
-                  <p className="muted">下载中 {Math.round((job.progress ?? 0) * 100)}%</p>
+                  <p className="muted">{t("下载中 {pct}%", { pct: Math.round((job.progress ?? 0) * 100) })}</p>
                 ) : job?.state === "ready" ? (
                   <>
-                    {info.busy.length > 0 && <p className="muted small">{info.busy.join("、")}还在进行，做完才能更新。</p>}
+                    {info.busy.length > 0 && <p className="muted small">{t("{tasks}还在进行，做完才能更新。", { tasks: joinList(info.busy) })}</p>}
                     <button className="btn btn-primary" disabled={!!busy || info.busy.length > 0} onClick={apply}>
-                      更新并重启
+                      {t("更新并重启")}
                     </button>
-                    <p className="muted small">大约一两分钟。正在编辑的内容都已经自动保存。新版本起不来会自动回到现在的版本。</p>
+                    <p className="muted small">{t("大约一两分钟。正在编辑的内容都已经自动保存。新版本起不来会自动回到现在的版本。")}</p>
                   </>
                 ) : (
                   <>
                     {job?.state === "error" && <p className="error">{job.error}</p>}
                     <button className="btn btn-primary" disabled={!!busy} onClick={prepare}>
-                      下载新版本
+                      {t("下载新版本")}
                     </button>
                   </>
                 )}
               </div>
             ) : (
-              <p className="muted">{u.error ?? (u.latest ? "已经是最新版本。" : "还没检查过更新。")}</p>
+              <p className="muted">{u.error ?? (u.latest ? t("已经是最新版本。") : t("还没检查过更新。"))}</p>
             )}
             <button className="btn btn-outline" disabled={!!busy} onClick={check}>
-              {busy === "check" ? "检查中…" : "检查更新"}
+              {busy === "check" ? t("检查中…") : t("检查更新")}
             </button>
           </>
         )}
@@ -179,11 +180,11 @@ export function SettingsView() {
         <div className="card-head">
           <h2>Claude API key</h2>
           <span className={info.key.present ? "badge badge-confirmed" : "badge badge-unknown"} data-testid="key-state">
-            {info.key.present ? `已设置（${KEY_SOURCE[info.key.source ?? ""] ?? info.key.source}）` : "没有设置"}
+            {info.key.present ? t("已设置（{p0}）", { p0: KEY_SOURCE[info.key.source ?? ""] ?? info.key.source }) : t("没有设置")}
           </span>
         </div>
         <p className="muted small">
-          AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上{info.platform === "macOS" ? "（钥匙串）" : ""}，不会显示出来。
+          {info.platform === "macOS" ? t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上（钥匙串），不会显示出来。") : t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上，不会显示出来。")}
         </p>
         <div className="row gap">
           <input
@@ -196,19 +197,19 @@ export function SettingsView() {
             onChange={(e) => setKey(e.target.value)}
           />
           <button className="btn btn-outline" disabled={!!busy || key.trim().length < 20} onClick={saveKey}>
-            {info.key.present ? "换一个" : "保存"}
+            {info.key.present ? t("换一个") : t("保存")}
           </button>
         </div>
       </section>
 
-      <section className="card" aria-label="这台电脑">
-        <h2>这台电脑</h2>
+      <section className="card" aria-label={t("这台电脑")}>
+        <h2>{t("这台电脑")}</h2>
         <ul className="plain small">
-          <li>系统：{info.platform}</li>
-          <li>工作区：{info.workspace}</li>
-          <li data-testid="ffmpeg-state">ffmpeg：{info.ffmpeg && info.ffprobe ? "已就绪" : "没找到（导入和导出会失败）"}</li>
-          <li>语音识别模型：{info.models ? "已下载" : "第一次导入时自动下载（约 400 MB）"}</li>
-          {info.home && <li>安装位置：{info.home}</li>}
+          <li>{t("系统：")}{info.platform}</li>
+          <li>{t("工作区：")}{info.workspace}</li>
+          <li data-testid="ffmpeg-state">ffmpeg：{info.ffmpeg && info.ffprobe ? t("已就绪") : t("没找到（导入和导出会失败）")}</li>
+          <li>{t("语音识别模型：")}{info.models ? t("已下载") : t("第一次导入时自动下载（约 400 MB）")}</li>
+          {info.home && <li>{t("安装位置：")}{info.home}</li>}
         </ul>
       </section>
     </main>

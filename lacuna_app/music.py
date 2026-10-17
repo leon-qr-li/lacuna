@@ -43,11 +43,12 @@ from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .episode import ConflictError, Episode, to_base, to_tl
 from .library import Library, credit_line
 from .store import Workspace, atomic_write_json, read_json
+from .i18n import N_, tr
 
 SCHEMA = 1
 FILE = "music.json"
 APPLIED, PROPOSED = "applied", "proposed"
-ROLES = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed": "铺底", "clip": "台词"}
+ROLES = {"intro": N_("片头"), "interlude": N_("间奏"), "outro": N_("片尾"), "bed": N_("铺底"), "clip": N_("台词")}
 GAP_ROLES = ("interlude", "clip")            # roles that insert time into the conversation
 ANCHORED = ("interlude", "clip", "bed")      # roles placed at a point of the conversation
 MAX_LEN = {"intro": 30.0, "interlude": 20.0, "outro": 60.0, "bed": 120.0, "clip": 60.0}   # default length cap (s)
@@ -269,7 +270,7 @@ class EpisodeMusic:
         if r == "clip":
             p["lead_s"] = round(min(max(float(LEAD_S if p.get("lead_s") is None else p["lead_s"]), 0.0), 5.0), 3)
         if r in ANCHORED and p.get("at_base") is None:
-            raise ConflictError("间奏、铺底、台词需要一个位置")
+            raise ConflictError(tr("间奏、铺底、台词需要一个位置"))
         if r not in ANCHORED:
             p["at_base"] = None
         if r != "bed":
@@ -354,7 +355,7 @@ class EpisodeMusic:
             if not d or d["id"] != draft_id:
                 raise KeyError(draft_id)
             if d["base"] != self.digest(doc["placements"]):
-                raise ConflictError("这条建议之后配乐又改过了，建议已经过期，请重新让 Claude 看一次")
+                raise ConflictError(tr("这条建议之后配乐又改过了，建议已经过期，请重新让 Claude 看一次"))
             doc["placements"] = [dict(p, status=APPLIED) for p in d["placements"]]
             doc["draft"] = None
             self.save(doc)
@@ -402,7 +403,7 @@ class EpisodeMusic:
     def apply_series(self, name: str | None = None) -> list[dict]:
         rule = self.lib.series_rule(name)
         if rule is None:
-            raise ConflictError("还没有这个系列的片头规则")
+            raise ConflictError(tr("还没有这个系列的片头规则"))
         added = []
         for role in ("intro", "outro"):
             t = rule.get(role)
@@ -424,7 +425,7 @@ class EpisodeMusic:
     def save_as_series(self, name: str) -> dict:
         ps = {p["role"]: p for p in self.placements() if p.get("status", APPLIED) == APPLIED}
         if "intro" not in ps and "outro" not in ps:
-            raise ConflictError("这一集还没有片头或片尾")
+            raise ConflictError(tr("这一集还没有片头或片尾"))
         rule = self.lib.save_series(name, ps.get("intro"), ps.get("outro"))
         with self.lock:
             doc = self.load()
@@ -620,7 +621,7 @@ class EpisodeMusic:
         out = []
         for it in lay.items:
             p, a = it.p, it.asset
-            out.append({**p, "role_label": ROLES[p["role"]], "asset_name": a.get("name"), "asset_note": a.get("note"),
+            out.append({**p, "role_label": tr(ROLES[p["role"]]), "asset_name": a.get("name"), "asset_note": a.get("note"),
                         "asset_duration_s": a["duration_s"], "credit_line": credit_line(a),
                         "credit_status": (a.get("credit") or {}).get("status", "unknown"),
                         "start_s": round(it.start / sr, 3), "end_s": round(it.end / sr, 3),
@@ -628,12 +629,12 @@ class EpisodeMusic:
                         "at_s": round(it.anchor / sr, 3) if it.anchor is not None else None,
                         "inserted_s": round(it.gap / sr, 3), "missing": False})
         for p in lay.skipped:
-            out.append({**p, "role_label": ROLES.get(p["role"], p["role"]), "missing": True,
-                        "asset_name": None, "credit_line": "素材已不在库里", "start_s": None, "end_s": None})
+            out.append({**p, "role_label": tr(ROLES.get(p["role"], p["role"])), "missing": True,
+                        "asset_name": None, "credit_line": tr("素材已不在库里"), "start_s": None, "end_s": None})
         proposed = [p for p in self.placements() if p.get("status") == PROPOSED] if include_proposed else []
         for p in proposed:
             a = self._asset_or_none(p["asset_id"]) or {}
-            out.append({**p, "role_label": ROLES.get(p["role"], p["role"]), "missing": not a,
+            out.append({**p, "role_label": tr(ROLES.get(p["role"], p["role"])), "missing": not a,
                         "asset_name": a.get("name"), "credit_line": credit_line(a) if a else "", "start_s": None, "end_s": None})
         return out
 
@@ -648,7 +649,7 @@ class EpisodeMusic:
                 "voice_duration": round(lay.voice_len / sr, 3), "duration": round(lay.length / sr, 3),
                 "mix_version": key, "mix_url": f"/api/episodes/{ep.id}/mix/{key}.wav",
                 "credits": credits(lay), "series": self.load().get("series"),
-                "series_suggestion": rule, "roles": ROLES, "draft": self.draft_view(),
+                "series_suggestion": rule, "roles": {k: tr(v) for k, v in ROLES.items()}, "draft": self.draft_view(),
                 # time added to the conversation, (voice seconds, seconds), so the review player can map
                 # its voice-cut playhead onto the final mix when listening with music
                 "inserts": [[round(T / sr, 4), round(n / sr, 4)] for T, _, n in lay.inserts if n > 0],

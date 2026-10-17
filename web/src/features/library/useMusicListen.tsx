@@ -6,6 +6,7 @@ import type { Player } from "../../usePlayer";
 import type { MusicView } from "./api";
 import { libraryApi } from "./api";
 import { fmt } from "../../api";
+import { t } from "../../i18n";
 
 const KEY = "lacuna.listenWithMusic";
 const EPS = 1e-4;
@@ -119,10 +120,10 @@ export function useMusicListen(id: string, refresh: string, raw: Player): MusicL
 export function MusicListenToggle({ listen }: { listen: MusicListen }) {
   if (!listen.available) return null;
   return (
-    <label className="check music-listen" title="播放加了配乐的成品；审阅、对话里的时间仍按人声剪辑算">
+    <label className="check music-listen" title={t("播放加了配乐的成品；审阅、对话里的时间仍按人声剪辑算")}>
       <input type="checkbox" checked={listen.on} onChange={(e) => listen.setOn(e.target.checked)} data-testid="listen-with-music" />
-      带配乐听
-      {listen.on && <span className="mono small"> · 成品 {fmt(listen.finalTime)}</span>}
+      {t("带配乐听")}
+      {listen.on && <span className="mono small"> {t("· 成品")} {fmt(listen.finalTime)}</span>}
     </label>
   );
 }

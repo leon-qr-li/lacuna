@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from ..editor import editor_status
 from ..episode import Episode
 from ..publish import PublishBusy, Publisher
+from ..i18n import tr
 
 
 class PublishEditBody(BaseModel):
@@ -50,7 +51,7 @@ def register(app, ctx) -> None:
         try:
             fn()
         except KeyError:
-            raise HTTPException(404, "还没有生成发布资料")
+            raise HTTPException(404, tr("还没有生成发布资料"))
         return publish_view(ep)
 
     @app.post("/api/episodes/{episode_id}/publish/retime")

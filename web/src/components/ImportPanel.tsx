@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FsListing, ImportJob } from "../api";
 import { api, fmt } from "../api";
+import { t } from "../i18n";
 
 const RUNNING = new Set(["queued", "running"]);
 const STATE_LABEL: Record<ImportJob["state"], string> = {
-  queued: "排队中",
-  running: "导入中",
-  done: "已完成",
-  error: "出错了",
-  interrupted: "中断了",
-  cancelled: "已取消",
+  queued: t("排队中"),
+  running: t("导入中"),
+  done: t("已完成"),
+  error: t("出错了"),
+  interrupted: t("中断了"),
+  cancelled: t("已取消"),
 };
 
 function elapsed(j: ImportJob, now: number): number {
@@ -23,7 +24,7 @@ export function FileBrowser({
   start,
   onPick,
   onClose,
-  label = "选择分轨文件",
+  label = t("选择分轨文件"),
 }: {
   start?: string;
   onPick: (path: string, listing: FsListing) => void;
@@ -51,7 +52,7 @@ export function FileBrowser({
           {ls?.path ?? "…"}
         </span>
         <button type="button" className="btn btn-small" onClick={onClose}>
-          关闭
+          {t("关闭")}
         </button>
       </div>
       {err && <p className="error small">{err}</p>}
@@ -68,7 +69,7 @@ export function FileBrowser({
             {ls.parent && (
               <li>
                 <button type="button" className="fs-item" onClick={() => void open(ls.parent!)}>
-                  ⬆ 上一级
+                  {t("⬆ 上一级")}
                 </button>
               </li>
             )}
@@ -89,7 +90,7 @@ export function FileBrowser({
                 </button>
               </li>
             ))}
-            {!ls.dirs.length && !ls.files.length && <li className="muted small">这里没有文件夹或音频文件</li>}
+            {!ls.dirs.length && !ls.files.length && <li className="muted small">{t("这里没有文件夹或音频文件")}</li>}
           </ul>
         </>
       )}
@@ -137,17 +138,17 @@ function NewImport({ nextId, onStarted, onCancel }: { nextId: string; onStarted:
   };
   const name = (p: string) => p.split(/[\\/]/).pop();
   return (
-    <section className="card import-new" aria-label="导入新一集">
+    <section className="card import-new" aria-label={t("导入新一集")}>
       <div className="card-head">
-        <h2>导入新一集</h2>
+        <h2>{t("导入新一集")}</h2>
       </div>
       <div className="import-grid">
         <label>
-          剧集编号
+          {t("剧集编号")}
           <input value={id} onChange={(e) => setId(e.target.value)} data-testid="import-id" />
         </label>
         <label>
-          标题（可不填）
+          {t("标题（可不填）")}
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`${id} · …`} data-testid="import-title" />
         </label>
         {(["leon", "pei"] as const).map((k) => {
@@ -155,12 +156,12 @@ function NewImport({ nextId, onStarted, onCancel }: { nextId: string; onStarted:
           return (
             <div key={k} className="import-track">
               <span className={`dot ${k}`} aria-hidden />
-              <strong>{k === "leon" ? "Leon 的分轨" : "Pei 的分轨"}</strong>
+              <strong>{k === "leon" ? t("Leon 的分轨") : t("Pei 的分轨")}</strong>
               <span className={`small ${v ? "" : "muted"}`} title={v} data-testid={`import-${k}`}>
-                {v ? name(v) : "还没选"}
+                {v ? name(v) : t("还没选")}
               </span>
               <button type="button" className="btn btn-small btn-outline" onClick={() => setPicking(k)}>
-                选择文件…
+                {t("选择文件…")}
               </button>
             </div>
           );
@@ -168,16 +169,15 @@ function NewImport({ nextId, onStarted, onCancel }: { nextId: string; onStarted:
       </div>
       {picking && <FileBrowser start={lastDir} onPick={pick} onClose={() => setPicking(null)} />}
       <p className="muted small">
-        原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给 Claude 做第一刀。
-        长录音要跑一阵，可以关掉这页，进度不会丢。
+        {t("原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给 Claude 做第一刀。 长录音要跑一阵，可以关掉这页，进度不会丢。")}
       </p>
       {err && <p className="error small">{err}</p>}
       <div className="row gap8">
         <button type="button" className="btn btn-primary" disabled={!leon || !pei || !id.trim() || busy} onClick={() => void start()}>
-          开始导入
+          {t("开始导入")}
         </button>
         <button type="button" className="btn" onClick={onCancel}>
-          取消
+          {t("取消")}
         </button>
       </div>
     </section>
@@ -206,15 +206,16 @@ function JobRow({ j, now, onChange }: { j: ImportJob; now: number; onChange: () 
           <div className="row gap8 small">
             <span data-testid="import-stage">{j.stage}</span>
             <span className="muted">
-              {Math.round(j.progress * 100)}% · 已用 {fmt(elapsed(j, now))}
+              {t("{pct}% · 已用 {time}", { pct: Math.round(j.progress * 100), time: fmt(elapsed(j, now)) })}
             </span>
           </div>
         </>
       )}
       {j.state === "done" && j.result && (
         <p className="small">
-          AI 第一刀{j.result.engine === "rules" ? "（没有 Claude，只收紧了停顿）" : ""}：{j.result.edits} 处改动，
-          {j.result.to_review} 处需要你过目。
+          {j.result.engine === "rules"
+            ? t("AI 第一刀（没有 Claude，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: j.result.to_review })
+            : t("AI 第一刀：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: j.result.to_review })}
         </p>
       )}
       {j.error && j.state !== "done" && <p className="error small">{j.error}</p>}
@@ -222,22 +223,22 @@ function JobRow({ j, now, onChange }: { j: ImportJob; now: number; onChange: () 
       <div className="row gap8">
         {j.state === "done" && (
           <a className="btn btn-primary btn-small linkbtn" href={`#/ep/${encodeURIComponent(j.id)}/review`}>
-            开始审阅
+            {t("开始审阅")}
           </a>
         )}
         {running && (
           <button type="button" className="btn btn-small" onClick={() => void act(api.cancelImport(j.id))}>
-            取消
+            {t("取消")}
           </button>
         )}
         {["error", "interrupted", "cancelled"].includes(j.state) && (
           <button type="button" className="btn btn-small btn-outline-accent" onClick={() => void act(api.resumeImport(j.id))}>
-            继续
+            {t("继续")}
           </button>
         )}
         {!running && (
           <button type="button" className="btn btn-small" onClick={() => void act(api.forgetImport(j.id))}>
-            从列表移除
+            {t("从列表移除")}
           </button>
         )}
       </div>
@@ -286,7 +287,7 @@ export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: 
     <div className="imports">
       {!form && (
         <button type="button" className="btn btn-primary" onClick={() => setForm(true)} disabled={active}>
-          导入新一集
+          {t("导入新一集")}
         </button>
       )}
       {form && (
@@ -300,8 +301,8 @@ export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: 
         />
       )}
       {!!jobs?.length && (
-        <section aria-label="导入任务">
-          <h2 className="sub">导入任务</h2>
+        <section aria-label={t("导入任务")}>
+          <h2 className="sub">{t("导入任务")}</h2>
           <ul className="jobs">
             {jobs.map((j) => (
               <JobRow key={j.id} j={j} now={now} onChange={() => void refresh()} />

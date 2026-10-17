@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from .editor import ClaudeEditorAdapter, find_api_key, sdk_installed
+from .i18n import in_reply_language, join_list, tr
 from .learning import LEARN_DIR, Rule
 from .store import Workspace, atomic_write_json, check_id, read_json
 
@@ -69,7 +70,7 @@ For each preference return:
 - instruction: one sentence in English telling an AI first-cut editor what to do differently.
 - turns: the numbers of the turns it comes from.
 - same_as: the id of an EXISTING preference (listed in the input) that says the same thing, else "".
-Do not repeat an existing preference as new. Return an empty list when there is none; that is common."""
+Do not repeat an existing preference as new. Return an empty list when there is none; that is common."""  # i18n-ignore
 
 
 def _now() -> str:      # microseconds: the latest wording of an ask is picked by this
@@ -128,7 +129,7 @@ class ChatAsks:
     def remember(self, episode_id: str, text: str, at: float) -> dict:
         ask = {"id": _id(text), "title": text, "source": "remember", "at": _now(),
                "instruction": f'Leon asked the editor to remember, as a standing rule: "{text}"',
-               "quotes": [{"said": f"记住：{text}", "at": round(at, 2)}]}
+               "quotes": [{"said": f"记住：{text}", "at": round(at, 2)}]}  # i18n-ignore
         with self.lock:
             doc = self.load(episode_id)
             doc["asks"] = [a for a in doc["asks"] if a["id"] != ask["id"]] + [ask]
@@ -182,10 +183,11 @@ class ChatAsks:
             examples = [{"text": q["said"], "raw": None, "verdict": "said", "episode": a["episode"],
                          "reason": _mmss(q.get("at", 0.0))} for a in group for q in a.get("quotes", [])]
             n = len(examples)
-            how = "你用「记住」说的" if any(a.get("source") == "remember" for a in group) else "导出后从对话里总结出的"
+            how = tr("你用「记住」说的") if any(a.get("source") == "remember" for a in group) else tr("导出后从对话里总结出的")
             out.append(Rule(
                 f"ask:{aid}", "ask", last["title"],
-                f"{how}，出自 {'、'.join(eps)} 的对话（{n} 句）。采用后从下一期的 AI 初剪开始照做。",
+                tr("{how}，出自 {episodes} 的对话（{n} 句）。采用后从下一期的 AI 初剪开始照做。",
+                   how=how, episodes=join_list(eps), n=n),
                 f"Leon's standing request (from the chat): {last['instruction']}",
                 {"ask": aid}, {"said": n, "episodes": eps}, examples[:6]))
         return out
@@ -227,7 +229,7 @@ class ClaudeAskSummarizer:
         }, ensure_ascii=False)
 
     def request(self, turns: list[dict], existing: list[dict]) -> dict:
-        return dict(model=self.model, max_tokens=4000, system=SYSTEM, tools=[TOOL],
+        return dict(model=self.model, max_tokens=4000, system=in_reply_language(SYSTEM), tools=[in_reply_language(TOOL)],
                     tool_choice={"type": "tool", "name": TOOL["name"]},
                     messages=[{"role": "user", "content": self.user_message(turns, existing)}])
 

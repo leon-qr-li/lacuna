@@ -33,14 +33,15 @@ from typing import Any, Callable
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
 from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json
+from .i18n import tr
 
 PUBLISH_SCHEMA = 1
 NAMES_SCHEMA = 1
 NAMES_FILE = "names.json"
 PROMPTS = Path(__file__).resolve().parent / "prompts"
-SHOW = "洛城二三事"
-FOOTER = "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*"
-ROLE_LABELS = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed": "铺底", "clip": "台词"}
+SHOW = "洛城二三事"  # i18n-ignore
+FOOTER = "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*"  # i18n-ignore
+ROLE_LABELS = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed": "铺底", "clip": "台词"}  # i18n-ignore
 MERGE_GAP_S = 1.5          # same speaker, shorter gap -> same segment
 MAX_SEGMENT_S = 45.0
 MIN_CHARS = 3              # "嗯" / "对对" alone are not worth a line
@@ -138,7 +139,7 @@ def music_info(ws: Workspace, ep: Episode) -> Music:
         credits = []
         for c in music.credits(lay) or []:
             credits.append({"role": str(c.get("role") or "clip"),
-                            "role_label": str(c.get("role_label") or ROLE_LABELS.get(c.get("role"), "配乐")),
+                            "role_label": str(c.get("role_label") or ROLE_LABELS.get(c.get("role"), "配乐")),  # i18n-ignore
                             "start_s": round(float(c.get("start_s") or 0.0), 3),
                             "end_s": round(float(c.get("end_s") or 0.0), 3),
                             "credit_line": str(c.get("credit_line") or c.get("title") or ""),
@@ -228,11 +229,11 @@ class Draft:
 
 
 def user_message(ep: Episode, doc: str, duration: float, names: list[dict]) -> str:
-    known = "\n".join(f"- {n['wrong']} → {n['right']}" for n in names) or "（还没有）"
-    return (f"节目：《{SHOW}》 {episode_label(ep.id)}，剪辑里的标题：{ep.meta.get('title', ep.id)}\n"
-            f"成品时长：{mmss(duration)}\n\nLeon 以前改过的名字（错 → 对）：\n{known}\n\n"
-            f"成品转写（每行：段落编号 成品时间 说话人：内容）：\n{doc}\n\n"
-            "请按说明写这一期的发布资料，调用 submit_publish_pack 一次。")
+    known = "\n".join(f"- {n['wrong']} → {n['right']}" for n in names) or "（还没有）"  # i18n-ignore
+    return (f"节目：《{SHOW}》 {episode_label(ep.id)}，剪辑里的标题：{ep.meta.get('title', ep.id)}\n"  # i18n-ignore
+            f"成品时长：{mmss(duration)}\n\nLeon 以前改过的名字（错 → 对）：\n{known}\n\n"  # i18n-ignore
+            f"成品转写（每行：段落编号 成品时间 说话人：内容）：\n{doc}\n\n"  # i18n-ignore
+            "请按说明写这一期的发布资料，调用 submit_publish_pack 一次。")  # i18n-ignore
 
 
 class ClaudePublisher:
@@ -279,16 +280,16 @@ class ClaudePublisher:
                                                   **self.request(user)) as s:
                 resp = s.get_final_message()
         except Exception as e:      # noqa: BLE001
-            raise PublishError(error_message(e).replace("，这次没有改动。", "")) from e
+            raise PublishError(error_message(e, tail="")) from e
         usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            raise PublishError("Claude 没有处理这次请求")
+            raise PublishError(tr("Claude 没有处理这次请求"))
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_publish_pack":
                 return Draft(dict(block.input), usage, self.name)
         if resp.stop_reason == "max_tokens":
-            raise PublishError("回答太长被截断了")
-        raise PublishError("Claude 没有交回发布资料")
+            raise PublishError(tr("回答太长被截断了"))
+        raise PublishError(tr("Claude 没有交回发布资料"))
 
 
 class RulePublisher:
@@ -304,7 +305,7 @@ class RulePublisher:
         for s in segs:
             part = int(s.start // 600)
             if not sections or sections[-1]["_part"] != part:
-                sections.append({"_part": part, "heading": f"第 {part + 1} 部分", "entries": []})
+                sections.append({"_part": part, "heading": f"第 {part + 1} 部分", "entries": []})  # i18n-ignore
             if s.start - last >= 180:
                 sections[-1]["entries"].append({"segment": s.id, "text": apply_names(s.text, names)[:24] + "…"})
                 last = s.start
@@ -312,9 +313,9 @@ class RulePublisher:
             del sec["_part"]
         title = ep.meta.get("title", ep.id)
         data = {"title": title, "alt_titles": [], "blurb": "",
-                "intro": "（没有 Claude：这是按时间切的草稿，开场白、片名表和小词典要接上 Claude 才会写。）",
+                "intro": "（没有 Claude：这是按时间切的草稿，开场白、片名表和小词典要接上 Claude 才会写。）",  # i18n-ignore
                 "sections": sections, "films": [], "shows": [], "things": [], "glossary": [], "names_to_check": []}
-        return Draft(data, {}, self.name, ["没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），只生成了按时间切的草稿。"])
+        return Draft(data, {}, self.name, [tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），只生成了按时间切的草稿。")])
 
 
 def make_publisher(kind: str = "auto"):
@@ -349,10 +350,10 @@ def clean(data: dict, segs: list[Segment]) -> tuple[dict, list[str]]:
             entries.append({"text": text, "base_s": s.base_s, "segment": s.id})
         entries.sort(key=lambda e: e["base_s"])
         if entries:
-            sections.append({"heading": _s(sec.get("heading"), 200) or "（未命名）", "entries": entries})
+            sections.append({"heading": _s(sec.get("heading"), 200) or "（未命名）", "entries": entries})  # i18n-ignore
     sections.sort(key=lambda sec: sec["entries"][0]["base_s"])
     if dropped:
-        notes.append(f"有 {dropped} 条时间轴引用了不存在的段落，已丢掉。")
+        notes.append(tr("有 {dropped} 条时间轴引用了不存在的段落，已丢掉。", dropped=dropped))
     names = []
     for n in data.get("names_to_check") or []:
         heard, sug = _s(n.get("heard"), 100), _s(n.get("suggested"), 100)
@@ -401,7 +402,7 @@ def timed(ep: Episode, draft: dict, music: Music) -> dict:
             sec = max(r["section"] for r in speech)
         elif c["role"] == "intro":
             sec = 0
-        label = {"intro": "片头", "interlude": "🎵 间奏", "outro": "片尾"}[c["role"]]
+        label = {"intro": "片头", "interlude": "🎵 间奏", "outro": "片尾"}[c["role"]]  # i18n-ignore
         rows.append({"key": f"m{ci}", "t": t, "text": label, "section": sec, "gone": False, "music": True})
     rows.sort(key=lambda r: (r["section"], r["t"], 0 if r.get("music") else 1))
     return {"rows": rows}
@@ -411,17 +412,17 @@ def timed(ep: Episode, draft: dict, music: Music) -> dict:
 
 def bgm_lines(credits: list[dict] | None) -> list[str]:
     if credits is None:
-        return ["- （素材库还没接上：配乐放进这一集后，这里自动填曲名）"]
+        return ["- （素材库还没接上：配乐放进这一集后，这里自动填曲名）"]  # i18n-ignore
     if not credits:
-        return ["- BGM：未设置"]
+        return ["- BGM：未设置"]  # i18n-ignore
     out = []
     for c in credits:
         label = c["role_label"]
         if c["role"] not in ("intro", "outro"):
             label = f"{mmss(c['start_s'])} {label}"
-        line = c["credit_line"] or "（曲名待补：在素材库里填上正式曲名）"
+        line = c["credit_line"] or "（曲名待补：在素材库里填上正式曲名）"  # i18n-ignore
         if c["credit_status"] == "suggested":
-            line += "（曲名待确认）"
+            line += "（曲名待确认）"  # i18n-ignore
         out.append(f"- **{label}**：{line}")
     return out
 
@@ -430,25 +431,25 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
     L = [f"# {draft['title'] or episode_id}", "", f"> 《{SHOW}》{episode_label(episode_id)} · Leon & Pei", ""]
     if draft["intro"]:
         L += [draft["intro"], ""]
-    L += ["---", "", "## ⏱ 时间轴", ""]
+    L += ["---", "", "## ⏱ 时间轴", ""]  # i18n-ignore
     for si, sec in enumerate(draft["sections"]):
         L.append(f"### {sec['heading']}")
         L += [f"- **{mmss(r['t'])}** {r['text']}" for r in rows if r["section"] == si]
         L.append("")
     L += ["---", ""]
     if draft["films"]:
-        L += ["## 🎬 本期提到的电影", "", "| 片名 | 导演 / 备注 |", "|---|---|"]
+        L += ["## 🎬 本期提到的电影", "", "| 片名 | 导演 / 备注 |", "|---|---|"]  # i18n-ignore
         L += [f"| {f['name'].replace('|', '/')} | {f['note'].replace('|', '/')} |" for f in draft["films"]]
         L.append("")
     if draft["shows"]:
-        L += [f"**剧集 / 纪录片 / 游戏**：{' · '.join(draft['shows'])}", ""]
+        L += [f"**剧集 / 纪录片 / 游戏**：{' · '.join(draft['shows'])}", ""]  # i18n-ignore
     if draft["things"]:
-        L += ["## 🎨 本期提到的人和东西", "", " · ".join(draft["things"]), ""]
+        L += ["## 🎨 本期提到的人和东西", "", " · ".join(draft["things"]), ""]  # i18n-ignore
     if draft["glossary"]:
-        L += ["## 😏 内部梗小词典", ""]
+        L += ["## 😏 内部梗小词典", ""]  # i18n-ignore
         L += [f"- **{g['term']}**：{g['meaning']}" for g in draft["glossary"]]
         L.append("")
-    L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", "", FOOTER, ""]
+    L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", "", FOOTER, ""]  # i18n-ignore
     return "\n".join(L)
 
 
@@ -514,10 +515,10 @@ class Publisher:
             return dict(j) if j else None
 
     def start(self, ep: Episode, wait: bool = False) -> dict:
-        job = {"state": "running", "stage": "读成品转写", "started": time.time(), "finished": None, "error": None}
+        job = {"state": "running", "stage": tr("读成品转写"), "started": time.time(), "finished": None, "error": None}
         with self._lock:
             if (self.jobs.get(ep.id) or {}).get("state") == "running":
-                raise PublishBusy("这一集的发布资料正在生成")
+                raise PublishBusy(tr("这一集的发布资料正在生成"))
             self.jobs[ep.id] = job
 
         def stage(s: str) -> None:
@@ -528,7 +529,7 @@ class Publisher:
             try:
                 self.generate(ep, stage)
                 with self._lock:
-                    job.update(state="done", stage="完成", finished=time.time())
+                    job.update(state="done", stage=tr("完成"), finished=time.time())
             except Exception as e:     # noqa: BLE001 - surfaced to the UI
                 if not isinstance(e, PublishError):
                     traceback.print_exc()
@@ -544,27 +545,27 @@ class Publisher:
     def generate(self, ep: Episode, stage: Callable[[str], None] = lambda s: None) -> dict:
         segs = segments(ep)
         if not segs:
-            raise PublishError("这一集没有转写，写不了 show notes")
+            raise PublishError(tr("这一集没有转写，写不了 show notes"))
         music = music_info(self.ws, ep)
         names = load_names(self.ws)
         with ep.lock:
             version = ep.version_key()
             duration = music.to_final(ep.timeline_for(ep.enabled).length / ep.sr)
         writer = self.factory()
-        stage("Claude 在写标题和 show notes" if writer.name == "claude" else "生成草稿（没有 Claude）")
+        stage(tr("Claude 在写标题和 show notes") if writer.name == "claude" else tr("生成草稿（没有 Claude）"))
         out = writer.write(ep, segs, music, names, duration)
         if out.usage:
             self.on_usage(ep.id, out.usage)
         draft, notes = clean(out.data, segs)
         if not draft["sections"]:
-            raise PublishError("时间轴是空的（引用的段落都对不上），请再生成一次")
+            raise PublishError(tr("时间轴是空的（引用的段落都对不上），请再生成一次"))
         pack = {"schema": PUBLISH_SCHEMA, "episode": ep.id,
                 "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "adapter": out.adapter, "usage": out.usage, "notes": out.notes + notes,
                 "draft": draft, "edited": False}
         with ep.lock:
             if ep.version_key() != version:
-                pack["notes"].append("生成期间剪辑有变化，时间已按最新剪辑重新对过。")
+                pack["notes"].append(tr("生成期间剪辑有变化，时间已按最新剪辑重新对过。"))
             self._layout(ep, pack, music)
             self.save(ep, pack)
         return pack
@@ -684,7 +685,7 @@ class Publisher:
 
 def _replace_bgm(md: str, credits: list[dict] | None) -> str:
     """Swap the body of the BGM section (up to the next rule / heading) in edited Markdown."""
-    m = re.search(r"(## 🎵 本期 BGM\n\n)(.*?)(\n\n---|\n## |\Z)", md, flags=re.S)
+    m = re.search(r"(## 🎵 本期 BGM\n\n)(.*?)(\n\n---|\n## |\Z)", md, flags=re.S)  # i18n-ignore
     if not m:
         return md
     return md[:m.start(2)] + "\n".join(bgm_lines(credits)) + md[m.end(2):]

@@ -1,5 +1,6 @@
 import type { Episode, EditInfo } from "../api";
 import { fmt } from "../api";
+import { t } from "../i18n";
 
 const WINDOW = 60; // seconds visible in the lane view
 
@@ -12,11 +13,11 @@ export function Overview({ ep, time, onSeek }: { ep: Episode; time: number; onSe
     onSeek(((e.clientX - r.left) / r.width) * d);
   };
   return (
-    <section className="card" aria-label="整集概览">
+    <section className="card" aria-label={t("整集概览")}>
       <div className="card-head">
-        <h2>{ep.topics.length ? "话题段落" : "整集概览"}</h2>
+        <h2>{ep.topics.length ? t("话题段落") : t("整集概览")}</h2>
         <span className="muted small">
-          {ep.topics.length ? "点击跳转" : "深色刻度 = 需要你过目的改动 · 点击跳转"}
+          {ep.topics.length ? t("点击跳转") : t("深色刻度 = 需要你过目的改动 · 点击跳转")}
         </span>
       </div>
       {ep.topics.length > 0 && (
@@ -74,7 +75,7 @@ export function Lanes({
   };
   const ticks = [0, 1, 2, 3].map((i) => t0 + (i * WINDOW) / 3);
   return (
-    <section className="card lanes" aria-label="双轨时间线">
+    <section className="card lanes" aria-label={t("双轨时间线")}>
       <div className="lane-ticks mono small muted" aria-hidden>
         {ticks.map((t) => (
           <span key={t}>{fmt(t)}</span>
@@ -121,8 +122,8 @@ export function Lanes({
         <div className="lane-head" style={{ left: x(time) }} />
       </div>
       <p className="muted small legend">
-        <span className="lg lg-cut" /> 剪切点　<span className="lg lg-lift" /> 单轨删减
-        <span className="lg lg-restored" /> 已恢复　<span className="lg lg-pending" /> 待批准
+        <span className="lg lg-cut" /> {t("剪切点")}　<span className="lg lg-lift" /> {t("单轨删减")}
+        <span className="lg lg-restored" /> {t("已恢复")}　<span className="lg lg-pending" /> {t("待批准")}
       </p>
     </section>
   );

@@ -29,12 +29,13 @@ from typing import Iterable
 
 from .review import REVIEW_CONFIDENCE, ReviewPolicy
 from .store import Workspace, atomic_write_json, check_id, read_json
+from .i18n import N_, lang, tr
 
 LEARN_DIR = "learning"
 RULES_FILE = "rules.json"
 
 APPLIED, RESTORED = "applied", "restored"
-SUGGESTION_PREFIX = "AI 建议（未删）"
+SUGGESTION_PREFIX = "AI 建议（未删）"  # i18n-ignore
 
 # verdicts
 KEPT, RESTORED_V, ACCEPTED, DECLINED, ADDED, UNTOUCHED = "kept", "restored", "accepted", "declined", "added", "untouched"
@@ -47,11 +48,11 @@ WEIGHT = {"single": 1.0, "batch": 0.5, "none": 0.25, "hand_edit": 0.5}
 EXPLICIT_OVERRIDES = {("disfluency", "Pei"), ("repetition", "Pei")}
 
 KIND_LABELS = {
-    "pause": "停顿收紧", "disfluency": "口误", "repetition": "重复", "crosstalk": "抢话",
-    "content": "内容删减", "interjection_move": "插话挪位", "single_track_noise": "单轨杂声",
-    "filler": "口误与重复", "interjection": "插话处理", "single_track": "单轨删减", "chat": "聊天修改",
+    "pause": N_("停顿收紧"), "disfluency": N_("口误"), "repetition": N_("重复"), "crosstalk": N_("抢话"),
+    "content": N_("内容删减"), "interjection_move": N_("插话挪位"), "single_track_noise": N_("单轨杂声"),
+    "filler": N_("口误与重复"), "interjection": N_("插话处理"), "single_track": N_("单轨删减"), "chat": N_("聊天修改"),
 }
-HOST_LABELS = {"Leon": "Leon", "Pei": "Pei", "both": "两人", "none": "无人说话处"}
+HOST_LABELS = {"Leon": "Leon", "Pei": "Pei", "both": N_("两人"), "none": N_("无人说话处")}
 
 # evidence needed before a pattern becomes a candidate rule
 MIN_RESTORED = 3          # "AI cuts too much of X": at least this many restores ...
@@ -119,9 +120,9 @@ def _host(ep, e) -> tuple[str, float, float]:
     sr = ep.sr
     ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
     for a, b, track in ranges:
-        for tr, s, en, _w in ep.words(a, b):
-            if track is None or tr == track:
-                per[tr] += max(0.0, min(b, en) - max(a, s))
+        for trk, s, en, _w in ep.words(a, b):
+            if track is None or trk == track:
+                per[trk] += max(0.0, min(b, en) - max(a, s))
     lift_tracks = {o["track"] for o in e.ops if o["op"] in ("lift", "slip")}
     if lift_tracks and not e.cuts:
         return (lift_tracks.pop() if len(lift_tracks) == 1 else "both"), per["Leon"], per["Pei"]
@@ -138,9 +139,9 @@ def _text(ep, e, host: str, limit: int = 40) -> str:
     ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
     per: dict[str, list[str]] = defaultdict(list)
     for a, b, track in ranges:
-        for tr, s, en, w in ep.words(a, b):
-            if (track is None or tr == track) and a <= (s + en) / 2 < b:
-                per[tr].append(w)
+        for trk, s, en, w in ep.words(a, b):
+            if (track is None or trk == track) and a <= (s + en) / 2 < b:
+                per[trk].append(w)
     order = [host] if host in per else sorted(per, key=lambda t: -len(per[t]))
     txt = " / ".join("".join(per[t]) for t in order if per[t])
     return txt[:limit] + ("…" if len(txt) > limit else "")
@@ -160,7 +161,7 @@ def decisions(ep, accepted_as_is: bool = False) -> list[Decision]:
             if e.status not in (APPLIED, RESTORED):
                 continue                               # chat proposals never approved
             label = last.get(e.id, "")
-            how = "none" if not label else ("batch" if label.startswith("全部") else "single")
+            how = "none" if not label else ("batch" if label.startswith("全部") else "single")  # i18n-ignore
             if e.source == "first_cut":
                 initial = first.get(e.id, RESTORED if e.title.startswith(SUGGESTION_PREFIX) else e.status)
                 if initial == APPLIED:
@@ -208,8 +209,10 @@ def _rid(kind: str, *parts: str) -> str:
 
 
 def _what(kind: str, host: str) -> str:
-    k = KIND_LABELS.get(kind, kind)
-    return f"{HOST_LABELS.get(host, host)}的{k}" if host in ("Leon", "Pei") else k
+    k = tr(KIND_LABELS.get(kind, kind))
+    if lang() == "en":
+        k = k[:1].lower() + k[1:]                   # inside a sentence ("Leon's stumbles")
+    return tr("{host}的{kind}", host=tr(HOST_LABELS.get(host, host)), kind=k) if host in ("Leon", "Pei") else k
 
 
 def _en(host: str) -> str:
@@ -244,8 +247,8 @@ def _w(d: Decision) -> float:
 def _sources(ds: list[Decision], review_word: str, hand_word: str) -> str:
     r = sum(d.how != "hand_edit" for d in ds)
     h = len(ds) - r
-    parts = ([f"审阅里{review_word} {r} 处"] if r else []) + ([f"你手剪的成品里{hand_word} {h} 处"] if h else [])
-    return "，".join(parts)
+    parts = ([tr("审阅里{review_word} {r} 处", review_word=review_word, r=r)] if r else []) + ([tr("你手剪的成品里{hand_word} {h} 处", hand_word=hand_word, h=h)] if h else [])
+    return (", " if lang() == "en" else "，").join(parts)
 
 
 def learn(ds: list[Decision]) -> list[Rule]:
@@ -277,9 +280,8 @@ def learn(ds: list[Decision]) -> list[Rule]:
         if len(restored) >= MIN_RESTORED and rate >= PROTECT_RATE:
             rules.append(Rule(
                 _rid("protect", kind, host), "protect",
-                f"{what}：AI 删多了，以后少删",
-                f"AI 删了 {n_edits} 处{what}，其中{_sources(restored, '恢复了', '没删')}"
-                f"（加权约 {rate:.0%}）。例如 {_quote(restored)}。",
+                tr("{what}：AI 删多了，以后少删", what=what),
+                tr("AI 删了 {n_edits} 处{what}，其中{p2}（加权约 {rate}）。例如 {p4}。", n_edits=n_edits, what=what, p2=_sources(restored, tr('恢复了'), tr('没删')), rate=f"{rate:.0%}", p4=_quote(restored)),
                 (f"Leon undid {len(restored)} of {n_edits} pause tightenings ({rate:.0%} weighted): leave more air; "
                  f"tighten only clearly dead gaps." if kind == "pause" else
                  f"Leon kept the words in {len(restored)} of {n_edits} '{kind}' cuts on {_en(host)} ({rate:.0%} "
@@ -289,17 +291,15 @@ def learn(ds: list[Decision]) -> list[Rule]:
         elif routine and len(restored) >= MIN_RESTORED and rate >= REVIEW_RATE and ev["restored_review"]:
             rules.append(Rule(
                 _rid("review", kind, host), "review",
-                f"{what}：以后放进审阅让你过目",
-                f"这类原来算常规清理、自动应用，但{_sources(restored, '恢复了', '没删')}（加权约 {rate:.0%}），"
-                f"不该不问你就删。例如 {_quote(restored)}。",
+                tr("{what}：以后放进审阅让你过目", what=what),
+                tr("这类原来算常规清理、自动应用，但{p0}（加权约 {rate}），不该不问你就删。例如 {p2}。", p0=_sources(restored, tr('恢复了'), tr('没删')), rate=f"{rate:.0%}", p2=_quote(restored)),
                 "", key, ev, ex, {"review": True}))
         if (not routine and not ev["restored_review"] and rate <= TRUST_RATE
                 and sum(_w(d) for d in considered) >= MIN_TRUSTED):
             rules.append(Rule(
                 _rid("trust", kind, host), "trust",
-                f"{what}：AI 删得对，以后不用逐条过目",
-                f"{_sources(considered, '确认了', '也删了')}{what}，审阅里一处没恢复。以后这类直接应用（仍可在列表里恢复），"
-                f"删掉超过 5 秒说话的仍会让你过目。",
+                tr("{what}：AI 删得对，以后不用逐条过目", what=what),
+                tr("{p0}{what}，审阅里一处没恢复。以后这类直接应用（仍可在列表里恢复），删掉超过 5 秒说话的仍会让你过目。", p0=_sources(considered, tr('确认了'), tr('也删了')), what=what),
                 f"Leon agreed with {len(considered)} '{kind}' cuts on {host}'s speech: keep cutting this kind "
                 f"at the same rate.",
                 key, ev, [_example(d) for d in considered[:MAX_EXAMPLES]], {"review": False}))
@@ -316,8 +316,8 @@ def learn(ds: list[Decision]) -> list[Rule]:
             what = _what(kind, host)
             rules.append(Rule(
                 _rid("timid", kind, host), "timid",
-                f"{what}：AI 太犹豫，该直接删",
-                f"AI 没敢删、留给你决定的 {len(g)} 处{what}里，{_sources(acc, '你删了', '删了')}。例如 {_quote(acc)}。",
+                tr("{what}：AI 太犹豫，该直接删", what=what),
+                tr("AI 没敢删、留给你决定的 {p0} 处{what}里，{p2}。例如 {p3}。", p0=len(g), what=what, p2=_sources(acc, tr('你删了'), tr('删了')), p3=_quote(acc)),
                 f"When unsure about '{kind}' on {_en(host)}, cut it (Leon cut {len(acc)} of {len(g)} such "
                 f"suggestions): {_prompt_quotes(acc)}.",
                 {"category": kind, "host": host}, {"suggested": len(g), "accepted": len(acc)},
@@ -330,11 +330,11 @@ def learn(ds: list[Decision]) -> list[Rule]:
             added[(d.kind, d.host)].append(d)
     for (kind, host), g in sorted(added.items()):
         if len(g) >= MIN_ADDED:
-            what = _what(kind, host) if kind != "chat" else f"{HOST_LABELS.get(host, host)}说的话"
+            what = _what(kind, host) if kind != "chat" else tr("{p0}说的话", p0=tr(HOST_LABELS.get(host, host)))
             rules.append(Rule(
                 _rid("missed", kind, host), "missed",
-                f"{what}：AI 漏删了，你得自己说",
-                f"你在聊天里让 AI 补删了 {len(g)} 处{what}。例如 {_quote(g)}。",
+                tr("{what}：AI 漏删了，你得自己说", what=what),
+                tr("你在聊天里让 AI 补删了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g)),
                 f"Leon had to ask for {len(g)} extra cuts of this kind ({kind}) on {_en(host)} after the first "
                 f"cut; look for similar passages: {_prompt_quotes(g)}.",
                 {"category": kind, "host": host}, {"added": len(g)}, [_example(d) for d in g[:MAX_EXAMPLES]]))
@@ -347,14 +347,13 @@ def learn(ds: list[Decision]) -> list[Rule]:
         kept = sorted([d for d in g if d.verdict in (RESTORED_V, DECLINED)], key=lambda d: -d.speech_s)
         if len(g) < MIN_TASTE or not cut_ or not kept:
             continue          # all one way: the protect / trust / timid rules already say it
-        who = HOST_LABELS[host]
+        who = tr(HOST_LABELS[host])
         missed = [d for d in cut_ if d.verdict == ADDED]
         rules.append(Rule(
             _rid("taste", "content", host), "taste",
-            f"{who}的内容删减：按你删 / 留的例子学品味",
-            f"跑题和啰嗦段落你删了 {len(cut_)} 处（如 {_quote(cut_, 3)}），留了 {len(kept)} 处"
-            f"（如 {_quote(kept, 3)}）" + (f"；其中 {len(missed)} 处是 AI 没删、你手剪时删掉的" if missed else "")
-            + "。这些例子会给 AI 参考，让它挑段落时更像你。",
+            tr("{who}的内容删减：按你删 / 留的例子学品味", who=who),
+            tr("跑题和啰嗦段落你删了 {p0} 处（如 {p1}），留了 {p2} 处（如 {p3}）", p0=len(cut_), p1=_quote(cut_, 3), p2=len(kept), p3=_quote(kept, 3)) + (tr("；其中 {p0} 处是 AI 没删、你手剪时删掉的", p0=len(missed)) if missed else "")
+            + tr("。这些例子会给 AI 参考，让它挑段落时更像你。"),
             f"Leon's taste on content trims of {_en(host)} (learn the kind of passage, not the ranges). "
             f"He CUT: {_prompt_quotes(cut_[:TASTE_EXAMPLES])}. "
             f"He KEPT (do not cut passages like these): {_prompt_quotes(kept[:TASTE_EXAMPLES])}.",
@@ -384,10 +383,10 @@ def learn(ds: list[Decision]) -> list[Rule]:
         if thr > REVIEW_CONFIDENCE:
             rules.append(Rule(
                 _rid("threshold", "confidence"), "threshold",
-                f"AI 把握度低于 {thr:.1f} 的常规删除也让你过目",
-                "按把握度分组，你恢复的比例："
-                + "，".join(f"{a:.1f}–{min(b, 1):.1f} 恢复 {r}/{n}" for a, b, n, r, _ in buckets if n)
-                + f"。低于 {thr:.1f} 时恢复率偏高，这些不该自动应用。",
+                tr("AI 把握度低于 {thr} 的常规删除也让你过目", thr=f"{thr:.1f}"),
+                tr("按把握度分组，你恢复的比例：")
+                + (", " if lang() == "en" else "，").join(tr("{a}–{p1} 恢复 {r}/{n}", a=f"{a:.1f}", p1=f"{min(b, 1):.1f}", r=r, n=n) for a, b, n, r, _ in buckets if n)
+                + tr("。低于 {thr} 时恢复率偏高，这些不该自动应用。", thr=f"{thr:.1f}"),
                 "", {"confidence": thr},
                 {"buckets": [{"lo": a, "hi": min(b, 1.0), "n": n, "restored": r, "rate": round(x, 2)}
                              for a, b, n, r, x in buckets]},
@@ -441,22 +440,22 @@ def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list]
         ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
         if not ranges or e.category == "pause":
             for a, b, track in ranges:
-                for tr in ([track] if track else list(rem)):
-                    covered[tr].append((a, b))
+                for trk in ([track] if track else list(rem)):
+                    covered[trk].append((a, b))
             continue                                     # slips: nothing removed; pauses: see below
         speech = hit = unsure = 0.0
         for a, b, track in ranges:
-            for tr in ([track] if track else list(rem)):
-                covered[tr].append((a, b))
-            for tr, s, en, _w in ep.words(a, b):
-                if track and tr != track:
+            for trk in ([track] if track else list(rem)):
+                covered[trk].append((a, b))
+            for trk, s, en, _w in ep.words(a, b):
+                if track and trk != track:
                     continue
                 x, y = max(a, s), min(b, en)
                 if y <= x:
                     continue
                 speech += y - x
-                hit += min(y - x, _spans_overlap(rem.get(tr, []), x, y))
-                unsure += min(y - x, _spans_overlap(amb.get(tr, []), x, y))
+                hit += min(y - x, _spans_overlap(rem.get(trk, []), x, y))
+                unsure += min(y - x, _spans_overlap(amb.get(trk, []), x, y))
         if speech < 0.05 or unsure > 0.5 * speech:
             continue        # pauses: his pause lengths are already calibrated as numbers (S5), not per edit
         frac = hit / speech
@@ -473,19 +472,19 @@ def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list]
             length_s=j["len"], speech_s=float(e.speech_s), text=_text(ep, e, host),
             reason=(e.reason or "")[:120], raw=j["raw"], consequential=e.consequential))
     # long stretches of speech he cut himself and the AI did not touch: what the AI missed
-    for tr, spans in removed.items():
-        cov = sorted(covered.get(tr, []))
+    for trk, spans in removed.items():
+        cov = sorted(covered.get(trk, []))
         for a, b in spans:
             a, b = a - off, b - off
             if b <= 0 or _spans_overlap(cov, a, b) > 0.2 * (b - a):
                 continue
-            ws = [(s, en, w) for t, s, en, w in ep.words(a, b) if t == tr and s >= a - tol and en <= b + tol]
+            ws = [(s, en, w) for t, s, en, w in ep.words(a, b) if t == trk and s >= a - tol and en <= b + tol]
             sp = sum(en - s for s, en, _ in ws)
             if sp < MISSED_SPEECH_S:
                 continue
             out.append(Decision(
-                episode=f"{ep.id}.hand_edit", edit_id=f"h{tr[0]}{int(a * 10):06d}", source="hand_edit",
-                kind="content", category="content", host=tr, verdict=ADDED, how="hand_edit", confidence=1.0,
+                episode=f"{ep.id}.hand_edit", edit_id=f"h{trk[0]}{int(a * 10):06d}", source="hand_edit",
+                kind="content", category="content", host=trk, verdict=ADDED, how="hand_edit", confidence=1.0,
                 length_s=round(b - a, 2), speech_s=round(sp, 2), text="".join(w for _, _, w in ws)[:40],
                 reason="", raw=[round(a + off, 2), round(b + off, 2)], consequential=True))
     return out

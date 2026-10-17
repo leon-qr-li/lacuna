@@ -30,6 +30,7 @@ from typing import Callable
 from pydantic import BaseModel, Field
 
 from .store import atomic_write_json, read_json
+from .i18n import join_list, tr
 
 APP_ROOT = Path(__file__).resolve().parent.parent      # the version folder (or the git checkout)
 UPDATE_EXIT = 75     # keep in sync with installer/lacuna_launcher.py
@@ -128,7 +129,7 @@ class Updater:
                     raise ValueError("incomplete feed")
                 err = None
             except (OSError, ValueError) as e:
-                feed, err = None, f"检查更新失败：{e}"
+                feed, err = None, tr("检查更新失败：{e}", e=e)
             with self._lock:
                 self._checked = time.time()
                 self._checking = False
@@ -143,10 +144,10 @@ class Updater:
 
     def prepare(self, wait: bool = False) -> dict:
         if not self.installed:
-            raise UpdateError("开发版不能在 App 里更新")
+            raise UpdateError(tr("开发版不能在 App 里更新"))
         st = self.status()
         if not st["available"]:
-            raise UpdateError("已经是最新版本")
+            raise UpdateError(tr("已经是最新版本"))
         with self._lock:
             if self.job and self.job["state"] == "running":
                 return dict(self.job)
@@ -169,7 +170,7 @@ class Updater:
                 self._download_and_unpack(feed)
             self._set_job(state="ready", progress=1.0)
         except Exception as e:      # noqa: BLE001 - shown to Leon, the app keeps running
-            self._set_job(state="error", error=f"下载新版本失败：{e}")
+            self._set_job(state="error", error=tr("下载新版本失败：{e}", e=e))
 
     def _download_and_unpack(self, feed: dict) -> None:
         version = feed["version"]
@@ -189,13 +190,13 @@ class Updater:
                     self._set_job(progress=min(0.95, done / total * 0.95))
         if h.hexdigest() != str(feed["sha256"]).lower():
             part.unlink(missing_ok=True)
-            raise UpdateError("文件校验不对，可能没下完整，再试一次")
+            raise UpdateError(tr("文件校验不对，可能没下完整，再试一次"))
         versions = self.home / "versions"
         tmp = Path(tempfile.mkdtemp(prefix=f".{version}-", dir=versions if versions.is_dir() else None))
         try:
             with zipfile.ZipFile(part) as z:
                 if z.read("VERSION").decode().strip() != version:
-                    raise UpdateError("更新包的版本号和说明对不上")
+                    raise UpdateError(tr("更新包的版本号和说明对不上"))
                 z.extractall(tmp)
             versions.mkdir(parents=True, exist_ok=True)
             dst = versions / version
@@ -210,13 +211,13 @@ class Updater:
     # ---- apply
     def apply(self, busy: list[str], restart: Callable[[int], None]) -> dict:
         if not self.installed:
-            raise UpdateError("开发版不能在 App 里更新")
+            raise UpdateError(tr("开发版不能在 App 里更新"))
         if busy:
-            raise UpdateError("、".join(busy) + "还没做完，做完再更新")
+            raise UpdateError(tr("{tasks}还没做完，做完再更新", tasks=join_list(busy)))
         with self._lock:
             job = dict(self.job) if self.job else None
         if not job or job.get("state") != "ready" or not self.prepared(job["version"]):
-            raise UpdateError("新版本还没下载好")
+            raise UpdateError(tr("新版本还没下载好"))
         atomic_write_json(self.home / "pending.json", {"version": job["version"], "from": self.version,
                                                         "at": time.strftime("%Y-%m-%d %H:%M:%S")})
         restart(UPDATE_EXIT)
