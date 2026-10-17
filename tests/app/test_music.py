@@ -1,4 +1,4 @@
-"""Media library + music placement / ducking (phase 6a, D43)."""
+"""Media library + music placement / ducking (phase 6a, D44)."""
 import json
 import shutil
 import subprocess
