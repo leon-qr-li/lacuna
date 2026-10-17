@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { AB, EditInfo, Episode, TextLine } from "../api";
 import { api, confidenceLabel, fmt, statusLabel } from "../api";
 import { ABPlayer, type ABHandle } from "./ABPlayer";
+import { Icon } from "./Icon";
 
 interface Props {
   ep: Episode;
@@ -175,24 +176,37 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
           <p className="muted">没有需要过目的改动。</p>
         ) : (
           <>
-            <div className="row wrap baseline gap12">
+            <header className="rv-head">
+              <span className={`chip ${pending(cur) ? "chip-warn" : "chip-ok"}`}>
+                第 {idx + 1} / {ranked.length} 处{pending(cur) ? "" : " · 已过目"}
+              </span>
               <h1 data-testid="review-title">{cur.title}</h1>
-              <span className="mono muted">
+              <span className="mono muted small">
                 成品 {fmt(cur.t)}
                 {cur.raw && ` · 原始 ${cur.tracks ? cur.tracks.join("/") + " " : ""}${fmt(cur.raw[0])}–${fmt(cur.raw[1])}`}
               </span>
-            </div>
-            <section className="card prose">
-              <h2 className="sub">为什么{cur.status === "restored" ? (cur.approved ? "删过（现已恢复）" : "建议删（还没有应用）") : "删"}</h2>
-              <p>{cur.reason || "（没有说明）"}</p>
-              <p className="muted small">
-                把握度：{confidenceLabel(cur.confidence)} · 类型：{cur.category_label}
-                {cur.speech_s ? ` · 删掉说话 ${cur.speech_s.toFixed(1)} 秒` : ""} · {statusLabel(cur)} · 可随时恢复
-              </p>
+            </header>
+            <section className="card rv-why">
+              <span className="rv-k">
+                为什么{cur.status === "restored" ? (cur.approved ? "删过（现已恢复）" : "建议删（还没有应用）") : "删"}
+              </span>
+              <div>
+                <p>{cur.reason || "（没有说明）"}</p>
+                <div className="rv-chips small">
+                  <span className="chip chip-plain">把握度 {confidenceLabel(cur.confidence)}</span>
+                  <span className="chip chip-plain">{cur.category_label}</span>
+                  {cur.speech_s ? <span className="chip chip-plain">删掉说话 {cur.speech_s.toFixed(1)} 秒</span> : null}
+                  <span className="chip chip-plain">{statusLabel(cur)}</span>
+                  <span className="chip chip-ok">可随时恢复</span>
+                </div>
+              </div>
             </section>
             {lines && lines.length > 0 && (
-              <section className="card prose" aria-label="原文对照">
-                <h2 className="sub">原话（只显示，不改写；划线部分被剪掉）</h2>
+              <section className="card prose rv-lines" aria-label="原文对照">
+                <div className="card-head">
+                  <h2 className="sub">原话</h2>
+                  <span className="muted small">只显示，不改写；划线部分被剪掉</span>
+                </div>
                 {lines.map((l, i) => (
                   <p key={i} className="line">
                     <span className={`spk spk-${ep.tracks.findIndex((t) => t.name === l.speaker)}`}>{l.speaker}</span>
@@ -206,46 +220,61 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 ))}
               </section>
             )}
-            <section className="dark-bar" aria-label="试听">
-              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={["原始（前后 10 秒）", "剪后（前后 10 秒）"]} onPlay={onPauseMain} dark />
-            </section>
-            <div className="row wrap gap10">
+            <form className="rv-tweak" onSubmit={sendTweak}>
+              <Icon name="chat" />
+              <label htmlFor="tweak" className="sr-only">
+                用一句话调整
+              </label>
+              <input
+                id="tweak"
+                type="text"
+                value={tweak}
+                onChange={(e) => setTweak(e.target.value)}
+                placeholder="或者直接说：恢复这处 / 停顿短一点"
+              />
+            </form>
+            {reply && <p className="note">{reply}</p>}
+            <p className="muted small">快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。</p>
+
+            {/* the floating dock: listen, compare, decide; everything for this edit in one place */}
+            <section className="dock rv-dock" aria-label="试听和决定">
+              <button type="button" className="btn btn-ghost btn-round" onClick={() => go(-1)} disabled={idx <= 0} title="上一处（J）" aria-label="上一处">
+                <Icon name="chevl" size={18} />
+              </button>
+              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={["A · 原始", "B · 剪后"]} onPlay={onPauseMain} compact />
+              <span className="grow" />
               {cur.status === "applied" ? (
                 <>
-                  <button type="button" className="btn btn-primary" onClick={() => void decide("keep")}>
-                    {cur.approved ? "✓ 已保留" : "保留这个删除"}
-                  </button>
                   <button type="button" className="btn btn-outline" onClick={() => void decide("restore")}>
-                    恢复原话
+                    恢复原话 <kbd aria-hidden="true">R</kbd>
+                  </button>
+                  <button type="button" className="btn btn-primary" onClick={() => void decide("keep")}>
+                    <Icon name="check" /> {cur.approved ? "已保留" : "保留这个删除"} <kbd aria-hidden="true">Y</kbd>
                   </button>
                 </>
               ) : (
                 <>
-                  {!cur.approved && (
-                    <button type="button" className="btn btn-primary" onClick={() => void decide("restore")}>
-                      不删，保持原话
-                    </button>
-                  )}
                   <button type="button" className={`btn ${cur.approved ? "btn-primary" : "btn-outline"}`} onClick={() => void decide("apply")}>
                     重新应用这个删除
                   </button>
+                  {!cur.approved && (
+                    <button type="button" className="btn btn-primary" onClick={() => void decide("restore")}>
+                      <Icon name="check" /> 不删，保持原话 <kbd aria-hidden="true">Y</kbd>
+                    </button>
+                  )}
                 </>
               )}
-              <form className="grow row gap8" onSubmit={sendTweak}>
-                <label htmlFor="tweak" className="sr-only">
-                  用一句话调整
-                </label>
-                <input
-                  id="tweak"
-                  type="text"
-                  value={tweak}
-                  onChange={(e) => setTweak(e.target.value)}
-                  placeholder="或者直接说：恢复这处 / 停顿短一点"
-                />
-              </form>
-            </div>
-            {reply && <p className="note">{reply}</p>}
-            <p className="muted small">快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。</p>
+              <button
+                type="button"
+                className="btn btn-ghost btn-round"
+                onClick={() => go(1)}
+                disabled={idx >= ranked.length - 1}
+                title="下一处（K）"
+                aria-label="下一处"
+              >
+                <Icon name="chev" size={18} />
+              </button>
+            </section>
           </>
         )}
       </main>

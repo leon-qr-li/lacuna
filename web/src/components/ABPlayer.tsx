@@ -25,9 +25,10 @@ interface Props {
   loading?: boolean;
   onPlay?: () => void;
   dark?: boolean;
+  compact?: boolean; // a segmented A | B pill for the review dock, hint as a tooltip
 }
 
-export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labels, loading, onPlay, dark }, ref) {
+export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labels, loading, onPlay, dark, compact }, ref) {
   const audio = useRef<HTMLAudioElement>(null);
   const [side, setSide] = useState<Side | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -71,7 +72,7 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
   const btn = (s: Side, label: string, key: string) => (
     <button
       type="button"
-      className={`btn ${dark ? "btn-ondark" : "btn-outline"} ${side === s ? "is-on" : ""}`}
+      className={compact ? `ab-opt ${side === s ? "is-on" : ""}` : `btn ${dark ? "btn-ondark" : "btn-outline"} ${side === s ? "is-on" : ""}`}
       aria-pressed={side === s}
       disabled={!ab || loading}
       onClick={() => (side === s && playing ? audio.current?.pause() : start(s))}
@@ -82,10 +83,15 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
   );
 
   return (
-    <div className="ab" role="group" aria-label="前后对比试听">
+    <div
+      className={compact ? "ab ab-seg" : "ab"}
+      role="group"
+      aria-label="前后对比试听"
+      title={compact ? (loading ? "正在渲染…" : "前后各约 10 秒，切换时位置同步") : undefined}
+    >
       {btn("before", labels[0], "A")}
       {btn("after", labels[1], "B")}
-      <span className="muted small">{loading ? "正在渲染…" : "前后各约 10 秒，切换时位置同步"}</span>
+      {!compact && <span className="muted small">{loading ? "正在渲染…" : "前后各约 10 秒，切换时位置同步"}</span>}
       <audio
         ref={audio}
         data-testid="ab-audio"
