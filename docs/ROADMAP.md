@@ -20,7 +20,7 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 6 | 片头、配乐与 ducking | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 5 | — |
 | 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
 | 8 | UI 审美迭代 | 视觉与布局打磨 | flows stable (after 4) | 5–6 | — |
-| 9 | 发布资料包 | 标题（可换候选）、一句话简介、show notes（D40 样式）、成品时间线上的章节、专有名词核对，一键复制（富文本 + Markdown） | 2 | 6a | **built (D44)**; real-key run + Leon validation pending |
+| 9 | 发布资料包 | 标题（可换候选）、一句话简介、show notes（D40 样式）、成品时间线上的章节、专有名词核对，一键复制（富文本 + Markdown） | 2 | 6a | **built (D45)**; real-key run + Leon validation pending |
 | 10 | 海报 | Claude 按本期内容写 3–4 版极简 SVG 海报，本地渲染 PNG，Leon 挑一版或一句话改 | 9 | 6a | — (direction set, D38) |
 | 11 | 辅助发布 | 发布页（文件、文字、海报、清单、打开上传页）+ 发布/同步状态核实；之后再试浏览器代填 | 9, 10 | — | — |
 | 6b | AI 推荐配乐 | AI 提议放音乐/台词的位置，从库里原声的真实分析中给 2–3 个候选片段 | 6, 5 | — | after MVP |
@@ -56,7 +56,7 @@ Parallel set (2026-10-17): phase 3 merged (#8), awaiting Leon's validation. Expo
 - EP001 result (cloud preview: v3 ops accepted as is + hand edit): 1 candidate, Leon's content taste (26 cut / 16 kept examples, incl. passages the AI missed). Review threshold unchanged.
 - Tests: `tests/app/test_learning.py`, `web/e2e/learning.spec.ts`.
 
-## Phase 9 — 发布资料包 (2026-10-17, D44)
+## Phase 9 — 发布资料包 (2026-10-17, D45)
 - UI: episode top bar → 「发布资料」 (`#/ep/<id>/publish`): 生成发布资料 → title (alternatives one click away), one-line blurb, show notes preview (Markdown in the D40 format) with 复制（带格式）= rich HTML + Markdown on the clipboard at once, 复制 Markdown, 编辑 (Leon's Markdown is kept), chapters (copy as `mm:ss 标题` lines), 专有名词核对 (改成 X / 不用改). After a later cut change: banner 「更新时间戳」 (local, free; hand edits kept, only bold timestamps swap); entries whose audio was cut later are listed.
 - API: `GET /api/episodes/{id}/publish`, `POST …/publish/generate` (background job), `POST …/publish/retime`, `PUT …/publish {markdown?|null, title?}`, `POST …/publish/names {heard, action: apply|ignore}`.
 - Engine `lacuna_app/publish.py`: transcript of the current cut (`Episode.utterances`, cuts/lifts/slips applied) → numbered segments anchored in base time → one streamed Claude request (`claude-opus-5-5`, effort `LACUNA_PUBLISH_EFFORT`, default medium; strict tool `submit_publish_pack`; brief `prompts/show_notes_brief.txt` + approved example `prompts/show_notes_example.md`) → entries cite segment ids, times computed locally → Markdown rendered locally. Without a key: a time-sliced skeleton, labelled.

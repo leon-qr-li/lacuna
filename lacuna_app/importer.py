@@ -79,6 +79,7 @@ class Importer:
         self.first_cut_factory = first_cut_factory or (lambda: make_first_cut("auto"))
         self.asr_backend = asr_backend          # None = real sherpa-onnx ASR (tests inject a fake)
         self._lock = threading.Lock()
+        self._usage_lock = threading.Lock()
         self._running: str | None = None
         self._cancel: set[str] = set()
         self.jobs: dict[str, dict] = {}
@@ -285,6 +286,8 @@ class Importer:
             ops_doc = read_json(ops_p)
         else:
             fc = self.first_cut_factory()
+            if hasattr(fc, "on_usage"):
+                fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
             self._progress(job, "first_cut", 0.0, "AI 第一刀" if fc.name == "claude" else "规则第一刀（没有 Claude）")
@@ -302,8 +305,6 @@ class Importer:
                 raise
             ops_doc = res.ops_doc
             atomic_write_json(ops_p, ops_doc)
-            if res.usage:
-                self._log_usage(job["id"], res.usage)
             self._done_step(job, "first_cut", {"engine": fc.name, "ops": len(ops_doc["ops"]), "usage": res.usage})
 
         # 5. episode
@@ -347,7 +348,7 @@ class Importer:
     def _log_usage(self, episode_id: str, usage: dict) -> None:
         line = {"at": now(), "episode": episode_id, "kind": "first_cut", **usage}
         try:
-            with open(self.ws.root / "ai_usage.jsonl", "a", encoding="utf-8") as f:
+            with self._usage_lock, open(self.ws.root / "ai_usage.jsonl", "a", encoding="utf-8") as f:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
         except OSError:
             pass
