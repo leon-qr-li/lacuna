@@ -162,6 +162,40 @@ def test_mac_app_bundle(tmp_path, root):
     assert made == [app]
     exe = app / "Contents" / "MacOS" / "LACUNA"
     assert exe.stat().st_mode & 0o111 and "open -a Terminal" in exe.read_text()
+    (root / "LACUNA.icns").write_bytes(b"icns")
+    L.make_shortcuts(root, 8765, home=tmp_path)
+    assert (app / "Contents" / "Resources" / "LACUNA.icns").read_bytes() == b"icns"
+    assert "<key>CFBundleIconFile</key><string>LACUNA</string>" in (app / "Contents" / "Info.plist").read_text()
+
+
+def test_install_copies_the_app_icons(tmp_path, root):
+    base = release(tmp_path, "2026.10.17.1")
+    cfg = L.install(root, str(base), tmp_path / "ws", None, None, shortcuts=False, runner=FakeUv(root))
+    for name in L.ICONS:
+        assert (root / name).read_bytes() == (REPO / "installer" / name).read_bytes()
+    assert cfg["shortcuts"] is False
+    app_dir = root / "versions" / "2026.10.17.1"
+    assert L.install_icons(root, app_dir) is False            # unchanged: nothing to refresh
+    (app_dir / "installer" / "LACUNA.ico").write_bytes(b"new")
+    assert L.install_icons(root, app_dir) is True and (root / "LACUNA.ico").read_bytes() == b"new"
+
+
+def test_run_refreshes_shortcuts_once_after_an_icon_change(tmp_path, root, monkeypatch):
+    base = release(tmp_path, "2026.10.17.1")
+    L.install(root, str(base), tmp_path / "ws", None, None, shortcuts=False, runner=FakeUv(root))
+    made = []
+    monkeypatch.setattr(L, "make_shortcuts", lambda r, port: made.append(port) or [])
+    monkeypatch.setattr(L, "health", lambda port: {"version": "2026.10.17.1"})   # already running: return early
+    monkeypatch.setattr(L.webbrowser, "open", lambda url: None)
+    (root / "LACUNA.ico").unlink()
+    assert L.run(root) == 0 and made == []                     # installed without shortcuts: leave them alone
+    cfg = L.load_config(root)
+    cfg.pop("shortcuts")                                       # installed before the key existed
+    L.write_json(root / "config.json", cfg)
+    (root / "LACUNA.ico").unlink()
+    L.run(root)
+    L.run(root)
+    assert made == [cfg["port"]] and (root / "LACUNA.ico").is_file()
 
 
 # ---------------------------------------------------------------------------- run: update + rollback
@@ -252,3 +286,21 @@ def test_run_update_then_rollback(tmp_path, root, monkeypatch):
         if t.is_alive():
             (root / "control").write_text("0")
             t.join(20)
+
+
+def test_windows_shortcut_gets_the_icon(tmp_path, root, monkeypatch):
+    scripts = []
+
+    def fake_run(cmd, **kw):
+        scripts.append(cmd[-1])
+        return type("R", (), {"stdout": ""})()
+    monkeypatch.setattr(L, "WINDOWS", True)
+    monkeypatch.setattr(L, "MACOS", False)
+    monkeypatch.setattr(L.subprocess, "run", fake_run)
+    root.mkdir(parents=True, exist_ok=True)
+    L.make_shortcuts(root, 8765)
+    assert "IconLocation" not in scripts[-1]                  # no icon file yet: Windows' default icon
+    (root / "LACUNA.ico").write_bytes(b"ico")
+    L.make_shortcuts(root, 8765)
+    assert f"$lnk.IconLocation = '{root / 'LACUNA.ico'},0';" in scripts[-1]
+    assert scripts[-1].rstrip().endswith("}")
