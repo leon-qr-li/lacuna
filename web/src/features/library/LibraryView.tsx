@@ -3,20 +3,21 @@ import { GrowText } from "../../components/GrowText";
 import type { Asset, Credit, CreditStatus, LibraryView as Lib } from "./api";
 import { fmt } from "../../api";
 import { libraryApi } from "./api";
+import { t } from "../../i18n";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
-  confirmed: "已确认",
-  suggested: "待确认",
-  unknown: "还不知道曲名",
+  confirmed: t("已确认"),
+  suggested: t("待确认"),
+  unknown: t("还不知道曲名"),
 };
 
 const FIELDS: { key: keyof Credit; label: string }[] = [
-  { key: "title", label: "曲名" },
-  { key: "film", label: "电影 / 剧" },
-  { key: "composer", label: "作曲" },
-  { key: "artist", label: "演唱 / 演奏" },
-  { key: "album", label: "原声专辑" },
-  { key: "year", label: "年份" },
+  { key: "title", label: t("曲名") },
+  { key: "film", label: t("电影 / 剧") },
+  { key: "composer", label: t("作曲") },
+  { key: "artist", label: t("演唱 / 演奏") },
+  { key: "album", label: t("原声专辑") },
+  { key: "year", label: t("年份") },
 ];
 
 type Upload = { name: string; state: "busy" | "done" | "dup" | "error"; msg?: string };
@@ -34,14 +35,14 @@ function DropZone({ kinds, dragging, onFiles }: { kinds: Record<string, string>;
       data-testid="drop-zone"
       data-kind={kind}
     >
-      <p className="lib-drop-title">把音乐文件拖到这里</p>
+      <p className="lib-drop-title">{t("把音乐文件拖到这里")}</p>
       <div className="row gap12 lib-drop-actions">
         <button type="button" className="btn btn-primary" onClick={() => input.current?.click()}>
-          选择文件
+          {t("选择文件")}
         </button>
         <label className="row gap8 small">
-          用途
-          <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label="新文件的用途">
+          {t("用途")}
+          <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label={t("新文件的用途")}>
             {Object.entries(kinds).map(([k, v]) => (
               <option key={k} value={k}>
                 {v}
@@ -50,14 +51,14 @@ function DropZone({ kinds, dragging, onFiles }: { kinds: Record<string, string>;
           </select>
         </label>
       </div>
-      <p className="small muted">mp3、wav、flac、m4a 等都可以，一次可以拖好几个。</p>
+      <p className="small muted">{t("mp3、wav、flac、m4a 等都可以，一次可以拖好几个。")}</p>
       <input
         ref={input}
         type="file"
         multiple
         accept={ACCEPT}
         hidden
-        aria-label="选择音乐文件"
+        aria-label={t("选择音乐文件")}
         onChange={(e) => {
           const files = Array.from(e.target.files ?? []);
           e.target.value = "";
@@ -85,7 +86,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
       if (r.message) setMsg(r.message);
       return true;
     } catch (e) {
-      setMsg(`失败：${(e as Error).message}`);
+      setMsg(t("失败：{message}", { message: (e as Error).message }));
       return false;
     } finally {
       setBusy(null);
@@ -99,7 +100,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
         <select
           className="chip-select"
           value={a.kind}
-          aria-label="用途"
+          aria-label={t("用途")}
           disabled={!!busy}
           onChange={(e) => void run("kind", libraryApi.updateAsset(a.id, { kind: e.target.value }))}
         >
@@ -118,10 +119,10 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
       <div className="row gap8 align-end">
         <GrowText
           value={note}
-          placeholder="随口说一句，比如：这是《奥德赛》的主题曲"
+          placeholder={t("随口说一句，比如：这是《奥德赛》的主题曲")}
           onChange={setNote}
           onEnter={() => note !== a.note && !busy && void run("save", libraryApi.updateAsset(a.id, { note }))}
-          aria-label="备注"
+          aria-label={t("备注")}
         />
         <button
           type="button"
@@ -129,18 +130,18 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           disabled={note === a.note || !!busy}
           onClick={() => void run("save", libraryApi.updateAsset(a.id, { note }))}
         >
-          保存备注
+          {t("保存备注")}
         </button>
       </div>
       <div className="row gap8 wrap">
-        <span data-testid="credit-line">BGM 署名：{a.credit_line}</span>
+        <span data-testid="credit-line">{t("BGM 署名：")}{a.credit_line}</span>
         <span className={`badge badge-${c.status}`}>{CREDIT_LABEL[c.status]}</span>
-        {c.source === "file_tags" && c.status === "suggested" && <span className="muted small">来自文件标签</span>}
-        {c.source === "claude" && c.status === "suggested" && <span className="muted small">Claude 查的</span>}
+        {c.source === "file_tags" && c.status === "suggested" && <span className="muted small">{t("来自文件标签")}</span>}
+        {c.source === "claude" && c.status === "suggested" && <span className="muted small">{t("Claude 查的")}</span>}
       </div>
       {c.sources?.length > 0 && (
         <p className="small muted">
-          出处：
+          {t("出处：")}
           {c.sources.slice(0, 3).map((u) => (
             <a key={u} href={u} target="_blank" rel="noreferrer" className="lib-src">
               {new URL(u).hostname}
@@ -154,18 +155,18 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           type="button"
           className="btn btn-primary"
           disabled={!!busy || !claude || !note.trim()}
-          title={!claude ? "没有 API key，Claude 暂时不可用" : !note.trim() ? "先写备注：Claude 听不到音乐，只能按备注去查" : ""}
+          title={!claude ? t("没有 API key，Claude 暂时不可用") : !note.trim() ? t("先写备注：Claude 听不到音乐，只能按备注去查") : ""}
           onClick={() => {
             const go = note !== a.note ? libraryApi.updateAsset(a.id, { note }).then(() => libraryApi.lookupCredit(a.id)) : libraryApi.lookupCredit(a.id);
             // show what Claude filled in, ready to correct before confirming
             void run("lookup", go.then((r) => (setDraft({ ...r.asset.credit }), setEdit(true), r)));
           }}
         >
-          {busy === "lookup" ? "Claude 正在查…" : "让 Claude 查正式曲名"}
+          {busy === "lookup" ? t("Claude 正在查…") : t("让 Claude 查正式曲名")}
         </button>
         {c.status === "suggested" && (
           <button type="button" className="btn btn-outline" disabled={!!busy} onClick={() => void run("confirm", libraryApi.updateAsset(a.id, { confirm: true }))}>
-            对，就是这首
+            {t("对，就是这首")}
           </button>
         )}
         <button
@@ -176,7 +177,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
             setEdit(!edit);
           }}
         >
-          {edit ? "收起" : "手动改"}
+          {edit ? t("收起") : t("手动改")}
         </button>
         <span className="grow" />
         <button
@@ -184,11 +185,11 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           className="btn btn-small btn-outline"
           disabled={!!busy}
           onClick={() => {
-            if (window.confirm(`把「${a.name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。`))
+            if (window.confirm(t("把「{name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。", { name: a.name })))
               void libraryApi.removeAsset(a.id).then(onRemoved);
           }}
         >
-          移出素材库
+          {t("移出素材库")}
         </button>
       </div>
       {edit && (
@@ -216,7 +217,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
               ).then((ok) => ok && setEdit(false))
             }
           >
-            保存署名
+            {t("保存署名")}
           </button>
         </div>
       )}
@@ -246,7 +247,7 @@ export function LibraryView() {
       try {
         const r = await libraryApi.uploadAsset(f, kind);
         u = r.duplicate
-          ? { name: f.name, state: "dup", msg: `素材库里已经有这首（${r.asset.name}）` }
+          ? { name: f.name, state: "dup", msg: t("素材库里已经有这首（{name}）", { name: r.asset.name }) }
           : { name: f.name, state: "done" };
       } catch (e) {
         u = { name: f.name, state: "error", msg: (e as Error).message };
@@ -257,7 +258,7 @@ export function LibraryView() {
   };
 
   if (err) return <p className="error pad">{err}</p>;
-  if (!lib) return <p className="pad muted">加载中…</p>;
+  if (!lib) return <p className="pad muted">{t("加载中…")}</p>;
   const replace = (a: Asset) => setLib({ ...lib, assets: lib.assets.map((x) => (x.id === a.id ? { ...x, ...a } : x)) });
   const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
   return (
@@ -282,21 +283,21 @@ export function LibraryView() {
       }}
     >
       <div className="row gap8 wrap">
-        <h1 className="grow">素材库</h1>
+        <h1 className="grow">{t("素材库")}</h1>
         <button
           type="button"
           className="btn btn-outline"
           onClick={() =>
             void libraryApi.scanLibrary().then((r) => {
               setLib({ ...r, lookup: lib.lookup });
-              setNote(r.added.length ? `新加入 ${r.added.length} 个文件` : "文件夹里没有新文件");
+              setNote(r.added.length ? t("新加入 {length} 个文件", { length: r.added.length }) : t("文件夹里没有新文件"));
             })
           }
         >
-          扫描文件夹
+          {t("扫描文件夹")}
         </button>
         <button type="button" className="btn btn-outline" onClick={() => void libraryApi.openLibrary()}>
-          打开文件夹
+          {t("打开文件夹")}
         </button>
       </div>
       <DropZone kinds={lib.kinds} dragging={dragging} onFiles={(f, k) => void addFiles(f, k)} />
@@ -304,17 +305,23 @@ export function LibraryView() {
         <ul className="lib-uploads small" data-testid="uploads">
           {uploads.map((u, i) => (
             <li key={i} className={u.state === "error" ? "error" : ""}>
-              {u.state === "busy" ? "正在加入" : u.state === "error" ? "没加进去" : u.state === "dup" ? "跳过" : "已加入"}：{u.name}
+              {u.state === "busy"
+                ? t("正在加入：{name}", u)
+                : u.state === "error"
+                  ? t("没加进去：{name}", u)
+                  : u.state === "dup"
+                    ? t("跳过：{name}", u)
+                    : t("已加入：{name}", u)}
               {u.msg && `（${u.msg}）`}
             </li>
           ))}
         </ul>
       )}
       <p className="muted small">
-        文件会复制到素材库文件夹 <span className="mono">{lib.folder}</span>，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 Claude。
+        {t("文件会复制到素材库文件夹")} <span className="mono">{lib.folder}</span>{t("，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 Claude。")}
       </p>
       {note && <p className="small">{note}</p>}
-      {lib.assets.length === 0 && <p className="muted">素材库还是空的。把片头、配乐或台词片段拖进来就行。</p>}
+      {lib.assets.length === 0 && <p className="muted">{t("素材库还是空的。把片头、配乐或台词片段拖进来就行。")}</p>}
       <ul className="lib-list">
         {lib.assets.map((a) => (
           <AssetRow key={a.id} a={a} kinds={lib.kinds} onChange={replace} onRemoved={load} claude={lib.lookup} />

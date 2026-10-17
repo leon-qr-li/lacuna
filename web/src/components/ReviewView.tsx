@@ -4,6 +4,7 @@ import { api, confidenceLabel, fmt, statusLabel } from "../api";
 import { ABPlayer, type ABHandle } from "./ABPlayer";
 import { GrowText } from "./GrowText";
 import { Icon } from "./Icon";
+import { t } from "../i18n";
 
 interface Props {
   ep: Episode;
@@ -99,24 +100,24 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
     e.preventDefault();
     if (!cur || !tweak.trim()) return;
     const r = await api.chat(ep.id, tweak.trim(), cur.t);
-    setReply(r.reply + (r.proposal ? "（建议已放到「整集试听」的对话里，试听后批准）" : ""));
+    setReply(r.reply + (r.proposal ? t("（建议已放到「整集试听」的对话里，试听后批准）") : ""));
     setTweak("");
   };
 
   return (
     <div className="review">
-      <nav className="review-nav" aria-label="改动列表">
+      <nav className="review-nav" aria-label={t("改动列表")}>
         <section>
-          <h2>需要你过目 · {all.length}</h2>
-          <p className="muted small">按时间先后排，从第一秒开始。已经应用在第一刀里，你只需要决定是否恢复。</p>
+          <h2>{t("需要你过目 · {n}", { n: all.length })}</h2>
+          <p className="muted small">{t("按时间先后排，从第一秒开始。已经应用在第一刀里，你只需要决定是否恢复。")}</p>
           <div className="batch" data-testid="review-progress">
             <div className="row baseline gap8">
               <span className="small">
-                已过目 <strong>{done}</strong> / {all.length}
+                {t("已过目")} <strong>{done}</strong> / {all.length}
               </span>
               <label className="small muted row gap4">
                 <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} />
-                只看没过目的
+                {t("只看没过目的")}
               </label>
             </div>
             <div className="meter" aria-hidden="true">
@@ -127,9 +128,9 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 type="button"
                 className="btn btn-outline btn-block"
                 onClick={() => void onApproveAll()}
-                title="按 AI 现在的处理全部确认：删了的保持删，没删的保持原样。一步撤销即可退回。"
+                title={t("按 AI 现在的处理全部确认：删了的保持删，没删的保持原样。一步撤销即可退回。")}
               >
-                剩下 {leftCount} 处全部通过
+                {t("剩下 {n} 处全部通过", { n: leftCount })}
               </button>
             )}
           </div>
@@ -146,9 +147,9 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 >
                   <span className="mono small">{fmt(e.t)}</span>
                   <span className="grow">{e.title}</span>
-                  {e.category === "content" && <span className="small rtag">内容</span>}
+                  {e.category === "content" && <span className="small rtag">{t("内容")}</span>}
                   <span className="small rstate">
-                    {e.status === "restored" ? (e.approved ? "不删 ✓" : "未应用") : e.approved ? "✓" : ""}
+                    {e.status === "restored" ? (e.approved ? t("不删 ✓") : t("未应用")) : e.approved ? "✓" : ""}
                   </span>
                 </button>
               </li>
@@ -156,8 +157,8 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
           </ul>
         </section>
         <section>
-          <h2>常规清理 · {ep.routine.reduce((n, r) => n + r.count, 0)} 处</h2>
-          <p className="muted small">按类别汇总，不逐条审批。整集试听时听到问题直接说即可。</p>
+          <h2>{t("常规清理 · {n} 处", { n: ep.routine.reduce((n, r) => n + r.count, 0) })}</h2>
+          <p className="muted small">{t("按类别汇总，不逐条审批。整集试听时听到问题直接说即可。")}</p>
           <ul className="routine">
             {ep.routine.map((r) => (
               <li key={r.category}>
@@ -174,39 +175,39 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
 
       <main className="review-main" aria-live="polite">
         {!cur ? (
-          <p className="muted">没有需要过目的改动。</p>
+          <p className="muted">{t("没有需要过目的改动。")}</p>
         ) : (
           <>
             <header className="rv-head">
               <span className={`chip ${pending(cur) ? "chip-warn" : "chip-ok"}`}>
-                第 {idx + 1} / {ranked.length} 处{pending(cur) ? "" : " · 已过目"}
+                {t("第 {i} / {n} 处", { i: idx + 1, n: ranked.length })}{pending(cur) ? "" : t(" · 已过目")}
               </span>
               <h1 data-testid="review-title">{cur.title}</h1>
               <span className="mono muted small">
-                成品 {fmt(cur.t)}
-                {cur.raw && ` · 原始 ${cur.tracks ? cur.tracks.join("/") + " " : ""}${fmt(cur.raw[0])}–${fmt(cur.raw[1])}`}
+                {t("成品 {time}", { time: fmt(cur.t) })}
+                {cur.raw && t(" · 原始 {p0}{p1}–{p2}", { p0: cur.tracks ? cur.tracks.join("/") + " " : "", p1: fmt(cur.raw[0]), p2: fmt(cur.raw[1]) })}
               </span>
             </header>
             <section className="card rv-why">
               <span className="rv-k">
-                为什么{cur.status === "restored" ? (cur.approved ? "删过（现已恢复）" : "建议删（还没有应用）") : "删"}
+                {cur.status === "restored" ? (cur.approved ? t("为什么删过（现已恢复）") : t("为什么建议删（还没有应用）")) : t("为什么删")}
               </span>
               <div>
-                <p>{cur.reason || "（没有说明）"}</p>
+                <p>{cur.reason || t("（没有说明）")}</p>
                 <div className="rv-chips small">
-                  <span className="chip chip-plain">把握度 {confidenceLabel(cur.confidence)}</span>
+                  <span className="chip chip-plain">{t("把握度")} {confidenceLabel(cur.confidence)}</span>
                   <span className="chip chip-plain">{cur.category_label}</span>
-                  {cur.speech_s ? <span className="chip chip-plain">删掉说话 {cur.speech_s.toFixed(1)} 秒</span> : null}
+                  {cur.speech_s ? <span className="chip chip-plain">{t("删掉说话 {s} 秒", { s: cur.speech_s.toFixed(1) })}</span> : null}
                   <span className="chip chip-plain">{statusLabel(cur)}</span>
-                  <span className="chip chip-ok">可随时恢复</span>
+                  <span className="chip chip-ok">{t("可随时恢复")}</span>
                 </div>
               </div>
             </section>
             {lines && lines.length > 0 && (
-              <section className="card prose rv-lines" aria-label="原文对照">
+              <section className="card prose rv-lines" aria-label={t("原文对照")}>
                 <div className="card-head">
-                  <h2 className="sub">原话</h2>
-                  <span className="muted small">只显示，不改写；划线部分被剪掉</span>
+                  <h2 className="sub">{t("原话")}</h2>
+                  <span className="muted small">{t("只显示，不改写；划线部分被剪掉")}</span>
                 </div>
                 {lines.map((l, i) => (
                   <p key={i} className="line">
@@ -224,42 +225,42 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
             <form className="rv-tweak" onSubmit={sendTweak}>
               <Icon name="chat" />
               <label htmlFor="tweak" className="sr-only">
-                用一句话调整
+                {t("用一句话调整")}
               </label>
               <GrowText
                 id="tweak"
                 value={tweak}
                 onChange={setTweak}
-                placeholder="或者直接说：恢复这处 / 停顿短一点"
+                placeholder={t("或者直接说：恢复这处 / 停顿短一点")}
               />
             </form>
             {reply && <p className="note">{reply}</p>}
-            <p className="muted small">快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。</p>
+            <p className="muted small">{t("快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。")}</p>
 
             {/* the floating dock: listen, compare, decide; everything for this edit in one place */}
-            <section className="dock rv-dock" aria-label="试听和决定">
-              <button type="button" className="btn btn-ghost btn-round" onClick={() => go(-1)} disabled={idx <= 0} title="上一处（J）" aria-label="上一处">
+            <section className="dock rv-dock" aria-label={t("试听和决定")}>
+              <button type="button" className="btn btn-ghost btn-round" onClick={() => go(-1)} disabled={idx <= 0} title={t("上一处（J）")} aria-label={t("上一处")}>
                 <Icon name="chevl" size={18} />
               </button>
-              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={["A · 原始", "B · 剪后"]} onPlay={onPauseMain} compact />
+              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={[t("A · 原始"), t("B · 剪后")]} onPlay={onPauseMain} compact />
               <span className="grow" />
               {cur.status === "applied" ? (
                 <>
                   <button type="button" className="btn btn-outline" onClick={() => void decide("restore")}>
-                    恢复原话 <kbd aria-hidden="true">R</kbd>
+                    {t("恢复原话")} <kbd aria-hidden="true">R</kbd>
                   </button>
                   <button type="button" className="btn btn-primary" onClick={() => void decide("keep")}>
-                    <Icon name="check" /> {cur.approved ? "已保留" : "保留这个删除"} <kbd aria-hidden="true">Y</kbd>
+                    <Icon name="check" /> {cur.approved ? t("已保留") : t("保留这个删除")} <kbd aria-hidden="true">Y</kbd>
                   </button>
                 </>
               ) : (
                 <>
                   <button type="button" className={`btn ${cur.approved ? "btn-primary" : "btn-outline"}`} onClick={() => void decide("apply")}>
-                    重新应用这个删除
+                    {t("重新应用这个删除")}
                   </button>
                   {!cur.approved && (
                     <button type="button" className="btn btn-primary" onClick={() => void decide("restore")}>
-                      <Icon name="check" /> 不删，保持原话 <kbd aria-hidden="true">Y</kbd>
+                      <Icon name="check" /> {t("不删，保持原话")} <kbd aria-hidden="true">Y</kbd>
                     </button>
                   )}
                 </>
@@ -269,8 +270,8 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 className="btn btn-ghost btn-round"
                 onClick={() => go(1)}
                 disabled={idx >= ranked.length - 1}
-                title="下一处（K）"
-                aria-label="下一处"
+                title={t("下一处（K）")}
+                aria-label={t("下一处")}
               >
                 <Icon name="chev" size={18} />
               </button>

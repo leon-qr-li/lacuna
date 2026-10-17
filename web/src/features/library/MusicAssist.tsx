@@ -3,6 +3,7 @@ import { useState } from "react";
 import { GrowText } from "../../components/GrowText";
 import type { MusicDraft } from "./api";
 import { fmt } from "../../api";
+import { t } from "../../i18n";
 
 export function DraftCard({ d, previewing, onPreview, onMove, onAccept, onDiscard }: {
   d: MusicDraft;
@@ -16,8 +17,8 @@ export function DraftCard({ d, previewing, onPreview, onMove, onAccept, onDiscar
   return (
     <div className="card banner-card music-draft" data-testid="music-draft">
       <div className="row gap8 wrap baseline">
-        <strong className="grow">{d.source === "auto" ? "建议的配乐" : "Claude 建议这样改"}</strong>
-        <span className="small muted">成品变成 {fmt(d.duration)}</span>
+        <strong className="grow">{d.source === "auto" ? t("建议的配乐") : t("Claude 建议这样改")}</strong>
+        <span className="small muted">{t("成品变成 {time}", { time: fmt(d.duration) })}</span>
       </div>
       {d.message && <p className="small">{d.message}</p>}
       <ul className="draft-changes">
@@ -32,12 +33,12 @@ export function DraftCard({ d, previewing, onPreview, onMove, onAccept, onDiscar
               </span>
               {c.previewable && (
                 <button type="button" className="btn btn-small btn-outline" aria-pressed={previewing === c.pid} onClick={() => onPreview(c.pid)}>
-                  {previewing === c.pid ? "停止" : "试听"}
+                  {previewing === c.pid ? t("停止") : t("试听")}
                 </button>
               )}
               {alts.length > 0 && (
                 <span className="row gap4 wrap small">
-                  换个位置：
+                  {t("换个位置：")}
                   {alts.map((a) => (
                     <button key={a.voice_s} type="button" className="chip-select" onClick={() => onMove(c.pid, a.voice_s)}>
                       {fmt(a.final_s)}
@@ -49,15 +50,15 @@ export function DraftCard({ d, previewing, onPreview, onMove, onAccept, onDiscar
           );
         })}
       </ul>
-      {d.stale && <p className="error small">这条建议之后配乐又改过了，已经过期。点「不要」再重新来一次。</p>}
+      {d.stale && <p className="error small">{t("这条建议之后配乐又改过了，已经过期。点「不要」再重新来一次。")}</p>}
       <div className="row gap8">
         <button type="button" className="btn btn-primary" disabled={d.stale} onClick={onAccept}>
-          采用
+          {t("采用")}
         </button>
         <button type="button" className="btn btn-outline" onClick={onDiscard}>
-          不要
+          {t("不要")}
         </button>
-        <span className="small muted grow">采用之前不会进导出。</span>
+        <span className="small muted grow">{t("采用之前不会进导出。")}</span>
       </div>
     </div>
   );
@@ -77,21 +78,21 @@ export function MusicChatBox({ onSend }: { onSend: (text: string) => Promise<boo
   };
   return (
     <div className="card music-chat">
-      <h2>跟 Claude 说配乐怎么改</h2>
+      <h2>{t("跟 Claude 说配乐怎么改")}</h2>
       <div className="row gap8 align-end">
         <GrowText
           value={text}
           onChange={setText}
           onEnter={send}
-          placeholder="比如：间奏晚两秒 / 背景音小 3 dB / 片尾去掉"
-          aria-label="跟 Claude 说配乐怎么改"
+          placeholder={t("比如：间奏晚两秒 / 背景音小 3 dB / 片尾去掉")}
+          aria-label={t("跟 Claude 说配乐怎么改")}
           disabled={busy}
         />
         <button type="button" className="btn btn-primary" onClick={send} disabled={busy || !text.trim()}>
-          {busy ? "Claude 在想…" : "发送"}
+          {busy ? t("Claude 在想…") : t("发送")}
         </button>
       </div>
-      <p className="small muted">Claude 只看文字（配乐位置、素材名和备注、附近的对话），不听音频。改动先变成建议，试听满意再采用。</p>
+      <p className="small muted">{t("Claude 只看文字（配乐位置、素材名和备注、附近的对话），不听音频。改动先变成建议，试听满意再采用。")}</p>
     </div>
   );
 }

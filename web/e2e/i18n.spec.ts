@@ -29,6 +29,11 @@ test("interface language: switch to English and back", async ({ page }) => {
   await expect(steps).toContainText("Export");
   await expect(page.getByRole("button", { name: /Undo/ })).toBeVisible();
   await expect(page.getByRole("region", { name: "Player" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "AI producer chat" })).toContainText("First cut");
+  await page.getByRole("link", { name: /Review edits/ }).click();
+  await expect(page.getByRole("heading", { name: /For you to review/ })).toBeVisible();
+  await page.getByRole("link", { name: /Music/ }).first().click();
+  await expect(page.getByRole("heading", { name: "Music", exact: true })).toBeVisible();
 
   // and back
   await page.goto("/#/settings");

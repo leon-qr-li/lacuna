@@ -10,12 +10,6 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../src")
 const HAN = /[㐀-鿿]/;
 // files not migrated yet (they still show Chinese in the English interface)
 const PENDING = new Set([
-  "components/ChatPanel.tsx",
-  "components/ReviewView.tsx",
-  "features/library/LibraryView.tsx",
-  "features/library/MusicAssist.tsx",
-  "features/library/MusicView.tsx",
-  "features/poster/PosterView.tsx",
 ]);
 
 const files = [];
