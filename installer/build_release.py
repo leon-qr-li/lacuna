@@ -1,4 +1,4 @@
-"""Build a LACUNA release (phase 7, D50): the app zip with the built UI, its feed and the installers.
+"""Build a LACUNA release (phase 7, D51): the app zip with the built UI, its feed and the installers.
 
     python installer/build_release.py --version 2026.10.17.1 --out dist [--notes "…"] [--url-base URL]
 

@@ -108,7 +108,7 @@ def main() -> int:
         print(json.dumps({k: info[k] for k in ("version", "installed", "platform", "ffmpeg", "ffprobe", "key")}, ensure_ascii=False))
         assert info["installed"], info
         for tool in ("ffmpeg", "ffprobe"):
-            assert info[tool] and Path(info[tool]).parent == root / "ffmpeg", info
+            assert info[tool] and Path(info[tool]).resolve().parent == (root / "ffmpeg").resolve(), info
         with urllib.request.urlopen(f"http://127.0.0.1:{PORT}/", timeout=10) as r:
             assert b"<div id=\"root\"" in r.read(), "UI not served"
         assert api("/api/health")["ok"]

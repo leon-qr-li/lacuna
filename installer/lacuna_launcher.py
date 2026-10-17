@@ -1,4 +1,4 @@
-"""LACUNA launcher: install, start and update LACUNA Studio without a command line (phase 7, D50).
+"""LACUNA launcher: install, start and update LACUNA Studio without a command line (phase 7, D51).
 
 Standard library only: it runs before any dependency is installed, and it must keep working while
 the app version it starts is being replaced. It lives in the install root:

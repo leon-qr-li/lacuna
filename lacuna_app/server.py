@@ -183,7 +183,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
             out["playhead"] = ep.map_playhead(playhead, before, ep.enabled)
         return out
 
-    # ------------------------------------------------------------------ app: version, update, settings (D50)
+    # ------------------------------------------------------------------ app: version, update, settings (D51)
     def busy() -> list[str]:
         """Work an update restart would cut off."""
         out = []
