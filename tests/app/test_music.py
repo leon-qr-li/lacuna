@@ -8,7 +8,7 @@ import pytest
 import soundfile as sf
 
 from lacuna_app.episode import Episode
-from lacuna_app.library import CONFIRMED, SUGGESTED, UNKNOWN, Library, credit_line, lookup_credit
+from lacuna_app.library import CONFIRMED, NEED_NOTE, SUGGESTED, UNKNOWN, Library, credit_line, lookup_credit
 from lacuna_app.music import EpisodeMusic, bgm_credits, final_duration, final_time, layout, speech_regions
 from lacuna_app.store import Workspace
 
@@ -113,8 +113,16 @@ def test_lookup_credit_stores_suggestion_with_sources(lib, song):
     assert len(fake.calls) == 2                       # the paused turn was continued
 
 
+def test_lookup_without_note_skips_claude(lib, song):
+    a = lib.add_file(song, "interlude", note="  ")
+    fake = FakeAnthropic({"title": "X"})
+    out = lookup_credit(lib, a["id"], client=fake)
+    assert fake.calls == [] and out["usage"] is None and out["message"] == NEED_NOTE
+    assert out["asset"]["credit"]["source"] != "claude"
+
+
 def test_lookup_without_answer_changes_nothing(lib, song):
-    a = lib.add_file(song, "interlude")
+    a = lib.add_file(song, "interlude", note="某部电影的配乐")
     fake = FakeAnthropic({"title": None, "artist": None, "composer": None, "album": None, "film": None,
                           "year": None, "confidence": 0.1, "note": "查不到"})
     out = lookup_credit(lib, a["id"], client=fake)
