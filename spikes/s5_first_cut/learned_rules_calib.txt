@@ -1,0 +1,301 @@
+LEARNED EDITING RULES — host Leon, inferred from Leon's real edit of EP001 (calibration half only:
+raw 0–2200 s, 36.7 min). Status: inferred candidate rules (Playbook learning tier 4), evidence-backed.
+These rules OVERRIDE the generic brief where they conflict, especially "when uncertain, prefer
+retaining", which does NOT apply to Leon's own speech (see R2/R3). All numbers are calibration-half
+measurements (calib_rules_stats.json). Token ids refer to the calibration half; use them as patterns only.
+
+======================================================================
+R0. OVERALL TARGET
+======================================================================
+- Final length ≈ 0.78 × raw. In the calibration half, 2198 s of raw became 1722 s.
+  A 2212 s half should land at about 1700–1750 s. If your ops remove much less than ~22 %, you are
+  under-cutting. The AI v1 cut only ~7 %.
+- Removed per track: about 13.4 s per minute on EACH track. On both tracks, 393 s of the removal is
+  the same raw range (joint cuts).
+- Where those seconds come from:
+  - Leon's own speech: 7.2 s/min, which is 22.8 % of his speech seconds and 21.5 % of his tokens.
+  - Pei's speech: 0.6 s/min, which is 3.7 % of her speech seconds and 3.0 % of her tokens.
+  - Everything else is silence or pauses.
+- Number of removal events:
+  - Leon's track: about 3.9 removed-speech runs per minute.
+  - Pei's track: about 1.1 per minute, mostly a single 嗯.
+
+======================================================================
+R1. PAUSES — target lengths (measured in the FINAL, between kept utterances)
+======================================================================
+Resulting floor pause, all utterance boundaries (n=390): median 0.39 s, p10 0.12, p90 0.94.
+About 0.9 pauses > 1 s survive per minute (33 in 36.7 min).
+
+| Context | Median | p10 | p90 |
+|---|---|---|---|
+| Turn change | 0.32 | 0.12 | 0.88 |
+| Same speaker continuing | 0.58 | 0.22 | 1.02 |
+| Reply after a question (turn change) | 0.43 (n=25) | 0.10 | 0.80 |
+| Junction where speech was cut | 0.33 | 0.12 | 0.83 |
+
+Pause after the cut speech at an edit junction: leave about 0.3 s.
+Laughter: only 2 detectable cases, both left at about 1.0–1.7 s. Weak evidence: keep about 1 s of air
+after a laugh and never cut the laugh itself.
+
+What Leon did to raw gaps (bounding speech kept):
+
+| Situation | Raw gap | What Leon left |
+|---|---|---|
+| Same speaker | 0.3–0.8 s | Left untouched 92–98 % of the time (0.38 / 0.58 s). DO NOT tighten. |
+| Same speaker | 0.8–1.2 s | Mostly untouched (71 %); median 0.88 |
+| Same speaker | 1.2–2 s | About 1.0 |
+| Same speaker | ≥ 2 s | Often kept (n=4, weak evidence) |
+| Leon → Pei | 0.3–0.5 s | 0.10 |
+| Leon → Pei | 0.5–0.8 s | 0.20 |
+| Leon → Pei | 0.8–1.2 s | 0.54 |
+| Leon → Pei | 1.2–2 s | 0.68 |
+| Pei → Leon | 0.3–0.5 s | 0.48 |
+| Pei → Leon | 0.5–0.8 s | 0.73 |
+| Pei → Leon | 0.8–1.2 s | 0.51 |
+| Pei → Leon | 1.2–2 s | 0.79 |
+
+For Leon → Pei, Pei's reply (often 嗯/哦/对) is pulled tight. In 20 % of cases it even touches or
+slightly overlaps the end of his phrase. Pei → Leon replies keep a normal gap.
+
+Op rules:
+- tighten_pause track "both" at a floor gap.
+  - Leon → Pei turn: target 0.2 s if the raw gap is ≥ 0.4 s.
+  - Pei → Leon turn: target 0.5 s if the raw gap is ≥ 0.8 s.
+  - Same speaker:
+    - < 0.9 s: leave it.
+    - 0.9–2 s: target 0.8 s.
+    - ≥ 2 s: target 1.0 s unless it is clearly a deliberate beat.
+- Do not tighten pauses inside one speaker's sentence (< 0.9 s). That was a large part of v1's
+  pause error budget in the wrong direction.
+- Every content or disfluency cut: also remove the silence around it, so the seam pause is about
+  0.3 s (Leon's junction median is 0.33).
+
+Examples (raw gap → final):
+- L000952 "…第一天是个大presentation" | P "嗯那还挺好的": 0.65 → overlapping by 0.15.
+- P001199 "…对呀哦是吗嗯嗯嗯" | L "其实obsession都不算…": 1.10 → 0.25.
+- L000185 "…还是特贵啊" (0.60) L "我听说挺便宜的": untouched, 0.60.
+- L002919 "…蜘蛛侠就这一对儿" (1.99) L "我觉得挺有意思": 0.59.
+
+======================================================================
+R2. HOST ASYMMETRY — cut Leon hard, protect Pei
+======================================================================
+Leon removed about 6× more of his own speech, proportionally, than of Pei's.
+
+| Feature | Leon (L) | Pei (P) |
+|---|---|---|
+| Speech removed | 22.8 % | 3.7 % |
+| Immediate repeats (XX / XYXY), any part removed | 55 of 111 (50 %) | 8 of 58 (14 %) |
+| Filler tokens (嗯呃啊哦…) removed | 67 of 229 (29 %) | 26 of 234 (11 %) |
+| 就是 removed | 58 of 192 (30 %) | 4 of 39 (10 %) |
+| 我觉得 removed | 10 of 29 | 0 of 10 |
+| Pei's filler-only utterances (backchannels) removed | — | 17 of 125 (14 %) |
+| Longest removed run | 37.6 s (≥ 2 s runs: 38, 236 s total) | 3.5 s (≥ 2 s runs: 3) |
+
+Leon's own track — what he removes, as runs of removed tokens:
+
+| Kind | Runs | Seconds | Examples |
+|---|---|---|---|
+| Content trims ≥ 2 s | 40 | 240 | See R3 |
+| Fragments / abandoned starts < 2 s | 67 | 54 | See below |
+| Restarts, keeping the later clean version | 22 | 10 | See below |
+| Filler-only bits | 12 | 5 | — |
+
+Fragment examples:
+- L000101 "…最近刚从【对吧刚】vacation" → removed.
+- L000422 "【对然后就是反正】我觉得…" → removed.
+- L005035 "【然后就是对吧】networking…" → removed.
+- L002174 "【而且很便宜很平】民" → removed.
+
+Restart examples:
+- L000310 "【第一次旅旅就是】第一次这个旅途…" → removed.
+- L001205 "我是属【于嗯】我是属于什么呢" → removed.
+- L002164 "吃出了【家乡的味】家乡的味道" → removed.
+- L005944 "【一月二十不】一月二十几号" → removed.
+
+Leon's own speech DO:
+- Cut his false starts, stacked connectors ("对然后就是反正", "然后就是对吧") and half-words.
+- Cut an earlier attempt when he restarts.
+- About half of his immediate word repeats go.
+
+Leon's own speech DON'T:
+- Strip every 就是 or 那个. Only about 30 % of 就是 go.
+- Example kept: L000520 "那个那个travel's healthy".
+- Example kept: L003491 "那个那个hook是什么".
+- Example kept: L000928 "走走吧走吧".
+
+Pei's track — protect. What Leon removed is only:
+- (a) A clean restart's first try:
+  - P001528 "【做】做marketing";
+  - P001655 "【恐】恐怖片";
+  - P003050 "【你为】你为什么";
+  - P001765 "【a二四】a二十四".
+- (b) A 嗯 that sits INSIDE a stretch of Leon's speech that is being cut (joint cut, track both).
+  - All 15 removed Pei backchannels were in such spans: Leon's track within ±1 s was 72–100 % removed.
+  - Examples: P001351, P002158, P000941/P000942.
+  - He never removed a backchannel on its own.
+- (c) Her phrase lost in crosstalk; see R4.
+- (d) Rarely, a short fragment: P001444 "【都是挺就是】还是挺明显的".
+
+Kept on Pei despite disfluency:
+- P000044 "这个比较比较比较大";
+- P002395 "这个这个super";
+- P001908 "三三之一的时时吧就就setup".
+
+Pei's speech DO:
+- Cut her clearly garbled first attempt when she immediately restarts the same word or phrase.
+
+Pei's speech DON'T:
+- Cut her 呃就是 / 就 / 对这也 hedges.
+- Cut her repeats or her mid-sentence searching.
+- Cut her backchannels. Keep at least about 86 % of them.
+- Make any content cut on Pei longer than about 3 s.
+  - None happened in 36.7 min, except crosstalk.
+
+Default confidence:
+- Pei disfluency cut: ≤ 0.3, unless it is a pure same-word restart.
+- Leon fragment or restart cut: 0.6–0.75.
+
+======================================================================
+R3. CONTENT TRIMS OF LEON'S OWN SPEECH (the biggest miss of v1)
+======================================================================
+Volume:
+- 38 removed runs ≥ 2 s: about 1 per minute, 6.4 s/min.
+- Lengths: p10 2.6, p25 3.0, median 4.0, p75 7.0, p90 9.8 s. Max 37.6 s.
+
+Position within his turn (40 runs):
+- Mid-turn: 13.
+- Whole utterance: 12.
+- Start of his turn, before he restarts cleanly: 11.
+- End of his turn: 5.
+
+Pei talks during < 20 % of these spans, usually not at all.
+
+What they are:
+1. A side anecdote or side detail that does not serve the thread.
+   - Example: L002249 (757.1 s, 37.6 s), cut from "就是他他不是属于托斯卡纳地区吗…winetasting是跟一个…
+     一个是biologicalengineer一个是electricityengineer…走了走了走了" through the follow-up
+     L002386 "就是就一看就是这种美美国游客". The wine-tasting story with the other couples' jobs was cut.
+   - Example: L001772 (614.4 s, 8.9 s), the food complaint "然后他那个面子而且意大利特别喜欢吃商面就是我亚洲我也
+     不太适应啊就是没有那么熟啊就是基本上", plus L001816 "然后他们的食物确实比较plain就是我觉".
+   - Example: L005370 (1973.5 s, 10.9 s), the gamer side explanation "般玩使命就是cod都是男…我死都不知道怎么死了吗他是
+     打leaderboard的人啊".
+2. A fumbling explanation that he then states cleanly. Keep the clean statement.
+   - Example: L003956 (1453.2 s, 22.7 s), "就是scp基金会就是他那scp讲的是完了我给忘了你scp是什么是secure control
+     protect好像是…我可能说的不不对啊大家纠正啊…" was CUT. "他核心设定就是…" was KEPT.
+   - Example: L003578 (1187.7 s, 4.9 s), "就剧情是是符合我的预期的不是它不是符合我预期就" was cut, and "是它的剧情基本上…"
+     was kept.
+3. A repeated evaluation: saying the same verdict twice.
+   - Example: L005518 (2008.7 s, 7.0 s), "他演的确实好吧对吧你不能说…他演的确实好啊这行活确实可以啊嗯" was cut.
+     L005554 "哎呀这真的很有意思这将来…都" was cut too.
+4. A trailing evaluative mumble at the end of a point.
+   - Example: L003770 (1285.6 s, 9.3 s), "就是我觉得这这个有点有有有点傻这个营销方式但是啊行行吧啊就是嗯就有这种感觉嗯" was cut.
+5. A redundant recap or wind-up at a topic transition.
+   - Example: L002778 (954.1 s, 8.9 s), "跟大家闲聊了一下我们最近的这个新cup最近的这个出行那回到温哥华回到圣河塞之后就"
+     was cut. "回顾一下我们夏天…" was kept.
+6. An illustrative example that runs long.
+   - Example: L004263 (1524.9 s, 12.5 s), "就是有一个就是说举个例子说一个人盯着一个电冰箱…如果你眨眼他都会把你吃了…" was cut.
+7. On-air "cut this" remarks and crude asides. These are always cut.
+   - Example: L000069 "反正要不管饱待会儿咱把这句话剪了吧啊".
+   - Example: L000213 "那这话我得剪了…ok".
+   - Example: L005176 (8.7 s) "可以这么说呀你看那些…fucking…streamer…我都吓坏了我靠啊".
+   - Every "剪" remark in the half was cut (2 of 2).
+
+KEPT in similar situations (counter-examples):
+- Side detail that is short and colourful, not a sub-story: L001686 "反正那些画儿基本该看都看了".
+- Audience-engagement hedges: L004900 "我不知道大家有没有意识到你看", L002991 "我不知道你的感受啊".
+- Natural oral repeats inside a fluent sentence: L000520 "那个那个travel's healthy".
+- The first CLEAN statement of a point is kept. Only the fumbling before it, the second restatement
+  and the tail drift go.
+
+Op guidance:
+- Use cut with category "content" and confidence 0.5–0.65.
+- Cut from the first token of the drift to the last token before the clean resumption.
+- When Pei has no speech inside the range, or only 嗯, cut on track "both" with raw seconds.
+  This keeps the tracks in sync, and Leon also lost Pei's 嗯 inside such spans.
+- If Pei says something meaningful inside the range, cut around it or use keep_flag(suggested="cut").
+- Aim for about 1 such trim per minute of Leon-heavy talk. Do NOT use keep_flag as a substitute when
+  the pattern matches 1–7 above.
+
+======================================================================
+R4. TWO TRACKS: CROSSTALK, BACKCHANNELS, NOISE, RE-PLACEMENT
+======================================================================
+Crosstalk (153 raw overlaps ≥ 0.2 s, 82 s total):
+
+| Outcome | Count | Share |
+|---|---|---|
+| Neither side cut | 127 | 83 % |
+| Only Leon's side cut | 16 | 10 % |
+| Only Pei's side cut | 2 | 1 % |
+| Both cut | 8 | 5 % |
+
+- When both cut, Pei restarts cleanly afterwards.
+- Natural overlaps are mostly left alone. 71 of the uncut ones still overlap ≥ 0.2 s in the final.
+
+Rule: when Leon talks over Pei with a stub, delete LEON's stub on the L track only. Leon either cut it
+or muted it in place.
+- L000107 "五" over Pei.
+- L000126 "配" (= 呸 / Pei's name, abandoned) over Pei's "嗯不错不错".
+- L002174 "而且很便宜很平民" over Pei's "哎说到这儿".
+- L002197 "对他".
+- L005629 "你不是哦extra" over Pei's "哦你说拆gbt".
+- L001865 "对就是" over Pei's "不会吧" (637.5 s) → L-only removal.
+
+When both stumble into each other and then restart, cut both stubs and keep the restart.
+- Example (1290–1294 s): L "行/是/有这种感" and P "嗯是他需要去" were both cut. Pei's following "对他需要去…"
+  was kept.
+
+Pei's side is cut in crosstalk only when it duplicates what she then says in the clear.
+- Example: P000090 "美国后花园" under Leon's "你说你去哪儿了" was muted. She answers "夏威夷" right after.
+
+Op guidance:
+- Use cut on track "L", category "crosstalk", token range, confidence 0.6. A ≤ 1 s stub does not
+  meaningfully desync.
+- Use a "P" cut only for an exact duplicate.
+
+Backchannels:
+- Pei: 119 short 嗯/对/哦 inside Leon's turns. 104 kept (87 %). 55 of the kept ones overlap Leon's
+  words in raw, and 44 still do in the final.
+- Leon's own backchannels inside Pei's turns: 18 of 19 kept.
+- Leon did NOT individually re-place most backchannels.
+- Their relative position changed by a median 0.4 s, almost always Pei earlier (49 earlier vs 3
+  later). This is the side effect of R1's pulled-in Leon → Pei turn gaps, not a deliberate slide.
+
+Rule:
+- Keep Pei's backchannels where they are.
+- Use slip (P, delta −0.3…−0.6 or +0.3…+0.8) only when a 嗯/对 collides with the middle of a Leon
+  word in a way that masks it. Expect a few per 10 min, not dozens. confidence ≤ 0.4.
+- Delete a Pei 嗯 only when it falls inside a Leon span you are cutting on "both".
+- Never delete one on its own, and never delete a 对/是 that answers a question.
+
+Track offset reality, for information:
+- Of the final calibration half, the two tracks are in raw sync only 24 % of the time.
+- For 63 %, Pei sits about 0.3–0.6 s earlier relative to Leon.
+- This comes from asymmetric pause removal at turn changes. You can reproduce the listener effect
+  with the R1 targets on "both" floor gaps. Do not try to reproduce the offsets themselves.
+
+Single-track noise (~snd lines, "(no text)"):
+
+| Situation | Leon removed |
+|---|---|
+| ~snd on L under Pei's speech | 5 of 72 |
+| ~snd on P under Leon's speech | 8 of 26 |
+| Noise in floor silence (L) | 22 of 48, as part of pause tightening |
+| Noise in floor silence (P) | 5 of 39, as part of pause tightening |
+
+Rule:
+- Do NOT spend ops on single_track_noise under the other host's speech. Leave it to processing.
+- Remove a ~snd only when it sits in a gap you are already tightening, or when it is a loud cough or
+  laugh-burst on a silent track (confidence ≤ 0.3).
+- Muting in place is rare: 13 Leon spans (5 s) and 1 Pei span. Every case was a Leon stub over Pei;
+  treat it as a crosstalk cut.
+
+======================================================================
+CHECKLIST BEFORE OUTPUT
+======================================================================
+1. Is the total removal about 22 %?
+2. Is Leon's speech removed about 20–25 %, including about 1 content trim ≥ 2 s per minute?
+3. Is Pei's speech removed ≤ 4 %?
+4. Leon → Pei gaps about 0.2 s, Pei → Leon about 0.5 s, same-speaker pauses < 0.9 s untouched?
+5. Every seam about 0.3 s?
+6. Are Leon's crosstalk stubs over Pei removed on L only?
+7. No noise-only ops under speech, and backchannels kept?

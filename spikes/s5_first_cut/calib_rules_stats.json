@@ -359,6 +359,7 @@
   "Leon": {
    "backchannels_inside_other_turn": 19,
    "removed": 1,
+   "removed_with_other_track_cut_ge_0.7_within_1s": 0,
    "kept_overlapping_other_raw": 14,
    "kept_rel_shift_abs": {
     "p25": 0.0,
@@ -374,6 +375,7 @@
   "Pei": {
    "backchannels_inside_other_turn": 119,
    "removed": 15,
+   "removed_with_other_track_cut_ge_0.7_within_1s": 15,
    "kept_overlapping_other_raw": 55,
    "kept_rel_shift_abs": {
     "p25": 0.14,

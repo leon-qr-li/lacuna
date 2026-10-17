@@ -233,10 +233,12 @@ def main_stats(c: Calib):
             a, b = u["start"], u["end"]
             if not (c.speech[o][max(0, fr(a - 1.5)):fr(a)].any() and c.speech[o][fr(b):fr(b + 1.5)].any()):
                 continue
-            out.append(dict(rem=c.removed_frac(k, a, b), sh=shift(k, (a + b) / 2), rawov=c.speech[o][fr(a):fr(b)].mean()))
+            out.append(dict(rem=c.removed_frac(k, a, b), sh=shift(k, (a + b) / 2), rawov=c.speech[o][fr(a):fr(b)].mean(),
+                            other_cut=c.removed_frac(o, a - 1, b + 1)))
         kp = [x for x in out if x["rem"] < 0.5]
         sh = [x["sh"] for x in kp if x["sh"] is not None]
         B[nm] = {"backchannels_inside_other_turn": len(out), "removed": len(out) - len(kp),
+                 "removed_with_other_track_cut_ge_0.7_within_1s": sum(x["rem"] >= 0.5 and x["other_cut"] >= 0.7 for x in out),
                  "kept_overlapping_other_raw": int(sum(x["rawov"] > 0.3 for x in kp)),
                  "kept_rel_shift_abs": pct(np.abs(sh), (25, 50, 75, 90)),
                  "kept_shift_ge_0.3_earlier": int(sum(s <= -0.3 for s in sh)),
