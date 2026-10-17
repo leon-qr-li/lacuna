@@ -180,12 +180,14 @@ def test_needs_review_rule():
     assert not needs_review("pause", 0.6, 0.0)
 
 
-def test_review_order_content_first_then_duration():
+def test_review_order_is_timeline_order():
     ds = [{"id": "f", "category": "filler", "len": 9.0, "t": 1},
           {"id": "c1", "category": "content", "len": 2.0, "t": 5},
           {"id": "p", "category": "pause", "len": 3.0, "t": 2},
-          {"id": "c2", "category": "content", "len": 6.0, "t": 9}]
-    assert [d["id"] for d in sorted(ds, key=review_sort_key)] == ["c2", "c1", "f", "p"]
+          {"id": "c3", "category": "content", "len": 1.0, "t": 0.5},
+          {"id": "c2", "category": "content", "len": 6.0, "t": 9},
+          {"id": "b", "category": "filler", "len": 1.0, "t": 5}]
+    assert [d["id"] for d in sorted(ds, key=review_sort_key)] == ["c3", "f", "p", "b", "c1", "c2"]
 
 
 def test_cuts_index_matches_linear_mapping():
@@ -210,8 +212,9 @@ def test_ai_episode_summary_and_review(ai_ws):
     assert s["title"] == AI_TITLE and s["demo"] is False and s["raw_offset_s"] == AI_WINDOW[0]
     by_id = {e["id"]: e for e in s["edits"]}
     review = [by_id[i] for i in s["review"]]
-    assert [e["category"] for e in review[:2]] == ["content", "content"]
-    assert review[0]["len"] >= review[1]["len"]
+    ts = [e["t"] for e in review]
+    assert ts == sorted(ts)                      # timeline order, from the first second
+    assert sum(e["category"] == "content" for e in review) >= 2
     assert all(e["consequential"] for e in review)
     assert {r["category"] for r in s["routine"]} >= {"pause", "crosstalk", "filler"}
     assert all("演示" not in e["title"] + e["reason"] for e in s["edits"])
@@ -220,7 +223,7 @@ def test_ai_episode_summary_and_review(ai_ws):
     slip = next(e for e in s["edits"] if e["category"] == "interjection")
     assert slip["tracks"] == ["Pei"] and slip["len"] == 0
     # restore the top content trim: duration grows by its length; undo brings it back
-    top = review[0]
+    top = max((e for e in review if e["category"] == "content"), key=lambda e: e["len"])
     r = c.post(f"/api/episodes/{AI_EPISODE}/edits/{top['id']}/review", json={"action": "restore"}).json()
     assert r["duration"] == pytest.approx(s["duration"] + top["len"], abs=1e-3)
     assert c.post(f"/api/episodes/{AI_EPISODE}/undo", json={}).json()["duration"] == pytest.approx(s["duration"])

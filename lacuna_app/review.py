@@ -38,6 +38,6 @@ def needs_review(category: str, confidence: float, speech_s: float, *, kind: str
 
 
 def review_sort_key(d: dict) -> tuple:
-    """For edit_json dicts: content trims first, then by duration removed (longest first),
-    then timeline order."""
-    return (d["category"] != "content", -d["len"], d["t"])
+    """For edit_json dicts: timeline order, from the first second (Leon listens through the episode;
+    the old content-first / longest-first order jumped around)."""
+    return (d["t"], d["id"])
