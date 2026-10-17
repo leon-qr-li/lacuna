@@ -83,6 +83,34 @@ export interface TextLine {
   words: { t: string; removed: boolean }[];
 }
 
+export interface ExportReport {
+  input_lufs: number | null;
+  input_true_peak_db: number | null;
+  output_lufs: number | null;
+  output_true_peak_db: number | null;
+  comp_mean_gr_db: number | null;
+  comp_max_gr_db: number | null;
+  limiter_active_pct: number | null;
+  duration_s: number;
+}
+
+export interface ExportJob {
+  id: string;
+  state: "running" | "done" | "error";
+  progress: number;
+  stage: string;
+  version: string;
+  basename: string;
+  error: string | null;
+  result: {
+    files: Record<string, string>;
+    report: ExportReport;
+    mp3: { kbps?: number; lufs?: number | null; true_peak_db?: number | null };
+    errors: Record<string, string>;
+    folder: string;
+  } | null;
+}
+
 async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
@@ -119,6 +147,9 @@ export const api = {
     req<Episode>("POST", `${ep(id)}/proposals/${pid}/approve`, { playhead }),
   discard: (id: string, pid: string, playhead: number) =>
     req<Episode>("POST", `${ep(id)}/proposals/${pid}/discard`, { playhead }),
+  startExport: (id: string, formats: string[]) => req<{ job: ExportJob }>("POST", `${ep(id)}/export`, { formats }),
+  exportStatus: (id: string) => req<{ job: ExportJob | null }>("GET", `${ep(id)}/export`),
+  openExports: (id: string) => req<{ folder: string }>("POST", `${ep(id)}/exports/open`),
 };
 
 export function fmt(s: number): string {

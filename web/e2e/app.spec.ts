@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 const audioTime = (page: Page) =>
@@ -108,5 +109,27 @@ test.describe.serial("LACUNA Studio", () => {
     await page.getByRole("link", { name: /改动审阅/ }).click();
     await page.getByRole("link", { name: "整集试听" }).click();
     await expect(page.getByTestId("chat-log")).toContainText("✓ 已批准并应用");
+  });
+
+  test("export the current version as MP3 + WAV", async ({ page }) => {
+    await openEpisode(page);
+    await page.getByTestId("export-toggle").click();
+    const pop = page.getByRole("dialog", { name: "导出成品" });
+    await expect(pop).toContainText("−16 LUFS");
+    await pop.getByTestId("export-start").click();
+    const result = pop.getByTestId("export-result");
+    await expect(result).toBeVisible({ timeout: 30_000 });
+    await expect(result).toContainText(/响度\s*-1[56]\.\d LUFS/);
+    const links = result.locator(".export-files a");
+    await expect(links).toHaveCount(2);
+    await expect(links.filter({ hasText: /\.mp3$/ })).toHaveCount(1);
+    const download = page.waitForEvent("download");
+    await links.filter({ hasText: /\.wav$/ }).click();
+    const dl = await download;
+    expect(await dl.failure()).toBeNull();
+    // (the suggested name is locale-dependent in headless Chromium for Chinese ids; check bytes)
+    const head = readFileSync((await dl.path())!).subarray(0, 4).toString("latin1");
+    expect(head).toBe("RIFF");
+    await page.screenshot({ path: "test-results/export.png" });
   });
 });

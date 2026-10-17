@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { EditInfo, Episode, EpisodeListItem } from "./api";
 import { api, fmt } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
+import { ExportPanel } from "./components/ExportPanel";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
@@ -169,6 +170,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           <button type="button" className="btn btn-outline" onClick={redo} disabled={!ep?.can_redo} title={ep?.redo_label ?? ""}>
             重做
           </button>
+          {ep && <ExportPanel id={id} version={ep.version} />}
         </div>
       </header>
       {ep?.demo && <p className="banner">{ep.demo_note || "演示数据"}</p>}

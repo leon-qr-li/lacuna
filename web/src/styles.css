@@ -166,3 +166,15 @@ input[type="text"] { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; b
 
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 [hidden] { display: none !important; }
+
+/* export */
+.export { position: relative; }
+.export-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 20; width: min(380px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12); }
+.export-pop p { margin: 0; }
+.export-progress { display: flex; align-items: center; gap: 8px; }
+.export-progress progress { flex: 1; accent-color: var(--accent); }
+.export-result dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0 0 8px; }
+.export-result dt { color: var(--muted); }
+.export-result dd { margin: 0; }
+.export-files { margin: 0 0 8px; padding-left: 18px; word-break: break-all; }
+.warn { color: var(--warn); }
