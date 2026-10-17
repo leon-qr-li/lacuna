@@ -17,7 +17,7 @@ const LATIN = /^[A-Za-z0-9']+$/;
 const pending = (e: EditInfo) => !e.approved;
 
 export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onPauseMain }: Props) {
-  // order comes from the server: content trims first, then by duration removed
+  // order comes from the server: timeline order, from the first second
   const all = useMemo(() => {
     const byId = new Map(ep.edits.map((e) => [e.id, e]));
     return ep.review.map((id) => byId.get(id)).filter((e): e is EditInfo => !!e);
@@ -106,7 +106,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
       <nav className="review-nav" aria-label="改动列表">
         <section>
           <h2>需要你过目 · {all.length}</h2>
-          <p className="muted small">内容删减排在最前，其余按删掉的时长排序。已经应用在第一刀里，你只需要决定是否恢复。</p>
+          <p className="muted small">按时间先后排，从第一秒开始。已经应用在第一刀里，你只需要决定是否恢复。</p>
           <div className="batch" data-testid="review-progress">
             <div className="row baseline gap8">
               <span className="small">
