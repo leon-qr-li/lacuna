@@ -7,8 +7,7 @@ What Leon gets: 双击更新（不再靠远程装机）、Mac 实机跑通（Pei
 Depends on: — (any time; best after 2) · Parallel with: any
 
 ## Progress
-- **Phase 7 packaging + update built** (2026-10-17, D51): installer scripts (Mac one-line paste, Windows `LACUNA-Setup.cmd` / `install.ps1`), launcher with in-app update and automatic rollback, 「设置」page (version, update, API key incl. macOS Keychain, ffmpeg/model status), Release workflow. CI runs a real install → update → rollback on Win/Mac/Linux. Not yet: first Release, migrating Leon's PC (steps in `docs/INSTALL.md`), Pei's real Mac install. Desktop icon artwork is phase 8.
-
+- **Phase 7 packaging + update built** (2026-10-17, D51): installer scripts (Mac one-line paste, Windows `LACUNA-Setup.cmd` / `install.ps1`), launcher with in-app update and automatic rollback, 「设置」page (version, update, API key incl. macOS Keychain, ffmpeg/model status), Release workflow. CI runs a real install → update → rollback on Win/Mac/Linux. Desktop icon artwork is phase 8.
 - **Released + validated** (2026-10-17): v2026.10.17.1 (first Release) installed on Leon's PC (`C:\Users\liqin\AppData\Local\LACUNA`, workspace `C:\Projects\LACUNA_Workspace`, port 8765; `C:\Projects\LACUNA_Start.bat` now calls `%LOCALAPPDATA%\LACUNA\LACUNA.cmd`, old one kept as `LACUNA_Start.old.bat`). v2026.10.17.2 (phase 11 upload page + #44) reached his PC through the in-app one-click update; Leon: "Verify it works". From now on Leon's PC updates only via Release + 设置 → 更新 (no git pull / RC installs). `C:\Projects\lacuna` is only a dev copy.
 - #44 (2026-10-17): fixed a race in the install smoke test (the new version answers before the launcher logs the update) that turned main red on macOS/Windows; the 设置 page now waits for the launcher's log entry for the target version, so it also refreshes after a rollback instead of waiting 10 min.
 
