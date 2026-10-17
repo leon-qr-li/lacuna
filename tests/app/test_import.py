@@ -64,7 +64,7 @@ def test_full_import_creates_reviewable_episode(ws, rec):
     for f in ("asr_L.json", "asr_P.json", "tokens.json", "features.json", "editor_input.md", "ops.json"):
         assert (d / f).is_file(), f
     req = fake.requests[0]
-    assert req["model"] == "claude-opus-5-5" and req["tools"] == [TOOL]
+    assert req["model"] == "claude-sonnet-5-5" and req["tools"] == [TOOL]
     doc = req["system"][1]
     assert doc["cache_control"] == {"type": "ephemeral"} and "@0" in doc["text"]
     assert "{我|我嗯}" in doc["text"] or "{|嗯}" in doc["text"]      # SenseVoice disagreement shown
@@ -127,6 +127,38 @@ def test_api_failure_resumes_from_cache(ws, rec):
     job = imp.status("EP002")
     assert job["state"] == "done", job["error"]
     assert "EP002" in ws.episode_ids()
+
+
+def test_refusal_names_the_category_and_is_billed(ws, rec):
+    fake = FakeFirstCutAnthropic(refuse_windows={0})          # every model refuses window 1
+    imp = importer(ws, fake)
+    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "error" and "拒绝" in job["error"] and "reasoning_extraction" in job["error"]
+    usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert len(usage) == 1 and usage[0]["refusal"] == "reasoning_extraction" and usage[0]["cost_usd"] > 0
+
+
+def test_opus_refusal_falls_back_to_sonnet(ws, rec):
+    fake = FakeFirstCutAnthropic(refuse_windows={0}, refuse_models={"claude-opus-5-5"})
+    imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=fake, model="claude-opus-5-5"),
+                   asr_backend=fake_asr)
+    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "done", job["error"]
+    assert [r["model"] for r in fake.requests] == ["claude-opus-5-5", "claude-sonnet-5-5"]
+    assert "betas" in fake.requests[0] and "betas" not in fake.requests[1]   # server fallback is Opus-only
+    usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert [u.get("refusal") for u in usage] == ["reasoning_extraction", None]
+    ops = json.loads((ws.root / "imports" / "EP002" / "ops.json").read_text(encoding="utf-8"))
+    assert "claude-sonnet-5-5" in ops["model"]
+
+
+def test_first_cut_defaults_to_sonnet(monkeypatch):
+    monkeypatch.delenv("LACUNA_FIRST_CUT_MODEL", raising=False)
+    assert ClaudeFirstCut(client=object()).model == "claude-sonnet-5-5"
+    monkeypatch.setenv("LACUNA_FIRST_CUT_MODEL", "claude-opus-5-5")
+    assert ClaudeFirstCut(client=object()).model == "claude-opus-5-5"
 
 
 def test_restart_marks_running_job_interrupted(ws, rec):

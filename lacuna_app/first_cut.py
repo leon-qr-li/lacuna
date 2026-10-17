@@ -167,16 +167,22 @@ class ClaudeFirstCut:
     """Runs the windows through Claude; `client` can be injected (tests use a fake)."""
 
     name = "claude"
-    model = ClaudeEditorAdapter.model
+    # Opus refuses whole-episode first-cut requests ("reasoning_extraction", tested on EP001 with
+    # opus-5-5 and opus-5, every prompt variant); Sonnet 5.5 does the job, at half the price. A
+    # refused window is retried once on FALLBACK_MODEL whatever the configured model.
+    MODEL = "claude-sonnet-5-5"
+    FALLBACK_MODEL = "claude-sonnet-5-5"
 
     def __init__(self, api_key: str | None = None, client: Any = None, effort: str | None = None,
-                 concurrency: int = 2):
+                 concurrency: int = 3, model: str | None = None):
         if api_key is None and client is None:
             api_key, _ = find_api_key()
         self.api_key = api_key
         self._client = client
         self.effort = effort or os.environ.get("LACUNA_FIRST_CUT_EFFORT", "high")
         self.concurrency = concurrency
+        self.model = model or os.environ.get("LACUNA_FIRST_CUT_MODEL", self.MODEL)
+        self.on_usage: Callable[[dict], None] = lambda u: None
 
     @property
     def available(self) -> bool:
@@ -189,28 +195,37 @@ class ClaudeFirstCut:
             self._client = anthropic.Anthropic(api_key=self.api_key, timeout=900.0, max_retries=4)
         return self._client
 
-    def request(self, system: str, doc: str, user: str) -> dict:
-        return dict(model=self.model, max_tokens=64000,
+    def request(self, system: str, doc: str, user: str, model: str | None = None) -> dict:
+        return dict(model=model or self.model, max_tokens=64000,
                     system=[{"type": "text", "text": system},
                             {"type": "text", "text": doc, "cache_control": {"type": "ephemeral"}}],
                     output_config={"effort": self.effort}, tools=[TOOL], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": user}])
 
     def _call(self, req: dict):
-        with self.client.beta.messages.stream(betas=["server-side-fallback-2026-07-01"], fallbacks="default",
-                                              **req) as s:
+        extra = ({"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
+                 if "opus" in req["model"] else {})
+        with self.client.beta.messages.stream(**extra, **req) as s:
             return s.get_final_message()
 
     def run_window(self, system: str, doc: str, a: float, b: float, k: int, n: int) -> tuple[list[dict], str, dict]:
         """(raw tool ops, notes, usage) for one window; raises FirstCutError with a Chinese message."""
-        t0 = time.monotonic()
-        try:
-            resp = self._call(self.request(system, doc, window_request(a, b, k, n)))
-        except Exception as e:      # noqa: BLE001
-            raise FirstCutError(error_message(e).replace("，这次没有改动。", "")) from e
-        usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
-        if resp.stop_reason == "refusal":
-            raise FirstCutError(f"Claude 拒绝处理第 {k + 1} 段")
+        model = self.model
+        while True:
+            t0 = time.monotonic()
+            try:
+                resp = self._call(self.request(system, doc, window_request(a, b, k, n), model))
+            except Exception as e:      # noqa: BLE001
+                raise FirstCutError(error_message(e).replace("，这次没有改动。", "")) from e
+            usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
+            if resp.stop_reason != "refusal":
+                break
+            cat = getattr(getattr(resp, "stop_details", None), "category", None)
+            self.on_usage(usage | {"refusal": cat or True})      # refused calls are billed too
+            if model == self.FALLBACK_MODEL:
+                raise FirstCutError(f"Claude 拒绝处理第 {k + 1} 段" + (f"（{cat}）" if cat else ""))
+            model = self.FALLBACK_MODEL
+        self.on_usage(usage)
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_ops":
                 return list(block.input.get("ops") or []), str(block.input.get("notes") or ""), usage
@@ -276,7 +291,8 @@ class ClaudeFirstCut:
                 notes.append(f"{int(a // 60)}–{int(b // 60)} 分：{note}")
         for i, o in enumerate(ops):
             o["id"] = f"op{i + 1:04d}"
-        doc_out = {"episode": episode, "model": f"{self.model} / LACUNA first cut (effort {self.effort})",
+        models = sorted({u.get("model") for _, _, u in results.values() if u.get("model")} or {self.model})
+        doc_out = {"episode": episode, "model": f"{' + '.join(models)} / LACUNA first cut (effort {self.effort})",
                    "notes": "\n".join(notes), "ops": ops}
         return FirstCutResult(doc_out, usage, notes)
 

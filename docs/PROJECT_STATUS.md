@@ -21,6 +21,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 
 - **Phase 5 learning built** (2026-10-17, D39): `lacuna_app/learning.py`, page 「学到的规则」, `scripts/learn_from_hand_edit.py`. Leon's EP001 review read on his PC (read-only): 5 single decisions (kept 3 big content trims, restored 凤凰形态 15.7 s, applied the 秦格雷 suggestion) + 「全部通过」110; 0 routine restores. Too little alone → his hand edit of EP001 added as second evidence source. Rules need his approval before they act. Installed on Leon's PC (main bae39ef) and **validated by Leon 2026-10-17**.
 - **Phase 4 new-episode import** (2026-10-17, D41): Home → 导入新一集 → pick Leon/Pei tracks → local ASR (Paraformer + SenseVoice, sherpa-onnx) → features → Claude first cut in ~10-min windows → review. Resumable per step (`<workspace>/imports/<id>/`). Real ASR verified on sherpa test clips in the cloud box; full EP001 run on Leon's PC pending (needs `pip install -e ".[asr]"`, first import downloads ~400 MB of models).
+  - 2026-10-17 first real run on Leon's PC (EP001 raw, 73.5 min): models download ~30 s, ASR Leon 268 s + Pei 197 s, features ~20 s, peak RAM ~1.5 GB. Claude step refused on Opus (D44) → first cut now Sonnet 5.5. Next: after the batch update, resume job EP001_导入测试 and report time/cost.
 - **Chat voice input** (2026-10-17, D43): 🎤 button next to the chat box; local SenseVoice, text lands in the box, Leon sends. Needs the models from a first import (`<workspace>/models`).
 
 ## Open issues
