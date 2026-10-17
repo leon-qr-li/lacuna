@@ -16,7 +16,7 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 2 | 导出成品 | 一个按钮导出整集 WAV / MP3（-16 LUFS / -1 dBTP），带进度，导出后能在文件夹里找到 | 母带与导出 thread merged (`lacuna_core`) | 3 | **done with #4** (top-bar 导出 button; validation by Leon pending listening verdict) |
 | 3 | 真 AI 对话 | 聊天框接 Claude API：在任意位置说“这段删掉 / 停顿短一点”，AI 给出可试听的修改 | Leon's API key (set 2026-10-17) | 2 | **done, validated by Leon 2026-10-17** |
 | 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **built** (D41); full run with EP001 raw on Leon's PC next; formal acceptance needs a second episode's raw tracks |
-| 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | **built (D39)**; Leon's EP001 review = 5 single decisions + 1 batch of 110 → hand edit added as 2nd source; install + validation pending |
+| 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | **done, validated by Leon 2026-10-17** (D39) |
 | 6 | 片头、配乐与 ducking | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 5 | — |
 | 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
 | 8 | UI 审美迭代 | 视觉与布局打磨 | flows stable (after 4) | 5–6 | — |
