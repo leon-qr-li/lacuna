@@ -39,7 +39,8 @@ test("上传喜马拉雅: says what is missing, then WAV, title, show notes and 
   await page.getByRole("button", { name: "复制标题" }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(pack.title);
   await page.getByRole("button", { name: "复制 show notes" }).click();
-  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(pack.markdown);
+  // Windows puts CRLF line endings on the plain-text clipboard
+  await expect.poll(async () => (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n")).toBe(pack.markdown);
 
   const wav = page.waitForEvent("download");
   await page.getByRole("link", { name: "下载 WAV" }).click();
