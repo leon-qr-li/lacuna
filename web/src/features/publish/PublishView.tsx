@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PublishView as View } from "../api";
-import { api } from "../api";
-import { copyRich, copyText, markdownToHtml } from "../markdown";
+import type { PublishView as View } from "./api";
+import { copyRich, copyText, markdownToHtml } from "../../markdown";
+import { publishApi } from "./api";
 
 /** 发布资料: title, one-line blurb, show notes (Markdown, approved D40 format), chapters and the
  *  names to check, all for the version of the cut that will be published. */
@@ -15,7 +15,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const timer = useRef<number | null>(null);
 
   const load = () =>
-    api
+    publishApi
       .publish(id)
       .then((v) => {
         setView(v);
@@ -73,7 +73,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const generate = () => {
     if (pack && !window.confirm(pack.edited ? "重新生成会覆盖你手改过的 show notes，确定吗？" : "重新生成一版？（会再花一次 Claude 的钱）")) return;
     setEditing(false);
-    void act(api.generatePublish(id));
+    void act(publishApi.generatePublish(id));
   };
   const claude = view.editor === "claude";
   const job = view.job;
@@ -112,7 +112,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
           {pack.stale && (
             <div className="banner-card row wrap gap8" data-testid="publish-stale">
               <span className="grow">剪辑在生成之后又改过，时间戳{pack.library ? "和配乐" : ""}可能不准了。更新只在本机重新对时间，不花钱，你改过的文字会保留。</span>
-              <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => act(api.retimePublish(id), "时间戳已按最新剪辑更新")}>
+              <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => act(publishApi.retimePublish(id), "时间戳已按最新剪辑更新")}>
                 更新时间戳
               </button>
             </div>
@@ -142,7 +142,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
               <div className="row wrap gap8">
                 <span className="muted small">换一个：</span>
                 {pack.alt_titles.map((t) => (
-                  <button key={t} type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => act(api.editPublish(id, { title: t }), "标题已换")}>
+                  <button key={t} type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => act(publishApi.editPublish(id, { title: t }), "标题已换")}>
                     {t}
                   </button>
                 ))}
@@ -185,7 +185,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
                       编辑
                     </button>
                     {pack.edited && (
-                      <button type="button" className="linkish small" disabled={busy} onClick={() => window.confirm("丢掉你手改的内容，恢复成生成的版本？") && act(api.editPublish(id, { markdown: null }), "已恢复成生成的版本")}>
+                      <button type="button" className="linkish small" disabled={busy} onClick={() => window.confirm("丢掉你手改的内容，恢复成生成的版本？") && act(publishApi.editPublish(id, { markdown: null }), "已恢复成生成的版本")}>
                         恢复成生成的版本
                       </button>
                     )}
@@ -197,7 +197,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
                       type="button"
                       className="btn btn-primary btn-small"
                       disabled={busy}
-                      onClick={async () => (await act(api.editPublish(id, { markdown: draft }), "已保存")) && setEditing(false)}
+                      onClick={async () => (await act(publishApi.editPublish(id, { markdown: draft }), "已保存")) && setEditing(false)}
                     >
                       保存
                     </button>
@@ -250,10 +250,10 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
                     </span>
                     {n.state === "open" ? (
                       <span className="row gap8">
-                        <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => act(api.publishName(id, n.heard, "apply"), `已全部改成「${n.suggested}」`)}>
+                        <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => act(publishApi.publishName(id, n.heard, "apply"), `已全部改成「${n.suggested}」`)}>
                           改成「{n.suggested}」
                         </button>
-                        <button type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => act(api.publishName(id, n.heard, "ignore"))}>
+                        <button type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => act(publishApi.publishName(id, n.heard, "ignore"))}>
                           不用改
                         </button>
                       </span>
