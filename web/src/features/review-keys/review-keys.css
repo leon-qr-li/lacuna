@@ -1,0 +1,9 @@
+/* review shortcuts: "?" card above the dock, progress chip inside it */
+.rk-wrap { position: relative; display: inline-flex; }
+.rk-btn { font: 600 15px var(--mono); }
+.rk-card { position: absolute; bottom: calc(100% + 14px); left: 0; z-index: 40; width: max-content; max-width: min(360px, calc(100vw - 48px)); padding: 12px 14px; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); display: grid; gap: 8px; }
+.rk-card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.rk-card li { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 10px; font-size: 13px; }
+.rk-card p { margin: 0; }
+.rk-keys { display: inline-flex; gap: 4px; }
+.rk-progress { white-space: nowrap; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, currentColor 8%, transparent); font-variant-numeric: tabular-nums; }

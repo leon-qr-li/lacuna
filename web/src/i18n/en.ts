@@ -195,9 +195,7 @@ export const en: Dict = {
   "只显示，不改写；划线部分被剪掉": "Shown, never rewritten; struck-out words are cut",
   "用一句话调整": "Adjust in a sentence",
   "或者直接说：恢复这处 / 停顿短一点": "Or just say: restore this / shorter pause",
-  "快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。": "Shortcuts: J / K previous / next, Space play, A / B switch original and cut, Y approve (keep as is) and go next, R restore the original and go next.",
   "试听和决定": "Listen and decide",
-  "上一处（J）": "Previous (J)",
   "上一处": "Previous",
   "A · 原始": "A · original",
   "B · 剪后": "B · cut",
@@ -205,6 +203,5 @@ export const en: Dict = {
   "保留这个删除": "Keep this cut",
   "重新应用这个删除": "Apply this cut again",
   "不删，保持原话": "Don't cut, keep the words",
-  "下一处（K）": "Next (K)",
   "下一处": "Next",
 };
