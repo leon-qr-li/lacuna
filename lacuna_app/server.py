@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 from datetime import datetime, timezone
 from urllib.parse import quote
@@ -21,18 +22,24 @@ from .exporter import ExportBusy, Exporter
 from .importer import ImportBusy, ImportError_, Importer, list_dir
 from .learning import Learning
 from .publish import PublishBusy, Publisher
+from .poster import PosterBusy, PosterError, Posters
 from .library import KINDS, Library, LibraryError, lookup_credit
 from .music import ROLES, EpisodeMusic
 from .store import PathError, Workspace
+
+MAX_UPLOAD = 4 * 1024 ** 3   # a 2-hour 48 kHz stereo WAV is ~1.4 GB
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 USAGE_LOG = "ai_usage.jsonl"     # one line per Claude call: tokens, seconds, estimated cost
 
 
+_USAGE_LOCK = threading.Lock()     # parallel calls (4 covers at once): appends are not atomic on Windows
+
+
 def log_usage(path: Path, episode_id: str, usage: dict) -> None:
     line = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "episode": episode_id, **usage}
     try:
-        with open(path, "a", encoding="utf-8") as f:
+        with _USAGE_LOCK, open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(line, ensure_ascii=False) + "\n")
     except OSError:
         pass      # bookkeeping must never break the chat
@@ -84,20 +91,18 @@ class PublishEditBody(BaseModel):
     title: str | None = Field(None, max_length=200)
 
 
+class PosterReviseBody(BaseModel):
+    instruction: str = Field(min_length=1, max_length=500, description="Leon's change, e.g. 换成暖色")
+
+
 class NameBody(BaseModel):
     heard: str = Field(min_length=1, max_length=200)
     action: str = Field(pattern="^(apply|ignore)$")
 
 
-class LibraryFileBody(BaseModel):
-    path: str = Field(min_length=1, max_length=2000)
-    kind: str = Field("music", pattern="^(music|jingle|clip)$")
-    note: str = Field("", max_length=500)
-
-
 class AssetBody(BaseModel):
     note: str | None = Field(None, max_length=500)
-    kind: str | None = Field(None, pattern="^(music|jingle|clip)$")
+    kind: str | None = Field(None, pattern="^(intro|outro|interlude|bed|dialogue|trailer|other)$")
     credit: dict | None = None
     confirm: bool = False
 
@@ -127,7 +132,7 @@ class OpBody(PlayheadBody):
 
 def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST,
                importer: Importer | None = None, dictation: Dictation | None = None,
-               publisher: Publisher | None = None, credit_client=None) -> FastAPI:
+               publisher: Publisher | None = None, credit_client=None, posters: Posters | None = None) -> FastAPI:
     """`credit_client`: an Anthropic-like client for the library's credit lookup (tests inject a fake)."""
     ws = Workspace(workspace).ensure()
     adapter = adapter or make_adapter("auto")
@@ -140,6 +145,8 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     dictation = dictation or Dictation(ws.root / "models")
     publisher = publisher or Publisher(ws)
     publisher.on_usage = lambda eid, u: log_usage(ws.root / USAGE_LOG, eid, u | {"kind": "publish"})
+    posters = posters or Posters(ws, publisher)
+    posters.on_usage = lambda eid, u: log_usage(ws.root / USAGE_LOG, eid, u | {"kind": "poster"})
     library = Library(ws)
     musics: dict[str, EpisodeMusic] = {}
 
@@ -375,6 +382,53 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         ep = get(episode_id)
         return publish_change(ep, lambda: publisher.name(ep, body.heard, body.action))
 
+    # ------------------------------------------------------------------ cover (phase 10)
+    def poster_view(ep: Episode) -> dict:
+        return posters.view(ep)
+
+    def poster_job(ep: Episode, fn) -> dict:
+        try:
+            fn()
+        except PosterBusy as e:
+            raise HTTPException(409, str(e))
+        except PosterError as e:
+            raise HTTPException(400, str(e))
+        except KeyError:
+            raise HTTPException(404, "没有这一版海报")
+        return poster_view(ep)
+
+    @app.get("/api/episodes/{episode_id}/poster")
+    def poster_get(episode_id: str):
+        return poster_view(get(episode_id))
+
+    @app.post("/api/episodes/{episode_id}/poster/generate")
+    def poster_generate(episode_id: str):
+        ep = get(episode_id)
+        return poster_job(ep, lambda: posters.generate(ep))
+
+    @app.post("/api/episodes/{episode_id}/poster/{variant}/revise")
+    def poster_revise(episode_id: str, variant: str, body: PosterReviseBody):
+        ep = get(episode_id)
+        return poster_job(ep, lambda: posters.revise(ep, variant, body.instruction))
+
+    @app.post("/api/episodes/{episode_id}/poster/{variant}/choose")
+    def poster_choose(episode_id: str, variant: str):
+        ep = get(episode_id)
+        return poster_job(ep, lambda: posters.choose(ep, variant))
+
+    @app.get("/api/episodes/{episode_id}/poster/{variant}.png")
+    def poster_preview(episode_id: str, variant: str):
+        ep = get(episode_id)
+        if not re.fullmatch(r"v\d+", variant):
+            raise HTTPException(404)
+        try:
+            path = posters.preview(ep, variant)
+        except KeyError:
+            raise HTTPException(404, "没有这一版海报")
+        except PosterError as e:
+            raise HTTPException(500, str(e))
+        return FileResponse(path, media_type="image/png", headers={"Cache-Control": "private, max-age=86400"})
+
     # ------------------------------------------------------------------ import
     @app.get("/api/fs")
     def browse(path: str | None = None):
@@ -471,12 +525,37 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         lookup = credit_client is not None or (bool(find_api_key()[0]) and sdk_installed())
         return library.view() | {"lookup": lookup}
 
-    @app.post("/api/library/files")
-    def library_add(body: LibraryFileBody):
+    @app.post("/api/library/upload")
+    async def library_upload(request: Request, name: str, kind: str = "other", note: str = ""):
+        """A file dragged into (or picked in) the browser, raw bytes in the body. It is written
+        straight into the library folder; nothing leaves this machine. The octet-stream type is
+        required so another web page can't post here without the browser's CORS preflight."""
+        if request.headers.get("content-type", "").split(";")[0].strip().lower() != "application/octet-stream":
+            raise HTTPException(415, "expected application/octet-stream")
+        if len(note) > 500:
+            raise HTTPException(422, "note too long")
         try:
-            return {"asset": library.asset_view(library.add_file(body.path, body.kind, body.note.strip()))}
+            part = library.upload_target(name, kind)
         except LibraryError as e:
             raise HTTPException(422, str(e))
+        try:
+            size = 0
+            with part.open("wb") as f:
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > MAX_UPLOAD:
+                        raise HTTPException(413, "文件太大")
+                    f.write(chunk)
+            if not size:
+                raise HTTPException(422, "文件是空的")
+            asset, duplicate = await run_in_threadpool(library.add_upload, part, kind, note.strip())
+        except HTTPException:
+            part.unlink(missing_ok=True)
+            raise
+        except Exception as e:
+            part.unlink(missing_ok=True)
+            raise HTTPException(422, f"读不了这个音频文件：{name}" if not isinstance(e, LibraryError) else str(e))
+        return {"asset": library.asset_view(asset), "duplicate": duplicate}
 
     @app.post("/api/library/scan")
     def library_scan():
@@ -641,5 +720,6 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     app.state.importer = importer
     app.state.dictation = dictation
     app.state.publisher = publisher
+    app.state.posters = posters
     app.state.library = library
     return app

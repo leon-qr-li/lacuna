@@ -204,3 +204,50 @@ class FakeCreditAnthropic:
                                  content=[SimpleNamespace(type="web_search_result", url="https://example.org/ost")])
         tool = SimpleNamespace(type="tool_use", name="submit_credit", input=self.answer)
         return SimpleNamespace(stop_reason="tool_use", content=[search, tool], usage=usage, model="claude-opus-5-5")
+
+
+# ---------------------------------------------------------------------------- poster (phase 10)
+
+POSTER_COLORS = {"ONE EMBLEM": "#4a0b13", "SIDE BY SIDE": "#15324a", "PURE GEOMETRY": "#f2eee6",
+                 "YOUR OWN IDEA": "#1c3e8c"}
+
+
+def poster_svg(bg: str, title: str = "TWO FILMS", extra: str = "") -> str:
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">'
+            f'<rect width="1200" height="1200" fill="{bg}"/><circle cx="600" cy="520" r="260" fill="#d9b25c"/>'
+            f'{extra}<text x="600" y="1040" font-family="Inter" font-weight="200" font-size="46" letter-spacing="30" '
+            f'fill="#efe6e6" text-anchor="middle">{title}</text></svg>')
+
+
+class FakePosterAnthropic:
+    """`client.beta.messages.stream(...)` drawing a simple cover per direction; a revision request
+    ("暖色") recolours the background. `fail` = direction headings that raise, `extra` is injected
+    into every SVG (tests of the sanitizer)."""
+
+    def __init__(self, delay: float = 0.0, fail: tuple[str, ...] = (), extra: str = ""):
+        self.delay, self.fail, self.extra = delay, fail, extra
+        self.requests: list[dict] = []
+        self.beta = SimpleNamespace(messages=SimpleNamespace(stream=self._stream))
+
+    def _stream(self, **kw):
+        import re
+        import time
+        self.requests.append(kw)
+        if self.delay:
+            time.sleep(self.delay)
+        user = kw["messages"][0]["content"]
+        if "Leon likes this cover" in user:
+            svg = re.search(r"<svg.*</svg>", user, re.S).group(0)
+            svg = re.sub(r'(<rect width="1200" height="1200" fill=")[^"]+', r"\g<1>#c0672a", svg, count=1)
+            inp = {"name": "Warm Version", "concept": "背景换成了暖橙色，其余不变。", "svg": svg}
+        else:
+            head = user.split("YOUR DIRECTION FOR THIS VERSION:\n")[1].split(":")[0]
+            if head in self.fail:
+                raise RuntimeError(f"boom {head}")
+            inp = {"name": head.title(), "concept": f"{head} 方向：金色圆代表落日。",
+                   "svg": poster_svg(POSTER_COLORS[head], extra=self.extra)}
+        return _Stream(SimpleNamespace(
+            stop_reason="tool_use", model=kw["model"], _request_id="req_fake",
+            content=[SimpleNamespace(type="tool_use", name="submit_poster", input=inp)],
+            usage=SimpleNamespace(input_tokens=20000, output_tokens=6000, cache_creation_input_tokens=0,
+                                  cache_read_input_tokens=0)))
