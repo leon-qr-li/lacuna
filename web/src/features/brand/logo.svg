@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<defs>
+<linearGradient id="lcbg" x1="0" y1="2" x2="0" y2="62" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#161B45"/>
+<stop offset="1" stop-color="#090B1F"/>
+</linearGradient>
+<linearGradient id="lcln" x1="14" y1="0" x2="51" y2="0" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#FFC24B"/>
+<stop offset="0.4" stop-color="#FF7A3D"/>
+<stop offset="0.75" stop-color="#FF4F7B"/>
+<stop offset="1" stop-color="#A35CFF"/>
+</linearGradient>
+<clipPath id="lcclip">
+<rect x="2" y="2" width="60" height="60" rx="15"/>
+</clipPath>
+<filter id="lcgl" x="-30%" y="-30%" width="160%" height="160%">
+<feGaussianBlur stdDeviation="2.0"/>
+</filter>
+</defs>
+<g clip-path="url(#lcclip)">
+<rect width="64" height="64" fill="url(#lcbg)"/>
+<g filter="url(#lcgl)" opacity="0.85">
+<path d="M14 19 V38 H22 L31 16 L40 48 L45 38 H51" fill="none" stroke="url(#lcln)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<path d="M14 19 V38 H22 L31 16 L40 48 L45 38 H51" fill="none" stroke="url(#lcln)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="48" cy="19" r="5.5" fill="#FF4F5E" opacity="0.45" filter="url(#lcgl)"/>
+<circle cx="48" cy="19" r="3" fill="#FF6A6A"/>
+<circle cx="47.2" cy="18.2" r="1" fill="#FFD9D9"/>
+</g>
+</svg>

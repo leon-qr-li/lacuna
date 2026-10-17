@@ -13,6 +13,7 @@ the app version it starts is being replaced. It lives in the install root:
     <root>/pending.json              written by the app: "switch to this prepared version"
     <root>/update_log.json           what the last update did (the app shows it)
     <root>/LACUNA.cmd | LACUNA.command   what the desktop shortcut / LACUNA.app starts
+    <root>/LACUNA.ico | LACUNA.icns       the shortcut / LACUNA.app icon (copied from the app version)
 
 Roots: Windows %LOCALAPPDATA%\\LACUNA, macOS ~/Library/Application Support/LACUNA,
 Linux ~/.local/share/lacuna. The workspace (episodes, models, exports) is elsewhere and is never
@@ -298,6 +299,20 @@ def write_start_script(root: Path) -> Path:
     return p
 
 
+ICONS = ("LACUNA.ico", "LACUNA.icns")
+
+
+def install_icons(root: Path, app_dir: Path) -> bool:
+    """Copy the app version's icons into the root. True when one changed (the shortcuts then need refreshing)."""
+    changed = False
+    for name in ICONS:
+        src, dst = app_dir / "installer" / name, root / name
+        if src.is_file() and (not dst.is_file() or dst.read_bytes() != src.read_bytes()):
+            shutil.copyfile(src, dst)
+            changed = True
+    return changed
+
+
 def ps_quote(s: str) -> str:
     return "'" + str(s).replace("'", "''") + "'"
 
@@ -306,13 +321,15 @@ def make_shortcuts(root: Path, port: int, home: Path | None = None) -> list[Path
     """Windows: Desktop + Start menu shortcuts. macOS: ~/Applications/LACUNA.app. Linux: none."""
     start = write_start_script(root)
     made: list[Path] = []
+    ico, icns = root / "LACUNA.ico", root / "LACUNA.icns"
     if WINDOWS:
+        icon = f"$lnk.IconLocation = {ps_quote(str(ico) + ',0')}; " if ico.is_file() else ""
         script = (
             "$ws = New-Object -ComObject WScript.Shell; "
             "foreach ($dir in @([Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('Programs'))) { "
             "  if (-not $dir) { continue }; $lnk = $ws.CreateShortcut((Join-Path $dir 'LACUNA.lnk')); "
             f"  $lnk.TargetPath = {ps_quote(start)}; $lnk.WorkingDirectory = {ps_quote(root)}; "
-            "  $lnk.Description = 'LACUNA Studio'; $lnk.Save(); Write-Output (Join-Path $dir 'LACUNA.lnk') }")
+            f"  $lnk.Description = 'LACUNA Studio'; {icon}$lnk.Save(); Write-Output (Join-Path $dir 'LACUNA.lnk') }}")
         out = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
                              capture_output=True, text=True)
         made = [Path(x) for x in out.stdout.split("\n") if x.strip()]
@@ -320,6 +337,11 @@ def make_shortcuts(root: Path, port: int, home: Path | None = None) -> list[Path
         app = (home or Path.home()) / "Applications" / "LACUNA.app"
         macos = app / "Contents" / "MacOS"
         macos.mkdir(parents=True, exist_ok=True)
+        icon = ""
+        if icns.is_file():
+            (app / "Contents" / "Resources").mkdir(exist_ok=True)
+            shutil.copyfile(icns, app / "Contents" / "Resources" / "LACUNA.icns")
+            icon = "\n  <key>CFBundleIconFile</key><string>LACUNA</string>"
         (app / "Contents" / "Info.plist").write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -329,7 +351,7 @@ def make_shortcuts(root: Path, port: int, home: Path | None = None) -> list[Path
   <key>CFBundleExecutable</key><string>LACUNA</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>1.0</string>
-  <key>LSUIElement</key><true/>
+  <key>LSUIElement</key><true/>{icon}
 </dict></plist>
 """, encoding="utf-8")
         exe = macos / "LACUNA"
@@ -375,10 +397,12 @@ def install(root: Path, base: str, workspace: Path | None, port: int | None, zip
     target = root / "lacuna_launcher.py"
     src = app_dir / "installer" / "lacuna_launcher.py"
     shutil.copyfile(src if src.is_file() else me, target)
+    install_icons(root, app_dir)
 
     cfg = {"schema": CONFIG_SCHEMA, "workspace": str(ws), "port": port, "current": version,
            "previous": old.get("current") if old.get("current") != version else old.get("previous"),
-           "feed": join_url(base, FEED_NAME), "installed": old.get("installed") or time.strftime("%Y-%m-%d %H:%M")}
+           "feed": join_url(base, FEED_NAME), "installed": old.get("installed") or time.strftime("%Y-%m-%d %H:%M"),
+           "shortcuts": shortcuts}
     write_json(root / "config.json", cfg)
     made = make_shortcuts(root, port) if shortcuts else [write_start_script(root)]
     prune_versions(root, cfg)
@@ -510,6 +534,9 @@ def run(root: Path, browser: bool = True, runner=run_cmd, health_timeout: float 
     cfg = load_config(root)
     port = int(cfg["port"])
     url = f"http://127.0.0.1:{port}/"
+    # a version with a new icon: refresh the shortcuts (installs from before the key had shortcuts)
+    if install_icons(root, root / "versions" / cfg["current"]) and cfg.get("shortcuts", True):
+        make_shortcuts(root, port)
     if health(port):
         say(f"{APP} 已经在运行，打开 {url}")
         if browser:

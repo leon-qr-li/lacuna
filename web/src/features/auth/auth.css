@@ -4,7 +4,7 @@
 .auth-art::before { content: ""; position: absolute; inset: 0; background: radial-gradient(700px 420px at 20% 10%, rgb(79 124 255 / 0.45), transparent 60%), radial-gradient(600px 420px at 90% 90%, rgb(236 72 153 / 0.35), transparent 60%); }
 .auth-art > * { position: relative; }
 .auth-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: 0.18em; font-size: 14px; }
-.auth-logo i { width: 28px; height: 28px; border-radius: 9px; background: var(--grad); box-shadow: 0 4px 14px rgb(139 92 246 / 0.35); }
+.auth-logo i { width: 28px; height: 28px; background: url("../brand/logo.svg") center / contain no-repeat; filter: drop-shadow(0 3px 8px rgb(255 79 123 / 0.25)); }
 .auth-tag { margin: 40px 0 0; font-size: 30px; font-weight: 600; line-height: 1.35; letter-spacing: -0.01em; max-width: 560px; }
 .auth-tag small { display: block; font-size: 14px; font-weight: 400; color: #a9aec4; margin-top: 10px; letter-spacing: 0; }
 .auth-wave { margin-top: auto; display: flex; gap: 7px; align-items: center; height: 220px; }
