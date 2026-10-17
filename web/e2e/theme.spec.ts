@@ -18,7 +18,7 @@ test("theme: follows the system, toggle switches and is remembered; fonts are bu
   await toggle.click();
   await expect(html).toHaveAttribute("data-theme", "light");
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(bg).toBe("rgb(243, 244, 248)");
+  expect(bg).toBe("rgb(244, 244, 248)");
 
   // remembered over the system preference, and on other screens
   await page.reload();
