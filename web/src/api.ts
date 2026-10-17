@@ -128,6 +128,8 @@ export interface ExportJob {
   progress: number;
   stage: string;
   version: string;
+  music_version?: string;
+  music_stale?: boolean; // the episode's music changed after this export
   basename: string;
   error: string | null;
   result: {

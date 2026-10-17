@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from ..episode import ConflictError
 from ..exporter import ExportBusy, Exporter
+from ..music import EpisodeMusic
 from ..store import PathError
 
 
@@ -36,8 +37,11 @@ def register(app, ctx) -> None:
 
     @app.get("/api/episodes/{episode_id}/export")
     def export_status(episode_id: str):
-        get(episode_id)
-        return {"job": exporter.status(episode_id)}
+        ep = get(episode_id)
+        job = exporter.status(episode_id)
+        if job and job.get("music_version"):     # the music changed after this export
+            job["music_stale"] = job["music_version"] != EpisodeMusic(ctx.ws, ep).export_key()
+        return {"job": job}
 
     @app.get("/api/episodes/{episode_id}/exports/{name}")
     def export_file(episode_id: str, name: str):

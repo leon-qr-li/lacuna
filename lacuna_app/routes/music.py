@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from ..audio import parse_range
 from ..music import EpisodeMusic
+from ..music_assist import MusicChat, auto_place
 from .library import asset_or_404, library_of
 
 
@@ -23,6 +24,15 @@ class PlacementBody(BaseModel):
     status: str | None = Field(None, pattern="^(applied|proposed)$")
 
 
+class ChatBody(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+class DraftMoveBody(BaseModel):
+    pid: str = Field(max_length=40)
+    voice_s: float = Field(ge=0)
+
+
 class SeriesBody(BaseModel):
     name: str = Field("洛城二三事", min_length=1, max_length=80)
 
@@ -30,6 +40,7 @@ class SeriesBody(BaseModel):
 def register(app, ctx) -> None:
     library = library_of(ctx)
     musics: dict[str, EpisodeMusic] = {}
+    chat = ctx.provide("music_chat", lambda: MusicChat(ctx.option("music_client")))
 
     def music(episode_id: str) -> EpisodeMusic:
         ep = ctx.get(episode_id)
@@ -43,11 +54,11 @@ def register(app, ctx) -> None:
     def music_view(episode_id: str):
         return music(episode_id).summary()
 
-    def placement_fields(m: EpisodeMusic, body: PlacementBody) -> dict:
+    def placement_fields(m: EpisodeMusic, body: PlacementBody, pid: str | None = None) -> dict:
         f = body.model_dump(exclude_unset=True)
         for k in ("at_s", "until_s"):     # the UI speaks final-mix time; anchors live on the voice timeline
             if f.get(k) is not None:
-                f[k] = m.final_to_voice_s(f[k])
+                f[k] = m.final_to_voice_s(f[k], exclude=pid)
         return f
 
     @app.post("/api/episodes/{episode_id}/music")
@@ -67,7 +78,7 @@ def register(app, ctx) -> None:
         if body.asset_id:
             asset_or_404(library, body.asset_id)
         try:
-            m.update(pid, **placement_fields(m, body))
+            m.update(pid, **placement_fields(m, body, pid))
         except KeyError:
             raise HTTPException(404, "no such placement")
         return m.summary()
@@ -87,6 +98,57 @@ def register(app, ctx) -> None:
             wav, start = music(episode_id).preview(pid)
         except KeyError:
             raise HTTPException(404, "no such placement")
+        return Response(wav, media_type="audio/wav", headers={"Cache-Control": "no-store", "X-Start": str(start)})
+
+    # ---- suggestions: by use, or from talking to Claude; heard first, applied only when accepted
+    @app.post("/api/episodes/{episode_id}/music/auto")
+    def music_auto(episode_id: str):
+        m = music(episode_id)
+        out = auto_place(m)
+        return m.summary() | {"message": out["message"]}
+
+    @app.post("/api/episodes/{episode_id}/music/chat")
+    def music_chat(episode_id: str, body: ChatBody):
+        m = music(episode_id)
+        out = chat.ask(m, body.text.strip())
+        if out.get("usage"):
+            ctx.log_usage(episode_id, {"kind": "music_chat", **out["usage"]})
+        return m.summary() | {"message": out["message"]}
+
+    @app.post("/api/episodes/{episode_id}/music/draft/{draft_id}/accept")
+    def music_draft_accept(episode_id: str, draft_id: str):
+        m = music(episode_id)
+        try:
+            m.accept_draft(draft_id)
+        except KeyError:
+            raise HTTPException(404, "no such suggestion")
+        return m.summary()
+
+    @app.post("/api/episodes/{episode_id}/music/draft/discard")
+    def music_draft_discard(episode_id: str):
+        m = music(episode_id)
+        m.discard_draft()
+        return m.summary()
+
+    @app.post("/api/episodes/{episode_id}/music/draft/move")
+    def music_draft_move(episode_id: str, body: DraftMoveBody):
+        m = music(episode_id)
+        try:
+            m.move_draft(body.pid, body.voice_s)
+        except KeyError:
+            raise HTTPException(404, "no such suggested placement")
+        return m.summary()
+
+    @app.get("/api/episodes/{episode_id}/music/draft/{pid}/preview")
+    def music_draft_preview(episode_id: str, pid: str):
+        m = music(episode_id)
+        d = m.draft()
+        if not d:
+            raise HTTPException(404, "no suggestion")
+        try:
+            wav, start = m.preview(pid, placements=d["placements"])
+        except KeyError:
+            raise HTTPException(404, "no such placement in the suggestion")
         return Response(wav, media_type="audio/wav", headers={"Cache-Control": "no-store", "X-Start": str(start)})
 
     @app.post("/api/episodes/{episode_id}/music/series/apply")
