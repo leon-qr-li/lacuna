@@ -18,7 +18,7 @@ const impact = (e: EditInfo) => e.len * (1.3 - e.confidence);
 
 export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Props) {
   const ranked = useMemo(
-    () => ep.edits.filter((e) => e.consequential || e.source !== "first_cut").sort((a, b) => impact(b) - impact(a)),
+    () => ep.edits.filter((e) => e.consequential).sort((a, b) => impact(b) - impact(a)),
     [ep.edits],
   );
   const cur = ranked.find((e) => e.id === selected) ?? ranked[0] ?? null;
