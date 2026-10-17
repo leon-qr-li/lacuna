@@ -6,9 +6,10 @@ Layout (user-chosen root, e.g. ``C:\\Projects\\LACUNA_Workspace``)::
     <workspace>/episodes/<episode_id>/state.json     lacuna_core Project + edit list + history
     <workspace>/episodes/<episode_id>/publish.json   publish pack: title, show notes (phase 9)
     <workspace>/episodes/<episode_id>/poster.json    cover versions as SVG (phase 10; previews in posters/)
+    <workspace>/episodes/<episode_id>/chat.json      the AI producer chat log (what Leon asked, the outcome)
     <workspace>/episodes/<episode_id>/raw/           original recordings (never written)
 
-The app only ever writes ``state.json``, ``publish.json``, ``poster.json`` (and their ``.bak``) and the
+The app only ever writes ``state.json``, ``publish.json``, ``poster.json``, ``chat.json`` (and their ``.bak``) and the
 ``posters/`` preview cache inside an episode folder.
 """
 from __future__ import annotations
@@ -23,6 +24,7 @@ STATE_FILE = "state.json"
 META_FILE = "episode.json"
 PUBLISH_FILE = "publish.json"   # phase 9 publish pack (title, show notes), see publish.py
 POSTER_FILE = "poster.json"     # phase 10 cover versions (SVG), see poster.py
+CHAT_FILE = "chat.json"         # chat log, kept so long-term asks can be learned (chat_learning.py)
 
 # Episode ids are folder names. Unicode letters are fine (EP001_样本集); separators, dot-dot,
 # drive letters and control characters are not.

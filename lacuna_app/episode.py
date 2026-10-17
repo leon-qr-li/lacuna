@@ -22,6 +22,7 @@ import threading
 import uuid
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from functools import cached_property
 from pathlib import Path
 
@@ -37,7 +38,7 @@ from . import analysis
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
-from .store import META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
+from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
 
 STATE_SCHEMA = 1
 APPLIED, RESTORED, PROPOSED, DISCARDED = "applied", "restored", "proposed", "discarded"
@@ -178,7 +179,7 @@ class Episode:
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
         self.proposals: dict[str, dict] = st.get("proposals") or {}
         self.transcript = self._load_transcript()
-        self._chat_log: list[dict] = []     # chat turns, in memory only (a restart starts afresh)
+        self._chat_log: list[dict] = self._load_chat()   # chat turns, saved to chat.json
         self._timelines: OrderedDict[frozenset, Timeline] = OrderedDict()
         self._versions: OrderedDict[str, frozenset] = OrderedDict()
         self._clips: OrderedDict[str, Clip] = OrderedDict()
@@ -440,6 +441,7 @@ class Episode:
     # ------------------------------------------------------------------ chat
     CHAT_RADIUS_S = 45.0       # transcript / pauses the editor sees around the playhead
     CHAT_HISTORY = 6           # earlier turns sent along ("再短一点", "不是这句")
+    CHAT_KEEP = 2000           # turns kept in chat.json (learning reads them after export)
 
     def chat_context(self, text: str, playhead_s: float) -> tuple[ChatContext, dict]:
         """What the editor sees around the playhead, plus what is needed to turn its answer into
@@ -472,7 +474,7 @@ class Episode:
                 proposal, why = self._make_proposal(prop, view["cuts"], view["mix"], view["lo"])
                 if why:
                     notes.append(why)
-            self._log_turn(text, ctx.playhead, prop.message, proposal)
+            self.log_turn(text, ctx.playhead, prop.message, proposal)
             return {"reply": prop.message, "notes": notes, "adapter": adapter.name,
                     "proposal": proposal, "usage": prop.usage}
 
@@ -487,15 +489,39 @@ class Episode:
             out.append({"said": turn["said"], "at": turn["at"], "you_replied": turn["reply"], "outcome": outcome})
         return out
 
-    def _log_turn(self, said: str, at: float, reply: str, proposal: dict | None) -> None:
-        self._chat_log.append({"said": said, "at": round(at, 2), "reply": reply,
-                               "proposal": proposal["id"] if proposal else None, "state": "pending"})
-        del self._chat_log[:-20]
+    def log_turn(self, said: str, at: float, reply: str, proposal: dict | None = None, **extra) -> None:
+        with self.lock:
+            self._chat_log.append({"said": said, "at": round(at, 2), "reply": reply,
+                                   "proposal": proposal["id"] if proposal else None, "state": "pending",
+                                   "time": datetime.now(timezone.utc).isoformat(timespec="seconds"), **extra})
+            del self._chat_log[:-self.CHAT_KEEP]
+            self._save_chat()
 
     def _turn_state(self, pid: str, state: str) -> None:
         for turn in self._chat_log:
             if turn["proposal"] == pid:
                 turn["state"] = state
+        self._save_chat()
+
+    def chat_log(self) -> list[dict]:
+        with self.lock:
+            return [dict(t) for t in self._chat_log]
+
+    def _load_chat(self) -> list[dict]:
+        p = self.dir / CHAT_FILE
+        if not p.exists() and not p.with_name(p.name + ".bak").exists():
+            return []
+        try:
+            return list(read_json(p).get("turns") or [])
+        except (OSError, ValueError, AttributeError):
+            return []           # a broken chat log must not stop the episode from opening
+
+    def _save_chat(self) -> None:
+        try:
+            atomic_write_json(self.dir / CHAT_FILE, {"schema": 1, "episode": self.id, "turns": self._chat_log},
+                              protected=tuple(Path(m.path) for m in self.media.values()))
+        except OSError:
+            pass                # the chat answer still goes out; the log catches up on the next turn
 
     def utterances(self, lo: float, hi: float, enabled: frozenset[str], cuts) -> list[Utterance]:
         """Transcript words still audible on this timeline between lo and hi (timeline seconds),
