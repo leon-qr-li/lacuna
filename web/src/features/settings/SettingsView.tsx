@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppInfo } from "./api";
 import { settingsApi } from "./api";
+import { ThemeSetting } from "../theme/ThemeSetting";
 
 const KEY_SOURCE: Record<string, string> = {
   env: "环境变量",
@@ -121,6 +122,8 @@ export function SettingsView() {
       <h1>设置</h1>
       {msg && <p className="card" role="status">{msg}</p>}
       {err && <p className="error">{err}</p>}
+
+      <ThemeSetting />
 
       <section className="card" aria-label="版本">
         <div className="card-head">
