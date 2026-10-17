@@ -36,7 +36,7 @@ from lacuna_core.refine import snap_cut
 from . import analysis
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
-from .editor import ChatContext, EditorAdapter, Proposal
+from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
 from .store import META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
 
 STATE_SCHEMA = 1
@@ -178,6 +178,7 @@ class Episode:
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
         self.proposals: dict[str, dict] = st.get("proposals") or {}
         self.transcript = self._load_transcript()
+        self._chat_log: list[dict] = []     # chat turns, in memory only (a restart starts afresh)
         self._timelines: OrderedDict[frozenset, Timeline] = OrderedDict()
         self._versions: OrderedDict[str, frozenset] = OrderedDict()
         self._clips: OrderedDict[str, Clip] = OrderedDict()
@@ -437,22 +438,113 @@ class Episode:
         return e
 
     # ------------------------------------------------------------------ chat
-    def chat(self, text: str, playhead_s: float, adapter: EditorAdapter) -> dict:
+    CHAT_RADIUS_S = 45.0       # transcript / pauses the editor sees around the playhead
+    CHAT_HISTORY = 6           # earlier turns sent along ("再短一点", "不是这句")
+
+    def chat_context(self, text: str, playhead_s: float) -> tuple[ChatContext, dict]:
+        """What the editor sees around the playhead, plus what is needed to turn its answer into
+        a proposal on exactly this version of the timeline."""
         with self.lock:
             enabled = self.enabled
             tl = self.timeline_for(enabled)
             cuts = self.cuts_for(enabled)
             dur = tl.length / self.sr
             t = min(max(playhead_s, 0.0), dur)
-            lo, hi = max(t - 20, 0.0), min(t + 20, dur)
+            lo, hi = max(t - self.CHAT_RADIUS_S, 0.0), min(t + self.CHAT_RADIUS_S, dur)
             mix = self.render(enabled, int(lo * self.sr), int(hi * self.sr))[:, 0]
             runs = analysis.quiet_runs(mix, self.sr, lo)
-            ctx = ChatContext(text, t, dur, runs, analysis.speech_around(runs, t, lo, hi),
-                              [self.edit_json(self.edits[i], cuts) for i in self._near(t, 20.0, cuts)],
-                              self.transcript_text(to_base(int(t * self.sr), cuts) / self.sr))
-            prop = adapter.propose(ctx)
-            return {"reply": prop.message, "adapter": adapter.name,
-                    "proposal": self._make_proposal(prop, cuts, mix, lo)}
+            near = [self.edit_json(self.edits[i], cuts) | {"removed_text": self.removed_text(i)}
+                    for i in self._near(t, 30.0, cuts)]
+            ctx = ChatContext(text, t, dur, runs, analysis.speech_around(runs, t, max(t - 20, lo), min(t + 20, hi)),
+                              near, self.transcript_text(to_base(int(t * self.sr), cuts) / self.sr),
+                              self.utterances(lo, hi, enabled, cuts), self.chat_history())
+            return ctx, {"enabled": enabled, "cuts": cuts, "mix": mix, "lo": lo}
+
+    def chat(self, text: str, playhead_s: float, adapter: EditorAdapter) -> dict:
+        ctx, view = self.chat_context(text, playhead_s)
+        prop = adapter.propose(ctx)          # may take seconds (network): not under the lock
+        notes = list(prop.notes)
+        with self.lock:
+            if self.enabled != view["enabled"]:
+                proposal = None
+                notes.append("刚才时间线有变化，这个建议作废了，请再说一次。")
+            else:
+                proposal, why = self._make_proposal(prop, view["cuts"], view["mix"], view["lo"])
+                if why:
+                    notes.append(why)
+            self._log_turn(text, ctx.playhead, prop.message, proposal)
+            return {"reply": prop.message, "notes": notes, "adapter": adapter.name,
+                    "proposal": proposal, "usage": prop.usage}
+
+    def chat_history(self) -> list[dict]:
+        out = []
+        for turn in self._chat_log[-self.CHAT_HISTORY:]:
+            pid = turn.get("proposal")
+            outcome = "no change proposed"
+            if pid:
+                outcome = {"pending": "proposed, not decided yet", "approved": "proposed and approved",
+                           "discarded": "proposed and rejected"}.get(turn.get("state", "pending"), "proposed")
+            out.append({"said": turn["said"], "at": turn["at"], "you_replied": turn["reply"], "outcome": outcome})
+        return out
+
+    def _log_turn(self, said: str, at: float, reply: str, proposal: dict | None) -> None:
+        self._chat_log.append({"said": said, "at": round(at, 2), "reply": reply,
+                               "proposal": proposal["id"] if proposal else None, "state": "pending"})
+        del self._chat_log[:-20]
+
+    def _turn_state(self, pid: str, state: str) -> None:
+        for turn in self._chat_log:
+            if turn["proposal"] == pid:
+                turn["state"] = state
+
+    def utterances(self, lo: float, hi: float, enabled: frozenset[str], cuts) -> list[Utterance]:
+        """Transcript words still audible on this timeline between lo and hi (timeline seconds),
+        grouped per host into utterances u1, u2, ... in time order."""
+        if not self.transcript:
+            return []
+        sr = self.sr
+        a_s, b_s = to_base(int(lo * sr), cuts) / sr, to_base(int(hi * sr), cuts, right=False) / sr
+        lifts: dict[str, list[tuple[int, int]]] = {}
+        slips: dict[str, list[tuple[int, int, int]]] = {}
+        for i in enabled:
+            for o in self.edits[i].ops:
+                if o["op"] == "lift":
+                    lifts.setdefault(o["track"], []).append((o["start"], o["end"]))
+                elif o["op"] == "slip":
+                    slips.setdefault(o["track"], []).append((o["start"], o["end"], o["delta"]))
+        starts = [c[0] for c in cuts]
+
+        def gone(track: str, mid: int) -> bool:
+            k = bisect.bisect_right(starts, mid) - 1
+            if k >= 0 and cuts[k][0] <= mid < cuts[k][1]:
+                return True
+            return any(x <= mid < y for x, y in lifts.get(track, ()))
+
+        per: dict[str, list[Word]] = {}
+        for track, s, e, w in self.words(a_s, b_s):
+            mid = int((s + e) / 2 * sr)
+            if gone(track, mid):
+                continue
+            d = next((dl for x, y, dl in slips.get(track, ()) if x <= mid < y), 0)
+            ts, te = to_tl(int(s * sr) + d, cuts) / sr, to_tl(int(e * sr) + d, cuts) / sr
+            if lo <= ts and te <= hi + 0.5:
+                per.setdefault(track, []).append(Word(w, round(ts, 3), round(max(te, ts + 0.01), 3)))
+        groups: list[tuple[str, list[Word]]] = []
+        for track, ws in per.items():
+            cur: list[Word] = []
+            for w in ws:
+                if cur and (w.start - cur[-1].end > 0.6 or (w.start - cur[-1].end > 0.25 and w.end - cur[0].start > 15)):
+                    groups.append((track, cur))
+                    cur = []
+                cur.append(w)
+            if cur:
+                groups.append((track, cur))
+        groups.sort(key=lambda g: g[1][0].start)
+        return [Utterance(f"u{i + 1}", tr, ws) for i, (tr, ws) in enumerate(groups)]
+
+    def removed_text(self, eid: str, limit: int = 60) -> str:
+        words = "".join(w["t"] for ln in self.edit_text(eid, ctx_s=0.0) for w in ln["words"] if w["removed"])
+        return words[:limit] + ("…" if len(words) > limit else "")
 
     def _near(self, t: float, radius: float, cuts) -> list[str]:
         out = []
@@ -462,39 +554,62 @@ class Episode:
                 out.append(e.id)
         return sorted(out, key=lambda i: self.edits[i].span[0])
 
-    def _make_proposal(self, p: Proposal, cuts, mix: np.ndarray, lo: float) -> dict | None:
-        if p.action == "restore" and p.edit_id in self.edits:
-            changes = [{"id": p.edit_id, "field": "status", "new": RESTORED}]
-            target = p.edit_id
-        elif p.action == "cut":
-            def snap(x):   # nudge the boundary to the quietest nearby sample of the mix
-                i = int((x - lo) * self.sr)
-                return int(lo * self.sr) + snap_cut([mix], i, self.sr, radius_ms=40) if 0 < i < len(mix) else int(x * self.sr)
-            a, b = snap(p.start), snap(p.end)
-            if b - a < int(0.05 * self.sr):
-                return None
-            pieces = subtract(to_base(a, cuts, right=True), to_base(b, cuts, right=False), cuts)
-            if not pieces:
-                return None
-            e = self.add_edit([{"op": "cut", "start": x, "end": y, "tracks": None} for x, y in pieces],
-                              p.category, p.title or "聊天修改", p.reason, p.confidence, source="chat")
-            changes = [{"id": e.id, "field": "status", "new": APPLIED},
-                       {"id": e.id, "field": "approved", "new": True}]
+    def _make_proposal(self, p: Proposal, cuts, mix: np.ndarray, lo: float) -> tuple[dict | None, str | None]:
+        """(proposal, why not) for the editor's answer on the timeline given by `cuts`."""
+        cut_list, restores = p.normalized()
+        restores = [r for r in restores if r in self.edits and self.edits[r].status == APPLIED]
+        sr = self.sr
+
+        def snap(x):   # nudge the boundary to the quietest nearby sample of the mix
+            i = int((x - lo) * sr)
+            return int(lo * sr) + snap_cut([mix], i, sr, radius_ms=40) if 0 < i < len(mix) else int(x * sr)
+
+        ops: list[dict] = []
+        ripple = sorted((snap(c["start"]), snap(c["end"])) for c in cut_list if not c.get("track"))
+        merged: list[list[int]] = []
+        for a, b in ripple:                 # overlapping or touching cuts become one
+            if merged and a <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], b)
+            else:
+                merged.append([a, b])
+        for a, b in merged:
+            if b - a >= int(0.05 * sr):
+                ops += [{"op": "cut", "start": x, "end": y, "tracks": None}
+                        for x, y in subtract(to_base(a, cuts, right=True), to_base(b, cuts, right=False), cuts)]
+        for c in cut_list:
+            if c.get("track"):
+                if c["track"] not in {tr.name for tr in self.base.tracks}:
+                    continue
+                a, b = int(c["start"] * sr), int(c["end"] * sr)
+                ops += [{"op": "lift", "track": c["track"], "start": x, "end": y}
+                        for x, y in subtract(to_base(a, cuts, right=True), to_base(b, cuts, right=False), cuts)
+                        if y - x >= int(0.03 * sr)]
+        if not ops and not restores:
+            return None, None
+        changes: list[dict] = []
+        target = None
+        if ops:
+            e = self.add_edit(ops, p.category, p.title or "聊天修改", p.reason, p.confidence, source="chat")
+            changes += [{"id": e.id, "field": "status", "new": APPLIED},
+                        {"id": e.id, "field": "approved", "new": True}]
             target = e.id
-        else:
-            return None
+        for r in restores:
+            changes.append({"id": r, "field": "status", "new": RESTORED})
+        target = target or restores[0]
         try:
             self.timeline_for(self._enabled_after(changes))
         except ConflictError:
-            return None
+            if ops:
+                self.edits[target].status = DISCARDED
+            return None, "这个改动和已有的改动冲突，没法应用。"
         for old in [k for k, v in self.proposals.items() if v["state"] == "pending"]:
             self.discard_proposal(old)          # a new instruction supersedes the last one
         self.proposals = {k: v for k, v in self.proposals.items() if v["state"] == "pending"}
         pid = uuid.uuid4().hex[:10]
-        self.proposals[pid] = {"id": pid, "title": p.title, "message": p.message, "target": target,
+        self.proposals[pid] = {"id": pid, "title": p.title or "聊天修改", "message": p.message, "target": target,
                                "changes": changes, "state": "pending"}
         self.save()
-        return self.proposals[pid]
+        return self.proposals[pid], None
 
     def approve_proposal(self, pid: str) -> None:
         p = self._proposal(pid)
@@ -502,12 +617,14 @@ class Episode:
             raise ConflictError("这个建议已经处理过了")
         self.change(f"批准：{p['title']}", [(c["id"], c["field"], c["new"]) for c in p["changes"]])
         p["state"] = "approved"
+        self._turn_state(pid, "approved")
         self.save()
 
     def discard_proposal(self, pid: str) -> None:
         with self.lock:
             p = self._proposal(pid)
             p["state"] = "discarded"
+            self._turn_state(pid, "discarded")
             e = self.edits.get(p["target"])
             if e and e.status == PROPOSED:
                 e.status = DISCARDED
