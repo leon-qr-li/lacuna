@@ -12,6 +12,7 @@ test("brand: favicon and top-bar logo come from the bundled logo.svg", async ({ 
 
   const brand = page.locator(".topbar .brand").first();
   await expect(brand).toHaveText("LACUNA");
-  const mark = await brand.evaluate((el) => getComputedStyle(el, "::before").backgroundImage);
-  expect(mark).toContain(href!);
+  // Vite may inline the small svg as a data: URL in the CSS (it does on Windows), or link the asset
+  const mark = decodeURIComponent(await brand.evaluate((el) => getComputedStyle(el, "::before").backgroundImage));
+  expect(mark.includes(href!) || mark.includes("M14 19 V38 H22 L31 16 L40 48 L45 38 H51")).toBe(true);
 });
