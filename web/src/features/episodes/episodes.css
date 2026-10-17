@@ -1,0 +1,2 @@
+/* 「剧集」 top-bar link: selected (navy tint, style 夜航) while the episode overview is open */
+.topbar .nav-episodes[aria-current="page"] { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--ink); font-weight: 600; }
