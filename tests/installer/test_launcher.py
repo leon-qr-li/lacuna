@@ -175,14 +175,23 @@ def stage(root: Path, tmp: Path, version: str, broken: bool = False) -> None:
         (d / "BROKEN").write_text("")
 
 
-def wait_for(pred, timeout=20.0):
+def wait_for(pred, timeout=20.0, root: Path | None = None, port: int | None = None):
     end = time.monotonic() + timeout
     while time.monotonic() < end:
         v = pred()
         if v:
             return v
         time.sleep(0.05)
-    raise AssertionError("timed out")
+    detail = ""
+    if root is not None and (root / "fake_app.log").exists():
+        detail += "\nfake_app.log:\n" + (root / "fake_app.log").read_text()
+    if port is not None:
+        import urllib.request
+        try:
+            detail += "\nGET: " + urllib.request.urlopen(f"http://127.0.0.1:{port}/api/app", timeout=3).read().decode()
+        except Exception as e:  # noqa: BLE001
+            detail += f"\nGET failed: {e!r}"
+    raise AssertionError("timed out" + detail)
 
 
 def test_run_update_then_rollback(tmp_path, root, monkeypatch):
@@ -197,7 +206,7 @@ def test_run_update_then_rollback(tmp_path, root, monkeypatch):
     t.start()
     try:
         version = lambda: (L.health(port) or {}).get("version")
-        wait_for(lambda: version() == "2026.10.17.1")
+        wait_for(lambda: version() == "2026.10.17.1", root=root, port=port)
 
         # 1. a good update: the app wrote pending.json and exited 75
         stage(root, tmp_path, "2026.10.18.1")

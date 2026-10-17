@@ -10,6 +10,7 @@ from pathlib import Path
 
 port, root = int(sys.argv[1]), Path(sys.argv[2])
 here = Path.cwd()
+(root / "fake_app.log").open("a").write(f"start pid cwd={here} port={port}\n")
 if (here / "BROKEN").exists():
     sys.exit(3)
 version = (here / "VERSION").read_text().strip()
@@ -30,6 +31,7 @@ class H(BaseHTTPRequestHandler):
 
 srv = ThreadingHTTPServer(("127.0.0.1", port), H)
 threading.Thread(target=srv.serve_forever, daemon=True).start()
+(root / "fake_app.log").open("a").write(f"serving {version}\n")
 control = root / "control"
 while True:
     if control.exists():
