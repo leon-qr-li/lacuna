@@ -10,17 +10,33 @@ const KEY_SOURCE: Record<string, string> = {
   file: "本机文件",
 };
 
-/** Polls /api/app until the server answers with a different version (or again, after a plain restart). */
-async function waitForRestart(from: string, sameVersionOk: boolean): Promise<void> {
+/** Polls /api/app until the server has gone down and answers again (a plain restart). */
+async function waitForRestart(): Promise<void> {
   const end = Date.now() + 10 * 60_000; // first install of new packages can take a few minutes
   let wentDown = false;
   while (Date.now() < end) {
     await new Promise((r) => setTimeout(r, 1500));
     try {
-      const info = await settingsApi.appInfo();
-      if (info.version !== from || (sameVersionOk && wentDown)) return;
+      await settingsApi.appInfo();
+      if (wentDown) return;
     } catch {
       wentDown = true;
+    }
+  }
+}
+
+/** After an update: polls until the launcher has logged how it went (updated, or rolled back).
+ * The new version answers a moment before the log is written, and a rollback keeps the old version,
+ * so neither the version alone nor the server coming back is enough. */
+async function waitForUpdate(target: string, lastAt: string | undefined): Promise<void> {
+  const end = Date.now() + 10 * 60_000;
+  while (Date.now() < end) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const last = (await settingsApi.appInfo()).update.last_update;
+      if (last && last.to === target && last.at !== lastAt) return;
+    } catch {
+      // restarting
     }
   }
 }
@@ -78,10 +94,10 @@ export function SettingsView() {
   const prepare = () => run("prepare", async () => setInfo(await settingsApi.prepareUpdate()));
   const apply = () =>
     run("apply", async () => {
-      const from = info!.version;
-      await settingsApi.applyUpdate();
+      const lastAt = info!.update.last_update?.at;
+      const r = await settingsApi.applyUpdate();
       setMsg("正在更新并重启，页面会自己刷新…");
-      await waitForRestart(from, false);
+      await waitForUpdate(r.version, lastAt);
       window.location.reload();
     });
   const saveKey = () =>
@@ -90,7 +106,7 @@ export function SettingsView() {
       setKey("");
       if (r.restarting) {
         setMsg("已保存，正在重启让它生效…");
-        await waitForRestart(info!.version, true);
+        await waitForRestart();
         window.location.reload();
       } else {
         setMsg("已保存。重启 LACUNA 后生效。");
