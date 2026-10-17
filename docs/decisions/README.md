@@ -2,7 +2,7 @@
 
 One decision per file: `<YYYY-MM-DD>-<slug>.md`, slug = a few English words in kebab-case (unique; check `ls`).
 No running numbers: parallel threads kept taking the same next D-number. Cite a decision by its slug,
-e.g. "decision `one-file-per-feature`". D01–D50 stay where they are (`handoff/07_DECISION_LOG.md`, `docs/DECISIONS.md`).
+e.g. "decision `one-file-per-feature`". D01–D51 stay where they are (`handoff/07_DECISION_LOG.md`, `docs/DECISIONS.md`).
 
 Template:
 

@@ -2,7 +2,7 @@
 
 - Date: 2026-10-17
 - Status: Claude 技术决策 (Leon asked how to stop the merge-conflict → re-run CI loop between parallel threads)
-- Supersedes / changes: the append-only numbering of `docs/DECISIONS.md` (frozen at D50); `docs/PROJECT_STATUS.md` as the per-session log
+- Supersedes / changes: the append-only numbering of `docs/DECISIONS.md` (frozen at D51); `docs/PROJECT_STATUS.md` as the per-session log
 
 Data (PRs #1–#39 on main): `docs/PROJECT_STATUS.md` was changed by 24 of 36 PRs, `docs/DECISIONS.md` by 16,
 `docs/ROADMAP.md` by 14, `web/src/styles.css` and `web/src/api.ts` by 11, `lacuna_app/server.py` by 10,

@@ -6,7 +6,7 @@ Local-first AI podcast producer for the two-host Chinese film podcast 《洛城�
 
 ## Read first (every session)
 1. `docs/PROJECT_STATUS.md` — index; then your phase's `docs/status/phase-…md` (state, blockers, next action).
-2. Decisions: `docs/decisions/` (one file each, newest) and `docs/DECISIONS.md` (D23–D50, frozen; D01–D22 in `docs/handoff/07_DECISION_LOG.md`).
+2. Decisions: `docs/decisions/` (one file each, newest) and `docs/DECISIONS.md` (D23–D51, frozen; D01–D22 in `docs/handoff/07_DECISION_LOG.md`).
 3. `docs/00_TECH_LEAD_ASSESSMENT.md` — risks, architecture hypothesis, roadmap.
 4. `docs/HARDWARE_PROFILE.md` — hard resource constraints (GTX 1660S 6GB, 16GB RAM).
 5. `docs/PARALLEL_WORK.md` — where a feature puts its code and docs so parallel threads don't conflict; git routine.

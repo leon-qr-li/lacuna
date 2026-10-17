@@ -19,4 +19,4 @@ Cross-cutting state that belongs to no single phase.
 - Pause shaping too uniform (keeps 2 vs Leon's 41 pauses >1 s); interjection moves should come from asymmetric per-track pause cuts.
 - One-track `tighten_pause` while the other host talks is skipped (needs per-track re-timing in the episode model); counted in `ai_report`. No per-track loudness edit in the AI path yet (D31).
 - Review threshold (D33) tuned to v3: 114 of 646 edits to review. AI confidences are poorly calibrated (almost all 0.5–0.6); recalibrate from Leon's first full review.
-- Missing: task panel, asset inbox, topic labels. macOS is verified only by CI (no real Mac run yet).
+- Missing: task panel, asset inbox, topic labels. macOS is verified only by CI (no real Mac run yet; see phase 7).
