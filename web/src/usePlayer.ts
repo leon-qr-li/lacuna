@@ -28,21 +28,34 @@ export function usePlayer() {
     a.preservesPitch = true; // 1.5x without chipmunk voices
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
-    const onTime = () => setTime(a.currentTime);
+    const onTime = () => {
+      // once the seek has landed, or playback has moved on from it, the position is the element's own
+      const p = pendingSeek.current;
+      if (p !== null && (Math.abs(a.currentTime - p) <= 0.05 || (!a.paused && a.currentTime > p))) pendingSeek.current = null;
+      setTime(pendingSeek.current ?? a.currentTime);
+    };
+    // A seek right after a source switch can be dropped (clamped to 0) while the stream is not yet
+    // seekable, so the pending position is re-applied on each loading event until it sticks.
+    const applyPending = () => {
+      const p = pendingSeek.current;
+      if (p === null || a.readyState === 0) return;
+      if (Math.abs(a.currentTime - p) > 0.05) a.currentTime = p;
+      if (Math.abs(a.currentTime - p) <= 0.05) pendingSeek.current = null;
+      setTime(p);
+    };
     const onMeta = () => {
       a.playbackRate = a.defaultPlaybackRate;
-      if (pendingSeek.current !== null) {
-        a.currentTime = pendingSeek.current;
-        setTime(pendingSeek.current);
-        pendingSeek.current = null;
-      }
+      applyPending();
     };
     a.addEventListener("play", onPlay);
     a.addEventListener("pause", onPause);
     a.addEventListener("timeupdate", onTime);
     a.addEventListener("seeked", onTime);
     a.addEventListener("loadedmetadata", onMeta);
+    const retry = ["loadeddata", "canplay", "progress", "durationchange"] as const;
+    retry.forEach((ev) => a.addEventListener(ev, applyPending));
     return () => {
+      retry.forEach((ev) => a.removeEventListener(ev, applyPending));
       a.removeEventListener("play", onPlay);
       a.removeEventListener("pause", onPause);
       a.removeEventListener("timeupdate", onTime);
@@ -70,8 +83,8 @@ export function usePlayer() {
     const resume = !a.paused;
     if (a.getAttribute("src") === url) {
       // still loading: a seek now can be dropped, so apply it on loadedmetadata instead
-      if (a.readyState === 0) pendingSeek.current = at;
-      else if (Math.abs(a.currentTime - at) > 0.05) a.currentTime = at;
+      if (a.readyState === 0 || pendingSeek.current !== null) pendingSeek.current = at;
+      if (a.readyState > 0 && Math.abs(a.currentTime - at) > 0.05) a.currentTime = at;
       setTime(at);
       return;
     }
@@ -100,8 +113,9 @@ export function usePlayer() {
     if (!a) return;
     const d = isFinite(a.duration) ? a.duration : t;
     const v = Math.max(0, Math.min(t, d));
-    if (a.readyState === 0) pendingSeek.current = v;
-    else a.currentTime = v;
+    if (a.readyState === 0 || pendingSeek.current !== null) pendingSeek.current = v;
+    if (a.readyState > 0) a.currentTime = v;
+    if (pendingSeek.current !== null && Math.abs(a.currentTime - v) <= 0.05) pendingSeek.current = null;
     setTime(v);
   }, []);
 

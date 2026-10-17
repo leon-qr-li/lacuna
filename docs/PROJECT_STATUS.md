@@ -3,7 +3,7 @@
 _Last updated: 2026-10-17 02:20Z_
 
 ## Current phase
-POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速: batch approve, auto-advance) in progress; 母带与导出 in a parallel thread.
+POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速) done and validated by Leon on his PC (main a719a8a). Mastering + export merged (#4). Phase 3 (real AI chat) merged (#8); to be installed on Leon's PC together with the phase 1 playhead fix (#7).
 
 ## Done
 - Assessment `docs/00_TECH_LEAD_ASSESSMENT.md`; decisions `docs/DECISIONS.md` (D23–D32); hardware `docs/HARDWARE_PROFILE.md`; editorial rules `docs/EDITORIAL_RULES.md` (R001–R003).
@@ -30,7 +30,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - Missing: task panel, asset inbox, topic labels, stereo music bus. macOS is verified only by CI (no real Mac run yet).
 
 ## Next action
-0. App phase 1 → merge, update Leon's PC, Leon validates (see ROADMAP). Then phase 2/3 per their dependencies.
+0. Phase 3 (real chat) per ROADMAP; then phase 4 (new-episode import). Phase 2 (export) shipped with #4.
 1. Leon reviews "EP001 · AI 第一刀" (v3, full episode) on his PC; learn from his restores/approvals (D27) and recalibrate review threshold + content-trim taste.
 2. Leon sets ANTHROPIC_API_KEY (steps given 2026-10-17; anthropic SDK installed on his PC) → verify real chat end to end.
 3. Leon listens to the mastering A/B and an exported EP001_AI; tune chain if needed.
