@@ -5,6 +5,7 @@ import { api, fmt } from "../api";
 import { ABPlayer } from "./ABPlayer";
 import { MicButton } from "./MicButton";
 import { t } from "../i18n";
+import { RememberButton, type Ask } from "../features/learning/RememberButton";
 
 interface Msg {
   id: number;
@@ -69,8 +70,12 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
   const setP = (pid: string, pstate: Msg["pstate"]) =>
     setMsgs((ms) => ms.map((m) => (m.proposal?.id === pid ? { ...m, pstate } : m)));
 
-  const send = async (e: React.FormEvent) => {
+  const send = (e: React.FormEvent) => {
     e.preventDefault();
+    run((said, at) => api.chat(ep.id, said, at));
+  };
+
+  const run = async (ask: Ask) => {
     const said = text.trim();
     if (!said || busy) return;
     const at = time;
@@ -79,7 +84,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
     setText("");
     setBusy(true);
     try {
-      const r = await api.chat(ep.id, said, at);
+      const r = await ask(said, at);
       push({
         role: "ai",
         text: r.reply,
@@ -202,6 +207,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             }}
             onError={(msg) => push({ role: "ai", text: msg })}
           />
+          <RememberButton epId={ep.id} disabled={busy || !text.trim()} onSend={run} />
           <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>
             {t("发送")}
           </button>

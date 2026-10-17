@@ -59,10 +59,10 @@ export function LearningView() {
         {t("审阅里逐条决定 {considered} 个；所有来源合计保留 {kept}、恢复或没删 {restored}、补删 {added}。", { considered: s.considered, kept: s.kept, restored: s.restored, added: s.added })}
       </p>
       <p className="muted small">
-        {t("规则是从你的决定和你在 AI 制作人里说的话推断的（每次导出后总结一次对话；说「记住：……」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。")}
+        {t("规则是从你的决定和你在 AI 制作人里说的话推断的（每次导出后总结一次对话；在 AI 制作人里写好一句点「记住」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。")}
       </p>
       {ov.rules.length === 0 && (
-        <p className="card">{t("还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。也可以在 AI 制作人里说「记住：……」，直接记一条。")}</p>
+        <p className="card">{t("还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。也可以在 AI 制作人里写一句长期要求，点「记住」直接记一条。")}</p>
       )}
       <ul className="rules" aria-label={t("学到的规则")}>
         {ov.rules.map((r) => (
