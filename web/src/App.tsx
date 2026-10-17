@@ -13,6 +13,7 @@ import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
 import { t } from "./i18n";
+import { EpisodeListSkeleton, PageLoading } from "./features/loading/Loading";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -130,6 +131,7 @@ function Home() {
         <ImportPanel onEpisodesChanged={reload} onOpen={open} />
         {err && <p className="error">{err}</p>}
         {list?.length === 0 && <p className="muted">{t("工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。")}</p>}
+        {!list && !err && <EpisodeListSkeleton />}
         <ul className="ep-list">
           {list?.map((e) => (
             <li key={e.id}>
@@ -335,7 +337,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       {/* one audio element shared by both modes: the playhead is common */}
       <audio ref={raw.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (
-        <p className="pad muted">{t("加载中…")}</p>
+        <PageLoading label={t("正在打开这一集…")} shape="episode" />
       ) : (
         <>
           {/* Full Listen stays mounted in review mode so the conversation is kept */}

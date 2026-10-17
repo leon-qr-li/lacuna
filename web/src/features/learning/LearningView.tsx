@@ -3,6 +3,7 @@ import type { LearnedRule, LearningOverview } from "./api";
 import { fmt } from "../../api";
 import { learningApi } from "./api";
 import { joinList, lang, t } from "../../i18n";
+import { PageLoading } from "../loading/Loading";
 
 const KIND_LABEL: Record<string, string> = {
   protect: t("少删"),
@@ -47,7 +48,7 @@ export function LearningView() {
   };
 
   if (err) return <p className="error pad">{t("学习页打不开：")}{err}</p>;
-  if (!ov) return <p className="pad muted">{t("正在从你的审阅记录里学习…")}</p>;
+  if (!ov) return <PageLoading label={t("正在从你的审阅记录里学习…")} shape="list" />;
   const s = ov.stats;
   return (
     <main className="learning">

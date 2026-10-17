@@ -6,6 +6,7 @@ import { api } from "../../api";
 import { MicButton } from "../../components/MicButton";
 import { posterApi } from "./api";
 import { joinList, lang, t } from "../../i18n";
+import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
 /** 海报: Claude draws several square covers (SVG) from the publish pack, rendered on this machine;
  *  Leon picks one (rendered at 3000×3000 into the publish folder) or changes one with a sentence. */
@@ -13,7 +14,6 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   const [view, setView] = useState<View | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [now, setNow] = useState(Date.now());
   const [health, setHealth] = useState<Health | null>(null);
   const [big, setBig] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
@@ -37,11 +37,6 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   }, [id]);
 
   const running = view?.job?.state === "running";
-  useEffect(() => {
-    if (!running) return;
-    const t = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(t);
-  }, [running]);
 
   const act = async (p: Promise<View>) => {
     setBusy(true);
@@ -59,7 +54,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   };
 
   if (err) return <p className="error pad">{t("海报页打不开：")}{err}</p>;
-  if (!view) return <p className="pad muted">{t("加载中…")}</p>;
+  if (!view) return <PageLoading label={t("正在打开海报…")} shape="cards" />;
 
   const claude = view.available;
   const job = view.job;
@@ -86,7 +81,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
           onClick={generate}
           disabled={busy || running || !view.has_pack || !claude}
         >
-          {view.variants.length ? t("再画 {n} 版", { n }) : t("画 {n} 版海报", { n })}
+          <BusyLabel busy={running} label={view.variants.length ? t("再画 {n} 版", { n }) : t("画 {n} 版海报", { n })} busyLabel={t("正在画…")} />
         </button>
       </div>
 
@@ -100,9 +95,13 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
         <p className="card">{t("只发标题、简介和片名这些文字给 Claude，{n} 版同时画，大约 2–4 分钟，一共约 $1。", { n })}</p>
       )}
       {running && (
-        <p className="card" role="status" data-testid="poster-running">
-          {t("{stage}… 已用 {s} 秒", { stage: job?.stage, s: Math.max(0, Math.round((now - (job?.started ?? 0) * 1000) / 1000)) })}
-        </p>
+        <JobProgress
+          title={job?.kind === "revise" ? t("正在按你的话改海报") : job?.kind === "choose" ? t("正在准备选定的封面") : t("正在画 {n} 版海报", { n })}
+          stage={job?.stage}
+          started={job?.started}
+          typical={job?.kind === "choose" ? 15 : job?.kind === "revise" ? 90 : 180}
+          testId="poster-running"
+        />
       )}
       {job?.state === "error" && <p className="card error">{t("没成功：{error}", { error: job.error })}</p>}
       {view.errors.length > 0 && <p className="card warn small">{t("有几版没画出来：{errors}", { errors: view.errors.join(lang === "en" ? "; " : "；") })}</p>}

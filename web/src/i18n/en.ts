@@ -33,7 +33,6 @@ export const en: Dict = {
   "导出": "Export",
   "制作流程": "Production steps",
   "演示数据": "Demo data",
-  "加载中…": "Loading…",
   "这一步做完了？": "Done with this step?",
   "下一步：": "Next: ",
   "已恢复原样": "Restored",
@@ -94,7 +93,6 @@ export const en: Dict = {
     "The original recordings are read-only. Transcription and analysis run on this computer; only text and numbers go to Claude for the first cut. Long recordings take a while: you can close this page without losing progress.",
   "开始导入": "Start import",
   "取消": "Cancel",
-  "{pct}% · 已用 {time}": "{pct}% · {time} elapsed",
   "AI 第一刀（没有 Claude，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。":
     "AI first cut (no Claude, pauses tightened only): {edits} edits, {review} for you to review.",
   "AI 第一刀：{edits} 处改动，{review} 处需要你过目。": "AI first cut: {edits} edits, {review} for you to review.",

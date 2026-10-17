@@ -5,6 +5,7 @@ import { api, fmt } from "../api";
 import { ABPlayer } from "./ABPlayer";
 import { MicButton } from "./MicButton";
 import { t } from "../i18n";
+import { Waiting } from "../features/loading/Loading";
 
 interface Msg {
   id: number;
@@ -172,7 +173,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             )}
           </div>
         ))}
-        {busy && <div className="msg msg-ai muted">{claude ? t("Claude 正在看这附近的逐字稿…") : t("正在看这附近…")}</div>}
+        {busy && <Waiting className="msg msg-ai" label={claude ? t("Claude 正在看这附近的逐字稿…") : t("正在看这附近…")} />}
       </div>
       <form className="chat-form" onSubmit={send}>
         <label htmlFor="say" className="sr-only">

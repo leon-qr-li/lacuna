@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { AB, ABSide } from "../api";
 import { t } from "../i18n";
+import { BusyLabel, Wave } from "../features/loading/Loading";
 
 type Side = "before" | "after";
 
@@ -79,7 +80,7 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
       onClick={() => (side === s && playing ? audio.current?.pause() : start(s))}
       title={t("快捷键 {key}", { key })}
     >
-      {side === s && playing ? "❚❚" : "▶"} {label}
+      {loading ? <Wave /> : side === s && playing ? "❚❚" : "▶"} {label}
     </button>
   );
 
@@ -92,7 +93,7 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
     >
       {btn("before", labels[0], "A")}
       {btn("after", labels[1], "B")}
-      {!compact && <span className="muted small">{loading ? t("正在渲染…") : t("前后各约 10 秒，切换时位置同步")}</span>}
+      {!compact && <span className="muted small">{loading ? <BusyLabel busy label={t("正在渲染…")} /> : t("前后各约 10 秒，切换时位置同步")}</span>}
       <audio
         ref={audio}
         data-testid="ab-audio"

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ExportJob } from "../api";
 import { api } from "../api";
 import { t } from "../i18n";
+import { BusyLabel, JobProgress } from "../features/loading/Loading";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
@@ -61,7 +62,7 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
         }}
         data-testid="export-toggle"
       >
-        {running ? t("导出中 {p0}%", { p0: Math.round((job?.progress ?? 0) * 100) }) : t("导出")}
+        <BusyLabel busy={running} label={t("导出")} busyLabel={t("导出中 {p0}%", { p0: Math.round((job?.progress ?? 0) * 100) })} />
       </button>
       )}
       {open && (
@@ -77,12 +78,17 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
             </label>
           </div>
           <button type="button" className="btn btn-primary" onClick={start} disabled={running || (!mp3 && !wav)} data-testid="export-start">
-            {running ? t("导出中…") : job ? t("重新导出") : t("开始导出")}
+            <BusyLabel busy={running} label={job ? t("重新导出") : t("开始导出")} busyLabel={t("导出中…")} />
           </button>
           {running && (
-            <div className="export-progress" data-testid="export-progress">
-              <progress max={1} value={job?.progress ?? 0} /> <span className="small">{job?.stage}</span>
-            </div>
+            <JobProgress
+              flat
+              title={t("正在导出成品")}
+              stage={job?.stage}
+              progress={job?.progress ?? 0}
+              started={job?.started}
+              testId="export-progress"
+            />
           )}
           {err && <p className="error small">{err}</p>}
           {job?.state === "error" && <p className="error small">{t("导出失败：")}{job.error}</p>}

@@ -4,6 +4,7 @@ import { GrowText } from "../../components/GrowText";
 import type { MusicDraft } from "./api";
 import { fmt } from "../../api";
 import { t } from "../../i18n";
+import { BusyLabel } from "../loading/Loading";
 
 export function DraftCard({ d, previewing, onPreview, onMove, onAccept, onDiscard }: {
   d: MusicDraft;
@@ -89,7 +90,7 @@ export function MusicChatBox({ onSend }: { onSend: (text: string) => Promise<boo
           disabled={busy}
         />
         <button type="button" className="btn btn-primary" onClick={send} disabled={busy || !text.trim()}>
-          {busy ? t("Claude 在想…") : t("发送")}
+          <BusyLabel busy={busy} label={t("发送")} busyLabel={t("Claude 在想…")} />
         </button>
       </div>
       <p className="small muted">{t("Claude 只看文字（配乐位置、素材名和备注、附近的对话），不听音频。改动先变成建议，试听满意再采用。")}</p>

@@ -3,7 +3,6 @@ import type { Dict } from "../../i18n";
 export const en: Dict = {
   "复制失败：{message}": "Copy failed: {message}",
   "上传页打不开：": "Can't open the upload page: ",
-  "加载中…": "Loading…",
   "发布资料": "Publish pack",
   "封面": "Cover",
   "show notes 的时间戳": "show notes timestamps",

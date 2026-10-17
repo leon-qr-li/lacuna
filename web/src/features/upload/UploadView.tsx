@@ -6,6 +6,7 @@ import { publishApi } from "../publish/api";
 import type { UploadView as View } from "./api";
 import { uploadApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
+import { PageLoading } from "../loading/Loading";
 
 const mb = (b: number) => `${(b / 1024 / 1024).toFixed(b >= 100 * 1024 * 1024 ? 0 : 1)} MB`;
 
@@ -35,7 +36,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
   };
 
   if (err) return <p className="error pad">{t("上传页打不开：")}{err}</p>;
-  if (!view || !pub) return <p className="pad muted">{t("加载中…")}</p>;
+  if (!view || !pub) return <PageLoading label={t("正在打开上传页…")} />;
 
   const tab = (mode: string) => `#/ep/${encodeURIComponent(id)}/${mode}`;
   const pack = pub.pack;

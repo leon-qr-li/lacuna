@@ -4,6 +4,7 @@ import type { Asset, Credit, CreditStatus, LibraryView as Lib } from "./api";
 import { fmt } from "../../api";
 import { libraryApi } from "./api";
 import { t } from "../../i18n";
+import { BusyLabel, PageLoading } from "../loading/Loading";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: t("已确认"),
@@ -162,7 +163,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
             void run("lookup", go.then((r) => (setDraft({ ...r.asset.credit }), setEdit(true), r)));
           }}
         >
-          {busy === "lookup" ? t("Claude 正在查…") : t("让 Claude 查正式曲名")}
+          <BusyLabel busy={busy === "lookup"} label={t("让 Claude 查正式曲名")} busyLabel={t("Claude 正在查…")} />
         </button>
         {c.status === "suggested" && (
           <button type="button" className="btn btn-outline" disabled={!!busy} onClick={() => void run("confirm", libraryApi.updateAsset(a.id, { confirm: true }))}>
@@ -258,7 +259,7 @@ export function LibraryView() {
   };
 
   if (err) return <p className="error pad">{err}</p>;
-  if (!lib) return <p className="pad muted">{t("加载中…")}</p>;
+  if (!lib) return <PageLoading label={t("正在打开素材库…")} shape="list" />;
   const replace = (a: Asset) => setLib({ ...lib, assets: lib.assets.map((x) => (x.id === a.id ? { ...x, ...a } : x)) });
   const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
   return (
@@ -306,7 +307,7 @@ export function LibraryView() {
           {uploads.map((u, i) => (
             <li key={i} className={u.state === "error" ? "error" : ""}>
               {u.state === "busy"
-                ? t("正在加入：{name}", u)
+                ? <BusyLabel busy label={t("正在加入：{name}", u)} />
                 : u.state === "error"
                   ? t("没加进去：{name}", u)
                   : u.state === "dup"

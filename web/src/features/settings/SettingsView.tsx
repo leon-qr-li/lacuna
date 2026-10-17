@@ -3,6 +3,7 @@ import type { AppInfo } from "./api";
 import { settingsApi } from "./api";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { joinList, t } from "../../i18n";
+import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
 const KEY_SOURCE: Record<string, string> = {
   env: t("环境变量"),
@@ -116,12 +117,16 @@ export function SettingsView() {
       }
     });
 
-  if (!info) return <p className={err ? "error pad" : "pad muted"}>{err ?? t("读取中…")}</p>;
+  if (!info) return err ? <p className="error pad">{err}</p> : <PageLoading label={t("正在打开设置…")} />;
   const u = info.update;
   return (
     <main className="home settings">
       <h1>{t("设置")}</h1>
-      {msg && <p className="card" role="status">{msg}</p>}
+      {msg && (
+        <p className="card" role="status">
+          <BusyLabel busy={busy === "apply" || busy === "key"} label={msg} />
+        </p>
+      )}
       {err && <p className="error">{err}</p>}
 
       <ThemeSetting />
@@ -148,7 +153,7 @@ export function SettingsView() {
                 </p>
                 {u.notes && <pre className="notes">{u.notes}</pre>}
                 {job?.state === "running" ? (
-                  <p className="muted">{t("下载中 {pct}%", { pct: Math.round((job.progress ?? 0) * 100) })}</p>
+                  <JobProgress flat title={t("正在下载 {version}", { version: u.latest })} progress={job.progress ?? 0} testId="update-download" />
                 ) : job?.state === "ready" ? (
                   <>
                     {info.busy.length > 0 && <p className="muted small">{t("{tasks}还在进行，做完才能更新。", { tasks: joinList(info.busy) })}</p>}
@@ -170,7 +175,7 @@ export function SettingsView() {
               <p className="muted">{u.error ?? (u.latest ? t("已经是最新版本。") : t("还没检查过更新。"))}</p>
             )}
             <button className="btn btn-outline" disabled={!!busy} onClick={check}>
-              {busy === "check" ? t("检查中…") : t("检查更新")}
+              <BusyLabel busy={busy === "check"} label={t("检查更新")} busyLabel={t("检查中…")} />
             </button>
           </>
         )}

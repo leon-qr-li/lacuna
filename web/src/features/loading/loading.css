@@ -1,0 +1,75 @@
+/* Unified loading language, style A「声波」 (decision 2026-10-17-unified-loading). */
+
+/* the mark: five bars bouncing like a level meter */
+.ld-wave { display: inline-flex; align-items: center; gap: 2.5px; height: 16px; vertical-align: -3px; flex: none; }
+.ld-wave i { width: 3px; height: 16px; border-radius: 2px; background: var(--grad); transform-origin: center; animation: ld-bounce 1s ease-in-out infinite; }
+.ld-wave i:nth-child(1) { animation-delay: -0.45s; }
+.ld-wave i:nth-child(2) { animation-delay: -0.2s; }
+.ld-wave i:nth-child(3) { animation-delay: -0.7s; }
+.ld-wave i:nth-child(4) { animation-delay: 0s; }
+.ld-wave i:nth-child(5) { animation-delay: -0.35s; }
+.ld-wave-lg { height: 34px; gap: 4px; }
+.ld-wave-lg i { width: 5px; height: 34px; border-radius: 3px; }
+.btn-primary .ld-wave i { background: currentColor; }
+@keyframes ld-bounce { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+
+/* placeholders */
+.ld-skel { display: block; position: relative; overflow: hidden; background: var(--hover); border-radius: 8px; max-width: 100%; }
+.ld-skel::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--solid) 75%, transparent), transparent);
+  animation: ld-sheen 1.4s ease-in-out infinite;
+}
+@keyframes ld-sheen { to { transform: translateX(100%); } }
+.ld-ep { flex: 1; display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.ld-ep-body { flex: 1; display: grid; gap: 9px; }
+.ld-ep-list li { pointer-events: none; }
+
+/* a page or tab on its way */
+.ld-page { padding: 34px 24px; max-width: 980px; margin: 0 auto; width: 100%; animation: ld-in 0.15s ease-out; }
+.ld-page-head { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--ink-3); font-size: 13px; margin-bottom: 26px; }
+.ld-shapes { display: grid; gap: 12px; }
+.ld-shapes-cards { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.ld-shapes-episode { display: flex; flex-direction: column; gap: 14px; }
+@keyframes ld-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* a wait of a few seconds */
+.ld-waiting { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-2); padding: 10px 14px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
+.ld-waiting-sub { display: block; color: var(--ink-3); font-size: 12px; }
+.ld-btn-busy { display: inline-flex; align-items: center; gap: 7px; }
+
+/* a long job */
+.ld-job { display: block; }
+.ld-job-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ld-job-head strong { font-size: 15px; font-weight: 600; }
+.ld-job-meta { margin-left: auto; font-size: 12.5px; color: var(--ink-3); }
+.ld-bar { height: 8px; border-radius: 99px; background: var(--hover); margin: 14px 0 10px; overflow: hidden; position: relative; }
+.ld-bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--grad); background-size: 200% 100%; transition: width 0.6s ease; overflow: hidden; }
+.ld-bar span::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent); animation: ld-sheen 1.8s ease-in-out infinite; }
+.ld-bar-indeterminate span { width: 32%; animation: ld-slide 1.5s ease-in-out infinite; }
+@keyframes ld-slide { from { left: -32%; } to { left: 100%; } }
+.ld-steps { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.ld-step { display: flex; align-items: center; gap: 10px; color: var(--ink-3); flex-wrap: wrap; }
+.ld-step-ic { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--line-2); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; flex: none; }
+.ld-step-done { color: var(--ink-2); }
+.ld-step-done .ld-step-ic { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+.ld-step-now { color: var(--ink); font-weight: 550; }
+.ld-step-now .ld-step-ic { border-color: transparent; }
+.ld-step-detail { margin-left: auto; font-weight: 400; font-size: 12px; color: var(--ink-3); }
+.ld-job-stage { margin: 0; font-size: 13px; color: var(--ink-2); }
+.ld-job-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; color: var(--ink-3); }
+.ld-job-foot b { color: var(--ink); font-weight: 600; }
+.ld-job-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+/* the thin line at the top of the window while something the person started is running */
+.ld-topline { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 1000; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity 0.2s; }
+.ld-topline::before { content: ""; position: absolute; top: 0; bottom: 0; width: 38%; left: -38%; border-radius: 2px; background: var(--grad); box-shadow: 0 0 10px #8b5cf6; }
+.ld-topline.is-on { opacity: 1; }
+.ld-topline.is-on::before { animation: ld-slide-top 1.2s ease-in-out infinite; }
+@keyframes ld-slide-top { from { left: -38%; } to { left: 100%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ld-wave i, .ld-skel::after, .ld-bar span::after, .ld-bar-indeterminate span, .ld-topline.is-on::before { animation-duration: 3s; }
+  .ld-wave i { animation: none; transform: scaleY(0.6); }
+}
+.ld-job-flat { margin-top: 10px; }
