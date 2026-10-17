@@ -208,7 +208,7 @@ def _human_pause(page, lo=600, hi=1600):
 
 def cmd_login(page, ctx, args) -> int:
     page.goto(args.studio_url, timeout=60000)
-    print("请在打开的窗口里登录喜马拉雅（扫码或手机号都行）。登录好后这里会自动继续，最多等 5 分钟。")
+    print("请在打开的窗口里登录喜马拉雅（点微信图标，用手机微信扫码）。登录好后这里会自动继续，最多等 5 分钟。")
     deadline = time.time() + 300
     while time.time() < deadline:
         if is_logged_in(ctx.cookies()):

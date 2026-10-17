@@ -36,7 +36,7 @@ page's hint text).
 
 | Command | What happens | Publishes? |
 |---|---|---|
-| `login` | Opens a browser window on studio.ximalaya.com; Leon logs in himself (QR or phone). Login is kept in a browser profile on his PC (`%LOCALAPPDATA%\LACUNA\xmly_profile`). | No |
+| `login` | Opens a browser window on studio.ximalaya.com; Leon logs in himself (he uses 微信 third-party login: click the WeChat icon, scan the QR with WeChat on his phone). Login is kept in a browser profile on his PC (`%LOCALAPPDATA%\LACUNA\xmly_profile`). | No |
 | `probe` | Opens the upload page, lists form labels / buttons / file-size hints, screenshot. | No |
 | `draft` | Uploads a 20 s test tone, picks the album, fills title + description, sets **私密**, then **stops before 确认发布**; window stays open. | **No** |
 | `publish-private` | Same, then clicks 确认发布 — refuses unless 私密 is verified. Only with Leon's OK. | Private only |
