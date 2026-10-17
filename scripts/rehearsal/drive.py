@@ -50,9 +50,9 @@ def main() -> None:
         t0 = time.monotonic()
         while time.monotonic() - t0 < limit:
             v = j("GET", path)
-            s = v.get(key) if key else v
+            s = v.get(key)
             state = (s or {}).get("state") if isinstance(s, dict) else None
-            if state in done:
+            if state is None or state in done:
                 return v
             if state in fail:
                 raise RuntimeError(f"{path}: {s.get('error')}")
@@ -145,12 +145,12 @@ def main() -> None:
 
     # ---------------- publish pack, cover, upload page
     step("发布资料：生成", j, "POST", f"{E}/publish/generate")
-    pub = step("发布资料：等待完成", poll, f"{E}/publish", None, every=2)
+    pub = step("发布资料：等待完成", poll, f"{E}/publish", "job", every=2)
     if pub:
         print(f"     publish: title={pub.get('title') or (pub.get('pack') or {}).get('title')}")
     step("发布资料：重新对时间", j, "POST", f"{E}/publish/retime")
     step("海报：生成", j, "POST", f"{E}/poster/generate")
-    po = step("海报：等待完成", poll, f"{E}/poster", None, every=2)
+    po = step("海报：等待完成", poll, f"{E}/poster", "job", every=2)
     if po:
         vs = [v for v in po.get("variants", []) if v.get("png") or v.get("state") == "done"]
         if vs:
