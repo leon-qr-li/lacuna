@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import type { LearnedRule, LearningOverview } from "../api";
-import { api, fmt } from "../api";
+import type { LearnedRule, LearningOverview } from "./api";
+import { fmt } from "../../api";
+import { learningApi } from "./api";
 
 const KIND_LABEL: Record<string, string> = {
   protect: "少删",
@@ -29,13 +30,13 @@ export function LearningView() {
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
-    api.learning().then(setOv).catch((e) => setErr(String(e.message ?? e)));
+    learningApi.learning().then(setOv).catch((e) => setErr(String(e.message ?? e)));
   }, []);
 
   const decide = async (r: LearnedRule, action: "approve" | "reject" | "reset") => {
     setBusy(r.id);
     try {
-      setOv(await api.decideRule(r.id, action));
+      setOv(await learningApi.decideRule(r.id, action));
     } catch (e) {
       setErr(String((e as Error).message ?? e));
     } finally {

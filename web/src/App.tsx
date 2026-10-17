@@ -1,29 +1,28 @@
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import type { EditInfo, Episode, EpisodeListItem } from "./api";
 import { api, fmt } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
 import { ExportPanel } from "./components/ExportPanel";
 import { ImportPanel } from "./components/ImportPanel";
-import { LearningView } from "./components/LearningView";
-import { LibraryView } from "./components/LibraryView";
-import { MusicView } from "./components/MusicView";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
-import { PosterView } from "./components/PosterView";
-import { PublishView } from "./components/PublishView";
 import { ReviewView } from "./components/ReviewView";
 import { Lanes, Overview } from "./components/Timeline";
+import { navLinks, pages, tabs } from "./features/registry";
+import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
 
-type Mode = "listen" | "review" | "music" | "publish" | "poster";
+// 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
+type Mode = string;
 
-function parseHash(): { id: string | null; mode: Mode; learning: boolean; library: boolean } {
-  const m = /^#\/ep\/([^/]+)(?:\/(listen|review|music|publish|poster))?/.exec(window.location.hash);
+function parseHash(): { id: string | null; mode: Mode; page: string | null } {
+  const m = /^#\/ep\/([^/]+)(?:\/([\w-]+))?/.exec(window.location.hash);
+  const mode = m?.[2] && (m[2] === "review" || tabs.some((t) => t.mode === m[2])) ? m[2] : "listen";
+  const p = /^#\/([\w-]+)/.exec(window.location.hash)?.[1] ?? null;
   return {
     id: m ? decodeURIComponent(m[1]) : null,
-    mode: (m?.[2] as Mode) ?? "listen",
-    learning: window.location.hash.startsWith("#/learning"),
-    library: window.location.hash.startsWith("#/library"),
+    mode,
+    page: p && pages.some((x) => x.path === p) ? p : null,
   };
 }
 
@@ -42,28 +41,25 @@ const go = (id: string, mode: Mode = "listen") => {
 };
 
 export default function App() {
-  const { id, mode, learning, library } = useRoute();
-  if (learning) return <LearningScreen />;
-  if (library) return <LibraryScreen />;
+  const { id, mode, page } = useRoute();
+  if (page) return <PageScreen path={page} />;
   return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home />;
 }
 
-function LearningScreen() {
+function Nav({ on, except }: { on: NavLink["on"][number]; except?: string }) {
   return (
-    <div className="app">
-      <header className="topbar">
-        <a className="brand" href="#/">
-          LACUNA
-        </a>
-        <span className="muted">/</span>
-        <span className="ep-title">学到的规则</span>
-      </header>
-      <LearningView />
-    </div>
+    <>
+      {navLinks
+        .filter((l) => l.on.includes(on) && l.path !== except)
+        .map((l) => (
+          <Fragment key={l.path}>{l.render()}</Fragment>
+        ))}
+    </>
   );
 }
 
-function LibraryScreen() {
+function PageScreen({ path }: { path: string }) {
+  const page = pages.find((p) => p.path === path)!;
   return (
     <div className="app">
       <header className="topbar">
@@ -71,35 +67,12 @@ function LibraryScreen() {
           LACUNA
         </a>
         <span className="muted">/</span>
-        <span className="ep-title">素材库</span>
+        <span className="ep-title">{page.title}</span>
         <span className="grow" />
-        <LearningLink />
+        <Nav on="page" except={path} />
       </header>
-      <LibraryView />
+      {page.render()}
     </div>
-  );
-}
-
-function LibraryLink() {
-  return (
-    <a className="btn btn-outline row" href="#/library">
-      素材库
-    </a>
-  );
-}
-
-function LearningLink() {
-  const [pending, setPending] = useState<number | null>(null);
-  useEffect(() => {
-    api
-      .learning()
-      .then((r) => setPending(r.pending))
-      .catch(() => setPending(null));
-  }, []);
-  return (
-    <a className="btn btn-outline row" href="#/learning">
-      学到的规则{pending ? ` · ${pending} 条待确认` : ""}
-    </a>
   );
 }
 
@@ -125,8 +98,7 @@ function Home() {
       <header className="topbar">
         <strong className="brand">LACUNA</strong>
         <span className="grow" />
-        <LibraryLink />
-        <LearningLink />
+        <Nav on="home" />
       </header>
       <main className="home">
         <ImportPanel onEpisodesChanged={reload} onOpen={open} />
@@ -246,15 +218,11 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           <a href={`#/ep/${encodeURIComponent(id)}/review`} aria-current={mode === "review" ? "page" : undefined}>
             改动审阅 · {ep?.pending_review ?? 0}
           </a>
-          <a href={`#/ep/${encodeURIComponent(id)}/music`} aria-current={mode === "music" ? "page" : undefined}>
-            配乐
-          </a>
-          <a href={`#/ep/${encodeURIComponent(id)}/publish`} aria-current={mode === "publish" ? "page" : undefined}>
-            发布资料
-          </a>
-          <a href={`#/ep/${encodeURIComponent(id)}/poster`} aria-current={mode === "poster" ? "page" : undefined}>
-            海报
-          </a>
+          {tabs.map((t) => (
+            <a key={t.mode} href={`#/ep/${encodeURIComponent(id)}/${t.mode}`} aria-current={mode === t.mode ? "page" : undefined}>
+              {t.label}
+            </a>
+          ))}
         </nav>
         <div className="row gap8">
           <button type="button" className="btn btn-outline" onClick={undo} disabled={!ep?.can_undo} title={ep?.undo_label ?? ""}>
@@ -264,8 +232,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             重做
           </button>
           {ep && <ExportPanel id={id} version={ep.version} />}
-          <LibraryLink />
-          <LearningLink />
+          <Nav on="episode" />
         </div>
       </header>
       {ep?.demo && <p className="banner">{ep.demo_note || "演示数据"}</p>}
@@ -290,8 +257,6 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
               <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
             </main>
           </div>
-          {mode === "publish" && <PublishView id={id} version={ep.version} flash={flash} />}
-          {mode === "poster" && <PosterView id={id} flash={flash} onPauseMain={player.pause} />}
           {mode === "review" && (
             <ReviewView
               ep={ep}
@@ -305,7 +270,11 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
               onPauseMain={player.pause}
             />
           )}
-          {mode === "music" && <MusicView key={ep.version} id={id} onPauseMain={player.pause} />}
+          {tabs
+            .filter((t) => t.mode === mode)
+            .map((t) => (
+              <Fragment key={t.mode}>{t.render({ id, ep, flash, pauseMain: player.pause })}</Fragment>
+            ))}
         </>
       )}
     </div>
