@@ -21,6 +21,7 @@ from lacuna_app.server import USAGE_LOG
 from .synth import AI_EPISODE, make_ai_workspace
 
 EP = f"/api/episodes/{AI_EPISODE}"
+REAL_REGISTRY_LOOKUP = editor_mod._windows_registry_key     # conftest stubs it in every test
 
 
 # ---------------------------------------------------------------- fakes
@@ -356,6 +357,7 @@ def test_find_api_key_windows_registry(monkeypatch):
     fake.OpenKey = open_key
     fake.QueryValueEx = lambda k, name: ("sk-ant-from-registry", 1)
     monkeypatch.setitem(sys.modules, "winreg", fake)
+    monkeypatch.setattr(editor_mod, "_windows_registry_key", REAL_REGISTRY_LOOKUP)
     monkeypatch.setattr(editor_mod.sys, "platform", "win32")
     assert find_api_key() == ("sk-ant-from-registry", "registry-user")
     monkeypatch.setattr(editor_mod.sys, "platform", "linux")

@@ -172,20 +172,27 @@ def find_api_key() -> tuple[str | None, str]:
     if key:
         return key, "env"
     if sys.platform == "win32":
-        import winreg
-        for root, path, where in (
-                (winreg.HKEY_CURRENT_USER, "Environment", "registry-user"),
-                (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
-                 "registry-machine")):
-            try:
-                with winreg.OpenKey(root, path) as k:
-                    v, _ = winreg.QueryValueEx(k, "ANTHROPIC_API_KEY")
-            except OSError:
-                continue
-            v = str(v or "").strip().strip('"')
-            if v:
-                return v, where
+        found = _windows_registry_key()
+        if found:
+            return found
     return None, "missing"
+
+
+def _windows_registry_key() -> tuple[str, str] | None:
+    import winreg
+    for root, path, where in (
+            (winreg.HKEY_CURRENT_USER, "Environment", "registry-user"),
+            (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+             "registry-machine")):
+        try:
+            with winreg.OpenKey(root, path) as k:
+                v, _ = winreg.QueryValueEx(k, "ANTHROPIC_API_KEY")
+        except OSError:
+            continue
+        v = str(v or "").strip().strip('"')
+        if v:
+            return v, where
+    return None
 
 
 def sdk_installed() -> bool:
