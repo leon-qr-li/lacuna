@@ -649,6 +649,9 @@ class EpisodeMusic:
                 "mix_version": key, "mix_url": f"/api/episodes/{ep.id}/mix/{key}.wav",
                 "credits": credits(lay), "series": self.load().get("series"),
                 "series_suggestion": rule, "roles": ROLES, "draft": self.draft_view(),
+                # time added to the conversation, (voice seconds, seconds), so the review player can map
+                # its voice-cut playhead onto the final mix when listening with music
+                "inserts": [[round(T / sr, 4), round(n / sr, 4)] for T, _, n in lay.inserts if n > 0],
                 "export_key": self.export_key()}
 
 

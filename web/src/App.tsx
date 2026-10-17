@@ -11,6 +11,7 @@ import { Lanes, Overview } from "./components/Timeline";
 import { navLinks, pages, tabs } from "./features/registry";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
+import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -132,7 +133,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [err, setErr] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const player = usePlayer();
+  const raw = usePlayer();
+  const listen = useMusicListen(id, `${ep?.version ?? ""}|${mode}`, raw);
+  const player = listen.player; // voice-cut time, also while listening with music
 
   useEffect(() => {
     api.episode(id).then(setEp).catch((e) => setErr(String(e.message ?? e)));
@@ -242,7 +245,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         </div>
       )}
       {/* one audio element shared by both modes: the playhead is common */}
-      <audio ref={player.ref} preload="auto" data-testid="main-audio" />
+      <audio ref={raw.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (
         <p className="pad muted">加载中…</p>
       ) : (
@@ -254,6 +257,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
               <Overview ep={ep} time={player.time} onSeek={player.seek} />
               <Lanes ep={ep} time={player.time} onSeek={player.seek} highlight={pending} />
               <PlayerBar player={player} duration={ep.duration} />
+              <MusicListenToggle listen={listen} />
               <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
             </main>
           </div>

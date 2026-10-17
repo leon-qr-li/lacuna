@@ -88,6 +88,7 @@ export interface MusicView {
   series_suggestion: { name: string } | null;
   roles: Record<Role, string>;
   draft: MusicDraft | null;
+  inserts: [number, number][]; // time added to the conversation: (voice seconds, seconds)
   export_key: string;
   message?: string; // reply to "按用途自动放好" / the chat
 }
