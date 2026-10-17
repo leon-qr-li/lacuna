@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { AppInfo } from "../api";
-import { api } from "../api";
+import type { AppInfo } from "./api";
+import { settingsApi } from "./api";
 
 const KEY_SOURCE: Record<string, string> = {
   env: "环境变量",
@@ -17,7 +17,7 @@ async function waitForRestart(from: string, sameVersionOk: boolean): Promise<voi
   while (Date.now() < end) {
     await new Promise((r) => setTimeout(r, 1500));
     try {
-      const info = await api.appInfo();
+      const info = await settingsApi.appInfo();
       if (info.version !== from || (sameVersionOk && wentDown)) return;
     } catch {
       wentDown = true;
@@ -29,7 +29,7 @@ async function waitForRestart(from: string, sameVersionOk: boolean): Promise<voi
 export function SettingsLink() {
   const [update, setUpdate] = useState(false);
   useEffect(() => {
-    api
+    settingsApi
       .appInfo()
       .then((i) => setUpdate(i.update.available))
       .catch(() => setUpdate(false));
@@ -48,7 +48,7 @@ export function SettingsView() {
   const [busy, setBusy] = useState<string | null>(null);
   const [key, setKey] = useState("");
 
-  const load = useCallback(() => api.appInfo().then(setInfo).catch((e) => setErr(String(e.message ?? e))), []);
+  const load = useCallback(() => settingsApi.appInfo().then(setInfo).catch((e) => setErr(String(e.message ?? e))), []);
   useEffect(() => {
     load();
   }, [load]);
@@ -74,19 +74,19 @@ export function SettingsView() {
     }
   };
 
-  const check = () => run("check", async () => setInfo(await api.checkUpdate()));
-  const prepare = () => run("prepare", async () => setInfo(await api.prepareUpdate()));
+  const check = () => run("check", async () => setInfo(await settingsApi.checkUpdate()));
+  const prepare = () => run("prepare", async () => setInfo(await settingsApi.prepareUpdate()));
   const apply = () =>
     run("apply", async () => {
       const from = info!.version;
-      await api.applyUpdate();
+      await settingsApi.applyUpdate();
       setMsg("正在更新并重启，页面会自己刷新…");
       await waitForRestart(from, false);
       window.location.reload();
     });
   const saveKey = () =>
     run("key", async () => {
-      const r = await api.saveApiKey(key.trim());
+      const r = await settingsApi.saveApiKey(key.trim());
       setKey("");
       if (r.restarting) {
         setMsg("已保存，正在重启让它生效…");
