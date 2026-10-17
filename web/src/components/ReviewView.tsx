@@ -7,19 +7,26 @@ interface Props {
   ep: Episode;
   selected: string | null;
   onSelect: (e: EditInfo) => void;
-  onReview: (e: EditInfo, action: "keep" | "restore" | "apply") => Promise<void>;
+  onReview: (e: EditInfo, action: "keep" | "restore" | "apply") => Promise<boolean>;
+  onApproveAll: () => Promise<boolean>;
   onPauseMain: () => void;
 }
 
 const LATIN = /^[A-Za-z0-9']+$/;
 
-export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Props) {
+const pending = (e: EditInfo) => !e.approved;
+
+export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onPauseMain }: Props) {
   // order comes from the server: content trims first, then by duration removed
-  const ranked = useMemo(() => {
+  const all = useMemo(() => {
     const byId = new Map(ep.edits.map((e) => [e.id, e]));
     return ep.review.map((id) => byId.get(id)).filter((e): e is EditInfo => !!e);
   }, [ep.edits, ep.review]);
-  const cur = ranked.find((e) => e.id === selected) ?? ranked[0] ?? null;
+  const [onlyPending, setOnlyPending] = useState(false);
+  // the current edit stays listed even once reviewed, so the view never jumps under Leon's cursor
+  const ranked = onlyPending ? all.filter((e) => pending(e) || e.id === selected) : all;
+  const done = all.length - all.filter(pending).length;
+  const cur = ranked.find((e) => e.id === selected) ?? ranked.find(pending) ?? ranked[0] ?? null;
   const idx = cur ? ranked.indexOf(cur) : -1;
   const [ab, setAb] = useState<AB | null>(null);
   const [lines, setLines] = useState<TextLine[] | null>(null);
@@ -49,13 +56,22 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cur?.id]);
 
-  const go = (d: number) => {
-    const n = ranked[Math.max(0, Math.min(ranked.length - 1, idx + d))];
-    if (n) {
-      onSelect(n);
-      listRef.current?.querySelector<HTMLElement>(`[data-id="${n.id}"]`)?.scrollIntoView({ block: "nearest" });
-    }
+  const select = (n: EditInfo | undefined) => {
+    if (!n) return;
+    onSelect(n);
+    listRef.current?.querySelector<HTMLElement>(`[data-id="${n.id}"]`)?.scrollIntoView({ block: "nearest" });
   };
+  const go = (d: number) => select(ranked[Math.max(0, Math.min(ranked.length - 1, idx + d))]);
+
+  // decide on the current edit, then move on to the next one still waiting (wrapping round to earlier skips)
+  const decide = async (action: "keep" | "restore" | "apply") => {
+    if (!cur) return;
+    const ok = await onReview(cur, action);
+    if (!ok || action === "apply") return;
+    const rest = [...ranked.slice(idx + 1), ...ranked.slice(0, Math.max(idx, 0))];
+    select(rest.find((e) => pending(e) && e.id !== cur.id));
+  };
+  const leftCount = all.length - done;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -69,7 +85,8 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
         abRef.current?.toggle();
       } else if (k === "a") abRef.current?.select("before");
       else if (k === "b") abRef.current?.select("after");
-      else if (k === "r" && cur && cur.status === "applied") void onReview(cur, "restore");
+      else if (k === "y" && cur) void decide(cur.status === "applied" ? "keep" : "restore");
+      else if (k === "r" && cur && cur.status === "applied") void decide("restore");
       else return;
     };
     window.addEventListener("keydown", onKey);
@@ -88,8 +105,32 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
     <div className="review">
       <nav className="review-nav" aria-label="改动列表">
         <section>
-          <h2>需要你过目 · {ranked.length}</h2>
+          <h2>需要你过目 · {all.length}</h2>
           <p className="muted small">内容删减排在最前，其余按删掉的时长排序。已经应用在第一刀里，你只需要决定是否恢复。</p>
+          <div className="batch" data-testid="review-progress">
+            <div className="row baseline gap8">
+              <span className="small">
+                已过目 <strong>{done}</strong> / {all.length}
+              </span>
+              <label className="small muted row gap4">
+                <input type="checkbox" checked={onlyPending} onChange={(e) => setOnlyPending(e.target.checked)} />
+                只看没过目的
+              </label>
+            </div>
+            <div className="meter" aria-hidden="true">
+              <span style={{ width: `${all.length ? (100 * done) / all.length : 0}%` }} />
+            </div>
+            {leftCount > 0 && (
+              <button
+                type="button"
+                className="btn btn-outline btn-block"
+                onClick={() => void onApproveAll()}
+                title="按 AI 现在的处理全部确认：删了的保持删，没删的保持原样。一步撤销即可退回。"
+              >
+                剩下 {leftCount} 处全部通过
+              </button>
+            )}
+          </div>
           <ul className="rlist" ref={listRef} data-testid="review-list">
             {ranked.map((e) => (
               <li key={e.id}>
@@ -104,7 +145,9 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
                   <span className="mono small">{fmt(e.t)}</span>
                   <span className="grow">{e.title}</span>
                   {e.category === "content" && <span className="small rtag">内容</span>}
-                  <span className="small rstate">{e.status === "restored" ? (e.approved ? "已恢复" : "未应用") : e.approved ? "✓" : ""}</span>
+                  <span className="small rstate">
+                    {e.status === "restored" ? (e.approved ? "不删 ✓" : "未应用") : e.approved ? "✓" : ""}
+                  </span>
                 </button>
               </li>
             ))}
@@ -169,17 +212,24 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
             <div className="row wrap gap10">
               {cur.status === "applied" ? (
                 <>
-                  <button type="button" className="btn btn-primary" onClick={() => onReview(cur, "keep")}>
+                  <button type="button" className="btn btn-primary" onClick={() => void decide("keep")}>
                     {cur.approved ? "✓ 已保留" : "保留这个删除"}
                   </button>
-                  <button type="button" className="btn btn-outline" onClick={() => onReview(cur, "restore")}>
+                  <button type="button" className="btn btn-outline" onClick={() => void decide("restore")}>
                     恢复原话
                   </button>
                 </>
               ) : (
-                <button type="button" className="btn btn-primary" onClick={() => onReview(cur, "apply")}>
-                  重新应用这个删除
-                </button>
+                <>
+                  {!cur.approved && (
+                    <button type="button" className="btn btn-primary" onClick={() => void decide("restore")}>
+                      不删，保持原话
+                    </button>
+                  )}
+                  <button type="button" className={`btn ${cur.approved ? "btn-primary" : "btn-outline"}`} onClick={() => void decide("apply")}>
+                    重新应用这个删除
+                  </button>
+                </>
               )}
               <form className="grow row gap8" onSubmit={sendTweak}>
                 <label htmlFor="tweak" className="sr-only">
@@ -195,7 +245,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
               </form>
             </div>
             {reply && <p className="note">{reply}</p>}
-            <p className="muted small">快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，R 恢复。</p>
+            <p className="muted small">快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。</p>
           </>
         )}
       </main>
