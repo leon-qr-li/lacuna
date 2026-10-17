@@ -32,7 +32,9 @@ test("import a new episode: pick two tracks → progress → straight into revie
   await expect(page.locator(".ep-title")).toHaveText("EP001 · 导入测试");
   const items = page.getByTestId("review-list").locator(".ritem");
   await expect(items).toHaveCount(2);
-  await expect(items.first()).toHaveAttribute("data-category", "content");
+  // timeline order: the earlier filler comes first, the content trim after it
+  await expect(items.nth(1)).toHaveAttribute("data-category", "content");
+  await items.nth(1).click();
   await expect(page.getByText("这段题外话和主线无关，后面没有再提")).toBeVisible();
 
   // back home (no auto-redirect): the task shows as done with a link to the review

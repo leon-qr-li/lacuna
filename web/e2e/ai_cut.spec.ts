@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // served by the second webServer in playwright.config.ts (an AI first-cut episode, short window)
 test.use({ baseURL: "http://127.0.0.1:8798" });
 
-test("AI first cut: no demo marks, content trims lead the review list", async ({ page }) => {
+test("AI first cut: no demo marks, review list in timeline order", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
   await expect(page.locator(".ep-title")).toHaveText("合成 · AI 第一刀");
@@ -15,15 +15,17 @@ test("AI first cut: no demo marks, content trims lead the review list", async ({
   await expect(page).toHaveURL(/\/review$/);
   const items = page.getByTestId("review-list").locator(".ritem");
   await expect(items).toHaveCount(4);
-  await expect(items.first()).toHaveAttribute("data-category", "content");
-  await expect(items.nth(1)).toHaveAttribute("data-category", "content");
-  await expect(items.nth(2)).not.toHaveAttribute("data-category", "content");
-  // the first (longest) content trim is selected, with the AI's own reason and the struck words
+  // timeline order, from the first second (not content-first / longest-first)
+  const cats = ["filler", "interjection", "content", "content"];
+  for (const [i, c] of cats.entries()) await expect(items.nth(i)).toHaveAttribute("data-category", c);
+  await expect(items.first()).toHaveAttribute("aria-current", "true");
+  // a content trim shows the AI's own reason and the struck words
+  await items.nth(2).click();
   await expect(page.getByTestId("review-title")).toContainText("内容删减");
   await expect(page.getByText("这段题外话和主线无关，后面没有再提")).toBeVisible();
   await expect(page.locator(".struck").first()).toBeVisible();
-  // the AI's unapplied suggestion (keep_flag) is second and can be applied
-  await items.nth(1).click();
+  // the AI's unapplied suggestion (keep_flag) comes last here and can be applied
+  await items.nth(3).click();
   await expect(page.getByTestId("review-title")).toContainText("AI 建议（未删）");
   await expect(page.getByRole("button", { name: "重新应用这个删除" })).toBeVisible();
   // routine cleanups are grouped by category, not listed one by one
@@ -46,12 +48,13 @@ test("review: decide → jump to next pending; Y shortcut; 全部通过 in one s
   await expect(items.first().locator(".rstate")).toHaveText("✓");
   await expect(page.getByTestId("review-progress")).toContainText("已过目 1 / 4");
 
-  // the second is the AI's unapplied suggestion: Y confirms "don't cut" and moves on
+  // the last is the AI's unapplied suggestion: Y confirms "don't cut" and wraps round to the skipped second
+  await items.nth(3).click();
   await expect(page.getByRole("button", { name: "不删，保持原话" })).toBeVisible();
   await page.keyboard.press("y");
   await expect(page.locator(".toast")).toHaveText("已确认不删");
-  await expect(items.nth(1).locator(".rstate")).toHaveText("不删 ✓");
-  await expect(items.nth(2)).toHaveAttribute("aria-current", "true");
+  await expect(items.nth(3).locator(".rstate")).toHaveText("不删 ✓");
+  await expect(items.nth(1)).toHaveAttribute("aria-current", "true");
 
   // "only pending" hides the two done ones (the current stays)
   await page.getByLabel("只看没过目的").check();
