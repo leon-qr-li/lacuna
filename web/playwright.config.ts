@@ -13,7 +13,10 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
     ...devices["Desktop Chrome"],
     viewport: { width: 1440, height: 960 },
-    launchOptions: { args: ["--autoplay-policy=no-user-gesture-required"] },
+    launchOptions: {
+      // fake mic (a beep) for the voice-input test; the permission is granted per test
+      args: ["--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"],
+    },
   },
   webServer: [
     {

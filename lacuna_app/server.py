@@ -10,9 +10,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from .audio import parse_range
+from .dictation import Dictation, DictationError
 from .editor import EditorAdapter, editor_status, make_adapter
 from .episode import ConflictError, Episode
 from .exporter import ExportBusy, Exporter
@@ -92,7 +94,8 @@ class OpBody(PlayheadBody):
 
 
 def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST,
-               importer: Importer | None = None, publisher: Publisher | None = None) -> FastAPI:
+               importer: Importer | None = None, dictation: Dictation | None = None,
+               publisher: Publisher | None = None) -> FastAPI:
     ws = Workspace(workspace).ensure()
     adapter = adapter or make_adapter("auto")
     app = FastAPI(title="LACUNA Studio", docs_url="/api/docs", openapi_url="/api/openapi.json")
@@ -101,6 +104,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     exporter = Exporter(ws)
     importer = importer or Importer(ws)
     learning = Learning(ws)
+    dictation = dictation or Dictation(ws.root / "models")
     publisher = publisher or Publisher(ws)
     publisher.on_usage = lambda eid, u: log_usage(ws.root / USAGE_LOG, eid, u | {"kind": "publish"})
 
@@ -136,7 +140,21 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     # ------------------------------------------------------------------ API
     @app.get("/api/health")
     def health():
-        return {"ok": True, "workspace": str(ws.root)} | editor_status(adapter)
+        return {"ok": True, "workspace": str(ws.root)} | editor_status(adapter) | dictation.status()
+
+    @app.post("/api/dictation/warm")
+    def dictation_warm():
+        dictation.warm()
+        return {"ok": True}
+
+    @app.post("/api/dictation")
+    async def dictate(request: Request):
+        """Raw recorded audio in the body (any format ffmpeg reads) → text. Stays on this machine."""
+        data = await request.body()
+        try:
+            return await run_in_threadpool(dictation.transcribe, data)
+        except DictationError as e:
+            raise HTTPException(422, str(e))
 
     @app.get("/api/episodes")
     def list_episodes():
@@ -416,5 +434,6 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     app.state.episodes = episodes
     app.state.exporter = exporter
     app.state.importer = importer
+    app.state.dictation = dictation
     app.state.publisher = publisher
     return app

@@ -1,7 +1,8 @@
 """Start the app on a fresh synthetic workspace (used by Playwright's webServer).
 
-    python tests/app/serve_e2e.py <port> [--ai]   # --ai: an AI first-cut episode, chat and publish pack
-                                                  # answered by a scripted fake Claude (tests/app/fake_claude.py)
+    python tests/app/serve_e2e.py <port> [--ai]   # --ai: an AI first-cut episode, chat and publish pack answered
+                                                  # by a scripted fake Claude (tests/app/fake_claude.py)
+                                                  # and a fake voice-input recogniser
     python tests/app/serve_e2e.py <port> --import # empty workspace + two raw tracks in <ws>/recordings;
                                                   # imports use a fake ASR and a fake Claude first cut
 """
@@ -36,6 +37,7 @@ if __name__ == "__main__":
     elif "--ai" in sys.argv:
         import uvicorn
 
+        from lacuna_app.dictation import Dictation
         from lacuna_app.editor import ClaudeEditorAdapter
         from lacuna_app.publish import ClaudePublisher, Publisher
         from lacuna_app.server import create_app
@@ -45,8 +47,10 @@ if __name__ == "__main__":
         ws = make_ai_workspace(Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws")
         seed_learning(ws)
         pub = Publisher(Workspace(ws), lambda: ClaudePublisher(client=FakePublishAnthropic(delay=1.0)))
-        uvicorn.run(create_app(ws, ClaudeEditorAdapter(client=FakeAnthropic()), publisher=pub), host="127.0.0.1",
-                    port=int(port), log_level="warning")
+        # voice input: real upload + ffmpeg decode, a fake recogniser that "hears" one fixed sentence
+        voice = Dictation(Path(ws) / "models", backend=lambda x: "这句删掉")
+        uvicorn.run(create_app(ws, ClaudeEditorAdapter(client=FakeAnthropic()), dictation=voice, publisher=pub),
+                    host="127.0.0.1", port=int(port), log_level="warning")
     else:
         ws = make_workspace(Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws")
         main(["--workspace", str(ws), "--port", port, "--no-browser", "--editor", "mock"])

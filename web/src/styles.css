@@ -134,6 +134,8 @@ h2.sub { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 
 .pstate.ok { color: var(--accent); }
 .chat-form { display: flex; gap: 8px; padding: 12px 20px 16px; border-top: 1px solid var(--line-soft); }
 .at-chip { align-self: center; padding: 4px 8px; border-radius: 6px; background: var(--sunk); font-size: 12px; white-space: nowrap; }
+.mic { min-width: 44px; min-height: 44px; padding: 0 10px; white-space: nowrap; }
+.mic-on { background: #c0392b; border-color: #c0392b; color: #fff; font-variant-numeric: tabular-nums; }
 input[type="text"] { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid #b8b4aa; border-radius: 8px; background: #fff; }
 
 .ab { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
