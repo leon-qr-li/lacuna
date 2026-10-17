@@ -395,13 +395,16 @@ def build_episode(media: dict[str, MediaRef], ops_doc: dict, tokens: dict[str, T
     sr = next(iter(media.values())).sample_rate
     if any(m.sample_rate != sr for m in media.values()):
         raise ValueError("host tracks have different sample rates")
-    end = min(m.frames for m in media.values())
+    # Each track keeps its own length: when one host's recording runs longer (a recorder stopped
+    # late, an outro said alone), its tail stays in instead of being cut to the shorter track.
+    end = max(m.frames for m in media.values())
     a = int(round(w0 * sr))
     b = end if w1 is None else min(int(round(w1 * sr)), end)
     if b <= a:
         raise ValueError("empty window")
     w1 = b / sr
-    tracks = [Track(name, (Clip(f"{name[0]}0", ref.media_id, a, b, 0),)) for name, ref in media.items()]
+    tracks = [Track(name, (Clip(f"{name[0]}0", ref.media_id, a, min(b, ref.frames), 0),) if ref.frames > a else ())
+              for name, ref in media.items()]
     base = replace(new_timeline(sr, list(media)), tracks=tuple(tracks), next_id=1)
     project = Project({m.media_id: m for m in media.values()}, base)
     with SourcePool({m.media_id: m for m in media.values()}) as pool:
