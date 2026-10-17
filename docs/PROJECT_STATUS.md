@@ -1,9 +1,9 @@
 # LACUNA Studio — Project Status
 
-_Last updated: 2026-10-17 01:00Z_
+_Last updated: 2026-10-17 02:10Z_
 
 ## Current phase
-P1: runnable vertical slice exists, AI first cut calibrated on EP001. Direction confirmed (D23 API credits path, D24 narrowed MVP).
+POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMAP.md` (D34). App phase 1 (审阅提速: batch approve, auto-advance) in progress; 母带与导出 in a parallel thread.
 
 ## Done
 - Assessment `docs/00_TECH_LEAD_ASSESSMENT.md`; decisions `docs/DECISIONS.md` (D23–D32); hardware `docs/HARDWARE_PROFILE.md`; editorial rules `docs/EDITORIAL_RULES.md` (R001–R003).
@@ -28,6 +28,7 @@ P1: runnable vertical slice exists, AI first cut calibrated on EP001. Direction 
 - Missing: export + mastering/LUFS (in progress, separate thread), task panel, asset inbox, topic labels, stereo music bus. macOS is verified only by CI (no real Mac run yet).
 
 ## Next action
+0. App phase 1 → merge, update Leon's PC, Leon validates (see ROADMAP). Then phase 2/3 per their dependencies.
 1. Leon reviews "EP001 · AI 第一刀" (v3, full episode) on his PC; learn from his restores/approvals (D27) and recalibrate review threshold + content-trim taste.
 2. Leon sets ANTHROPIC_API_KEY (steps given 2026-10-17; anthropic SDK installed on his PC) → verify real chat end to end.
 3. Export with mastering (leveller + LUFS/true-peak).

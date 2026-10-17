@@ -30,3 +30,45 @@ test("AI first cut: no demo marks, content trims lead the review list", async ({
   await expect(page.locator(".routine")).toContainText("停顿收紧");
   await expect(page.locator(".routine")).toContainText("口误与无意识重复");
 });
+
+test("review: decide → jump to next pending; Y shortcut; 全部通过 in one step, one undo", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: /改动审阅/ }).click();
+  const items = page.getByTestId("review-list").locator(".ritem");
+  await expect(items).toHaveCount(4);
+  await expect(page.getByTestId("review-progress")).toContainText("已过目 0 / 4");
+
+  // keep the first: it is ticked and the second becomes current
+  await expect(items.first()).toHaveAttribute("aria-current", "true");
+  await page.getByRole("button", { name: "保留这个删除" }).click();
+  await expect(page.locator(".toast")).toHaveText("已保留");
+  await expect(items.nth(1)).toHaveAttribute("aria-current", "true");
+  await expect(items.first().locator(".rstate")).toHaveText("✓");
+  await expect(page.getByTestId("review-progress")).toContainText("已过目 1 / 4");
+
+  // the second is the AI's unapplied suggestion: Y confirms "don't cut" and moves on
+  await expect(page.getByRole("button", { name: "不删，保持原话" })).toBeVisible();
+  await page.keyboard.press("y");
+  await expect(page.locator(".toast")).toHaveText("已确认不删");
+  await expect(items.nth(1).locator(".rstate")).toHaveText("不删 ✓");
+  await expect(items.nth(2)).toHaveAttribute("aria-current", "true");
+
+  // "only pending" hides the two done ones (the current stays)
+  await page.getByLabel("只看没过目的").check();
+  await expect(items).toHaveCount(2);
+  await page.getByLabel("只看没过目的").uncheck();
+
+  // approve the remaining two in one go
+  await page.getByRole("button", { name: "剩下 2 处全部通过" }).click();
+  await expect(page.locator(".toast")).toHaveText("已全部通过 2 处，可撤销");
+  await expect(page.getByTestId("review-progress")).toContainText("已过目 4 / 4");
+  await expect(page.getByRole("button", { name: /全部通过/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /改动审阅/ })).toHaveText("改动审阅 · 0");
+
+  // one undo takes back exactly the batch, then the two single decisions
+  await page.getByRole("button", { name: "撤销" }).click();
+  await expect(page.getByTestId("review-progress")).toContainText("已过目 2 / 4");
+  await page.getByRole("button", { name: "撤销" }).click();
+  await page.getByRole("button", { name: "撤销" }).click();
+  await expect(page.getByTestId("review-progress")).toContainText("已过目 0 / 4");
+});

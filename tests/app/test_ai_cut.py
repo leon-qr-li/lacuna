@@ -268,3 +268,55 @@ def test_make_ai_episode_cli_on_synthetic_audio(tmp_path):
     assert {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in raw.glob("*.wav")} == before
     with pytest.raises(SystemExit):
         make_ai_episode.main(["--workspace", str(tmp_path / "ws"), "--raw-dir", str(tmp_path)])
+
+
+def test_batch_review_approve_all_is_one_undo_step(ai_ws, tmp_path):
+    """「剩下的全部通过」signs off every pending edit as it stands (cuts stay cut, the unapplied AI suggestion
+    stays unapplied), is one undo step, and persists across a restart."""
+    c = TestClient(create_app(ai_ws, MockEditorAdapter(), web_dist=Path("/nonexistent")))
+    EP = f"/api/episodes/{AI_EPISODE}"
+    s = c.get(EP).json()
+    assert s["pending_review"] == len(s["review"]) == 4
+    # Leon handles one by hand first; the batch only touches the rest
+    first = s["review"][0]
+    c.post(f"{EP}/edits/{first}/review", json={"action": "restore"})
+    r = c.post(f"{EP}/review", json={"action": "approve", "playhead": 5.0}).json()
+    assert r["changed"] == 3 and r["pending_review"] == 0
+    assert r["undo_label"] == "全部通过（3 处）"
+    by_id = {e["id"]: e for e in r["edits"]}
+    before = {e["id"]: e for e in s["edits"]}
+    assert by_id[first]["status"] == "restored"
+    for i in s["review"][1:]:
+        assert by_id[i]["approved"] and by_id[i]["status"] == before[i]["status"]
+    assert r["duration"] == pytest.approx(s["duration"] + before[first]["len"], abs=1e-3)
+    assert r["playhead"] == pytest.approx(5.0, abs=0.5)
+    # nothing left: a second batch is a no-op and adds no undo step
+    again = c.post(f"{EP}/review", json={"action": "approve"}).json()
+    assert again["changed"] == 0 and again["undo_label"] == r["undo_label"]
+    # survives a restart
+    c2 = TestClient(create_app(ai_ws, MockEditorAdapter(), web_dist=Path("/nonexistent")))
+    assert c2.get(EP).json()["pending_review"] == 0
+    # one undo brings back exactly the three
+    u = c2.post(f"{EP}/undo", json={}).json()
+    assert u["pending_review"] == 3 and u["undo_label"].startswith("恢复")
+
+
+def test_batch_review_keep_restore_ids_and_errors(ai_ws):
+    c = TestClient(create_app(ai_ws, MockEditorAdapter(), web_dist=Path("/nonexistent")))
+    EP = f"/api/episodes/{AI_EPISODE}"
+    s = c.get(EP).json()
+    content = [i for i in s["review"] if next(e for e in s["edits"] if e["id"] == i)["category"] == "content"]
+    lens = {e["id"]: e["len"] for e in s["edits"]}
+    applied = [i for i in content if next(e for e in s["edits"] if e["id"] == i)["status"] == "applied"]
+    r = c.post(f"{EP}/review", json={"action": "restore", "ids": content}).json()
+    assert r["undo_label"].startswith("全部恢复原话")
+    assert all(e["status"] == "restored" and e["approved"] for e in r["edits"] if e["id"] in content)
+    assert r["duration"] == pytest.approx(s["duration"] + sum(lens[i] for i in applied), abs=1e-3)
+    r = c.post(f"{EP}/review", json={"action": "keep", "ids": content}).json()
+    assert all(e["status"] == "applied" for e in r["edits"] if e["id"] in content)
+    assert r["duration"] == pytest.approx(s["duration"] - sum(lens[i] for i in content if i not in applied), abs=1e-3)
+    # bad action / unknown id are refused without changing anything
+    assert c.post(f"{EP}/review", json={"action": "bogus"}).status_code == 422
+    n_undo = c.get(EP).json()["undo_label"]
+    assert c.post(f"{EP}/review", json={"action": "approve", "ids": ["nope"]}).status_code == 404
+    assert c.get(EP).json()["undo_label"] == n_undo

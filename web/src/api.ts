@@ -114,6 +114,8 @@ export const api = {
   editText: (id: string, eid: string) => req<{ lines: TextLine[] }>("GET", `${ep(id)}/edits/${eid}/text`),
   review: (id: string, eid: string, action: "keep" | "restore" | "apply", playhead: number) =>
     req<Episode>("POST", `${ep(id)}/edits/${eid}/review`, { action, playhead }),
+  reviewAll: (id: string, action: "approve" | "keep" | "restore", playhead: number, ids?: string[]) =>
+    req<Episode & { changed: number }>("POST", `${ep(id)}/review`, { action, playhead, ids }),
   undo: (id: string, playhead: number) => req<Episode>("POST", `${ep(id)}/undo`, { playhead }),
   redo: (id: string, playhead: number) => req<Episode>("POST", `${ep(id)}/redo`, { playhead }),
   chat: (id: string, text: string, playhead: number) =>
