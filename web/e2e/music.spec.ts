@@ -20,6 +20,8 @@ test("media library → credits → music on the episode → series rule", async
   await expect(page.getByTestId("uploads")).toContainText("已加入：odyssey_theme.mp3");
   const theme = page.getByTestId("asset-row").filter({ hasText: "odyssey_theme.mp3" });
   await expect(theme).toContainText("待确认"); // from the file's own tags
+  // Claude can't hear the music: no note, no lookup
+  await expect(theme.getByRole("button", { name: "让 Claude 查正式曲名" })).toBeDisabled();
   await theme.getByLabel("备注").fill("这是奥德赛的主题曲");
   await theme.getByRole("button", { name: "保存备注" }).click();
   await expect(theme.getByRole("button", { name: "保存备注" })).toBeDisabled();
