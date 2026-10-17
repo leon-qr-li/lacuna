@@ -156,6 +156,33 @@ def make_workspace(root: str | Path, episode_id: str = EPISODE) -> Path:
     return root
 
 
+def write_recordings(folder: str | Path) -> dict[str, Path]:
+    """The two synthetic raw tracks in a plain folder (as Riverside would leave them), for imports."""
+    refs = write_raw(Path(folder))
+    return {name: Path(r.path) for name, r in refs.items()}
+
+
+def fake_asr(tag: str, x, progress=lambda f, s: None) -> dict:
+    """Stand-in for lacuna_app.asr.transcribe: one VAD segment per turn, the synthetic words as
+    Paraformer tokens; SenseVoice agrees except it hears an extra 嗯 after the first word."""
+    name = {"L": "Leon", "P": "Pei"}[tag]
+    words = words_by_track()[name]
+    segs = []
+    for tr, a, b in TURNS:
+        if tr != name:
+            continue
+        toks = [{"t": w, "start": s, "end": e} for s, e, w in words if a <= s < b]
+        sv = [dict(t) for t in toks]
+        if len(segs) == 0 and sv:
+            sv.insert(1, {"t": "嗯", "start": sv[0]["end"], "end": sv[0]["end"] + 0.05})
+        text = "".join(t["t"] for t in toks)
+        segs.append({"start": round(max(a - 0.2, 0), 3), "end": round(b + 0.2, 3),
+                     "par": {"text": text, "tokens": toks},
+                     "sv": {"text": "".join(t["t"] for t in sv), "event": "Speech", "emotion": "NEUTRAL", "tokens": sv}})
+        progress(b / DUR, f"逐字识别 {int(b)} 秒")
+    return {"audio_s": round(len(x) / SR, 3), "segments": segs}
+
+
 if __name__ == "__main__":
     (make_ai_workspace if "--ai" in sys.argv else make_workspace)(sys.argv[1])
     print(f"synthetic workspace at {sys.argv[1]}")
