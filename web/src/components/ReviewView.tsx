@@ -11,16 +11,14 @@ interface Props {
   onPauseMain: () => void;
 }
 
-/** Impact ranking: long removals the AI is less sure about first. */
 const LATIN = /^[A-Za-z0-9']+$/;
 
-const impact = (e: EditInfo) => e.len * (1.3 - e.confidence);
-
 export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Props) {
-  const ranked = useMemo(
-    () => ep.edits.filter((e) => e.consequential).sort((a, b) => impact(b) - impact(a)),
-    [ep.edits],
-  );
+  // order comes from the server: content trims first, then by duration removed
+  const ranked = useMemo(() => {
+    const byId = new Map(ep.edits.map((e) => [e.id, e]));
+    return ep.review.map((id) => byId.get(id)).filter((e): e is EditInfo => !!e);
+  }, [ep.edits, ep.review]);
   const cur = ranked.find((e) => e.id === selected) ?? ranked[0] ?? null;
   const idx = cur ? ranked.indexOf(cur) : -1;
   const [ab, setAb] = useState<AB | null>(null);
@@ -91,20 +89,22 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
       <nav className="review-nav" aria-label="改动列表">
         <section>
           <h2>需要你过目 · {ranked.length}</h2>
-          <p className="muted small">按影响大小排序。已经应用在第一刀里，你只需要决定是否恢复。</p>
+          <p className="muted small">内容删减排在最前，其余按删掉的时长排序。已经应用在第一刀里，你只需要决定是否恢复。</p>
           <ul className="rlist" ref={listRef} data-testid="review-list">
             {ranked.map((e) => (
               <li key={e.id}>
                 <button
                   type="button"
                   data-id={e.id}
+                  data-category={e.category}
                   className={`ritem ${e.id === cur?.id ? "is-current" : ""}`}
                   aria-current={e.id === cur?.id}
                   onClick={() => onSelect(e)}
                 >
                   <span className="mono small">{fmt(e.t)}</span>
                   <span className="grow">{e.title}</span>
-                  <span className="small rstate">{e.status === "restored" ? "已恢复" : e.approved ? "✓" : ""}</span>
+                  {e.category === "content" && <span className="small rtag">内容</span>}
+                  <span className="small rstate">{e.status === "restored" ? (e.approved ? "已恢复" : "未应用") : e.approved ? "✓" : ""}</span>
                 </button>
               </li>
             ))}
@@ -140,10 +140,11 @@ export function ReviewView({ ep, selected, onSelect, onReview, onPauseMain }: Pr
               </span>
             </div>
             <section className="card prose">
-              <h2 className="sub">为什么{cur.status === "restored" ? "删过（现已恢复）" : "删"}</h2>
+              <h2 className="sub">为什么{cur.status === "restored" ? (cur.approved ? "删过（现已恢复）" : "建议删（还没有应用）") : "删"}</h2>
               <p>{cur.reason || "（没有说明）"}</p>
               <p className="muted small">
-                把握度：{confidenceLabel(cur.confidence)} · 类型：{cur.category_label} · {statusLabel(cur)} · 可随时恢复
+                把握度：{confidenceLabel(cur.confidence)} · 类型：{cur.category_label}
+                {cur.speech_s ? ` · 删掉说话 ${cur.speech_s.toFixed(1)} 秒` : ""} · {statusLabel(cur)} · 可随时恢复
               </p>
             </section>
             {lines && lines.length > 0 && (

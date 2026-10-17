@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 8799;
+export const AI_PORT = 8798;
 const PYTHON = process.env.PYTHON ?? (process.platform === "win32" ? "python" : "python3");
 
 export default defineConfig({
@@ -13,10 +14,19 @@ export default defineConfig({
     viewport: { width: 1440, height: 960 },
     launchOptions: { args: ["--autoplay-policy=no-user-gesture-required"] },
   },
-  webServer: {
-    command: `${PYTHON} ../tests/app/serve_e2e.py ${PORT}`,
-    url: `http://127.0.0.1:${PORT}/api/health`,
-    reuseExistingServer: false,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: `${PYTHON} ../tests/app/serve_e2e.py ${PORT}`,
+      url: `http://127.0.0.1:${PORT}/api/health`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      // a workspace holding one AI first-cut episode (see tests/app/synth.py make_ai_workspace)
+      command: `${PYTHON} ../tests/app/serve_e2e.py ${AI_PORT} --ai`,
+      url: `http://127.0.0.1:${AI_PORT}/api/health`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+  ],
 });

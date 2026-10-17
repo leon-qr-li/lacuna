@@ -1,0 +1,603 @@
+{
+ "n_ops": 646,
+ "ops_by_type": {
+  "tighten_pause": 320,
+  "cut": 322,
+  "keep_flag": 4
+ },
+ "warnings": [],
+ "n_warnings": 0,
+ "keep_flags": 4,
+ "tracks": {
+  "L": {
+   "ai_removed_s": 387.4,
+   "gt_removed_s": 409.2,
+   "gt_ambiguous_s": 18.7,
+   "precision_s": 0.544,
+   "recall_s": 0.501,
+   "speech": {
+    "ai_removed_s": 178.2,
+    "gt_removed_s": 176.1,
+    "precision": 0.458,
+    "recall": 0.443
+   },
+   "pause": {
+    "ai_removed_s": 209.2,
+    "gt_removed_s": 233.1,
+    "precision": 0.617,
+    "recall": 0.545
+   },
+   "events": {
+    "ai": 293,
+    "gt": 253,
+    "precision": 0.72,
+    "recall": 0.704,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 96.63,
+   "false_deletion_items": 105,
+   "missed_speech_removal_s": 98.12,
+   "missed_items": 148
+  },
+  "P": {
+   "ai_removed_s": 378.3,
+   "gt_removed_s": 407.1,
+   "gt_ambiguous_s": 2.2,
+   "precision_s": 0.609,
+   "recall_s": 0.564,
+   "speech": {
+    "ai_removed_s": 32.0,
+    "gt_removed_s": 40.5,
+    "precision": 0.216,
+    "recall": 0.156
+   },
+   "pause": {
+    "ai_removed_s": 346.4,
+    "gt_removed_s": 366.6,
+    "precision": 0.645,
+    "recall": 0.609
+   },
+   "events": {
+    "ai": 281,
+    "gt": 229,
+    "precision": 0.762,
+    "recall": 0.803,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 25.05,
+   "false_deletion_items": 35,
+   "missed_speech_removal_s": 34.18,
+   "missed_items": 61
+  }
+ },
+ "window_raw_s": [
+  2200.0,
+  4415.29
+ ],
+ "false_deletions_top": [
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3135.65,
+    3141.34
+   ],
+   "dur": 5.69,
+   "first_token": "L008091",
+   "text": "因为信条啊特别有意思是我一直在找中文字幕就是在这边下载",
+   "op": "op0461",
+   "category": "content",
+   "reason": "下载字幕对不上的细节, 保留\"中文字幕也看不懂\"笑点"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    2901.08,
+    2905.09
+   ],
+   "dur": 4.01,
+   "first_token": "L007484",
+   "text": "折损了自己的人然后再去下一个岛基本就是这种结构",
+   "op": "op0425",
+   "category": "content",
+   "reason": "再次概括\"打怪-下一个岛\", 前面已说流水账"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3700.78,
+    3704.75
+   ],
+   "dur": 3.97,
+   "first_token": "L009200",
+   "text": "是他们三个都要出的这但我依旧不敢相信是真的是这样",
+   "op": "op0527",
+   "category": "content",
+   "reason": "买首映怕剧透的细节, 不影响\"全场欢呼\"高潮"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    4264.07,
+    4267.48
+   ],
+   "dur": 3.41,
+   "first_token": "L010852",
+   "text": "因为以前的电影都是那么处理的大家说啊thisisnotyoung就",
+   "op": "op0622",
+   "category": "content",
+   "reason": "\"this is not Leon\"的解释展开, 前句已说清"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3436.18,
+    3439.54
+   ],
+   "dur": 3.36,
+   "first_token": "L008873",
+   "text": "我老觉得蜘蛛侠给我一种就是特别",
+   "op": "op0511",
+   "category": "disfluency",
+   "reason": "起句没说完, 下句重说\"我不知道为什么\""
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3148.61,
+    3151.86
+   ],
+   "dur": 3.25,
+   "first_token": "L008145",
+   "text": "然后所以我就特别懒得弄我就在家看的都是英文字幕的",
+   "op": "op0461",
+   "category": "content",
+   "reason": "下载字幕对不上的细节, 保留\"中文字幕也看不懂\"笑点"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3692.99,
+    3696.19
+   ],
+   "dur": 3.2,
+   "first_token": "L009164",
+   "text": "因为当时没有人知道吗我当时就是特意买的首映嘛",
+   "op": "op0527",
+   "category": "content",
+   "reason": "买首映怕剧透的细节, 不影响\"全场欢呼\"高潮"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3949.29,
+    3952.47
+   ],
+   "dur": 3.18,
+   "first_token": "L009806",
+   "text": "如果秦格雷开启凤凰形态那基本上就是",
+   "op": "op0557",
+   "category": "content",
+   "reason": "凤凰形态的设定科普, 偏离蜘蛛侠主线"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3697.33,
+    3700.09
+   ],
+   "dur": 2.76,
+   "first_token": "L009186",
+   "text": "就是我就怕剧透我知道很有可能",
+   "op": "op0527",
+   "category": "content",
+   "reason": "买首映怕剧透的细节, 不影响\"全场欢呼\"高潮"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    2289.02,
+    2291.7
+   ],
+   "dur": 2.68,
+   "first_token": "L006517",
+   "text": "就是我听说到这个事儿我就很震惊",
+   "op": "op0359",
+   "category": "content",
+   "reason": "结尾感叹, 重复\"互联网的力量\""
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    2873.11,
+    2875.47
+   ],
+   "dur": 2.36,
+   "first_token": "L007377",
+   "text": "知道吗就是赶紧把这些人全弄死",
+   "op": "op0419",
+   "category": "content",
+   "reason": "重复上句\"为了害死同胞\"的说法"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3954.24,
+    3956.56
+   ],
+   "dur": 2.32,
+   "first_token": "L009823",
+   "text": "就完了就是全宇宙它可以改变现实",
+   "op": "op0557",
+   "category": "content",
+   "reason": "凤凰形态的设定科普, 偏离蜘蛛侠主线"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    2410.56,
+    2412.85
+   ],
+   "dur": 2.29,
+   "first_token": "L006650",
+   "text": "他们愿意会给周围人讲这个mythology",
+   "op": "op0377",
+   "category": "content",
+   "reason": "\"像伍迪艾伦的学者\"旁支例子"
+  },
+  {
+   "track": "P",
+   "kind": "false_deletion",
+   "raw": [
+    2347.98,
+    2350.17
+   ],
+   "dur": 2.19,
+   "first_token": "P003357",
+   "text": "足够说明就是大家对这件事情",
+   "op": "op0367",
+   "category": "repetition",
+   "reason": "Pei重复\"足够说明\"并改口"
+  },
+  {
+   "track": "L",
+   "kind": "false_deletion",
+   "raw": [
+    3747.98,
+    3750.16
+   ],
+   "dur": 2.18,
+   "first_token": "L009434",
+   "text": "就是那那个反派啊",
+   "op": "op0534",
+   "category": "disfluency",
+   "reason": "\"就是那那个反派啊就是\"绕"
+  }
+ ],
+ "missed_removals_top": [
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2262.8,
+    2267.08
+   ],
+   "dur": 4.28,
+   "first_token": "L006419",
+   "text": "他会问有什么区别我跟他说没区别去看avx",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2230.61,
+    2234.14
+   ],
+   "dur": 3.53,
+   "first_token": "L006264",
+   "text": "audeesy因为当时这个电影上映的时候这边还没有装七十毫米",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2253.78,
+    2257.26
+   ],
+   "dur": 3.48,
+   "first_token": "L006375",
+   "text": "有很多人就来问我说七十毫米的电影值得看吗",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2237.47,
+    2240.73
+   ],
+   "dur": 3.26,
+   "first_token": "L006289",
+   "text": "没有所以大家不看然后装了七十毫米人都说我操",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "P",
+   "kind": "missed_removal",
+   "raw": [
+    2227.23,
+    2230.16
+   ],
+   "dur": 2.93,
+   "first_token": "P003117",
+   "text": "hlithy这边你至少要排两个月我感觉",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2392.43,
+    2395.34
+   ],
+   "dur": 2.91,
+   "first_token": "L006573",
+   "text": "就是你想那黑神话对吧中国人不也高潮了嘛",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    3933.7,
+    3936.5
+   ],
+   "dur": 2.8,
+   "first_token": "L009748",
+   "text": "我看那秦格雷那你你那肚子还出来",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2219.36,
+    2221.98
+   ],
+   "dur": 2.62,
+   "first_token": "L006243",
+   "text": "原来那个奥利斯的票可好买了",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    3062.68,
+    3065.17
+   ],
+   "dur": 2.49,
+   "first_token": "L007825",
+   "text": "呃镜头啊包括人物的那种特写",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "P",
+   "kind": "missed_removal",
+   "raw": [
+    2234.67,
+    2237.11
+   ],
+   "dur": 2.44,
+   "first_token": "P003131",
+   "text": "哦因为本来没有是吧所以很好买",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2216.33,
+    2218.76
+   ],
+   "dur": 2.43,
+   "first_token": "L006232",
+   "text": "所以他妈买不着票了一下",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    3257.04,
+    3259.47
+   ],
+   "dur": 2.43,
+   "first_token": "L008469",
+   "text": "诺兰老老实实拍结构吧就是还是",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "P",
+   "kind": "missed_removal",
+   "raw": [
+    2223.73,
+    2225.99
+   ],
+   "dur": 2.26,
+   "first_token": "P003105",
+   "text": "你那你是因为你是在加拿大",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    4361.49,
+    4363.71
+   ],
+   "dur": 2.22,
+   "first_token": "L011066",
+   "text": "安利你将来玩玩生化危机的游戏我",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    3809.06,
+    3811.26
+   ],
+   "dur": 2.2,
+   "first_token": "L009665",
+   "text": "基本就倒了霉了这蜘蛛侠算是",
+   "op": null,
+   "category": null,
+   "reason": null
+  }
+ ],
+ "false_deletion_total_s": 123.28,
+ "by_category": {
+  "pause": {
+   "removed_s": 198.2,
+   "precision": 0.662,
+   "speech_removed_s": 0.0,
+   "false_deletion_s": 0.0
+  },
+  "disfluency": {
+   "removed_s": 237.6,
+   "precision": 0.674,
+   "speech_removed_s": 80.2,
+   "false_deletion_s": 39.7
+  },
+  "repetition": {
+   "removed_s": 62.1,
+   "precision": 0.488,
+   "speech_removed_s": 27.3,
+   "false_deletion_s": 15.7
+  },
+  "crosstalk": {
+   "removed_s": 6.0,
+   "precision": 0.653,
+   "speech_removed_s": 5.7,
+   "false_deletion_s": 1.8
+  },
+  "content": {
+   "removed_s": 261.8,
+   "precision": 0.44,
+   "speech_removed_s": 97.0,
+   "false_deletion_s": 64.5
+  }
+ },
+ "duration": {
+  "raw_s": 2211.9,
+  "leon_final_from_raw_s": 1809.7,
+  "leon_final_incl_music_s": null,
+  "leon_est_by_formula_s": 1806.0,
+  "ai_est_s": 1829.1,
+  "formula": "window only: raw = window length; final_from_raw = kept Leon-track source inside the window; estimates = raw - mean(per-track removed in window)"
+ },
+ "floor_pauses": {
+  "n": 582,
+  "raw": {
+   "p10": 0.33,
+   "p25": 0.41,
+   "median": 0.55,
+   "p75": 0.83,
+   "p90": 1.36,
+   "n_gt_1s": 110,
+   "n_gt_2s": 22,
+   "total_s": 433.5
+  },
+  "leon": {
+   "p10": 0.0,
+   "p25": 0.21,
+   "median": 0.39,
+   "p75": 0.56,
+   "p90": 0.82,
+   "n_gt_1s": 41,
+   "n_gt_2s": 9,
+   "total_s": 265.8
+  },
+  "ai": {
+   "p10": 0.15,
+   "p25": 0.2,
+   "median": 0.39,
+   "p75": 0.58,
+   "p90": 0.8,
+   "n_gt_1s": 24,
+   "n_gt_2s": 0,
+   "total_s": 252.7
+  },
+  "paired_mae_s": 0.227,
+  "paired_median_signed_s(ai-leon)": 0.0
+ },
+ "interjections": {
+  "n_candidates": 170,
+  "confusion_gt_rows_ai_cols": {
+   "deleted": {
+    "kept": 15,
+    "deleted": 8
+   },
+   "moved": {
+    "kept": 59,
+    "deleted": 9
+   },
+   "kept": {
+    "kept": 70,
+    "deleted": 7
+   },
+   "unclear": {
+    "kept": 2
+   }
+  },
+  "gt_moved": 68,
+  "ai_moved": 0,
+  "both_moved": 0,
+  "sign_agreement": null,
+  "median_abs_delta_error_s": null,
+  "definition": "candidate = phrase <=6 tokens, <=2.5 s, preceded by >=0.5 s own pause, with >=1 s of the other host's speech within ±1 s. GT moved = kept and relative placement vs the other track changed by 0.3-3 s (from S4 per-track offsets); deleted = >=50% of its speech removed."
+ }
+}

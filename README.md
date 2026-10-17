@@ -55,6 +55,15 @@ The default, `auto`, uses Claude when `ANTHROPIC_API_KEY` is set in your environ
 <workspace>/episodes/<episode>/raw/           original recordings (read-only, never written)
 ```
 
+### AI first cut (EP001)
+
+```bash
+python scripts/make_ai_episode.py --workspace ~/LACUNA_Workspace --raw-dir "<folder with Leon.wav / Pei.wav or 原始双轨_*.wav>" \
+    --ops spikes/s5_first_cut/out/ai_v3_full_ops.json          # optional: --start <raw s> --minutes <n>
+```
+
+Converts the AI editor's ops (`spikes/s5_first_cut/edit_ops.schema.json`) into reviewable edits (`lacuna_app/ai_cut.py`): token ids map to samples, cut points snap to the nearest quiet spot, `tighten_pause` cuts the excess from the middle of the pause, a one-track `cut` becomes a lift on that track (or a cut on both when the other host is silent there), `slip` moves one track, `keep_flag` becomes an unapplied suggestion. Skipped ops are counted in the script output and in `episode.json` (`ai_report`). Edits needing Leon's judgement (content, confidence < 0.6, or > 1.5 s of speech removed) are listed content first, then by duration; everything else is routine, grouped by category and restorable.
+
 ### Demo episode (EP001, 10 minutes)
 
 ```bash
@@ -70,7 +79,7 @@ The cut positions come from Leon's hand edit of EP001. Categories, reasons and c
   - Lane view of both tracks around the playhead, plus a "这附近改了什么" list of nearby edits.
   - Chat anchored to the playhead. Try 「停顿短一点」, 「恢复这处」 or 「删掉这句」. Each suggestion lets you preview it A/B, then choose 批准 to approve or 再改 to revise.
 - **改动审阅 (Edit Review)**
-  - Consequential edits are listed by impact. Routine cleanup is summarised by category.
+  - Edits that need your judgement are listed content trims first, then by duration removed. Routine cleanup is summarised by category.
   - For each edit: A/B compare, keep or restore, and the original words.
   - Keyboard: J/K previous/next, space play, A/B switch, R restore.
 - **Undo / redo**: the header buttons or Ctrl/Cmd+Z (Shift for redo).

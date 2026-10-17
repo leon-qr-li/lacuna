@@ -22,7 +22,7 @@ def wav_header(frames: int, sample_rate: int, channels: int = 1) -> bytes:
 
 def pcm16(x: np.ndarray) -> bytes:
     y = np.clip(np.asarray(x, dtype=np.float32), -1.0, 1.0)
-    return (np.round(y * 32767.0)).astype("<i2").tobytes()
+    return np.rint(y * 32767.0).astype("<i2").tobytes()
 
 
 def wav_bytes(x: np.ndarray, sample_rate: int) -> bytes:
