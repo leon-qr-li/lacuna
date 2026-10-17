@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Asset, Credit, CreditStatus, LibraryView as Lib } from "../api";
-import { api, fmt } from "../api";
+import type { Asset, Credit, CreditStatus, LibraryView as Lib } from "./api";
+import { fmt } from "../../api";
+import { libraryApi } from "./api";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: "已确认",
@@ -99,7 +100,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           value={a.kind}
           aria-label="用途"
           disabled={!!busy}
-          onChange={(e) => void run("kind", api.updateAsset(a.id, { kind: e.target.value }))}
+          onChange={(e) => void run("kind", libraryApi.updateAsset(a.id, { kind: e.target.value }))}
         >
           {Object.entries(kinds).map(([k, v]) => (
             <option key={k} value={k}>
@@ -125,7 +126,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           type="button"
           className="btn btn-outline"
           disabled={note === a.note || !!busy}
-          onClick={() => void run("save", api.updateAsset(a.id, { note }))}
+          onClick={() => void run("save", libraryApi.updateAsset(a.id, { note }))}
         >
           保存备注
         </button>
@@ -154,7 +155,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           disabled={!!busy || !claude}
           title={claude ? "" : "没有 API key，Claude 暂时不可用"}
           onClick={() => {
-            const go = note !== a.note ? api.updateAsset(a.id, { note }).then(() => api.lookupCredit(a.id)) : api.lookupCredit(a.id);
+            const go = note !== a.note ? libraryApi.updateAsset(a.id, { note }).then(() => libraryApi.lookupCredit(a.id)) : libraryApi.lookupCredit(a.id);
             // show what Claude filled in, ready to correct before confirming
             void run("lookup", go.then((r) => (setDraft({ ...r.asset.credit }), setEdit(true), r)));
           }}
@@ -162,7 +163,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           {busy === "lookup" ? "Claude 正在查…" : "让 Claude 查正式曲名"}
         </button>
         {c.status === "suggested" && (
-          <button type="button" className="btn btn-outline" disabled={!!busy} onClick={() => void run("confirm", api.updateAsset(a.id, { confirm: true }))}>
+          <button type="button" className="btn btn-outline" disabled={!!busy} onClick={() => void run("confirm", libraryApi.updateAsset(a.id, { confirm: true }))}>
             对，就是这首
           </button>
         )}
@@ -183,7 +184,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           disabled={!!busy}
           onClick={() => {
             if (window.confirm(`把「${a.name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。`))
-              void api.removeAsset(a.id).then(onRemoved);
+              void libraryApi.removeAsset(a.id).then(onRemoved);
           }}
         >
           移出素材库
@@ -208,7 +209,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
             onClick={() =>
               void run(
                 "credit",
-                api.updateAsset(a.id, {
+                libraryApi.updateAsset(a.id, {
                   credit: Object.fromEntries(FIELDS.map((f) => [f.key, draft[f.key] ?? null])) as Partial<Credit>,
                 }),
               ).then((ok) => ok && setEdit(false))
@@ -229,7 +230,7 @@ export function LibraryView() {
   const [dragging, setDragging] = useState(false);
   const [note, setNote] = useState<string | null>(null);
     const load = useCallback(() => {
-    api
+    libraryApi
       .library()
       .then(setLib)
       .catch((e) => setErr(String(e.message ?? e)));
@@ -242,7 +243,7 @@ export function LibraryView() {
     for (const [i, f] of files.entries()) {
       let u: Upload;
       try {
-        const r = await api.uploadAsset(f, kind);
+        const r = await libraryApi.uploadAsset(f, kind);
         u = r.duplicate
           ? { name: f.name, state: "dup", msg: `素材库里已经有这首（${r.asset.name}）` }
           : { name: f.name, state: "done" };
@@ -285,7 +286,7 @@ export function LibraryView() {
           type="button"
           className="btn btn-outline"
           onClick={() =>
-            void api.scanLibrary().then((r) => {
+            void libraryApi.scanLibrary().then((r) => {
               setLib({ ...r, lookup: lib.lookup });
               setNote(r.added.length ? `新加入 ${r.added.length} 个文件` : "文件夹里没有新文件");
             })
@@ -293,7 +294,7 @@ export function LibraryView() {
         >
           扫描文件夹
         </button>
-        <button type="button" className="btn btn-outline" onClick={() => void api.openLibrary()}>
+        <button type="button" className="btn btn-outline" onClick={() => void libraryApi.openLibrary()}>
           打开文件夹
         </button>
       </div>
