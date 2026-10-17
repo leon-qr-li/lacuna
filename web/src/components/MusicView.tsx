@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Asset, MusicView as Music, Placement, PlacementPatch, Role } from "../api";
+import type { Asset, Kind, MusicView as Music, Placement, PlacementPatch, Role } from "../api";
 import { api, fmt, parseTime } from "../api";
 import { CREDIT_LABEL } from "./LibraryView";
 
@@ -80,15 +80,23 @@ function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
   );
 }
 
-function AddPlacement({ assets, onAdd }: { assets: Asset[]; onAdd: (body: PlacementPatch & { asset_id: string; role: Role }) => Promise<boolean> }) {
+function AddPlacement({ assets, kindRoles, onAdd }: {
+  assets: Asset[];
+  kindRoles: Partial<Record<Kind, Role>>;
+  onAdd: (body: PlacementPatch & { asset_id: string; role: Role }) => Promise<boolean>;
+}) {
+  const roleOf = (aid: string): Role => kindRoles[assets.find((a) => a.id === aid)?.kind ?? "other"] ?? "interlude";
   const [assetId, setAssetId] = useState(assets[0]?.id ?? "");
-  const [role, setRole] = useState<Role>("intro");
+  const [role, setRole] = useState<Role>(() => roleOf(assets[0]?.id ?? ""));
   const [at, setAt] = useState("");
   const [until, setUntil] = useState("");
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
-    if (!assets.find((a) => a.id === assetId)) setAssetId(assets[0]?.id ?? "");
-  }, [assets, assetId]);
+    if (!assets.find((a) => a.id === assetId)) {
+      setAssetId(assets[0]?.id ?? "");
+      setRole(roleOf(assets[0]?.id ?? ""));
+    }
+  }, [assets, assetId]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!assets.length)
     return (
       <p className="muted">
@@ -114,16 +122,23 @@ function AddPlacement({ assets, onAdd }: { assets: Asset[]; onAdd: (body: Placem
     <div className="card music-add">
       <h2>放一段音乐</h2>
       <div className="row gap8 wrap">
-        <select value={assetId} onChange={(e) => setAssetId(e.target.value)} aria-label="选择素材">
+        <select
+          value={assetId}
+          onChange={(e) => {
+            setAssetId(e.target.value); // the asset's use in the library decides where it goes
+            setRole(roleOf(e.target.value));
+          }}
+          aria-label="选择素材"
+        >
           {assets.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.credit_line !== a.name.replace(/\.[^.]+$/, "") ? `${a.credit_line}（${a.name}）` : a.name}
+              {a.credit_line !== a.name.replace(/\.[^.]+$/, "") ? `${a.credit_line}（${a.name}）` : a.name} · {a.kind_label}
             </option>
           ))}
         </select>
         <select value={role} onChange={(e) => setRole(e.target.value as Role)} aria-label="用途">
           <option value="intro">片头</option>
-          <option value="interlude">间奏</option>
+          <option value="interlude">间奏 / 休息间隙</option>
           <option value="outro">片尾</option>
           <option value="bed">铺底</option>
           <option value="clip">台词</option>
@@ -147,6 +162,7 @@ function AddPlacement({ assets, onAdd }: { assets: Asset[]; onAdd: (body: Placem
 export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => void }) {
   const [m, setM] = useState<Music | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [kindRoles, setKindRoles] = useState<Partial<Record<Kind, Role>>>({});
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -159,6 +175,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
       .then(([mm, lib]) => {
         setM(mm);
         setAssets(lib.assets);
+        setKindRoles(lib.kind_roles);
         if (mm.series) setSeries(mm.series);
       })
       .catch((e) => setErr(String(e.message ?? e)));
@@ -244,7 +261,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
         ))}
       </ul>
       {m.placements.length === 0 && <p className="muted">这一集还没有配乐。</p>}
-      <AddPlacement assets={assets} onAdd={(body) => run(api.addPlacement(id, body), "已放进去，可以点「试听这一处」")} />
+      <AddPlacement assets={assets} kindRoles={kindRoles} onAdd={(body) => run(api.addPlacement(id, body), "已放进去，可以点「试听这一处」")} />
       {m.placements.some((p) => p.role === "intro" || p.role === "outro") && (
         <div className="row gap8 wrap">
           <input value={series} onChange={(e) => setSeries(e.target.value)} aria-label="系列名" className="time" />
