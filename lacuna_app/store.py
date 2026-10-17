@@ -7,6 +7,7 @@ Layout (user-chosen root, e.g. ``C:\\Projects\\LACUNA_Workspace``)::
     <workspace>/episodes/<episode_id>/publish.json   publish pack: title, show notes (phase 9)
     <workspace>/episodes/<episode_id>/poster.json    cover versions as SVG (phase 10; previews in posters/)
     <workspace>/episodes/<episode_id>/raw/           original recordings (never written)
+    <workspace>/episodes/.index.json                 home-page list cache (episode_index.py)
 
 The app only ever writes ``state.json``, ``publish.json``, ``poster.json`` (and their ``.bak``) and the
 ``posters/`` preview cache inside an episode folder.

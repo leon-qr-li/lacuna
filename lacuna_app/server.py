@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import json
 import threading
+import weakref
+from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -53,7 +55,11 @@ class AppContext:
     def __init__(self, app: FastAPI, ws: Workspace, adapter: EditorAdapter, services: dict[str, Any]):
         self.app, self.ws, self.adapter = app, ws, adapter
         self.lock = threading.Lock()
-        self.episodes: dict[str, Episode] = {}
+        # the KEEP_OPEN most recently used episodes stay in memory; the others load on demand
+        # (~0.1 s each). `_alive` also finds an evicted episode a background job still holds, so
+        # there is never more than one Episode object (and one writer) per episode.
+        self.episodes: OrderedDict[str, Episode] = OrderedDict()
+        self._alive: weakref.WeakValueDictionary[str, Episode] = weakref.WeakValueDictionary()
         self._given = dict(services)
         self._built: dict[str, Any] = {}
 
@@ -75,27 +81,44 @@ class AppContext:
     def log_usage(self, episode_id: str, usage: dict) -> None:
         log_usage(self.ws.root / USAGE_LOG, episode_id, usage)
 
+    KEEP_OPEN = 3
+
     def get(self, episode_id: str) -> Episode:
+        """The episode, loaded if needed, marked as most recently used."""
+        ep = self.peek(episode_id)
+        with self.lock:
+            self.episodes[episode_id] = ep
+            self.episodes.move_to_end(episode_id)
+            while len(self.episodes) > self.KEEP_OPEN:
+                self.episodes.popitem(last=False)    # freed once no job holds it any more
+        return ep
+
+    def peek(self, episode_id: str) -> Episode:
+        """The episode, loaded if needed, without keeping it in memory (listing, learning)."""
         try:
             self.ws.episode_dir(episode_id)
         except PathError:
             raise HTTPException(400, "invalid episode id")
         with self.lock:
-            ep = self.episodes.get(episode_id)
+            ep = self.episodes.get(episode_id) or self._alive.get(episode_id)
             if ep is None:
                 if episode_id not in self.ws.episode_ids():
                     raise HTTPException(404, "no such episode")
-                ep = self.episodes[episode_id] = Episode(self.ws, episode_id)
+                ep = self._alive[episode_id] = Episode(self.ws, episode_id)
             return ep
 
-    def open_episodes(self) -> list[Episode]:
-        out = []
+    def loaded(self, episode_id: str) -> Episode | None:
+        """The episode if it is in memory right now, else None (never loads)."""
+        with self.lock:
+            return self.episodes.get(episode_id) or self._alive.get(episode_id)
+
+    def open_episodes(self):
+        """Every episode, one at a time: only the recently used ones stay in memory."""
         for eid in self.ws.episode_ids():
             try:
-                out.append(self.get(eid))
+                yield self.peek(eid)
             except Exception:     # a broken episode must not hide the others
                 continue
-        return out
 
     def mutate(self, ep: Episode, playhead: float | None, fn) -> dict:
         """Run a mutation; return the new summary plus the playhead mapped onto the new timeline."""
