@@ -49,21 +49,23 @@ Tests: `tests/test_s6_ximalaya.py` — helpers (description HTML, login detectio
 everywhere; the full form flow against `fake_upload.html` where Python Playwright + Chromium exist
 (skipped in CI).
 
-## Run on Leon's PC (needs Leon present for the login)
+## Run on Leon's PC (needs Leon present for the WeChat scan)
 
-Separate folder and Python env, so the App is untouched:
+Works with the new install layout (App in `%LOCALAPPDATA%\LACUNA`). It borrows the App's `uv`
+and Python 3.12 but runs in a throwaway environment (`uv run --no-project --with ...`), so the
+App's own environment is never changed. Claude copies `xmly.py` into its own folder:
 
 ```bat
-mkdir C:\Projects\LACUNA_Workspace\xmly_poc
-cd C:\Projects\LACUNA_Workspace\xmly_poc
-copy <repo>\spikes\s6_ximalaya\xmly.py .
-py -3.12 -m venv .venv
-.venv\Scripts\pip install playwright numpy soundfile
-.venv\Scripts\python xmly.py login
-.venv\Scripts\python xmly.py probe --capture
-.venv\Scripts\python xmly.py draft --album 洛城二三事 --capture
+set UV_PYTHON_INSTALL_DIR=%LOCALAPPDATA%\LACUNA\python
+set UV_CACHE_DIR=%LOCALAPPDATA%\LACUNA\cache
+set PYTHONUTF8=1
+cd /d C:\Projects\LACUNA_Workspace\xmly_poc
+set RUN="%LOCALAPPDATA%\LACUNA\bin\uv.exe" run --no-project --python 3.12 --with playwright --with numpy --with soundfile python xmly.py
+%RUN% login
+%RUN% probe --capture
+%RUN% draft --album 洛城二三事 --capture
 rem only after Leon says OK, private:
-.venv\Scripts\python xmly.py publish-private --album 洛城二三事 --capture
+%RUN% publish-private --album 洛城二三事 --capture
 ```
 
 After a private test publish, Leon deletes the test track in 创作中心 (or we automate that next).
