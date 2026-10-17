@@ -1,9 +1,7 @@
 """Media library + music placement / ducking (phase 6a, D44)."""
 import json
 import shutil
-import subprocess
 from pathlib import Path
-from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -14,27 +12,10 @@ from lacuna_app.library import CONFIRMED, SUGGESTED, UNKNOWN, Library, credit_li
 from lacuna_app.music import EpisodeMusic, bgm_credits, final_duration, final_time, layout, speech_regions
 from lacuna_app.store import Workspace
 
-from .synth import EPISODE, SR, make_workspace
+from .fake_claude import FakeCreditAnthropic as FakeAnthropic
+from .synth import EPISODE, SR, make_workspace, write_music
 
 pytestmark = pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not installed")
-
-
-def write_music(path: Path, seconds: float = 12.0, sr: int = 44100, stereo: bool = True, tags: dict | None = None,
-                level: float = 0.3) -> Path:
-    """A steady two-note chord (left 440 Hz, right 660 Hz); mp3 with tags when the suffix says so."""
-    t = np.arange(int(seconds * sr)) / sr
-    left = level * np.sin(2 * np.pi * 440 * t)
-    right = level * np.sin(2 * np.pi * 660 * t)
-    x = np.stack([left, right], axis=1) if stereo else ((left + right) / 2)[:, None]
-    path.parent.mkdir(parents=True, exist_ok=True)
-    wav = path.with_suffix(".src.wav") if path.suffix != ".wav" else path
-    sf.write(str(wav), x.astype(np.float32), sr, subtype="PCM_16")
-    if path.suffix != ".wav":
-        meta = [a for k, v in (tags or {}).items() for a in ("-metadata", f"{k}={v}")]
-        subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-i", str(wav), *meta,
-                        "-codec:a", "libmp3lame", "-b:a", "192k", str(path)], check=True)
-        wav.unlink()
-    return path
 
 
 @pytest.fixture
@@ -100,25 +81,6 @@ def test_credit_edit_confirm_and_line(lib, song):
     assert a["credit"]["source"] == "leon" and a["credit"]["year"] == 2026
     assert credit_line(a) == "《奥德赛》原声 · Ludwig Göransson — “The Sea”"
     assert credit_line({"name": "foo.mp3", "credit": {}}) == "foo"
-
-
-class FakeAnthropic:
-    """Records the request; answers with a web search result block + a submit_credit tool call."""
-
-    def __init__(self, answer, pause_first=False):
-        self.answer, self.calls, self.pause_first = answer, [], pause_first
-        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self.create))
-
-    def create(self, **kw):
-        self.calls.append(kw)
-        usage = SimpleNamespace(input_tokens=1000, output_tokens=200, cache_read_input_tokens=0,
-                                cache_creation_input_tokens=0)
-        if self.pause_first and len(self.calls) == 1:
-            return SimpleNamespace(stop_reason="pause_turn", content=[], usage=usage, model="claude-opus-5-5")
-        search = SimpleNamespace(type="web_search_tool_result",
-                                 content=[SimpleNamespace(type="web_search_result", url="https://example.org/ost")])
-        tool = SimpleNamespace(type="tool_use", name="submit_credit", input=self.answer)
-        return SimpleNamespace(stop_reason="tool_use", content=[search, tool], usage=usage, model="claude-opus-5-5")
 
 
 def test_lookup_credit_stores_suggestion_with_sources(lib, song):

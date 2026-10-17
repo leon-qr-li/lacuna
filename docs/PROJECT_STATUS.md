@@ -22,6 +22,7 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - **Phase 5 learning built** (2026-10-17, D39): `lacuna_app/learning.py`, page 「学到的规则」, `scripts/learn_from_hand_edit.py`. Leon's EP001 review read on his PC (read-only): 5 single decisions (kept 3 big content trims, restored 凤凰形态 15.7 s, applied the 秦格雷 suggestion) + 「全部通过」110; 0 routine restores. Too little alone → his hand edit of EP001 added as second evidence source. Rules need his approval before they act. Installed on Leon's PC (main bae39ef) and **validated by Leon 2026-10-17**.
 - **Phase 4 new-episode import** (2026-10-17, D41): Home → 导入新一集 → pick Leon/Pei tracks → local ASR (Paraformer + SenseVoice, sherpa-onnx) → features → Claude first cut in ~10-min windows → review. Resumable per step (`<workspace>/imports/<id>/`). Real ASR verified on sherpa test clips in the cloud box; full EP001 run on Leon's PC pending (needs `pip install -e ".[asr]"`, first import downloads ~400 MB of models).
 - **Chat voice input** (2026-10-17, D43): 🎤 button next to the chat box; local SenseVoice, text lands in the box, Leon sends. Needs the models from a first import (`<workspace>/models`).
+- **Phase 6a media library + music** (2026-10-17, D44): 素材库 page, Claude credit lookup, 配乐 tab with intro / interlude / outro / bed / clip, measured levels and voice-driven ducking, series intro rule, export with music. Merged with the batch; Leon's PC update + validation pending (batch update run by the coordinator). Nothing extra to install (uses ffmpeg/ffprobe already needed). Leon needs to add his EP001 intro / interlude (45:59) / outro music files to the library.
 
 ## Open issues
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.
@@ -31,7 +32,8 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - One-track `tighten_pause` while the other host talks is skipped (needs per-track re-timing in the episode model); counted in `ai_report`. No per-track loudness edit in the AI path yet (D31).
 - Review threshold (D33) tuned to v3: 114 of 646 edits to review. AI confidences are poorly calibrated (almost all 0.5–0.6); recalibrate from Leon's first full review.
 - Mastering: MP3 comes out ~0.4 LU quieter than the WAV (LAME low-pass); app preview still soft-clips (preview is not mastered). Tuning of compressor/limiter awaits Leon's listening verdict.
-- Missing: task panel, asset inbox, topic labels, stereo music bus. macOS is verified only by CI (no real Mac run yet).
+- Music (6a): no undo for music placements (remove + add again); chat cannot place music yet ("这里放《XX》的主题曲" via chat is a follow-up); the export popover's "stale" hint ignores music changes. Ducking depth / levels (LEVEL_LU, DUCK_DB in `music.py`) await Leon's listening verdict.
+- Missing: task panel, asset inbox, topic labels. macOS is verified only by CI (no real Mac run yet).
 
 ## Next action
 0. Phase 3 (real chat) per ROADMAP; then phase 4 (new-episode import). Phase 2 (export) shipped with #4.

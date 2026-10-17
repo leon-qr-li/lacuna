@@ -17,7 +17,7 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 3 | 真 AI 对话 | 聊天框接 Claude API：在任意位置说“这段删掉 / 停顿短一点”，AI 给出可试听的修改 | Leon's API key (set 2026-10-17) | 2 | **done, validated by Leon 2026-10-17** |
 | 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **built** (D41); full run with EP001 raw on Leon's PC next; formal acceptance needs a second episode's raw tracks |
 | 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | **done, validated by Leon 2026-10-17** (D39) |
-| 6 | 片头、配乐与 ducking | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 5 | — |
+| 6 | 片头、配乐与 ducking (= 6a) | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 9 | **built (D44)**; install with the next batch update, then Leon validates |
 | 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
 | 8 | UI 审美迭代 | 视觉与布局打磨 | flows stable (after 4) | 5–6 | — |
 | 9 | 发布资料包 | 标题候选、简介、show notes、成品时间线上的章节、专有名词核对，一键复制 | 2 | 6a | — (plan: `docs/BEYOND_AUDIO_PLAN.md`) |
@@ -46,6 +46,13 @@ Parallel set (2026-10-17): phase 3 merged (#8), awaiting Leon's validation. Expo
 - Pipeline (`lacuna_app/importer.py`): models (first time, ~400 MB from the sherpa-onnx GitHub releases into `<workspace>/models`) → ASR per track (`asr.py`) → features + editor document (`features.py`) → AI first cut (`first_cut.py`, windows of ~10 min, cached per window) → episode (`ai_cut.build_episode`). Cache: `<workspace>/imports/<id>/` (asr_L/P.json, tokens/features.json, editor_input.md, ai_windows/, ops.json, job.json).
 - Needs `pip install -e ".[asr]"` (sherpa-onnx) and ffmpeg. Without a key the first cut is rules-only (pause targets), labelled as such.
 - Tests: `tests/app/test_import.py` (fake ASR + fake Claude, real decoding/features/conversion/episode), `tests/test_asr_real.py` (real models; set `LACUNA_ASR_MODELS`), `web/e2e/import.spec.ts`.
+
+## Phase 6a — 素材库与配乐 (2026-10-17, D44)
+- Library page 「素材库」(`#/library`, link in every top bar): add a file through the local folder browser (copied into `<workspace>/library/music|jingles|clips/`) or drop files there and 「扫描文件夹」; per file: player, duration, LUFS, Leon's note, BGM credit with state (已确认 / 待确认 / 还不知道曲名), 「让 Claude 查正式曲名」 (API + web search; text only), 「对，就是这首」, 「手动改」, 「移出素材库」 (file moved to `_removed/`).
+- Episode tab 「配乐」 (`#/ep/<id>/music`): 成品试听 (final mix stream incl. music and ducking), series suggestion (用系列片头片尾 / 这一集不用), placements (片头 / 间奏 / 片尾 / 铺底 / 台词) with in/out, overlap with the voice, gain, 「试听这一处」, 「去掉」; add form with position in final-cut time (m:ss); 「记成系列片头片尾」; BGM credit list as the show notes will print it.
+- Engine: `lacuna_core.InsertGap`; `lacuna_app/library.py`, `lacuna_app/music.py`. Export renders the final mix (voice + music, stereo music as hard-panned L/R) through the same mastering chain; the export record lists the music credits.
+- For phase 9: `music.bgm_credits(ws, id)`, `music.final_time(ws, id, t)`, `music.final_duration(ws, id)`.
+- Tests: `tests/app/test_music.py`, `tests/app/test_music_api.py`, `tests/test_edl.py::test_insert_gap_*`, `web/e2e/music.spec.ts`.
 
 ## Phase 5 — 从审阅里学习 (2026-10-17, D39)
 - Evidence: (1) review decisions per first-cut edit, read from each episode's `state.json` + undo history (`lacuna_app/learning.py: decisions`): kept / restored / accepted / declined / added (chat) / untouched, and how (single decision, batch sign-off, none); (2) Leon's own hand edit of the same recording (`scripts/learn_from_hand_edit.py`, S4 alignment) labels every speech edit and finds long passages he cut that the AI left in. Snapshots in `<workspace>/learning/decisions/` (demo episodes ignored).

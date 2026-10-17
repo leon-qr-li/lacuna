@@ -49,5 +49,14 @@ if __name__ == "__main__":
         uvicorn.run(create_app(ws, ClaudeEditorAdapter(client=FakeAnthropic()), dictation=voice),
                     host="127.0.0.1", port=int(port), log_level="warning")
     else:
+        import uvicorn
+
+        from lacuna_app.editor import MockEditorAdapter
+        from lacuna_app.server import create_app
+        from tests.app.fake_claude import FakeCreditAnthropic
+        from tests.app.synth import write_music_inbox
+
         ws = make_workspace(Path(tempfile.mkdtemp(prefix="lacuna-e2e-")) / "ws")
-        main(["--workspace", str(ws), "--port", port, "--no-browser", "--editor", "mock"])
+        write_music_inbox(Path(ws) / "music_inbox")       # for the media library (phase 6a)
+        uvicorn.run(create_app(ws, MockEditorAdapter(), credit_client=FakeCreditAnthropic()), host="127.0.0.1",
+                    port=int(port), log_level="warning")

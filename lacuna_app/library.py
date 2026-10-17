@@ -357,10 +357,12 @@ class Library:
             return next((s for s in rules if s["name"] == name), None)
         return next((s for s in rules if s.get("default")), None)
 
+    @staticmethod
+    def asset_view(a: dict) -> dict:
+        return a | {"kind_label": KINDS.get(a["kind"], a["kind"]), "credit_line": credit_line(a)}
+
     def view(self) -> dict:
-        assets = []
-        for a in self.assets():
-            assets.append(a | {"kind_label": KINDS.get(a["kind"], a["kind"]), "credit_line": credit_line(a)})
+        assets = [self.asset_view(a) for a in self.assets()]
         return {"assets": sorted(assets, key=lambda a: a["added_at"], reverse=True), "series": self.series(),
                 "folder": str(self.dir), "kinds": KINDS}
 
@@ -450,4 +452,4 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
     msg = found.get("note") or ""
     if not (found.get("title") or found.get("film")):
         msg = msg or "没查到可靠的曲名。"
-    return {"asset": asset | {"credit_line": credit_line(asset)}, "message": msg, "usage": usage}
+    return {"asset": Library.asset_view(asset), "message": msg, "usage": usage}
