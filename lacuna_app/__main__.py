@@ -32,6 +32,7 @@ def main(argv: list[str] | None = None) -> None:
     from .server import create_app
 
     from .appinfo import current_version
+    from .quiet import install as quiet_disconnect_noise
 
     exit_code = 0
     server: uvicorn.Server | None = None
@@ -43,6 +44,7 @@ def main(argv: list[str] | None = None) -> None:
         if server is not None:
             server.should_exit = True
 
+    quiet_disconnect_noise()
     app = create_app(ws, make_adapter(args.editor), restart=restart)
     url = f"http://{HOST}:{args.port}/"
     print(f"LACUNA Studio {current_version()} → {url}  (workspace: {ws.resolve()}, editor: {args.editor})")
