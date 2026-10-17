@@ -38,15 +38,15 @@ def song(tmp_path):
 # ------------------------------------------------------------------ library
 
 def test_add_copies_analyses_and_dedupes(lib, song):
-    a = lib.add_file(song, "music", note="这是奥德赛的主题曲")
-    assert a["id"].startswith("a_") and a["kind"] == "music"
+    a = lib.add_file(song, "interlude", note="这是奥德赛的主题曲")
+    assert a["id"].startswith("a_") and a["kind"] == "interlude"
     assert a["file"] == "music/odyssey_theme.mp3"
     assert (lib.dir / a["file"]).is_file() and song.is_file()          # copied; the original is untouched
     assert 11.9 < a["duration_s"] < 12.2
     assert a["channels"] == 2 and a["lufs"] is not None and -20 < a["lufs"] < 0
     # embedded tags give a first suggestion, never a confirmed credit
     assert a["credit"]["title"] == "The Sea" and a["credit"]["status"] == SUGGESTED and a["credit"]["year"] == 2026
-    again = lib.add_file(song, "music")
+    again = lib.add_file(song, "interlude")
     assert again["id"] == a["id"] and len(lib.assets()) == 1
     data = json.loads((lib.dir / "library.json").read_text("utf-8"))
     assert data["schema"] == 1 and data["assets"][0]["note"] == "这是奥德赛的主题曲"
@@ -57,24 +57,36 @@ def test_scan_picks_up_dropped_files_and_remove_keeps_file(lib, tmp_path):
     write_music(lib.dir / "jingles" / "片头.wav", 5.0, stereo=False)
     (lib.dir / "jingles" / "readme.txt").write_text("x")
     new = lib.scan()
-    assert [a["kind"] for a in new] == ["jingle"] and new[0]["credit"]["status"] == UNKNOWN
+    assert [a["kind"] for a in new] == ["intro"] and new[0]["credit"]["status"] == UNKNOWN
     assert lib.scan() == []
     lib.remove(new[0]["id"])
     assert lib.assets() == [] and (lib.dir / "_removed" / "片头.wav").is_file()
     assert lib.scan() == []                              # removed files are not re-added
 
 
+def test_old_kinds_are_migrated(lib, song):
+    a = lib.add_file(song, "interlude")
+    doc = json.loads((lib.dir / "library.json").read_text("utf-8"))
+    doc["assets"][0]["kind"] = "jingle"                  # written by the first version (#23)
+    (lib.dir / "library.json").write_text(json.dumps(doc), "utf-8")
+    assert lib.asset(a["id"])["kind"] == "intro"
+    assert lib.view()["kind_roles"]["trailer"] == "clip"
+    assert lib.update(a["id"], kind="outro")["kind"] == "outro"
+    with pytest.raises(ValueError):
+        lib.update(a["id"], kind="jingle")
+
+
 def test_rejects_non_audio(lib, tmp_path):
     p = tmp_path / "notes.txt"
     p.write_text("hi")
     with pytest.raises(ValueError):
-        lib.add_file(p, "music")
+        lib.add_file(p, "interlude")
     with pytest.raises(ValueError):
-        lib.add_file(tmp_path / "missing.mp3", "music")
+        lib.add_file(tmp_path / "missing.mp3", "interlude")
 
 
 def test_credit_edit_confirm_and_line(lib, song):
-    a = lib.add_file(song, "music")
+    a = lib.add_file(song, "interlude")
     a = lib.update(a["id"], confirm=True)
     assert a["credit"]["status"] == CONFIRMED
     a = lib.update(a["id"], credit={"film": "奥德赛", "composer": "Ludwig Göransson", "year": "2026"})
@@ -84,7 +96,7 @@ def test_credit_edit_confirm_and_line(lib, song):
 
 
 def test_lookup_credit_stores_suggestion_with_sources(lib, song):
-    a = lib.add_file(song, "music", note="这是奥德赛的主题曲")
+    a = lib.add_file(song, "interlude", note="这是奥德赛的主题曲")
     fake = FakeAnthropic({"title": "Odysseus", "artist": None, "composer": "Ludwig Göransson",
                           "album": "The Odyssey (Original Motion Picture Soundtrack)", "film": "奥德赛",
                           "year": 2026, "confidence": 0.8, "note": "官方原声第 1 首"}, pause_first=True)
@@ -102,7 +114,7 @@ def test_lookup_credit_stores_suggestion_with_sources(lib, song):
 
 
 def test_lookup_without_answer_changes_nothing(lib, song):
-    a = lib.add_file(song, "music")
+    a = lib.add_file(song, "interlude")
     fake = FakeAnthropic({"title": None, "artist": None, "composer": None, "album": None, "film": None,
                           "year": None, "confidence": 0.1, "note": "查不到"})
     out = lookup_credit(lib, a["id"], client=fake)
@@ -153,8 +165,8 @@ def _rms_db(x):
 
 
 def test_intro_interlude_outro_mix_and_contract(ws, lib, ep, song, tmp_path):
-    a = lib.add_file(song, "music")
-    jingle = lib.add_file(write_music(tmp_path / "in" / "jingle.wav", 8.0, stereo=False), "jingle")
+    a = lib.add_file(song, "interlude")
+    jingle = lib.add_file(write_music(tmp_path / "in" / "jingle.wav", 8.0, stereo=False), "intro")
     m = EpisodeMusic(ws, ep, lib)
     voice_len = ep.timeline_for(ep.enabled).length / SR
     assert bgm_credits(ws, EPISODE) == [] and final_time(ws, EPISODE, 10.0) == 10.0
@@ -201,7 +213,7 @@ def test_intro_interlude_outro_mix_and_contract(ws, lib, ep, song, tmp_path):
 
 
 def test_preview_series_rule_and_stream(ws, lib, ep, tmp_path):
-    jingle = lib.add_file(write_music(tmp_path / "in" / "theme.wav", 10.0, stereo=False), "jingle")
+    jingle = lib.add_file(write_music(tmp_path / "in" / "theme.wav", 10.0, stereo=False), "intro")
     m = EpisodeMusic(ws, ep, lib)
     p = m.add(jingle["id"], "intro", src_out_s=10.0)
     wav, start = m.preview(p["id"])
@@ -223,8 +235,8 @@ def test_preview_series_rule_and_stream(ws, lib, ep, tmp_path):
 
 
 def test_bed_and_clip(ws, lib, ep, tmp_path):
-    bed = lib.add_file(write_music(tmp_path / "in" / "bed.wav", 30.0), "music")
-    clip = lib.add_file(write_music(tmp_path / "in" / "line.wav", 3.0, stereo=False), "clip")
+    bed = lib.add_file(write_music(tmp_path / "in" / "bed.wav", 30.0), "bed")
+    clip = lib.add_file(write_music(tmp_path / "in" / "line.wav", 3.0, stereo=False), "dialogue")
     m = EpisodeMusic(ws, ep, lib)
     b = m.add(bed["id"], "bed", at_s=6.0, until_s=16.0)
     c = m.add(clip["id"], "clip", at_s=30.0, lead_s=0.5)

@@ -1,4 +1,4 @@
-"""Installer / launcher / release builder (phase 7, D48), without network, uv or a real app:
+"""Installer / launcher / release builder (phase 7, D49), without network, uv or a real app:
 uv is a fake runner, the app is tests/installer/fake_app.py."""
 import importlib.util
 import json

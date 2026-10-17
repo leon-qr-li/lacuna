@@ -28,11 +28,11 @@ CREDIT_ARTIST = "LACUNA 生成的测试音乐"
 
 # name, kind, seconds, bpm, root midi note, chord progression (semitones from root), title, note
 TRACKS = [
-    ("测试音乐_片头.wav", "jingle", 25.0, 96, 57, [(0, 4, 7), (-3, 0, 4), (5, 9, 12), (7, 11, 14)],
+    ("测试音乐_片头.wav", "intro", 25.0, 96, 57, [(0, 4, 7), (-3, 0, 4), (5, 9, 12), (7, 11, 14)],
      "测试片头", "生成的测试音乐（片头用），不是真歌"),
-    ("测试音乐_间奏.wav", "music", 18.0, 84, 55, [(0, 3, 7), (5, 8, 12), (-2, 2, 5), (3, 7, 10)],
+    ("测试音乐_间奏.wav", "interlude", 18.0, 84, 55, [(0, 3, 7), (5, 8, 12), (-2, 2, 5), (3, 7, 10)],
      "测试间奏", "生成的测试音乐（间奏用），不是真歌"),
-    ("测试音乐_片尾.wav", "jingle", 45.0, 100, 60, [(0, 4, 7), (7, 11, 14), (-3, 0, 4), (5, 9, 12)],
+    ("测试音乐_片尾.wav", "outro", 45.0, 100, 60, [(0, 4, 7), (7, 11, 14), (-3, 0, 4), (5, 9, 12)],
      "测试片尾", "生成的测试音乐（片尾用），不是真歌"),
 ]
 
@@ -133,7 +133,7 @@ def make(ws: Workspace) -> list[dict]:
         path = lib.dir / FOLDERS[kind] / name
         write_wav(path, render(secs, bpm, root, prog, seed=i))
         asset = lib.add_file(path, kind, note)
-        asset = lib.update(asset["id"], credit={"title": title, "artist": CREDIT_ARTIST})
+        asset = lib.update(asset["id"], kind=kind, credit={"title": title, "artist": CREDIT_ARTIST})
         out.append(asset)
     return out
 

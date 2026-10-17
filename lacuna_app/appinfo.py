@@ -1,4 +1,4 @@
-"""App version, in-app updates and settings (phase 7, D48).
+"""App version, in-app updates and settings (phase 7, D49).
 
 The installed app runs under `installer/lacuna_launcher.py`, which sets `LACUNA_HOME` (the install
 root) and `LACUNA_UPDATE_FEED` (the release feed, `version.json`). An update happens in two steps:

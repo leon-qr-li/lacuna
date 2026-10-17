@@ -28,6 +28,8 @@ from .library import KINDS, Library, LibraryError, lookup_credit
 from .music import ROLES, EpisodeMusic
 from .store import PathError, Workspace
 
+MAX_UPLOAD = 4 * 1024 ** 3   # a 2-hour 48 kHz stereo WAV is ~1.4 GB
+
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 USAGE_LOG = "ai_usage.jsonl"     # one line per Claude call: tokens, seconds, estimated cost
 
@@ -92,15 +94,9 @@ class NameBody(BaseModel):
     action: str = Field(pattern="^(apply|ignore)$")
 
 
-class LibraryFileBody(BaseModel):
-    path: str = Field(min_length=1, max_length=2000)
-    kind: str = Field("music", pattern="^(music|jingle|clip)$")
-    note: str = Field("", max_length=500)
-
-
 class AssetBody(BaseModel):
     note: str | None = Field(None, max_length=500)
-    kind: str | None = Field(None, pattern="^(music|jingle|clip)$")
+    kind: str | None = Field(None, pattern="^(intro|outro|interlude|bed|dialogue|trailer|other)$")
     credit: dict | None = None
     confirm: bool = False
 
@@ -176,7 +172,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
             out["playhead"] = ep.map_playhead(playhead, before, ep.enabled)
         return out
 
-    # ------------------------------------------------------------------ app: version, update, settings (D48)
+    # ------------------------------------------------------------------ app: version, update, settings (D49)
     def busy() -> list[str]:
         """Work an update restart would cut off."""
         out = []
@@ -496,12 +492,37 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         lookup = credit_client is not None or (bool(find_api_key()[0]) and sdk_installed())
         return library.view() | {"lookup": lookup}
 
-    @app.post("/api/library/files")
-    def library_add(body: LibraryFileBody):
+    @app.post("/api/library/upload")
+    async def library_upload(request: Request, name: str, kind: str = "other", note: str = ""):
+        """A file dragged into (or picked in) the browser, raw bytes in the body. It is written
+        straight into the library folder; nothing leaves this machine. The octet-stream type is
+        required so another web page can't post here without the browser's CORS preflight."""
+        if request.headers.get("content-type", "").split(";")[0].strip().lower() != "application/octet-stream":
+            raise HTTPException(415, "expected application/octet-stream")
+        if len(note) > 500:
+            raise HTTPException(422, "note too long")
         try:
-            return {"asset": library.asset_view(library.add_file(body.path, body.kind, body.note.strip()))}
+            part = library.upload_target(name, kind)
         except LibraryError as e:
             raise HTTPException(422, str(e))
+        try:
+            size = 0
+            with part.open("wb") as f:
+                async for chunk in request.stream():
+                    size += len(chunk)
+                    if size > MAX_UPLOAD:
+                        raise HTTPException(413, "文件太大")
+                    f.write(chunk)
+            if not size:
+                raise HTTPException(422, "文件是空的")
+            asset, duplicate = await run_in_threadpool(library.add_upload, part, kind, note.strip())
+        except HTTPException:
+            part.unlink(missing_ok=True)
+            raise
+        except Exception as e:
+            part.unlink(missing_ok=True)
+            raise HTTPException(422, f"读不了这个音频文件：{name}" if not isinstance(e, LibraryError) else str(e))
+        return {"asset": library.asset_view(asset), "duplicate": duplicate}
 
     @app.post("/api/library/scan")
     def library_scan():
