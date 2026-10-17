@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import threading
 from datetime import datetime, timezone
+from urllib.parse import quote
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -14,6 +15,7 @@ from pydantic import BaseModel, Field
 from .audio import parse_range
 from .editor import EditorAdapter, editor_status, make_adapter
 from .episode import ConflictError, Episode
+from .exporter import ExportBusy, Exporter
 from .store import PathError, Workspace
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
@@ -47,6 +49,12 @@ class ChatBody(BaseModel):
     playhead: float = Field(ge=0)
 
 
+class ExportBody(BaseModel):
+    formats: list[str] = Field(default_factory=lambda: ["mp3", "wav"], min_length=1)
+    mp3_kbps: int = Field(128, ge=64, le=320)
+    channels: int = Field(2, ge=1, le=2)
+
+
 class OpBody(PlayheadBody):
     op: dict
     title: str = Field("手动修改", max_length=200)
@@ -59,6 +67,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     app = FastAPI(title="LACUNA Studio", docs_url="/api/docs", openapi_url="/api/openapi.json")
     episodes: dict[str, Episode] = {}
     lock = threading.Lock()
+    exporter = Exporter(ws)
 
     def get(episode_id: str) -> Episode:
         try:
@@ -204,6 +213,41 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         ep = get(episode_id)
         return mutate(ep, body.playhead, lambda: ep.discard_proposal(pid))
 
+    # ------------------------------------------------------------------ export
+    @app.post("/api/episodes/{episode_id}/export")
+    def start_export(episode_id: str, body: ExportBody):
+        ep = get(episode_id)
+        try:
+            return {"job": exporter.start(ep, body.formats, body.mp3_kbps, body.channels)}
+        except ExportBusy as e:
+            raise HTTPException(409, str(e))
+        except ValueError as e:
+            if isinstance(e, ConflictError):
+                raise
+            raise HTTPException(422, str(e))
+
+    @app.get("/api/episodes/{episode_id}/export")
+    def export_status(episode_id: str):
+        get(episode_id)
+        return {"job": exporter.status(episode_id)}
+
+    @app.get("/api/episodes/{episode_id}/exports/{name}")
+    def export_file(episode_id: str, name: str):
+        get(episode_id)
+        try:
+            path = exporter.file_path(episode_id, name)
+        except (PathError, FileNotFoundError):
+            raise HTTPException(404, "no such export file")
+        # ASCII fallback first, then the UTF-8 name (episode ids are often Chinese)
+        ascii_name = path.name.encode("ascii", "replace").decode().replace("?", "_").replace('"', "_")
+        disp = f"attachment; filename=\"{ascii_name}\"; filename*=utf-8''{quote(path.name)}"
+        return FileResponse(path, headers={"Content-Disposition": disp})
+
+    @app.post("/api/episodes/{episode_id}/exports/open")
+    def open_exports(episode_id: str):
+        get(episode_id)
+        return {"folder": exporter.open_folder(episode_id)}
+
     # ------------------------------------------------------------------ web UI
     if (web_dist / "index.html").is_file():
         app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
@@ -221,4 +265,5 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
 
     app.state.workspace = ws
     app.state.episodes = episodes
+    app.state.exporter = exporter
     return app
