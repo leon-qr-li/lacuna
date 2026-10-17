@@ -203,6 +203,101 @@ export interface LearningOverview {
   };
 }
 
+export type CreditStatus = "confirmed" | "suggested" | "unknown";
+
+export interface Credit {
+  title: string | null;
+  artist: string | null;
+  composer: string | null;
+  album: string | null;
+  film: string | null;
+  year: number | null;
+  status: CreditStatus;
+  source: string | null;
+  sources: string[];
+  note?: string;
+}
+
+export interface Asset {
+  id: string;
+  kind: "music" | "jingle" | "clip";
+  kind_label: string;
+  file: string;
+  name: string;
+  duration_s: number;
+  lufs: number | null;
+  note: string;
+  tags: Record<string, string>;
+  credit: Credit;
+  credit_line: string;
+  added_at: string;
+}
+
+export interface LibraryView {
+  assets: Asset[];
+  series: { name: string; default: boolean }[];
+  folder: string;
+  kinds: Record<string, string>;
+  lookup: boolean; // Claude credit lookup available (API key found)
+}
+
+export type Role = "intro" | "interlude" | "outro" | "bed" | "clip";
+
+export interface Placement {
+  id: string;
+  asset_id: string;
+  role: Role;
+  role_label: string;
+  status: "applied" | "proposed";
+  src_in_s: number;
+  src_out_s: number;
+  overlap_s: number;
+  gain_db: number;
+  lead_s?: number;
+  asset_name: string | null;
+  asset_duration_s?: number;
+  credit_line: string;
+  credit_status?: CreditStatus;
+  start_s: number | null;
+  end_s: number | null;
+  voice_at_s?: number | null;
+  inserted_s?: number;
+  missing: boolean;
+}
+
+export interface BgmCredit {
+  role: Role;
+  role_label: string;
+  start_s: number;
+  end_s: number;
+  credit_line: string;
+  credit_status: CreditStatus;
+}
+
+export interface MusicView {
+  placements: Placement[];
+  voice_duration: number;
+  duration: number;
+  mix_version: string;
+  mix_url: string;
+  credits: BgmCredit[];
+  series: string | null;
+  series_suggestion: { name: string } | null;
+  roles: Record<Role, string>;
+}
+
+export type PlacementPatch = Partial<{
+  asset_id: string;
+  role: Role;
+  at_s: number;
+  until_s: number;
+  src_in_s: number;
+  src_out_s: number;
+  overlap_s: number;
+  gain_db: number;
+  lead_s: number;
+}>;
+
 async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   const res = await fetch(url, {
     method,
@@ -274,6 +369,26 @@ export const api = {
   learning: () => req<LearningOverview>("GET", "/api/learning"),
   decideRule: (id: string, action: "approve" | "reject" | "reset") =>
     req<LearningOverview>("POST", "/api/learning/rules", { id, action }),
+  library: () => req<LibraryView>("GET", "/api/library"),
+  addAsset: (path: string, kind: string, note: string) =>
+    req<{ asset: Asset }>("POST", "/api/library/files", { path, kind, note }),
+  scanLibrary: () => req<LibraryView & { added: Asset[] }>("POST", "/api/library/scan"),
+  openLibrary: () => req<{ folder: string }>("POST", "/api/library/open"),
+  updateAsset: (aid: string, body: { note?: string; kind?: string; credit?: Partial<Credit>; confirm?: boolean }) =>
+    req<{ asset: Asset }>("PATCH", `/api/library/assets/${aid}`, body),
+  lookupCredit: (aid: string) =>
+    req<{ asset: Asset; message: string; usage: Usage | null }>("POST", `/api/library/assets/${aid}/lookup`),
+  removeAsset: (aid: string) => req<{ ok: boolean }>("DELETE", `/api/library/assets/${aid}`),
+  music: (id: string) => req<MusicView>("GET", `${ep(id)}/music`),
+  addPlacement: (id: string, body: PlacementPatch & { asset_id: string; role: Role }) =>
+    req<MusicView>("POST", `${ep(id)}/music`, body),
+  updatePlacement: (id: string, pid: string, body: PlacementPatch) =>
+    req<MusicView>("PATCH", `${ep(id)}/music/${pid}`, body),
+  removePlacement: (id: string, pid: string) => req<MusicView>("DELETE", `${ep(id)}/music/${pid}`),
+  applySeries: (id: string, name: string) => req<MusicView>("POST", `${ep(id)}/music/series/apply`, { name }),
+  saveSeries: (id: string, name: string) => req<MusicView>("POST", `${ep(id)}/music/series/save`, { name }),
+  dismissSeries: (id: string) => req<MusicView>("POST", `${ep(id)}/music/series/dismiss`),
+  placementPreviewUrl: (id: string, pid: string) => `${ep(id)}/music/${pid}/preview?t=${Date.now()}`,
   openExports: (id: string) => req<{ folder: string }>("POST", `${ep(id)}/exports/open`),
 };
 
@@ -284,6 +399,15 @@ export function fmt(s: number): string {
   const sec = Math.floor(s % 60);
   const mm = h ? String(m).padStart(2, "0") : String(m);
   return `${h ? h + ":" : ""}${mm}:${String(sec).padStart(2, "0")}`;
+}
+
+/** "45:59", "1:02:03", "75" or "75.5" -> seconds; null when unreadable. */
+export function parseTime(s: string): number | null {
+  const t = s.trim();
+  if (!t) return null;
+  const parts = t.split(/[:：]/).map((x) => Number(x));
+  if (parts.some((x) => !isFinite(x) || x < 0)) return null;
+  return parts.reduce((acc, x) => acc * 60 + x, 0);
 }
 
 export function statusLabel(e: EditInfo): string {

@@ -4,6 +4,7 @@ Run directly to (re)create one: `python tests/app/synth.py <workspace-dir>`.
 """
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -192,6 +193,31 @@ def fake_asr(tag: str, x, progress=lambda f, s: None) -> dict:
                      "sv": {"text": "".join(t["t"] for t in sv), "event": "Speech", "emotion": "NEUTRAL", "tokens": sv}})
         progress(b / DUR, f"逐字识别 {int(b)} 秒")
     return {"audio_s": round(len(x) / SR, 3), "segments": segs}
+
+
+def write_music(path: Path, seconds: float = 12.0, sr: int = 44100, stereo: bool = True, tags: dict | None = None,
+                level: float = 0.3) -> Path:
+    """A steady two-note chord (left 440 Hz, right 660 Hz); mp3 with tags when the suffix says so."""
+    t = np.arange(int(seconds * sr)) / sr
+    left = level * np.sin(2 * np.pi * 440 * t)
+    right = level * np.sin(2 * np.pi * 660 * t)
+    x = np.stack([left, right], axis=1) if stereo else ((left + right) / 2)[:, None]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    wav = path.with_suffix(".src.wav") if path.suffix != ".wav" else path
+    sf.write(str(wav), x.astype(np.float32), sr, subtype="PCM_16")
+    if path.suffix != ".wav":
+        meta = [a for k, v in (tags or {}).items() for a in ("-metadata", f"{k}={v}")]
+        subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-i", str(wav), *meta,
+                        "-codec:a", "libmp3lame", "-b:a", "192k", str(path)], check=True)
+        wav.unlink()
+    return path
+
+
+def write_music_inbox(folder: str | Path) -> None:
+    """Two music files as Leon would have them lying around (E2E media library)."""
+    folder = Path(folder)
+    write_music(folder / "odyssey_theme.mp3", 12.0, tags={"title": "Odyssey Main Theme"})
+    write_music(folder / "洛城片头.wav", 8.0, stereo=False)
 
 
 if __name__ == "__main__":
