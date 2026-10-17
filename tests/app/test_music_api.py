@@ -96,6 +96,7 @@ def test_episode_music_and_mix_stream(client, tmp_path):
     assert m["placements"] == [] and m["duration"] == pytest.approx(base, abs=0.01) and m["credits"] == []
     m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "intro", "overlap_s": 2}).json()
     assert m["duration"] == pytest.approx(base + 4.0, abs=0.01)
+    assert m["inserts"] == [[0.0, pytest.approx(4.0, abs=0.01)]]      # for 「带配乐听」 in the review player
     # interlude at 20 s *of the final mix* = 16 s of the voice cut (intro adds 4 s)
     m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "interlude", "at_s": 20.0, "overlap_s": 1}).json()
     mid = next(p for p in m["placements"] if p["role"] == "interlude")

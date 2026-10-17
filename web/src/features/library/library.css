@@ -22,3 +22,4 @@ select, input:not([type]), input[type="number"] { padding: 6px 8px; border: 1px 
 .lib-drop-actions { flex-wrap: wrap; justify-content: center; }
 .music-draft, .music-chat { display: flex; flex-direction: column; gap: 8px; }
 .draft-changes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.music-listen { align-self: flex-start; }

@@ -189,3 +189,35 @@ test("place by use → hear the suggestion → accept → nudge → change it by
   await theme.getByLabel("用途").selectOption("other");
   await expect(theme.getByLabel("用途")).toHaveValue("other");
 });
+
+// 「带配乐听」: the review player plays the final mix, while the page keeps voice-cut time
+test("listen with music in the review player", async ({ page }) => {
+  const lib = await (await page.request.get("/api/library")).json();
+  const jingle = lib.assets.find((a: { name: string }) => a.name === "洛城片头.wav");
+  const m = await (await page.request.post(`/api/episodes/${EP}/music`, { data: { asset_id: jingle.id, role: "intro" } })).json();
+  const intro = m.inserts[0][1] as number; // seconds the intro adds before the voice
+  expect(m.inserts[0][0]).toBe(0);
+  expect(intro).toBeGreaterThan(1);
+
+  await page.goto(`/#/ep/${EP}/listen`);
+  const audio = page.getByTestId("main-audio");
+  const toggle = page.getByTestId("listen-with-music");
+  await expect(toggle).not.toBeChecked();
+  await expect(audio).toHaveAttribute("src", /\/audio\//);
+  await toggle.check();
+  await expect(audio).toHaveAttribute("src", /\/mix\/[0-9a-f]+\.wav$/);
+  // voice-cut 0:00 is where the voice comes in on the mix, after the intro
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeCloseTo(intro, 1);
+  await expect(page.getByTestId("clock")).toContainText("0:00 /");
+  await expect(page.getByText(/成品 0:0\d/)).toBeVisible();
+  // seeking on the page speaks voice-cut time
+  await page.getByRole("slider", { name: "播放位置" }).fill("10");
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeCloseTo(10 + intro, 1);
+  await expect(page.getByTestId("clock")).toContainText("0:10 /");
+  await toggle.uncheck();
+  await expect(audio).toHaveAttribute("src", /\/audio\//);
+  await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => a.currentTime)).toBeCloseTo(10, 1);
+
+  // leave the shared episode as it was
+  await page.request.delete(`/api/episodes/${EP}/music/${m.placements[0].id}`);
+});
