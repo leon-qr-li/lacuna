@@ -20,6 +20,11 @@ Depends on: Leon's full review of EP001; 3 · Parallel with: 4
 - EP001 result (cloud preview: v3 ops accepted as is + hand edit): 1 candidate, Leon's content taste (26 cut / 16 kept examples, incl. passages the AI missed). Review threshold unchanged.
 - Tests: `tests/app/test_learning.py`, `web/e2e/learning.spec.ts`.
 
+## Page layout: groups + paging (2026-10-17, Leon's ask)
+- 「学到的规则」 opens on **待你决定** (candidates + adopted rules with new evidence); **已生效** and **已不采用** are the other two tabs, each with a count. Deciding a rule moves it out of the current tab with a one-line notice and a 「去看看」 link to where it went.
+- Each tab pages 10 rules at a time (`web/src/features/learning/Pager.tsx`: prev / numbers with gaps / next, "第 1–10 条，共 23 条"); the pager hides when one page is enough. Paging is client-side: the overview already returns every rule and the cost is recomputing it, not the payload.
+- Tests: `web/e2e/learning.spec.ts` (groups, move on decide, 23-rule stubbed paging), `web/e2e/chat_learning.spec.ts`. Screenshots `/mnt/project-files/lacuna/screenshots/learning/`.
+
 ## Open issues
 - Chat asks (kind `ask`) feed only the AI first cut, not the chat producer itself; if Leon wants an adopted ask to also steer chat answers, pass `learning.prompt_rules` into the chat scene.
 - Content-trim selection is taste: phase 5 turns Leon's cut/kept passages into examples for the first-cut prompt (D39); effect measurable only on a new episode (phase 4).

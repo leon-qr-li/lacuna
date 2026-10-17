@@ -4,3 +4,23 @@
 .rule-approved { border-color: var(--accent); }
 .rule-rejected { opacity: .65; }
 .examples { margin: 8px 0; padding-left: 18px; line-height: 1.7; }
+
+/* groups: 待你决定 / 已生效 / 不采用 (segmented, like the episode sub-tabs) */
+.learning-how summary { cursor: pointer; width: max-content; }
+.learning-how p { margin: 6px 0 0; line-height: 1.7; }
+.learning-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 14px; background: var(--hover); align-self: flex-start; max-width: 100%; }
+.learning-tabs button { display: inline-flex; align-items: center; gap: 8px; padding: 7px 16px; border: 0; border-radius: 11px; background: none; color: var(--ink-2); font: inherit; font-size: 13.5px; white-space: nowrap; cursor: pointer; }
+.learning-tabs button:hover { color: var(--ink); }
+.learning-tabs button.on { background: var(--solid); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
+.learning-tabs .count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--line); font-size: 12px; font-weight: 500; text-align: center; font-variant-numeric: tabular-nums; }
+.learning-tabs button.on .count { background: var(--accent-soft); color: var(--accent-ink); }
+.learning-done { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-ink); }
+.learning-done .linkish { color: var(--accent-ink); }
+
+/* paging when a group holds more than one page */
+.pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding-top: 4px; }
+.pager .btn { white-space: nowrap; }
+.pager-num { min-width: 34px; height: 34px; padding: 0 8px; border: 1px solid transparent; border-radius: 10px; background: none; color: var(--ink-2); font: inherit; font-variant-numeric: tabular-nums; cursor: pointer; }
+.pager-num:hover { background: var(--hover); }
+.pager-num.on { border-color: var(--line-2); background: var(--solid); color: var(--ink); font-weight: 600; }
+.pager-gap { padding: 0 4px; }
