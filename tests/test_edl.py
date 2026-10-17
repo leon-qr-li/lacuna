@@ -243,3 +243,21 @@ def test_apply_batch_rejects_like_sequential(two_tracks):
         apply_batch(tl, [CutRange(10, 5)])
     with pytest.raises(EDLError):
         apply_batch(tl, [CutRange(10, 20, ("Z",))])
+
+
+def test_insert_gap_opens_silence_and_shifts_later_material(two_tracks):
+    from lacuna_core import InsertGap
+    media, tl, a, b = two_tracks
+    tl = AddDuck("B", 6 * SR, 7 * SR, 6.0).apply(tl)
+    out = InsertGap(3 * SR, 2 * SR).apply(tl)
+    validate(out, media)
+    assert src_at(out, "A", 3 * SR - 1) == (a.media_id, 3 * SR - 1)
+    assert src_at(out, "A", 3 * SR) is None and src_at(out, "A", 5 * SR - 1) is None     # the gap
+    assert src_at(out, "A", 5 * SR) == (a.media_id, 3 * SR)                              # material resumes
+    assert out.length == 12 * SR and out.track("B").ducks[0].start == 8 * SR
+    only_a = InsertGap(0, SR, ("A",)).apply(tl)
+    assert src_at(only_a, "A", SR) == (a.media_id, 0) and src_at(only_a, "B", 0) == (b.media_id, 0)
+    assert Op.from_dict(InsertGap(5, 7).to_dict()) == InsertGap(5, 7)
+    assert InsertGap(5, 0).apply(tl) is tl
+    with pytest.raises(EDLError):
+        InsertGap(-1, 5).apply(tl)

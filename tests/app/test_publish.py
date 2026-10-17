@@ -102,11 +102,11 @@ def test_generate_writes_the_approved_format(ws, ep, pub, fake):
     assert any("不存在的段落" in n for n in v["notes"])     # ... and said so
     assert "| 片名 | 导演 / 备注 |" in md and "| 《一部电影》 | 结尾 |" in md
     assert "## 😏 内部梗小词典" in md and "- **网大**：夸人用的，真的。" in md
-    assert "## 🎵 本期 BGM" in md and "素材库还没接上" in md       # BGM section is always there
+    assert "## 🎵 本期 BGM\n\n- BGM：未设置" in md           # BGM section is always there (no music placed)
     assert md.rstrip().endswith("分享给一个也爱看电影的朋友吧。*")
     assert v["chapters"] == [{"t": 0.5, "time": "00:00", "heading": "暖场"},
                              {"t": pytest.approx(25.5, abs=0.01), "time": "00:25", "heading": "正题：那个结尾"}]
-    assert v["stale"] is False and v["adapter"] == "claude" and v["library"] is False
+    assert v["stale"] is False and v["adapter"] == "claude" and v["library"] is True
     assert v["names"] == [{"heard": "结尾", "suggested": "结局", "why": "上下文是在说电影的结局", "state": "open"}]
     # saved through the store, and as a file next to the exports
     saved = json.loads((ep.dir / "publish.json").read_text(encoding="utf-8"))
@@ -235,10 +235,16 @@ def test_fixing_a_name_everywhere_and_remembering_it(ws, ep, pub, fake):
 # ---------------------------------------------------------------------------- music from the library (6a)
 
 def fake_music(monkeypatch, credits, inserts):
-    """Stand-in for 6a's lacuna_app.music: bgm_credits + final_time (inserted music before t)."""
+    """Stand-in for 6a's lacuna_app.music: EpisodeMusic(...).layout() + credits(layout)."""
+    class Lay:
+        sr = 16000
+
+        def final(self, x):
+            t = x / self.sr
+            return int(round((t + sum(n for at, n in inserts if at <= t + 1e-6)) * self.sr))
     mod = types.ModuleType("lacuna_app.music")
-    mod.bgm_credits = lambda w, eid: [dict(c) for c in credits] if eid == EPISODE else []
-    mod.final_time = lambda w, eid, t: t + sum(n for at, n in inserts if at <= t + 1e-6)
+    mod.EpisodeMusic = lambda w, ep: types.SimpleNamespace(layout=lambda: Lay())
+    mod.credits = lambda lay: [dict(c) for c in credits]
     monkeypatch.setitem(sys.modules, "lacuna_app.music", mod)
     monkeypatch.setattr(sys.modules["lacuna_app"], "music", mod, raising=False)
 
@@ -312,3 +318,17 @@ def test_publish_api(ws, fake):
     assert client.post(f"{EP}/publish/retime").json()["pack"]["stale"] is False
     usage = (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()
     assert json.loads(usage[-1])["kind"] == "publish"
+
+
+def test_real_music_module_no_music_is_identity(ws, ep):
+    from lacuna_app.publish import music_info
+    m = music_info(ws, ep)
+    assert m.credits == [] and m.to_final(12.5) == pytest.approx(12.5, abs=1e-3)
+
+
+def test_without_the_music_module_bgm_is_a_placeholder(ws, ep, pub, monkeypatch):
+    monkeypatch.setitem(sys.modules, "lacuna_app.music", None)     # import fails
+    monkeypatch.delattr(sys.modules["lacuna_app"], "music", raising=False)
+    pub.start(ep, wait=True)
+    v = pub.view(ep)["pack"]
+    assert "素材库还没接上" in v["markdown"] and v["library"] is False

@@ -178,3 +178,29 @@ class FakePublishAnthropic:
             content=[SimpleNamespace(type="tool_use", name="submit_publish_pack", input=inp)],
             usage=SimpleNamespace(input_tokens=30000, output_tokens=4000, cache_creation_input_tokens=0,
                                   cache_read_input_tokens=0)))
+
+
+# ---------------------------------------------------------------------------- library credit lookup
+
+CREDIT_ANSWER = {"title": "Odysseus", "artist": None, "composer": "Ludwig Göransson",
+                 "album": "The Odyssey (Original Motion Picture Soundtrack)", "film": "奥德赛", "year": 2026,
+                 "confidence": 0.8, "note": "官方原声第 1 首"}
+
+
+class FakeCreditAnthropic:
+    """Records the request; answers with a web search result block + a submit_credit tool call."""
+
+    def __init__(self, answer=None, pause_first=False):
+        self.answer, self.calls, self.pause_first = answer or CREDIT_ANSWER, [], pause_first
+        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self.create))
+
+    def create(self, **kw):
+        self.calls.append(kw)
+        usage = SimpleNamespace(input_tokens=1000, output_tokens=200, cache_read_input_tokens=0,
+                                cache_creation_input_tokens=0)
+        if self.pause_first and len(self.calls) == 1:
+            return SimpleNamespace(stop_reason="pause_turn", content=[], usage=usage, model="claude-opus-5-5")
+        search = SimpleNamespace(type="web_search_tool_result",
+                                 content=[SimpleNamespace(type="web_search_result", url="https://example.org/ost")])
+        tool = SimpleNamespace(type="tool_use", name="submit_credit", input=self.answer)
+        return SimpleNamespace(stop_reason="tool_use", content=[search, tool], usage=usage, model="claude-opus-5-5")

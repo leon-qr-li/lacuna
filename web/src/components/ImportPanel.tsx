@@ -19,7 +19,17 @@ function elapsed(j: ImportJob, now: number): number {
 }
 
 /** Folder browser on the local machine (the server only lists folders and audio files). */
-function FileBrowser({ start, onPick, onClose }: { start?: string; onPick: (path: string, listing: FsListing) => void; onClose: () => void }) {
+export function FileBrowser({
+  start,
+  onPick,
+  onClose,
+  label = "选择分轨文件",
+}: {
+  start?: string;
+  onPick: (path: string, listing: FsListing) => void;
+  onClose: () => void;
+  label?: string;
+}) {
   const [ls, setLs] = useState<FsListing | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const open = (path?: string) =>
@@ -35,7 +45,7 @@ function FileBrowser({ start, onPick, onClose }: { start?: string; onPick: (path
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div className="fs" role="dialog" aria-label="选择分轨文件">
+    <div className="fs" role="dialog" aria-label={label}>
       <div className="row gap8 fs-head">
         <span className="mono small fs-path" title={ls?.path}>
           {ls?.path ?? "…"}

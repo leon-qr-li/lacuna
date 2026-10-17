@@ -5,6 +5,8 @@ import { ChatPanel } from "./components/ChatPanel";
 import { ExportPanel } from "./components/ExportPanel";
 import { ImportPanel } from "./components/ImportPanel";
 import { LearningView } from "./components/LearningView";
+import { LibraryView } from "./components/LibraryView";
+import { MusicView } from "./components/MusicView";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
 import { PublishView } from "./components/PublishView";
@@ -12,14 +14,15 @@ import { ReviewView } from "./components/ReviewView";
 import { Lanes, Overview } from "./components/Timeline";
 import { usePlayer } from "./usePlayer";
 
-type Mode = "listen" | "review" | "publish";
+type Mode = "listen" | "review" | "music" | "publish";
 
-function parseHash(): { id: string | null; mode: Mode; learning: boolean } {
-  const m = /^#\/ep\/([^/]+)(?:\/(listen|review|publish))?/.exec(window.location.hash);
+function parseHash(): { id: string | null; mode: Mode; learning: boolean; library: boolean } {
+  const m = /^#\/ep\/([^/]+)(?:\/(listen|review|music|publish))?/.exec(window.location.hash);
   return {
     id: m ? decodeURIComponent(m[1]) : null,
     mode: (m?.[2] as Mode) ?? "listen",
     learning: window.location.hash.startsWith("#/learning"),
+    library: window.location.hash.startsWith("#/library"),
   };
 }
 
@@ -38,8 +41,9 @@ const go = (id: string, mode: Mode = "listen") => {
 };
 
 export default function App() {
-  const { id, mode, learning } = useRoute();
+  const { id, mode, learning, library } = useRoute();
   if (learning) return <LearningScreen />;
+  if (library) return <LibraryScreen />;
   return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home />;
 }
 
@@ -55,6 +59,31 @@ function LearningScreen() {
       </header>
       <LearningView />
     </div>
+  );
+}
+
+function LibraryScreen() {
+  return (
+    <div className="app">
+      <header className="topbar">
+        <a className="brand" href="#/">
+          LACUNA
+        </a>
+        <span className="muted">/</span>
+        <span className="ep-title">素材库</span>
+        <span className="grow" />
+        <LearningLink />
+      </header>
+      <LibraryView />
+    </div>
+  );
+}
+
+function LibraryLink() {
+  return (
+    <a className="btn btn-outline row" href="#/library">
+      素材库
+    </a>
   );
 }
 
@@ -95,6 +124,7 @@ function Home() {
       <header className="topbar">
         <strong className="brand">LACUNA</strong>
         <span className="grow" />
+        <LibraryLink />
         <LearningLink />
       </header>
       <main className="home">
@@ -215,6 +245,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           <a href={`#/ep/${encodeURIComponent(id)}/review`} aria-current={mode === "review" ? "page" : undefined}>
             改动审阅 · {ep?.pending_review ?? 0}
           </a>
+          <a href={`#/ep/${encodeURIComponent(id)}/music`} aria-current={mode === "music" ? "page" : undefined}>
+            配乐
+          </a>
           <a href={`#/ep/${encodeURIComponent(id)}/publish`} aria-current={mode === "publish" ? "page" : undefined}>
             发布资料
           </a>
@@ -227,6 +260,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             重做
           </button>
           {ep && <ExportPanel id={id} version={ep.version} />}
+          <LibraryLink />
           <LearningLink />
         </div>
       </header>
@@ -266,6 +300,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
               onPauseMain={player.pause}
             />
           )}
+          {mode === "music" && <MusicView key={ep.version} id={id} onPauseMain={player.pause} />}
         </>
       )}
     </div>

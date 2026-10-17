@@ -17,10 +17,10 @@ Prerequisites beyond the POC: none block development. Only person-only item: `AN
 | 3 | 真 AI 对话 | 聊天框接 Claude API：在任意位置说“这段删掉 / 停顿短一点”，AI 给出可试听的修改 | Leon's API key (set 2026-10-17) | 2 | **done, validated by Leon 2026-10-17** |
 | 4 | 新一集导入 | 在 App 里选两条分轨 → 后台跑 ASR、分析、AI 第一刀，任务面板显示进度，完成后直接进入审阅 | 3 (first cut runs through the API at runtime) | 5 | **built** (D41); full run with EP001 raw on Leon's PC next; formal acceptance needs a second episode's raw tracks |
 | 5 | 从审阅里学习 (D27) | Leon 的恢复/保留变成规则与阈值校准，下一集第一刀更像他 | Leon's full review of EP001; 3 | 4 | **done, validated by Leon 2026-10-17** (D39) |
-| 6 | 片头、配乐与 ducking | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 5 | — |
+| 6 | 片头、配乐与 ducking (= 6a) | 系列片头规则、指定配乐的放置与压低人声下的音乐、素材库 | 2 (mix bus + export) | 9 | **built (D45)**; install with the next batch update, then Leon validates |
 | 7 | 打包与更新 | 双击更新（不再靠远程装机）、Mac 实机跑通（Pei） | — (any time; best after 2) | any | — |
 | 8 | UI 审美迭代 | 视觉与布局打磨 | flows stable (after 4) | 5–6 | — |
-| 9 | 发布资料包 | 标题（可换候选）、一句话简介、show notes（D40 样式）、成品时间线上的章节、专有名词核对，一键复制（富文本 + Markdown） | 2 | 6a | **built (D45)**; real-key run + Leon validation pending |
+| 9 | 发布资料包 | 标题（可换候选）、一句话简介、show notes（D40 样式）、成品时间线上的章节、专有名词核对，一键复制（富文本 + Markdown） | 2 | 6a | **built (D46)**; real-key run + Leon validation pending |
 | 10 | 海报 | Claude 按本期内容写 3–4 版极简 SVG 海报，本地渲染 PNG，Leon 挑一版或一句话改 | 9 | 6a | — (direction set, D38) |
 | 11 | 辅助发布 | 发布页（文件、文字、海报、清单、打开上传页）+ 发布/同步状态核实；之后再试浏览器代填 | 9, 10 | — | — |
 | 6b | AI 推荐配乐 | AI 提议放音乐/台词的位置，从库里原声的真实分析中给 2–3 个候选片段 | 6, 5 | — | after MVP |
@@ -47,6 +47,13 @@ Parallel set (2026-10-17): phase 3 merged (#8), awaiting Leon's validation. Expo
 - Needs `pip install -e ".[asr]"` (sherpa-onnx) and ffmpeg. Without a key the first cut is rules-only (pause targets), labelled as such.
 - Tests: `tests/app/test_import.py` (fake ASR + fake Claude, real decoding/features/conversion/episode), `tests/test_asr_real.py` (real models; set `LACUNA_ASR_MODELS`), `web/e2e/import.spec.ts`.
 
+## Phase 6a — 素材库与配乐 (2026-10-17, D45)
+- Library page 「素材库」(`#/library`, link in every top bar): add a file through the local folder browser (copied into `<workspace>/library/music|jingles|clips/`) or drop files there and 「扫描文件夹」; per file: player, duration, LUFS, Leon's note, BGM credit with state (已确认 / 待确认 / 还不知道曲名), 「让 Claude 查正式曲名」 (API + web search; text only), 「对，就是这首」, 「手动改」, 「移出素材库」 (file moved to `_removed/`).
+- Episode tab 「配乐」 (`#/ep/<id>/music`): 成品试听 (final mix stream incl. music and ducking), series suggestion (用系列片头片尾 / 这一集不用), placements (片头 / 间奏 / 片尾 / 铺底 / 台词) with in/out, overlap with the voice, gain, 「试听这一处」, 「去掉」; add form with position in final-cut time (m:ss); 「记成系列片头片尾」; BGM credit list as the show notes will print it.
+- Engine: `lacuna_core.InsertGap`; `lacuna_app/library.py`, `lacuna_app/music.py`. Export renders the final mix (voice + music, stereo music as hard-panned L/R) through the same mastering chain; the export record lists the music credits.
+- For phase 9: `music.bgm_credits(ws, id)`, `music.final_time(ws, id, t)`, `music.final_duration(ws, id)`.
+- Tests: `tests/app/test_music.py`, `tests/app/test_music_api.py`, `tests/test_edl.py::test_insert_gap_*`, `web/e2e/music.spec.ts`.
+
 ## Phase 5 — 从审阅里学习 (2026-10-17, D39)
 - Evidence: (1) review decisions per first-cut edit, read from each episode's `state.json` + undo history (`lacuna_app/learning.py: decisions`): kept / restored / accepted / declined / added (chat) / untouched, and how (single decision, batch sign-off, none); (2) Leon's own hand edit of the same recording (`scripts/learn_from_hand_edit.py`, S4 alignment) labels every speech edit and finds long passages he cut that the AI left in. Snapshots in `<workspace>/learning/decisions/` (demo episodes ignored).
 - Rules (`learn`): protect (AI cuts a kind too much), review (routine kind he restores → goes to review), trust (consequential kind always agreed → auto-apply up to 5 s speech), timid (AI suggestions he cut), missed (cuts he asked for in chat), taste (content passages he cut vs kept, as examples), threshold (confidence calibration). Weights: single 1, batch 0.5, untouched 0.25, hand edit 0.5. Explicit rules win: hand-edit evidence never argues for cutting Pei's stumbles less (R002).
@@ -56,11 +63,11 @@ Parallel set (2026-10-17): phase 3 merged (#8), awaiting Leon's validation. Expo
 - EP001 result (cloud preview: v3 ops accepted as is + hand edit): 1 candidate, Leon's content taste (26 cut / 16 kept examples, incl. passages the AI missed). Review threshold unchanged.
 - Tests: `tests/app/test_learning.py`, `web/e2e/learning.spec.ts`.
 
-## Phase 9 — 发布资料包 (2026-10-17, D45)
+## Phase 9 — 发布资料包 (2026-10-17, D46)
 - UI: episode top bar → 「发布资料」 (`#/ep/<id>/publish`): 生成发布资料 → title (alternatives one click away), one-line blurb, show notes preview (Markdown in the D40 format) with 复制（带格式）= rich HTML + Markdown on the clipboard at once, 复制 Markdown, 编辑 (Leon's Markdown is kept), chapters (copy as `mm:ss 标题` lines), 专有名词核对 (改成 X / 不用改). After a later cut change: banner 「更新时间戳」 (local, free; hand edits kept, only bold timestamps swap); entries whose audio was cut later are listed.
 - API: `GET /api/episodes/{id}/publish`, `POST …/publish/generate` (background job), `POST …/publish/retime`, `PUT …/publish {markdown?|null, title?}`, `POST …/publish/names {heard, action: apply|ignore}`.
 - Engine `lacuna_app/publish.py`: transcript of the current cut (`Episode.utterances`, cuts/lifts/slips applied) → numbered segments anchored in base time → one streamed Claude request (`claude-opus-5-5`, effort `LACUNA_PUBLISH_EFFORT`, default medium; strict tool `submit_publish_pack`; brief `prompts/show_notes_brief.txt` + approved example `prompts/show_notes_example.md`) → entries cite segment ids, times computed locally → Markdown rendered locally. Without a key: a time-sliced skeleton, labelled.
-- Music (6a): `music_info` calls `lacuna_app.music.bgm_credits` (credit lines, final-timeline positions) and `music.final_time` (voice cut → final, inserted intro/interludes) when present; 片头/间奏/片尾 lines join the timeline, the BGM section lists the credits ("BGM：未设置" when none). Before 6a lands: a placeholder.
+- Music (6a): `music_info` builds the `lacuna_app.music` layout once per call (same data as `music.bgm_credits` / `music.final_time`: credit lines, final-timeline positions, voice → final shift from inserted intro/interludes); 片头/间奏/片尾 lines join the timeline, the BGM section lists the credits ("BGM：未设置" when none). Before 6a lands: a placeholder.
 - Files: `<episode>/publish.json` (schema 1, via `store`), `<workspace>/exports/<episode>/publish/notes.md` (rewritten on every save), `<workspace>/names.json` (names Leon corrected; applied to the next transcript and listed in the prompt). Cost logged to `ai_usage.jsonl` (`kind: publish`).
 - Real-key check: `scripts/publish_smoke.py --workspace … --episode …`.
 - Tests: `tests/app/test_publish.py` (fake client), `web/e2e/publish.spec.ts`.

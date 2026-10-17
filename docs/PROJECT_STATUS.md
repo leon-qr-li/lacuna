@@ -23,8 +23,9 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - **Phase 4 new-episode import** (2026-10-17, D41): Home → 导入新一集 → pick Leon/Pei tracks → local ASR (Paraformer + SenseVoice, sherpa-onnx) → features → Claude first cut in ~10-min windows → review. Resumable per step (`<workspace>/imports/<id>/`). Real ASR verified on sherpa test clips in the cloud box; full EP001 run on Leon's PC pending (needs `pip install -e ".[asr]"`, first import downloads ~400 MB of models).
   - 2026-10-17 first real run on Leon's PC (EP001 raw, 73.5 min): models download ~30 s, ASR Leon 268 s + Pei 197 s, features ~20 s, peak RAM ~1.5 GB. Claude step refused on Opus (D44) → first cut now Sonnet 5.5. Next: after the batch update, resume job EP001_导入测试 and report time/cost.
 - **Chat voice input** (2026-10-17, D43): 🎤 button next to the chat box; local SenseVoice, text lands in the box, Leon sends. Needs the models from a first import (`<workspace>/models`).
+- **Phase 6a media library + music** (2026-10-17, D45): 素材库 page, Claude credit lookup, 配乐 tab with intro / interlude / outro / bed / clip, measured levels and voice-driven ducking, series intro rule, export with music. Merged with the batch; Leon's PC update + validation pending (batch update run by the coordinator). Nothing extra to install (uses ffmpeg/ffprobe already needed). Leon needs to add his EP001 intro / interlude (45:59) / outro music files to the library.
 
-- **Phase 9 publish pack built** (2026-10-17, D45): episode page 「发布资料」 → Claude writes title / blurb / show notes from the current cut's transcript (text only), timeline times computed locally on the final cut, Markdown in the D40 format, copy = rich text + Markdown, chapters, name check (corrections remembered in `names.json`), local re-timing after later edits. BGM from the 6a library once it lands (placeholder until then). Real-key run on Leon's PC pending (`scripts/publish_smoke.py`).
+- **Phase 9 publish pack built** (2026-10-17, D46): episode page 「发布资料」 → Claude writes title / blurb / show notes from the current cut's transcript (text only), timeline times computed locally on the final cut, Markdown in the D40 format, copy = rich text + Markdown, chapters, name check (corrections remembered in `names.json`), local re-timing after later edits. BGM from the 6a library once it lands (placeholder until then). Real-key run on Leon's PC pending (`scripts/publish_smoke.py`).
 
 ## Open issues
 - `EP001_demo` now shows 0 to review under the D33 rule (its fake confidences are ≥ 0.45, no content category). Demo is superseded by EP001_AI; delete or regenerate it.
@@ -34,7 +35,8 @@ POC passed (Leon, 2026-10-17). Building the app in small phases per `docs/ROADMA
 - One-track `tighten_pause` while the other host talks is skipped (needs per-track re-timing in the episode model); counted in `ai_report`. No per-track loudness edit in the AI path yet (D31).
 - Review threshold (D33) tuned to v3: 114 of 646 edits to review. AI confidences are poorly calibrated (almost all 0.5–0.6); recalibrate from Leon's first full review.
 - Mastering: MP3 comes out ~0.4 LU quieter than the WAV (LAME low-pass); app preview still soft-clips (preview is not mastered). Tuning of compressor/limiter awaits Leon's listening verdict.
-- Missing: task panel, asset inbox, topic labels, stereo music bus. macOS is verified only by CI (no real Mac run yet).
+- Music (6a): no undo for music placements (remove + add again); chat cannot place music yet ("这里放《XX》的主题曲" via chat is a follow-up); the export popover's "stale" hint ignores music changes. Ducking depth / levels (LEVEL_LU, DUCK_DB in `music.py`) await Leon's listening verdict.
+- Missing: task panel, asset inbox, topic labels. macOS is verified only by CI (no real Mac run yet).
 
 ## Next action
 0. Phase 3 (real chat) per ROADMAP; then phase 4 (new-episode import). Phase 2 (export) shipped with #4.

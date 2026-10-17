@@ -21,6 +21,8 @@ from .exporter import ExportBusy, Exporter
 from .importer import ImportBusy, ImportError_, Importer, list_dir
 from .learning import Learning
 from .publish import PublishBusy, Publisher
+from .library import KINDS, Library, LibraryError, lookup_credit
+from .music import ROLES, EpisodeMusic
 from .store import PathError, Workspace
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
@@ -87,6 +89,36 @@ class NameBody(BaseModel):
     action: str = Field(pattern="^(apply|ignore)$")
 
 
+class LibraryFileBody(BaseModel):
+    path: str = Field(min_length=1, max_length=2000)
+    kind: str = Field("music", pattern="^(music|jingle|clip)$")
+    note: str = Field("", max_length=500)
+
+
+class AssetBody(BaseModel):
+    note: str | None = Field(None, max_length=500)
+    kind: str | None = Field(None, pattern="^(music|jingle|clip)$")
+    credit: dict | None = None
+    confirm: bool = False
+
+
+class PlacementBody(BaseModel):
+    asset_id: str | None = Field(None, max_length=40)
+    role: str | None = Field(None, pattern="^(intro|interlude|outro|bed|clip)$")
+    at_s: float | None = Field(None, ge=0, description="position on the final mix (seconds)")
+    until_s: float | None = Field(None, ge=0, description="bed: end on the final mix (seconds)")
+    src_in_s: float | None = Field(None, ge=0)
+    src_out_s: float | None = Field(None, ge=0)
+    overlap_s: float | None = Field(None, ge=0, le=30)
+    gain_db: float | None = Field(None, ge=-30, le=12)
+    lead_s: float | None = Field(None, ge=0, le=5)
+    status: str | None = Field(None, pattern="^(applied|proposed)$")
+
+
+class SeriesBody(BaseModel):
+    name: str = Field("洛城二三事", min_length=1, max_length=80)
+
+
 class OpBody(PlayheadBody):
     op: dict
     title: str = Field("手动修改", max_length=200)
@@ -95,7 +127,8 @@ class OpBody(PlayheadBody):
 
 def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_dist: Path = WEB_DIST,
                importer: Importer | None = None, dictation: Dictation | None = None,
-               publisher: Publisher | None = None) -> FastAPI:
+               publisher: Publisher | None = None, credit_client=None) -> FastAPI:
+    """`credit_client`: an Anthropic-like client for the library's credit lookup (tests inject a fake)."""
     ws = Workspace(workspace).ensure()
     adapter = adapter or make_adapter("auto")
     app = FastAPI(title="LACUNA Studio", docs_url="/api/docs", openapi_url="/api/openapi.json")
@@ -107,6 +140,8 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     dictation = dictation or Dictation(ws.root / "models")
     publisher = publisher or Publisher(ws)
     publisher.on_usage = lambda eid, u: log_usage(ws.root / USAGE_LOG, eid, u | {"kind": "publish"})
+    library = Library(ws)
+    musics: dict[str, EpisodeMusic] = {}
 
     def get(episode_id: str) -> Episode:
         try:
@@ -415,6 +450,176 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
         except KeyError:
             raise HTTPException(404, "no such rule")
 
+    # ------------------------------------------------------------------ media library + music (D43)
+    def music(episode_id: str) -> EpisodeMusic:
+        ep = get(episode_id)
+        with lock:
+            m = musics.get(episode_id)
+            if m is None or m.ep is not ep:
+                m = musics[episode_id] = EpisodeMusic(ws, ep, library)
+            return m
+
+    def asset_or_404(asset_id: str) -> dict:
+        try:
+            return library.asset(asset_id)
+        except KeyError:
+            raise HTTPException(404, "no such asset")
+
+    @app.get("/api/library")
+    def library_view():
+        from .editor import find_api_key, sdk_installed
+        lookup = credit_client is not None or (bool(find_api_key()[0]) and sdk_installed())
+        return library.view() | {"lookup": lookup}
+
+    @app.post("/api/library/files")
+    def library_add(body: LibraryFileBody):
+        try:
+            return {"asset": library.asset_view(library.add_file(body.path, body.kind, body.note.strip()))}
+        except LibraryError as e:
+            raise HTTPException(422, str(e))
+
+    @app.post("/api/library/scan")
+    def library_scan():
+        library.ensure_dirs()
+        try:
+            return {"added": library.scan()} | library.view() | {"lookup": credit_client is not None}
+        except LibraryError as e:
+            raise HTTPException(422, str(e))
+
+    @app.patch("/api/library/assets/{asset_id}")
+    def library_update(asset_id: str, body: AssetBody):
+        try:
+            return {"asset": library.asset_view(library.update(asset_id, note=body.note, kind=body.kind,
+                                                               credit=body.credit, confirm=body.confirm))}
+        except KeyError:
+            raise HTTPException(404, "no such asset")
+        except LibraryError as e:
+            raise HTTPException(422, str(e))
+
+    @app.post("/api/library/assets/{asset_id}/lookup")
+    def library_lookup(asset_id: str):
+        asset_or_404(asset_id)
+        out = lookup_credit(library, asset_id, client=credit_client)
+        if out.get("usage"):
+            log_usage(ws.root / USAGE_LOG, f"library:{asset_id}", out["usage"])
+        return out
+
+    @app.delete("/api/library/assets/{asset_id}")
+    def library_remove(asset_id: str):
+        asset_or_404(asset_id)
+        library.remove(asset_id)
+        return {"ok": True}
+
+    @app.get("/api/library/assets/{asset_id}/audio")
+    def library_audio(asset_id: str):
+        a = asset_or_404(asset_id)
+        try:
+            p = library.path_of(a)
+        except PathError:
+            raise HTTPException(404, "file missing")
+        if not p.is_file():
+            raise HTTPException(404, "file missing")
+        return FileResponse(p, headers={"Cache-Control": "private, max-age=3600"})
+
+    @app.post("/api/library/open")
+    def library_open():
+        library.ensure_dirs()
+        import os, subprocess, sys
+        d = str(library.dir)
+        if sys.platform == "win32":
+            os.startfile(d)  # type: ignore[attr-defined]
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", d])
+        else:
+            subprocess.Popen(["xdg-open", d], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return {"folder": d}
+
+    @app.get("/api/episodes/{episode_id}/music")
+    def music_view(episode_id: str):
+        return music(episode_id).summary()
+
+    def placement_fields(m: EpisodeMusic, body: PlacementBody) -> dict:
+        f = body.model_dump(exclude_unset=True)
+        for k in ("at_s", "until_s"):     # the UI speaks final-mix time; anchors live on the voice timeline
+            if f.get(k) is not None:
+                f[k] = m.final_to_voice_s(f[k])
+        return f
+
+    @app.post("/api/episodes/{episode_id}/music")
+    def music_add(episode_id: str, body: PlacementBody):
+        m = music(episode_id)
+        if not body.asset_id or not body.role:
+            raise HTTPException(422, "asset_id and role are required")
+        asset_or_404(body.asset_id)
+        f = placement_fields(m, body)
+        f.pop("asset_id"), f.pop("role")
+        m.add(body.asset_id, body.role, **{k: v for k, v in f.items() if v is not None})
+        return m.summary()
+
+    @app.patch("/api/episodes/{episode_id}/music/{pid}")
+    def music_update(episode_id: str, pid: str, body: PlacementBody):
+        m = music(episode_id)
+        if body.asset_id:
+            asset_or_404(body.asset_id)
+        try:
+            m.update(pid, **placement_fields(m, body))
+        except KeyError:
+            raise HTTPException(404, "no such placement")
+        return m.summary()
+
+    @app.delete("/api/episodes/{episode_id}/music/{pid}")
+    def music_remove(episode_id: str, pid: str):
+        m = music(episode_id)
+        try:
+            m.remove(pid)
+        except KeyError:
+            raise HTTPException(404, "no such placement")
+        return m.summary()
+
+    @app.get("/api/episodes/{episode_id}/music/{pid}/preview")
+    def music_preview(episode_id: str, pid: str):
+        try:
+            wav, start = music(episode_id).preview(pid)
+        except KeyError:
+            raise HTTPException(404, "no such placement")
+        return Response(wav, media_type="audio/wav", headers={"Cache-Control": "no-store", "X-Start": str(start)})
+
+    @app.post("/api/episodes/{episode_id}/music/series/apply")
+    def music_series_apply(episode_id: str, body: SeriesBody):
+        m = music(episode_id)
+        m.apply_series(body.name)
+        return m.summary()
+
+    @app.post("/api/episodes/{episode_id}/music/series/save")
+    def music_series_save(episode_id: str, body: SeriesBody):
+        m = music(episode_id)
+        m.save_as_series(body.name)
+        return m.summary()
+
+    @app.post("/api/episodes/{episode_id}/music/series/dismiss")
+    def music_series_dismiss(episode_id: str):
+        m = music(episode_id)
+        m.dismiss_series()
+        return m.summary()
+
+    @app.get("/api/episodes/{episode_id}/mix/{version}.wav")
+    def mix_audio(episode_id: str, version: str, request: Request):
+        m = music(episode_id)
+        enabled = m.ep.enabled
+        if version != m.mix_key(enabled):
+            raise HTTPException(404, "unknown or expired version")
+        total = m.wav_size(enabled)
+        rng = parse_range(request.headers.get("range"), total)
+        headers = {"Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600"}
+        if request.headers.get("range") and rng is None:
+            return Response(status_code=416, headers={"Content-Range": f"bytes */{total}"})
+        first, last = rng or (0, total - 1)
+        headers["Content-Length"] = str(last - first + 1)
+        if rng:
+            headers["Content-Range"] = f"bytes {first}-{last}/{total}"
+        return StreamingResponse(m.iter_wav(enabled, first, last), status_code=206 if rng else 200,
+                                 media_type="audio/wav", headers=headers)
+
     # ------------------------------------------------------------------ web UI
     if (web_dist / "index.html").is_file():
         app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
@@ -436,4 +641,5 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     app.state.importer = importer
     app.state.dictation = dictation
     app.state.publisher = publisher
+    app.state.library = library
     return app

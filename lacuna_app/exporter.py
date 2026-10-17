@@ -22,6 +22,7 @@ from lacuna_core.export import FORMATS, export, timeline_source
 from lacuna_core.master import MasterSettings
 
 from .episode import Episode
+from .music import EpisodeMusic, credits
 from .store import Workspace, atomic_write_json, check_id, inside
 
 DEFAULT_SHOW = "洛城二三事"
@@ -60,9 +61,8 @@ class Exporter:
             raise ValueError("no export format selected")
         with ep.lock:
             enabled = ep.enabled
-            tl = ep.timeline_for(enabled)
+            ep.timeline_for(enabled)           # refuses an invalid state before anything starts
             version = ep.version_key(enabled)
-            media = dict(ep.media)
             title = ep.meta.get("title", ep.id)
             show = ep.meta.get("show", DEFAULT_SHOW)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -82,15 +82,18 @@ class Exporter:
                 job["stage"] = stage
 
         def run() -> None:
-            pool = SourcePool(media)
+            pool = None
             try:
+                progress(0.0, "配乐与 ducking")
+                tl, media, lay = EpisodeMusic(self.ws, ep).mix(enabled, channels)
+                pool = SourcePool(media)
                 res = export(timeline_source(pool, tl, channels), tl.sample_rate, channels, out_dir,
                              job["basename"], tuple(formats), MasterSettings(), tl.length,
                              mp3_kbps, {"title": title, "artist": show, "album": show},
                              progress)
                 record = {"episode": ep.id, "title": title, "version": version,
                           "applied_edits": sorted(enabled), "exported_at": datetime.now().isoformat(),
-                          "channels": channels, **res.to_dict()}
+                          "channels": channels, "music": credits(lay), **res.to_dict()}
                 atomic_write_json(out_dir / f"{job['basename']}.json", record)
                 files = {k: Path(v).name for k, v in res.files.items()}
                 with self._lock:
@@ -102,7 +105,8 @@ class Exporter:
                 with self._lock:
                     job.update(state="error", finished=time.time(), error=str(e) or type(e).__name__)
             finally:
-                pool.close()
+                if pool:
+                    pool.close()
                 with self._lock:
                     self._running = None
 

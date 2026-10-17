@@ -125,26 +125,29 @@ class Music:
         return self.credits is not None
 
 
-def music_info(ws: Workspace, episode_id: str) -> Music:
+def music_info(ws: Workspace, ep: Episode) -> Music:
+    """The episode's music layout, built once: ``music.credits`` (same rows as ``music.bgm_credits``)
+    and its voice -> final mapping (same as ``music.final_time``) without re-reading per call."""
     try:
         from . import music  # type: ignore[attr-defined]
-        credits_fn, final_fn = music.bgm_credits, music.final_time
-    except Exception:          # noqa: BLE001 - 6a not on this install yet
+    except Exception:          # noqa: BLE001 - 6a not on this install
         return Music()
     try:
+        with ep.lock:
+            lay = music.EpisodeMusic(ws, ep).layout()
         credits = []
-        for c in credits_fn(ws, episode_id) or []:
+        for c in music.credits(lay) or []:
             credits.append({"role": str(c.get("role") or "clip"),
                             "role_label": str(c.get("role_label") or ROLE_LABELS.get(c.get("role"), "配乐")),
                             "start_s": round(float(c.get("start_s") or 0.0), 3),
                             "end_s": round(float(c.get("end_s") or 0.0), 3),
                             "credit_line": str(c.get("credit_line") or c.get("title") or ""),
                             "credit_status": str(c.get("credit_status") or "unknown")})
-        final_fn(ws, episode_id, 0.0)            # fail here, not halfway through a layout
     except Exception:          # noqa: BLE001 - a library problem must not break the show notes
         traceback.print_exc()
         return Music()
-    return Music(credits, lambda t: float(final_fn(ws, episode_id, t)))
+    sr = lay.sr
+    return Music(credits, lambda t: lay.final(int(round(t * sr))) / sr)
 
 
 # ---------------------------------------------------------------------------- names (词表)
@@ -542,7 +545,7 @@ class Publisher:
         segs = segments(ep)
         if not segs:
             raise PublishError("这一集没有转写，写不了 show notes")
-        music = music_info(self.ws, ep.id)
+        music = music_info(self.ws, ep)
         names = load_names(self.ws)
         with ep.lock:
             version = ep.version_key()
@@ -571,7 +574,7 @@ class Publisher:
         """Re-place every entry on the current cut (+ current music); keeps Leon's wording."""
         with ep.lock:
             pack = self._need(ep)
-            music = music_info(self.ws, ep.id)
+            music = music_info(self.ws, ep)
             old_times, old_music = pack["times"], pack.get("music")
             self._layout(ep, pack, music, keep_text=pack["edited"])
             if pack["edited"]:
@@ -627,7 +630,7 @@ class Publisher:
                 for g in d["glossary"]:
                     g["term"], g["meaning"] = apply_names(g["term"], fix), apply_names(g["meaning"], fix)
                 pack["markdown"] = apply_names(pack["markdown"], fix)
-                self._layout(ep, pack, music_info(self.ws, ep.id), keep_text=True)
+                self._layout(ep, pack, music_info(self.ws, ep), keep_text=True)
                 add_name(self.ws, n["heard"], n["suggested"])
                 n["state"] = "applied"
             else:
@@ -643,7 +646,7 @@ class Publisher:
 
     def _rerender(self, ep: Episode, pack: dict) -> None:
         pack["edited"] = False
-        self._layout(ep, pack, music_info(self.ws, ep.id))
+        self._layout(ep, pack, music_info(self.ws, ep))
 
     def _layout(self, ep: Episode, pack: dict, music: Music, keep_text: bool = False) -> None:
         """Place the draft on the current cut: times, chapters, Markdown (unless Leon's is kept)."""
@@ -665,7 +668,7 @@ class Publisher:
         out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
         if pack is None:
             return out
-        music = music_info(self.ws, ep.id)
+        music = music_info(self.ws, ep)
         d = pack["draft"]
         out["pack"] = {
             "title": d["title"], "alt_titles": d["alt_titles"], "blurb": d["blurb"],
