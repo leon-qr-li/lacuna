@@ -27,7 +27,7 @@ async function shot(page: Page, name: string) {
 test("first run: create the owner account (no code), then the app opens", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "创建你的账号" })).toBeVisible();
-  await expect(page.getByText("在留白处，听见电影。")).toBeVisible();
+  await expect(page.getByText("Mind the gaps. Keep the voice.")).toBeVisible();
   await shot(page, "first_run");
   await page.getByTestId("auth-email").fill("leon@example.com");
   await page.getByTestId("auth-password").fill("short");

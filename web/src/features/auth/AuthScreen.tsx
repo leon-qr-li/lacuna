@@ -19,7 +19,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
           LACUNA
         </div>
         <p className="auth-tag">
-          {t("在留白处，听见电影。")}
+          {SLOGAN}
           <small>{t("《洛城二三事》的剪辑工作台")}</small>
         </p>
         <div className="auth-wave">
@@ -39,6 +39,9 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
     </div>
   );
 }
+
+// the brand line is English in both interface languages (Leon 2026-10-17)
+const SLOGAN = "Mind the gaps. Keep the voice.";
 
 // a fixed "level meter" for the brand panel (same shape on every render)
 const BARS = Array.from({ length: 46 }, (_, i) => 18 + Math.abs(Math.sin(i * 0.47 + 1) * Math.cos(i * 0.13)) * 82);
