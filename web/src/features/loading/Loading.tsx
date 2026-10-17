@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { t } from "../../i18n";
 import { subscribe } from "./activity";
 import "./loading.css";
 
 /**
- * The one loading language of the app (decision 2026-10-17-unified-loading):
+ * The one loading language of the app (decisions 2026-10-17-unified-loading, -loading-logo):
  * - a page or tab whose data is on its way shows `PageLoading` at once: the wave, a line saying what
  *   is opening, and grey shapes of what will appear (never a blank page, however short the wait);
  * - an action that takes seconds shows `Wave` where it happens (in the button, or a `Waiting` row);
@@ -12,16 +12,38 @@ import "./loading.css";
  * - every request the person started also moves a thin line under the top bar (`TopLine`).
  */
 
-/** The animated sound-wave mark. Decorative: the text next to it says what is happening. */
+// the pulse line of the logo (features/brand/logo.svg): one stroke that hides "L" and "A"
+const PULSE = "M14 19 V38 H22 L31 16 L40 48 L45 38 H51";
+
+/**
+ * The loading mark, style C「信号」: the logo's pulse line drawn faintly, a sunset-coloured light
+ * running along it like a signal, and the ON AIR light breathing. Decorative: the text next to it
+ * says what is happening. (Named Wave since the first, sound-wave version; callers stay the same.)
+ */
 export function Wave({ size = "sm", className = "" }: { size?: "sm" | "lg"; className?: string }) {
+  const id = useId().replace(/:/g, "");
+  const big = size === "lg";
+  const w = big ? 3.6 : 5.5;
   return (
-    <span className={`ld-wave ld-wave-${size} ${className}`} aria-hidden="true">
-      <i />
-      <i />
-      <i />
-      <i />
-      <i />
-    </span>
+    <svg className={`ld-mark ld-mark-${size} ${className}`} viewBox="8 10 48 44" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id={`ldg${id}`} x1="14" y1="0" x2="51" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#FFC24B" />
+          <stop offset="0.4" stopColor="#FF7A3D" />
+          <stop offset="0.75" stopColor="#FF4F7B" />
+          <stop offset="1" stopColor="#A35CFF" />
+        </linearGradient>
+        {big && (
+          <filter id={`ldf${id}`} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="2" />
+          </filter>
+        )}
+      </defs>
+      <path className="ld-mark-base" d={PULSE} stroke={`url(#ldg${id})`} strokeWidth={w} />
+      <path className="ld-mark-signal" d={PULSE} pathLength={100} stroke={`url(#ldg${id})`} strokeWidth={w} />
+      {big && <path className="ld-mark-signal ld-mark-glow" d={PULSE} pathLength={100} stroke={`url(#ldg${id})`} strokeWidth={6} filter={`url(#ldf${id})`} />}
+      <circle className="ld-mark-air" cx="48" cy="19" r="3.4" />
+    </svg>
   );
 }
 

@@ -1,17 +1,16 @@
-/* Unified loading language, style A「声波」 (decision 2026-10-17-unified-loading). */
+/* Unified loading language (decisions 2026-10-17-unified-loading, 2026-10-17-loading-logo). */
+:root { --ld-sun: linear-gradient(90deg, #FFC24B, #FF7A3D 40%, #FF4F7B 75%, #A35CFF); }
 
-/* the mark: five bars bouncing like a level meter */
-.ld-wave { display: inline-flex; align-items: center; gap: 2.5px; height: 16px; vertical-align: -3px; flex: none; }
-.ld-wave i { width: 3px; height: 16px; border-radius: 2px; background: var(--grad); transform-origin: center; animation: ld-bounce 1s ease-in-out infinite; }
-.ld-wave i:nth-child(1) { animation-delay: -0.45s; }
-.ld-wave i:nth-child(2) { animation-delay: -0.2s; }
-.ld-wave i:nth-child(3) { animation-delay: -0.7s; }
-.ld-wave i:nth-child(4) { animation-delay: 0s; }
-.ld-wave i:nth-child(5) { animation-delay: -0.35s; }
-.ld-wave-lg { height: 34px; gap: 4px; }
-.ld-wave-lg i { width: 5px; height: 34px; border-radius: 3px; }
-.btn-primary .ld-wave i { background: currentColor; }
-@keyframes ld-bounce { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+/* the mark, style C「信号」(decision 2026-10-17-loading-logo): the logo's pulse line with a light running along it */
+.ld-mark { display: inline-block; width: 20px; height: 20px; vertical-align: -5px; flex: none; overflow: visible; }
+.ld-mark-lg { width: 76px; height: 76px; }
+.ld-mark path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ld-mark-base { opacity: 0.35; }
+.ld-mark-signal { stroke-dasharray: 22 78; animation: ld-signal 1.5s linear infinite; }
+.ld-mark-glow { opacity: 0.7; }
+.ld-mark-air { fill: #FF5A64; animation: ld-air 1.4s ease-in-out infinite; }
+@keyframes ld-signal { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes ld-air { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* placeholders */
 .ld-skel { display: block; position: relative; overflow: hidden; background: var(--hover); border-radius: 8px; max-width: 100%; }
@@ -46,7 +45,7 @@
 .ld-job-head strong { font-size: 15px; font-weight: 600; }
 .ld-job-meta { margin-left: auto; font-size: 12.5px; color: var(--ink-3); }
 .ld-bar { height: 8px; border-radius: 99px; background: var(--hover); margin: 14px 0 10px; overflow: hidden; position: relative; }
-.ld-bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--grad); background-size: 200% 100%; transition: width 0.6s ease; overflow: hidden; }
+.ld-bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; background: var(--ld-sun); transition: width 0.6s ease; overflow: hidden; }
 .ld-bar span::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent); animation: ld-sheen 1.8s ease-in-out infinite; }
 .ld-bar-indeterminate span { width: 32%; animation: ld-slide 1.5s ease-in-out infinite; }
 @keyframes ld-slide { from { left: -32%; } to { left: 100%; } }
@@ -65,13 +64,13 @@
 
 /* the thin line at the top of the window while something the person started is running */
 .ld-topline { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 1000; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity 0.2s; }
-.ld-topline::before { content: ""; position: absolute; top: 0; bottom: 0; width: 38%; left: -38%; border-radius: 2px; background: var(--grad); box-shadow: 0 0 10px #8b5cf6; }
+.ld-topline::before { content: ""; position: absolute; top: 0; bottom: 0; width: 38%; left: -38%; border-radius: 2px; background: var(--ld-sun); box-shadow: 0 0 10px #FF4F7B; }
 .ld-topline.is-on { opacity: 1; }
 .ld-topline.is-on::before { animation: ld-slide-top 1.2s ease-in-out infinite; }
 @keyframes ld-slide-top { from { left: -38%; } to { left: 100%; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .ld-wave i, .ld-skel::after, .ld-bar span::after, .ld-bar-indeterminate span, .ld-topline.is-on::before { animation-duration: 3s; }
-  .ld-wave i { animation: none; transform: scaleY(0.6); }
+  .ld-mark-signal, .ld-skel::after, .ld-bar span::after, .ld-bar-indeterminate span, .ld-topline.is-on::before { animation-duration: 3s; }
+  .ld-mark-air { animation: none; }
 }
 .ld-job-flat { margin-top: 10px; }
