@@ -11,8 +11,8 @@ Flow
 * ``render_markdown`` lays the structured draft out in the approved format (D40, example in
   ``prompts/show_notes_example.md``). Leon may edit the Markdown in the app; a later re-timing
   (after more edits) only swaps the bold timestamps, so his wording stays.
-* BGM credits and inserted music come from the media library (phase 6a) through
-  ``music_cues``; until it exists the BGM section shows a placeholder.
+* BGM credits and the shift from inserted music come from the media library (phase 6a,
+  ``lacuna_app.music``) through ``music_info``; until it exists the BGM section shows a placeholder.
 
 Persistence (D42): ``<episode>/publish.json`` through ``store``; every save also writes the
 Markdown to ``<workspace>/exports/<episode>/publish/notes.md`` for copying into 喜马拉雅.
@@ -40,7 +40,7 @@ NAMES_FILE = "names.json"
 PROMPTS = Path(__file__).resolve().parent / "prompts"
 SHOW = "洛城二三事"
 FOOTER = "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*"
-ROLE_LABELS = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed": "铺底", "clip": "片段"}
+ROLE_LABELS = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed": "铺底", "clip": "台词"}
 MERGE_GAP_S = 1.5          # same speaker, shorter gap -> same segment
 MAX_SEGMENT_S = 45.0
 MIN_CHARS = 3              # "嗯" / "对对" alone are not worth a line
@@ -110,41 +110,41 @@ def episode_label(episode_id: str) -> str:
 
 # ---------------------------------------------------------------------------- music (phase 6a)
 
-def music_cues(ws: Workspace, episode_id: str) -> list[dict] | None:
-    """Music placed in this episode, from the media library (6a). None = no library yet.
+@dataclass
+class Music:
+    """Music placed in this episode, from the 6a media library (``lacuna_app.music``).
 
-    Contract (proposed to 6a): ``lacuna_app.library.episode_music(ws, episode_id)`` returns dicts
-    with role (intro / interlude / outro / bed / clip), at_s (voice-cut seconds), length_s,
-    inserted (pushes the voice later) and title / artist / film (normalised track info)."""
+    credits: ``music.bgm_credits`` rows in final-cut order (role, role_label, start_s / end_s on the
+    final mixed timeline, credit_line, credit_status ...), or None while there is no library.
+    to_final: ``music.final_time`` - voice-cut seconds -> final seconds (inserted intro/interludes)."""
+    credits: list[dict] | None = None
+    to_final: Callable[[float], float] = lambda t: t
+
+    @property
+    def library(self) -> bool:
+        return self.credits is not None
+
+
+def music_info(ws: Workspace, episode_id: str) -> Music:
     try:
-        from . import library  # type: ignore[attr-defined]
-        fn = getattr(library, "episode_music")
-    except Exception:          # noqa: BLE001 - not built yet
-        return None
+        from . import music  # type: ignore[attr-defined]
+        credits_fn, final_fn = music.bgm_credits, music.final_time
+    except Exception:          # noqa: BLE001 - 6a not on this install yet
+        return Music()
     try:
-        raw = fn(ws, episode_id) or []
+        credits = []
+        for c in credits_fn(ws, episode_id) or []:
+            credits.append({"role": str(c.get("role") or "clip"),
+                            "role_label": str(c.get("role_label") or ROLE_LABELS.get(c.get("role"), "配乐")),
+                            "start_s": round(float(c.get("start_s") or 0.0), 3),
+                            "end_s": round(float(c.get("end_s") or 0.0), 3),
+                            "credit_line": str(c.get("credit_line") or c.get("title") or ""),
+                            "credit_status": str(c.get("credit_status") or "unknown")})
+        final_fn(ws, episode_id, 0.0)            # fail here, not halfway through a layout
     except Exception:          # noqa: BLE001 - a library problem must not break the show notes
         traceback.print_exc()
-        return None
-    out = []
-    for c in raw:
-        try:
-            out.append({"role": str(c.get("role") or "clip"), "at_s": float(c.get("at_s") or 0.0),
-                        "length_s": float(c.get("length_s") or 0.0), "inserted": bool(c.get("inserted")),
-                        "title": str(c.get("title") or ""), "artist": str(c.get("artist") or ""),
-                        "film": str(c.get("film") or "")})
-        except (TypeError, ValueError, AttributeError):
-            continue
-    return sorted(out, key=lambda c: c["at_s"])
-
-
-def final_time(t: float, cues: list[dict] | None) -> float:
-    """Voice-cut seconds -> seconds on the finished episode (inserted music before t pushes it)."""
-    return t + sum(c["length_s"] for c in cues or () if c["inserted"] and c["at_s"] <= t + 1e-6)
-
-
-def cue_final_time(c: dict, cues: list[dict]) -> float:
-    return c["at_s"] + sum(o["length_s"] for o in cues if o["inserted"] and o is not c and o["at_s"] < c["at_s"] - 1e-6)
+        return Music()
+    return Music(credits, lambda t: float(final_fn(ws, episode_id, t)))
 
 
 # ---------------------------------------------------------------------------- names (词表)
@@ -209,8 +209,8 @@ def segments(ep: Episode) -> list[Segment]:
     return out
 
 
-def transcript_doc(segs: list[Segment], cues: list[dict] | None, names: list[dict]) -> str:
-    return "\n".join(f"{s.id} {mmss(final_time(s.start, cues))} {s.speaker}：{apply_names(s.text, names)}"
+def transcript_doc(segs: list[Segment], music: Music, names: list[dict]) -> str:
+    return "\n".join(f"{s.id} {mmss(music.to_final(s.start))} {s.speaker}：{apply_names(s.text, names)}"
                      for s in segs)
 
 
@@ -267,9 +267,9 @@ class ClaudePublisher:
                     output_config={"effort": self.effort}, tools=[TOOL], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": user}])
 
-    def write(self, ep: Episode, segs: list[Segment], cues: list[dict] | None, names: list[dict],
+    def write(self, ep: Episode, segs: list[Segment], music: Music, names: list[dict],
               duration: float) -> Draft:
-        user = user_message(ep, transcript_doc(segs, cues, names), duration, names)
+        user = user_message(ep, transcript_doc(segs, music, names), duration, names)
         t0 = time.monotonic()
         try:
             with self.client.beta.messages.stream(betas=["server-side-fallback-2026-07-01"], fallbacks="default",
@@ -294,7 +294,7 @@ class RulePublisher:
     name = "rules"
     available = True
 
-    def write(self, ep: Episode, segs: list[Segment], cues: list[dict] | None, names: list[dict],
+    def write(self, ep: Episode, segs: list[Segment], music: Music, names: list[dict],
               duration: float) -> Draft:
         sections: list[dict] = []
         last = -1e9
@@ -374,7 +374,7 @@ def clean(data: dict, segs: list[Segment]) -> tuple[dict, list[str]]:
     return out, notes
 
 
-def timed(ep: Episode, draft: dict, cues: list[dict] | None) -> dict:
+def timed(ep: Episode, draft: dict, music: Music) -> dict:
     """Times of every timeline entry and music cue on the current cut (no API call)."""
     with ep.lock:
         cuts = ep.cuts_for(ep.enabled)
@@ -384,11 +384,11 @@ def timed(ep: Episode, draft: dict, cues: list[dict] | None) -> dict:
         for ei, e in enumerate(sec["entries"]):
             x = int(e["base_s"] * sr)
             gone = any(a <= x < b for a, b in cuts)
-            rows.append({"key": f"{si}.{ei}", "t": final_time(to_tl(x, cuts) / sr, cues), "text": e["text"],
+            rows.append({"key": f"{si}.{ei}", "t": music.to_final(to_tl(x, cuts) / sr), "text": e["text"],
                          "section": si, "gone": gone})
     speech = list(rows)
-    for ci, c in enumerate(cue for cue in cues or () if cue["role"] in ("intro", "interlude", "outro")):
-        t = cue_final_time(c, cues)
+    for ci, c in enumerate(c for c in music.credits or () if c["role"] in ("intro", "interlude", "outro")):
+        t = c["start_s"]
         # the music line goes to the part playing at that moment (intro: the first, outro: the last)
         sec = 0
         for r in speech:
@@ -406,25 +406,24 @@ def timed(ep: Episode, draft: dict, cues: list[dict] | None) -> dict:
 
 # ---------------------------------------------------------------------------- markdown
 
-def bgm_lines(cues: list[dict] | None) -> list[str]:
-    if cues is None:
+def bgm_lines(credits: list[dict] | None) -> list[str]:
+    if credits is None:
         return ["- （素材库还没接上：配乐放进这一集后，这里自动填曲名）"]
-    music = [c for c in cues if c["role"] in ("intro", "interlude", "outro", "bed")]
-    if not music:
-        return ["- （这一集还没有放配乐）"]
+    if not credits:
+        return ["- BGM：未设置"]
     out = []
-    for c in music:
-        label = ROLE_LABELS[c["role"]]
-        if c["role"] in ("interlude", "bed"):
-            label = f"{mmss(cue_final_time(c, cues))} {label}"
-        name = c["title"] or "（曲名待补：在素材库里填上正式曲名）"
-        extra = " — " + c["artist"] if c["artist"] else ""
-        film = f"（{c['film']}）" if c["film"] else ""
-        out.append(f"- **{label}**：{name}{extra}{film}")
+    for c in credits:
+        label = c["role_label"]
+        if c["role"] not in ("intro", "outro"):
+            label = f"{mmss(c['start_s'])} {label}"
+        line = c["credit_line"] or "（曲名待补：在素材库里填上正式曲名）"
+        if c["credit_status"] == "suggested":
+            line += "（曲名待确认）"
+        out.append(f"- **{label}**：{line}")
     return out
 
 
-def render_markdown(episode_id: str, draft: dict, rows: list[dict], cues: list[dict] | None) -> str:
+def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: list[dict] | None) -> str:
     L = [f"# {draft['title'] or episode_id}", "", f"> 《{SHOW}》{episode_label(episode_id)} · Leon & Pei", ""]
     if draft["intro"]:
         L += [draft["intro"], ""]
@@ -446,7 +445,7 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], cues: list[d
         L += ["## 😏 内部梗小词典", ""]
         L += [f"- **{g['term']}**：{g['meaning']}" for g in draft["glossary"]]
         L.append("")
-    L += ["## 🎵 本期 BGM", ""] + bgm_lines(cues) + ["", "---", "", FOOTER, ""]
+    L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", "", FOOTER, ""]
     return "\n".join(L)
 
 
@@ -543,14 +542,14 @@ class Publisher:
         segs = segments(ep)
         if not segs:
             raise PublishError("这一集没有转写，写不了 show notes")
-        cues = music_cues(self.ws, ep.id)
+        music = music_info(self.ws, ep.id)
         names = load_names(self.ws)
         with ep.lock:
             version = ep.version_key()
-            duration = final_time(ep.timeline_for(ep.enabled).length / ep.sr, cues)
+            duration = music.to_final(ep.timeline_for(ep.enabled).length / ep.sr)
         writer = self.factory()
         stage("Claude 在写标题和 show notes" if writer.name == "claude" else "生成草稿（没有 Claude）")
-        out = writer.write(ep, segs, cues, names, duration)
+        out = writer.write(ep, segs, music, names, duration)
         if out.usage:
             self.on_usage(ep.id, out.usage)
         draft, notes = clean(out.data, segs)
@@ -563,7 +562,7 @@ class Publisher:
         with ep.lock:
             if ep.version_key() != version:
                 pack["notes"].append("生成期间剪辑有变化，时间已按最新剪辑重新对过。")
-            self._layout(ep, pack, cues)
+            self._layout(ep, pack, music)
             self.save(ep, pack)
         return pack
 
@@ -572,13 +571,13 @@ class Publisher:
         """Re-place every entry on the current cut (+ current music); keeps Leon's wording."""
         with ep.lock:
             pack = self._need(ep)
-            cues = music_cues(self.ws, ep.id)
+            music = music_info(self.ws, ep.id)
             old_times, old_music = pack["times"], pack.get("music")
-            self._layout(ep, pack, cues, keep_text=pack["edited"])
+            self._layout(ep, pack, music, keep_text=pack["edited"])
             if pack["edited"]:
                 pack["markdown"] = retime_markdown(pack["markdown"], old_times, pack["times"])
-                if (cues or []) != (old_music or []):
-                    pack["markdown"] = _replace_bgm(pack["markdown"], cues)
+                if music.credits != old_music:
+                    pack["markdown"] = _replace_bgm(pack["markdown"], music.credits)
             self.save(ep, pack)
             return pack
 
@@ -628,7 +627,7 @@ class Publisher:
                 for g in d["glossary"]:
                     g["term"], g["meaning"] = apply_names(g["term"], fix), apply_names(g["meaning"], fix)
                 pack["markdown"] = apply_names(pack["markdown"], fix)
-                self._layout(ep, pack, pack.get("music"), keep_text=True)
+                self._layout(ep, pack, music_info(self.ws, ep.id), keep_text=True)
                 add_name(self.ws, n["heard"], n["suggested"])
                 n["state"] = "applied"
             else:
@@ -644,20 +643,20 @@ class Publisher:
 
     def _rerender(self, ep: Episode, pack: dict) -> None:
         pack["edited"] = False
-        self._layout(ep, pack, pack.get("music"))
+        self._layout(ep, pack, music_info(self.ws, ep.id))
 
-    def _layout(self, ep: Episode, pack: dict, cues: list[dict] | None, keep_text: bool = False) -> None:
+    def _layout(self, ep: Episode, pack: dict, music: Music, keep_text: bool = False) -> None:
         """Place the draft on the current cut: times, chapters, Markdown (unless Leon's is kept)."""
-        rows = timed(ep, pack["draft"], cues)["rows"]
+        rows = timed(ep, pack["draft"], music)["rows"]
         first: dict[int, float] = {}
         for r in rows:
             first.setdefault(r["section"], r["t"])
-        pack.update(version=ep.version_key(), music=cues, times=[mmss(r["t"]) for r in rows],
+        pack.update(version=ep.version_key(), music=music.credits, times=[mmss(r["t"]) for r in rows],
                     chapters=[{"t": round(first.get(i, 0.0), 2), "time": mmss(first.get(i, 0.0)),
                                "heading": s["heading"]} for i, s in enumerate(pack["draft"]["sections"])],
                     gone=[r["text"] for r in rows if r["gone"]])
         if not keep_text:
-            pack["markdown"] = render_markdown(ep.id, pack["draft"], rows, cues)
+            pack["markdown"] = render_markdown(ep.id, pack["draft"], rows, music.credits)
 
     # ---- view
     def view(self, ep: Episode) -> dict:
@@ -666,23 +665,23 @@ class Publisher:
         out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
         if pack is None:
             return out
-        cues = music_cues(self.ws, ep.id)
+        music = music_info(self.ws, ep.id)
         d = pack["draft"]
         out["pack"] = {
             "title": d["title"], "alt_titles": d["alt_titles"], "blurb": d["blurb"],
             "markdown": pack["markdown"], "edited": pack["edited"], "chapters": pack["chapters"],
             "names": [{k: n[k] for k in ("heard", "suggested", "why", "state")} for n in d["names"]],
-            "stale": pack["version"] != ep.version_key() or (cues or []) != (pack.get("music") or []),
+            "stale": pack["version"] != ep.version_key() or music.credits != pack.get("music"),
             "gone": pack.get("gone", []), "notes": pack.get("notes", []), "adapter": pack["adapter"],
             "usage": pack.get("usage") or {}, "generated_at": pack["generated_at"],
-            "library": cues is not None,
+            "library": music.library,
         }
         return out
 
 
-def _replace_bgm(md: str, cues: list[dict] | None) -> str:
+def _replace_bgm(md: str, credits: list[dict] | None) -> str:
     """Swap the body of the BGM section (up to the next rule / heading) in edited Markdown."""
     m = re.search(r"(## 🎵 本期 BGM\n\n)(.*?)(\n\n---|\n## |\Z)", md, flags=re.S)
     if not m:
         return md
-    return md[:m.start(2)] + "\n".join(bgm_lines(cues)) + md[m.end(2):]
+    return md[:m.start(2)] + "\n".join(bgm_lines(credits)) + md[m.end(2):]

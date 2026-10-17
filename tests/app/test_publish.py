@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from lacuna_app import Episode, Workspace, create_app
 from lacuna_app.editor import MockEditorAdapter
-from lacuna_app.publish import (TOOL, ClaudePublisher, Publisher, RulePublisher, clean, final_time, load_names,
+from lacuna_app.publish import (TOOL, ClaudePublisher, Publisher, RulePublisher, clean, load_names,
                                 make_publisher, mmss, retime_markdown, segments)
 
 from .fake_claude import FakePublishAnthropic
@@ -234,40 +234,54 @@ def test_fixing_a_name_everywhere_and_remembering_it(ws, ep, pub, fake):
 
 # ---------------------------------------------------------------------------- music from the library (6a)
 
+def fake_music(monkeypatch, credits, inserts):
+    """Stand-in for 6a's lacuna_app.music: bgm_credits + final_time (inserted music before t)."""
+    mod = types.ModuleType("lacuna_app.music")
+    mod.bgm_credits = lambda w, eid: [dict(c) for c in credits] if eid == EPISODE else []
+    mod.final_time = lambda w, eid, t: t + sum(n for at, n in inserts if at <= t + 1e-6)
+    monkeypatch.setitem(sys.modules, "lacuna_app.music", mod)
+    monkeypatch.setattr(sys.modules["lacuna_app"], "music", mod, raising=False)
+
+
+def credit(role, label, start, end, line, status="confirmed"):
+    return {"role": role, "role_label": label, "start_s": start, "end_s": end, "asset_id": "a_x", "title": None,
+            "artist": None, "composer": None, "album": None, "film": None, "year": None,
+            "credit_status": status, "credit_line": line}
+
+
 def test_music_from_the_library_moves_times_and_fills_bgm(ws, ep, pub, monkeypatch):
-    cues = [{"role": "intro", "at_s": 0.0, "length_s": 30.0, "inserted": True, "title": "Main Theme",
-             "artist": "Michael Giacchino", "film": "Spider-Man"},
-            {"role": "interlude", "at_s": 25.0, "length_s": 10.0, "inserted": True, "title": "", "artist": "", "film": ""},
-            {"role": "outro", "at_s": 51.0, "length_s": 20.0, "inserted": True, "title": "End", "artist": "", "film": "X"}]
-    lib = types.ModuleType("lacuna_app.library")
-    lib.episode_music = lambda w, eid: [dict(c) for c in cues] if eid == EPISODE else []
-    monkeypatch.setitem(sys.modules, "lacuna_app.library", lib)
-    monkeypatch.setattr(sys.modules["lacuna_app"], "library", lib, raising=False)
+    # intro 30 s at 0, interlude 10 s at voice 25 s (final 55 s), outro after the talk (voice 51 s -> final 91 s)
+    credits = [credit("intro", "片头", 0.0, 30.0, "《蜘蛛侠》原声 · Michael Giacchino — “Main Theme”"),
+               credit("interlude", "间奏", 55.0, 65.0, "interlude.wav", "unknown"),
+               credit("outro", "片尾", 91.0, 111.0, "“End”", "suggested")]
+    fake_music(monkeypatch, credits, [(0.0, 30.0), (25.0, 10.0)])
 
     pub.start(ep, wait=True)
     v = pub.view(ep)["pack"]
     tl = timeline_lines(v["markdown"])
     assert tl[0] == "- **00:00** 片头"
     assert tl[1] == "- **00:30** Leon 聊到「我们今天聊一」"          # 0.5 s + 30 s intro
-    assert "- **00:55** 🎵 间奏" in tl                                # 25 s + 30 s intro
+    assert "- **00:55** 🎵 间奏" in tl
     assert "- **01:05** Pei 聊到「电影真的很好」" in tl                 # 25.5 + 30 + 10
-    assert tl[-1] == "- **01:31** 片尾"                              # 51 + 30 + 10
-    assert "- **片头**：Main Theme — Michael Giacchino（Spider-Man）" in v["markdown"]
-    assert "- **00:55 间奏**：（曲名待补" in v["markdown"]
-    assert "- **片尾**：End（X）" in v["markdown"]
+    assert tl[-1] == "- **01:31** 片尾"
+    assert "- **片头**：《蜘蛛侠》原声 · Michael Giacchino — “Main Theme”" in v["markdown"]
+    assert "- **00:55 间奏**：interlude.wav" in v["markdown"]
+    assert "- **片尾**：“End”（曲名待确认）" in v["markdown"]
     assert v["library"] is True and v["stale"] is False
-    # Leon names the interlude in the library -> stale -> re-timing refreshes the BGM lines only
-    cues[1]["title"] = "Interlude"
+    # Leon confirms the interlude's title in the library -> stale -> re-timing refreshes the BGM lines only
+    credits[1].update(credit_line="《奥德赛》原声 — “Interlude”", credit_status="confirmed")
     pub.edit(ep, markdown=v["markdown"].replace("片头", "开场", 1))
     assert pub.view(ep)["pack"]["stale"] is True
     pub.retime(ep)
     md = pub.view(ep)["pack"]["markdown"]
-    assert "- **00:55 间奏**：Interlude" in md and "- **00:00** 开场" in md
+    assert "- **00:55 间奏**：《奥德赛》原声 — “Interlude”" in md and "- **00:00** 开场" in md
 
 
-def test_final_time_adds_inserted_music_only():
-    cues = [{"at_s": 0.0, "length_s": 30.0, "inserted": True}, {"at_s": 10.0, "length_s": 99.0, "inserted": False}]
-    assert final_time(5.0, cues) == 35.0 and final_time(5.0, None) == 5.0
+def test_library_without_music_says_bgm_not_set(ws, ep, pub, monkeypatch):
+    fake_music(monkeypatch, [], [])
+    pub.start(ep, wait=True)
+    v = pub.view(ep)["pack"]
+    assert "## 🎵 本期 BGM\n\n- BGM：未设置" in v["markdown"] and v["library"] is True
 
 
 # ---------------------------------------------------------------------------- API
