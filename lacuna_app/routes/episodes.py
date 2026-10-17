@@ -10,6 +10,7 @@ from ..dictation import Dictation
 from ..editor import editor_status
 from ..chat_learning import remember_text
 from ..episode import ConflictError
+from ..episode_index import EpisodeIndex
 
 
 class PlayheadBody(BaseModel):
@@ -39,6 +40,7 @@ class OpBody(PlayheadBody):
 def register(app, ctx) -> None:
     ws, adapter, get, mutate = ctx.ws, ctx.adapter, ctx.get, ctx.mutate
     dictation = ctx.provide("dictation", lambda: Dictation(ws.root / "models"))
+    index = ctx.provide("episode_index", lambda: EpisodeIndex(ws, ctx.loaded, ctx.peek))
 
     @app.get("/api/health")
     def health():
@@ -46,14 +48,7 @@ def register(app, ctx) -> None:
 
     @app.get("/api/episodes")
     def list_episodes():
-        out = []
-        for eid in ws.episode_ids():
-            try:
-                s = get(eid).summary()
-                out.append({k: s[k] for k in ("id", "title", "demo", "duration", "raw_duration", "pending_review")})
-            except Exception as e:   # a broken episode must not hide the others
-                out.append({"id": eid, "title": eid, "error": str(e)})
-        return {"episodes": out} | editor_status(adapter)
+        return {"episodes": index.rows()} | editor_status(adapter)
 
     @app.get("/api/episodes/{episode_id}")
     def load_episode(episode_id: str):
