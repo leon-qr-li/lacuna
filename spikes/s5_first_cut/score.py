@@ -26,6 +26,12 @@ interjection handling agreement (deleted / moved / kept).
 Usage:
   python score.py --ops ops.json [--gt ../s4_alignment/out/ep001_alignment.json]
                   [--tokens out/ep001_tokens.json] [--json report.json] [--top 15]
+                  [--min-raw 2200] [--max-raw 4412]
+
+Time window (--min-raw / --max-raw, raw seconds, both optional): AI removals, GT removals and GT
+ambiguous spans are all clipped to [min_raw, max_raw); floor pauses and interjection candidates are
+restricted to ones lying inside the window; duration is reported for the window only (raw = window
+length, Leon/AI estimates by the same formula). Without these flags the scorer is unchanged.
 """
 from __future__ import annotations
 
@@ -253,17 +259,30 @@ def gt_interjection_state(u, rem, segs, tracks):
 
 # --------------------------------------------------------------------------- scoring
 
-def score(ops_doc, gt_path, tok_path, tol_s=0.10, ev_tol_s=0.30, top=15):
+def score(ops_doc, gt_path, tok_path, tol_s=0.10, ev_tol_s=0.30, top=15, min_raw=None, max_raw=None):
     tok = json.load(open(tok_path, encoding="utf-8"))
     n = fr(max(t["end"] for tr in tok["tracks"].values() for t in tr) + 5)
     gtd, gt_rem, gt_amb, segs = load_gt(gt_path, n)
     n = max(n, fr(gtd["stats"]["raw_duration_s"]) + 10)
     tracks = {k: Track(k, tok["tracks"][k], n) for k in NAMES}
     ai_rem, ai_cat, ai_op, slips, flags, warns = resolve_ops(ops_doc["ops"], tracks, n)
+    windowed = min_raw is not None or max_raw is not None
+    w0 = fr(min_raw) if min_raw is not None else 0
+    w1 = min(n, fr(max_raw)) if max_raw is not None else n
+    if windowed:
+        W = np.zeros(n, bool)
+        W[w0:w1] = True
+        for tag in NAMES:
+            ai_rem[tag] &= W
+            gt_rem[tag] &= W
+            gt_amb[tag] &= W
+        slips = [s for s in slips if s["start"] >= w0 * HOP and s["end"] <= w1 * HOP]
     ops = ops_doc["ops"]
     k_tol, k_ev = fr(tol_s), fr(ev_tol_s)
     R = {"n_ops": len(ops), "ops_by_type": {}, "warnings": warns[:50], "n_warnings": len(warns),
          "keep_flags": len(flags), "tracks": {}}
+    if windowed:
+        R["window_raw_s"] = [round(w0 * HOP, 2), round(w1 * HOP, 2)]
     for o in ops:
         R["ops_by_type"][o["op"]] = R["ops_by_type"].get(o["op"], 0) + 1
 
@@ -383,12 +402,28 @@ def score(ops_doc, gt_path, tok_path, tol_s=0.10, ev_tol_s=0.30, top=15):
                      "leon_est_by_formula_s": round(raw - (gL + gP) / 2, 1),
                      "ai_est_s": round(raw - (aiL + aiP) / 2, 1),
                      "formula": "raw - mean(per-track removed); compare ai_est_s with leon_est_by_formula_s"}
+    if windowed:
+        # same formula, restricted to the window (GT = removed_raw clipped to the window)
+        def clip_sum(spans):
+            return sum(max(0.0, min(b, w1 * HOP) - max(a, w0 * HOP)) for a, b in spans)
+        raw_w = min(raw, w1 * HOP) - w0 * HOP
+        gLw, gPw = clip_sum(gtd["removed_raw"]["Leon"]), clip_sum(gtd["removed_raw"]["Pei"])
+        fin_w = clip_sum([s["leon_src"] for s in segs])
+        R["duration"] = {"raw_s": round(raw_w, 1),
+                         "leon_final_from_raw_s": round(fin_w, 1),
+                         "leon_final_incl_music_s": None,
+                         "leon_est_by_formula_s": round(raw_w - (gLw + gPw) / 2, 1),
+                         "ai_est_s": round(raw_w - (aiL + aiP) / 2, 1),
+                         "formula": "window only: raw = window length; final_from_raw = kept Leon-track source "
+                                    "inside the window; estimates = raw - mean(per-track removed in window)"}
 
     # pause distribution, paired per floor gap (neither host speaking, >= 0.3 s)
     both_sil = ~(tracks["L"].speech | tracks["P"].speech)
     rows = []
     for a, b in runs(both_sil):
         if b - a < 30 or a == 0 or b >= n - 10:
+            continue
+        if windowed and (a < w0 or b > w1):
             continue
         L0 = (b - a) * HOP
         g_after = L0 - (gt_rem["L"][a:b].sum() + gt_rem["P"][a:b].sum()) * HOP / 2
@@ -406,6 +441,8 @@ def score(ops_doc, gt_path, tok_path, tol_s=0.10, ev_tol_s=0.30, top=15):
 
     # interjections
     ij = interjections(tracks, n)
+    if windowed:
+        ij = [u for u in ij if u["start"] >= w0 * HOP and u["end"] <= w1 * HOP]
     conf = {}
     deltas = []
     for u in ij:
@@ -439,7 +476,8 @@ def score(ops_doc, gt_path, tok_path, tol_s=0.10, ev_tol_s=0.30, top=15):
 
 def print_report(R, name):
     p = print
-    p(f"=== {name} ===  ops={R['n_ops']} {R['ops_by_type']}  keep_flags={R['keep_flags']}  warnings={R['n_warnings']}")
+    p(f"=== {name} ===  ops={R['n_ops']} {R['ops_by_type']}  keep_flags={R['keep_flags']}  warnings={R['n_warnings']}"
+      + (f"  window={R['window_raw_s']}" if "window_raw_s" in R else ""))
     for tag, t in R["tracks"].items():
         p(f"[{tag}] removed AI {t['ai_removed_s']}s vs Leon {t['gt_removed_s']}s (ambiguous {t['gt_ambiguous_s']}s) | "
           f"P {t['precision_s']:.3f} R {t['recall_s']:.3f} | speech P {t['speech']['precision']:.3f} R {t['speech']['recall']:.3f} "
@@ -475,9 +513,11 @@ def main():
     ap.add_argument("--event-tol", type=float, default=0.30)
     ap.add_argument("--top", type=int, default=15)
     ap.add_argument("--json")
+    ap.add_argument("--min-raw", type=float, default=None, help="score only raw time >= this (s)")
+    ap.add_argument("--max-raw", type=float, default=None, help="score only raw time < this (s)")
     a = ap.parse_args()
     ops = json.load(open(a.ops, encoding="utf-8"))
-    R = score(ops, a.gt, a.tokens, a.tol, a.event_tol, a.top)
+    R = score(ops, a.gt, a.tokens, a.tol, a.event_tol, a.top, a.min_raw, a.max_raw)
     print_report(R, os.path.basename(a.ops))
     if a.json:
         json.dump(R, open(a.json, "w", encoding="utf-8"), ensure_ascii=False, indent=1)

@@ -1,0 +1,25 @@
+=== ai_first_cut_ops.json ===  ops=438 {'cut': 275, 'tighten_pause': 153, 'keep_flag': 7, 'slip': 3}  keep_flags=7  warnings=0  window=[2200.0, 4415.29]
+[L] removed AI 138.1s vs Leon 409.2s (ambiguous 18.7s) | P 0.695 R 0.232 | speech P 0.690 R 0.174 (AI 44.6s / Leon 176.1s) | pause P 0.698 R 0.277 | events P 0.807 R 0.411 (AI 145 / Leon 253) | FALSE DEL 13.81s (30) | missed speech 145.49s
+[P] removed AI 141.6s vs Leon 407.1s (ambiguous 2.2s) | P 0.597 R 0.206 | speech P 0.253 R 0.305 (AI 52.0s / Leon 40.5s) | pause P 0.797 R 0.195 | events P 0.609 R 0.559 (AI 156 / Leon 229) | FALSE DEL 38.82s (72) | missed speech 28.16s
+duration: AI est 2072.1s vs Leon est 1806.0s (Leon actual from raw 1809.7s, raw 2211.9s)
+floor pauses (n=582) median raw 0.55 / Leon 0.39 / AI 0.55; >1s raw 110 Leon 41 AI 38; paired MAE 0.251s
+by category: {"pause": {"removed_s": 168.5, "precision": 0.759, "speech_removed_s": 0.0, "false_deletion_s": 0.0}, "disfluency": {"removed_s": 68.3, "precision": 0.48, "speech_removed_s": 58.5, "false_deletion_s": 31.2}, "repetition": {"removed_s": 31.4, "precision": 0.408, "speech_removed_s": 31.0, "false_deletion_s": 18.4}, "crosstalk": {"removed_s": 7.3, "precision": 0.589, "speech_removed_s": 7.0, "false_deletion_s": 2.9}, "single_track_noise": {"removed_s": 4.2, "precision": 0.669, "speech_removed_s": 0.0, "false_deletion_s": 0.0}}
+interjections: 170 candidates; GT moved 68, AI moved 0, both 0, sign agree None, median |Δ err| None; confusion {'deleted': {'kept': 19, 'deleted': 4}, 'moved': {'kept': 63, 'deleted': 5}, 'kept': {'kept': 75, 'deleted': 2}, 'unclear': {'kept': 2}}
+false deletions total 53.03s; top:
+   P 3312.18-3314.16 1.98s P005536 「呃就是」 disfluency op0322
+   P 4033.77-4035.53 1.76s P007072 「对这也就就」 disfluency op0388
+   L 4164.27-4165.86 1.59s L010467 「我是第一个接触」 disfluency op0407
+   P 3031.58-3033.04 1.46s P005201 「那那如果我不我」 disfluency op0293
+   P 3613.35-3614.70 1.35s P006377 「我刚刚在聊这个」 disfluency op0350
+   L 4298.09-4299.43 1.34s L010963 「那就是那种就是」 disfluency op0419
+   P 3012.01-3013.27 1.26s P005130 「如果你」 disfluency op0290
+   P 2340.33-2341.58 1.25s P003324 「不住在一个就是」 disfluency op0223
+missed removals top:
+   L 4370.72-4378.14 7.42s L011084 「那么ntentendo就是你赶紧玩那个什么元宇宙吧ggta六」
+   L 2229.81-2234.14 4.33s L006260 「不是就是audeesy因为当时这个电影上映的时候这边还没有装」
+   L 2262.80-2267.08 4.28s L006419 「他会问有什么区别我跟他说没区别去看avx」
+   L 2249.54-2253.40 3.86s L006355 「就我觉得哇这这而且就这个现象不是说我片骗」
+   L 2253.78-2257.45 3.67s L006375 「有很多人就来问我说七十毫米的电影值得看吗你」
+   L 2392.43-2395.72 3.29s L006573 「就是你想那黑神话对吧中国人不也高潮了嘛就是」
+   L 2237.47-2240.73 3.26s L006289 「没有所以大家不看然后装了七十毫米人都说我操」
+   L 2406.43-2409.64 3.21s L006626 「看着像学者的人就是看像乌迪艾伦的人你知道吗就是」

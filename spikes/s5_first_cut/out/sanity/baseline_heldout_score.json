@@ -1,0 +1,363 @@
+{
+ "n_ops": 308,
+ "ops_by_type": {
+  "tighten_pause": 308
+ },
+ "warnings": [],
+ "n_warnings": 0,
+ "keep_flags": 0,
+ "tracks": {
+  "L": {
+   "ai_removed_s": 162.6,
+   "gt_removed_s": 409.2,
+   "gt_ambiguous_s": 18.7,
+   "precision_s": 0.656,
+   "recall_s": 0.257,
+   "speech": {
+    "ai_removed_s": 0.0,
+    "gt_removed_s": 176.1,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "pause": {
+    "ai_removed_s": 162.6,
+    "gt_removed_s": 233.1,
+    "precision": 0.656,
+    "recall": 0.452
+   },
+   "events": {
+    "ai": 158,
+    "gt": 253,
+    "precision": 0.816,
+    "recall": 0.458,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 0.0,
+   "false_deletion_items": 0,
+   "missed_speech_removal_s": 176.1,
+   "missed_items": 215
+  },
+  "P": {
+   "ai_removed_s": 162.6,
+   "gt_removed_s": 407.1,
+   "gt_ambiguous_s": 2.2,
+   "precision_s": 0.742,
+   "recall_s": 0.296,
+   "speech": {
+    "ai_removed_s": 0.0,
+    "gt_removed_s": 40.5,
+    "precision": 0.0,
+    "recall": 0.0
+   },
+   "pause": {
+    "ai_removed_s": 162.6,
+    "gt_removed_s": 366.6,
+    "precision": 0.742,
+    "recall": 0.329
+   },
+   "events": {
+    "ai": 158,
+    "gt": 229,
+    "precision": 0.804,
+    "recall": 0.603,
+    "tolerance_s": 0.3
+   },
+   "false_deletion_s": 0.0,
+   "false_deletion_items": 0,
+   "missed_speech_removal_s": 40.51,
+   "missed_items": 74
+  }
+ },
+ "window_raw_s": [
+  2200.0,
+  4415.29
+ ],
+ "false_deletions_top": [],
+ "missed_removals_top": [
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    4370.72,
+    4378.14
+   ],
+   "dur": 7.42,
+   "first_token": "L011084",
+   "text": "那么ntentendo就是你赶紧玩那个什么元宇宙吧ggta六还有俩两个月真正的元宇宙",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2229.81,
+    2234.14
+   ],
+   "dur": 4.33,
+   "first_token": "L006260",
+   "text": "不是就是audeesy因为当时这个电影上映的时候这边还没有装七十毫米",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2262.8,
+    2267.08
+   ],
+   "dur": 4.28,
+   "first_token": "L006419",
+   "text": "他会问有什么区别我跟他说没区别去看avx",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2249.54,
+    2253.4
+   ],
+   "dur": 3.86,
+   "first_token": "L006355",
+   "text": "就我觉得哇这这而且就这个现象不是说我片骗",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    3255.76,
+    3259.47
+   ],
+   "dur": 3.71,
+   "first_token": "L008463",
+   "text": "嗯还是期待诺诺兰老老实实拍结构吧就是还是",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2253.78,
+    2257.45
+   ],
+   "dur": 3.67,
+   "first_token": "L006375",
+   "text": "有很多人就来问我说七十毫米的电影值得看吗你",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2392.43,
+    2395.72
+   ],
+   "dur": 3.29,
+   "first_token": "L006573",
+   "text": "就是你想那黑神话对吧中国人不也高潮了嘛就是",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2237.47,
+    2240.73
+   ],
+   "dur": 3.26,
+   "first_token": "L006289",
+   "text": "没有所以大家不看然后装了七十毫米人都说我操",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2835.5,
+    2838.74
+   ],
+   "dur": 3.24,
+   "first_token": "L007196",
+   "text": "里就是诺兰啊不是不是诺什么诺诺诺兰就是",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    4054.47,
+    4057.69
+   ],
+   "dur": 3.22,
+   "first_token": "L010122",
+   "text": "我都忘了你要你要不说我都忘了奥利给里theday呀",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2406.43,
+    2409.64
+   ],
+   "dur": 3.21,
+   "first_token": "L006626",
+   "text": "看着像学者的人就是看像乌迪艾伦的人你知道吗就是",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    4160.63,
+    4163.64
+   ],
+   "dur": 3.01,
+   "first_token": "L010452",
+   "text": "嗯嗯就是因为因为becauseofthegame啊",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    2257.66,
+    2260.66
+   ],
+   "dur": 3.0,
+   "first_token": "L006396",
+   "text": "知道为什么他问我值不值得看因为对他来说太贵了",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "L",
+   "kind": "missed_removal",
+   "raw": [
+    4360.77,
+    4363.71
+   ],
+   "dur": 2.94,
+   "first_token": "L011061",
+   "text": "我到时候安安利你将来玩玩生化危机的游戏我",
+   "op": null,
+   "category": null,
+   "reason": null
+  },
+  {
+   "track": "P",
+   "kind": "missed_removal",
+   "raw": [
+    2227.23,
+    2230.16
+   ],
+   "dur": 2.93,
+   "first_token": "P003117",
+   "text": "hlithy这边你至少要排两个月我感觉",
+   "op": null,
+   "category": null,
+   "reason": null
+  }
+ ],
+ "false_deletion_total_s": 0,
+ "by_category": {
+  "pause": {
+   "removed_s": 325.3,
+   "precision": 0.699,
+   "speech_removed_s": 0.0,
+   "false_deletion_s": 0.0
+  }
+ },
+ "duration": {
+  "raw_s": 2211.9,
+  "leon_final_from_raw_s": 1809.7,
+  "leon_final_incl_music_s": null,
+  "leon_est_by_formula_s": 1806.0,
+  "ai_est_s": 2049.3,
+  "formula": "window only: raw = window length; final_from_raw = kept Leon-track source inside the window; estimates = raw - mean(per-track removed in window)"
+ },
+ "floor_pauses": {
+  "n": 582,
+  "raw": {
+   "p10": 0.33,
+   "p25": 0.41,
+   "median": 0.55,
+   "p75": 0.83,
+   "p90": 1.36,
+   "n_gt_1s": 110,
+   "n_gt_2s": 22,
+   "total_s": 433.5
+  },
+  "leon": {
+   "p10": 0.0,
+   "p25": 0.21,
+   "median": 0.39,
+   "p75": 0.56,
+   "p90": 0.82,
+   "n_gt_1s": 41,
+   "n_gt_2s": 9,
+   "total_s": 265.8
+  },
+  "ai": {
+   "p10": 0.33,
+   "p25": 0.4,
+   "median": 0.4,
+   "p75": 0.53,
+   "p90": 0.67,
+   "n_gt_1s": 0,
+   "n_gt_2s": 0,
+   "total_s": 270.8
+  },
+  "paired_mae_s": 0.249,
+  "paired_median_signed_s(ai-leon)": 0.0
+ },
+ "interjections": {
+  "n_candidates": 170,
+  "confusion_gt_rows_ai_cols": {
+   "deleted": {
+    "kept": 23
+   },
+   "moved": {
+    "kept": 68
+   },
+   "kept": {
+    "kept": 77
+   },
+   "unclear": {
+    "kept": 2
+   }
+  },
+  "gt_moved": 68,
+  "ai_moved": 0,
+  "both_moved": 0,
+  "sign_agreement": null,
+  "median_abs_delta_error_s": null,
+  "definition": "candidate = phrase <=6 tokens, <=2.5 s, preceded by >=0.5 s own pause, with >=1 s of the other host's speech within ±1 s. GT moved = kept and relative placement vs the other track changed by 0.3-3 s (from S4 per-track offsets); deleted = >=50% of its speech removed."
+ }
+}

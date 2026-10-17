@@ -1,0 +1,17 @@
+=== baseline_ops.json ===  ops=308 {'tighten_pause': 308}  keep_flags=0  warnings=0  window=[2200.0, 4415.29]
+[L] removed AI 162.6s vs Leon 409.2s (ambiguous 18.7s) | P 0.656 R 0.257 | speech P 0.000 R 0.000 (AI 0.0s / Leon 176.1s) | pause P 0.656 R 0.452 | events P 0.816 R 0.458 (AI 158 / Leon 253) | FALSE DEL 0.0s (0) | missed speech 176.1s
+[P] removed AI 162.6s vs Leon 407.1s (ambiguous 2.2s) | P 0.742 R 0.296 | speech P 0.000 R 0.000 (AI 0.0s / Leon 40.5s) | pause P 0.742 R 0.329 | events P 0.804 R 0.603 (AI 158 / Leon 229) | FALSE DEL 0.0s (0) | missed speech 40.51s
+duration: AI est 2049.3s vs Leon est 1806.0s (Leon actual from raw 1809.7s, raw 2211.9s)
+floor pauses (n=582) median raw 0.55 / Leon 0.39 / AI 0.4; >1s raw 110 Leon 41 AI 0; paired MAE 0.249s
+by category: {"pause": {"removed_s": 325.3, "precision": 0.699, "speech_removed_s": 0.0, "false_deletion_s": 0.0}}
+interjections: 170 candidates; GT moved 68, AI moved 0, both 0, sign agree None, median |Δ err| None; confusion {'deleted': {'kept': 23}, 'moved': {'kept': 68}, 'kept': {'kept': 77}, 'unclear': {'kept': 2}}
+false deletions total 0s; top:
+missed removals top:
+   L 4370.72-4378.14 7.42s L011084 「那么ntentendo就是你赶紧玩那个什么元宇宙吧ggta六」
+   L 2229.81-2234.14 4.33s L006260 「不是就是audeesy因为当时这个电影上映的时候这边还没有装」
+   L 2262.80-2267.08 4.28s L006419 「他会问有什么区别我跟他说没区别去看avx」
+   L 2249.54-2253.40 3.86s L006355 「就我觉得哇这这而且就这个现象不是说我片骗」
+   L 3255.76-3259.47 3.71s L008463 「嗯还是期待诺诺兰老老实实拍结构吧就是还是」
+   L 2253.78-2257.45 3.67s L006375 「有很多人就来问我说七十毫米的电影值得看吗你」
+   L 2392.43-2395.72 3.29s L006573 「就是你想那黑神话对吧中国人不也高潮了嘛就是」
+   L 2237.47-2240.73 3.26s L006289 「没有所以大家不看然后装了七十毫米人都说我操」

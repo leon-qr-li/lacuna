@@ -1,0 +1,3852 @@
+{
+ "episode": "EP001",
+ "model": "claude-opus-5-5 / S5 v2 blind held-out (brief + learned_rules_calib + EDITORIAL_RULES R001-R003)",
+ "notes": "Blind first cut of raw >= 2200 s. Pause targets per learned R1 (L→P 0.2, P→L 0.5, same speaker 0.8/1.0, laughs ~1s); Leon trimmed hard (R2/R3), Pei only clean restarts (R002 slightly stricter). Token times used for seams are interpolated from line timing.",
+ "ops": [
+  {
+   "id": "op0001",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2209.93,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.10s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0002",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2211.72,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.63s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0003",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2222.86,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.75s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0004",
+   "op": "cut",
+   "track": "L",
+   "from": "L006260",
+   "to": "L006263",
+   "category": "crosstalk",
+   "reason": "\"不是就是\" 压在 Pei 上的抢话起句",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0005",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2234.4,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.53s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0006",
+   "op": "cut",
+   "track": "both",
+   "from": "L006355",
+   "to": "L006374",
+   "category": "content",
+   "reason": "\"就我觉得哇这这而且就这个现象不是说我骗片\" 碎片+连接词堆叠, 后面\"有很多人就来问我\"干净接上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0007",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2254.29,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.38s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0008",
+   "op": "cut",
+   "track": "both",
+   "from": "L006395",
+   "to": "L006418",
+   "category": "content",
+   "reason": "旁白\"你知道为什么他问我值不值得看因为对他来说太贵了 (1.6s) 就\", 问答本身已清楚",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0009",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2269.72,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 0.99s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0010",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2271.8,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.87s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0011",
+   "op": "cut",
+   "track": "both",
+   "from": "L006450",
+   "to": "L006451",
+   "category": "disfluency",
+   "reason": "\"这是\"起句废弃, 重启\"有人为了看…\"",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0012",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2273.36,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.63s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0013",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2283.64,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.85s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0014",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2285.68,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.19s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0015",
+   "op": "cut",
+   "track": "both",
+   "from": "L006500",
+   "to": "L006502",
+   "category": "repetition",
+   "reason": "\"就这个就是\" 重启, 保留\"就是现在互联网的力量\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0016",
+   "op": "cut",
+   "track": "both",
+   "from": "L006517",
+   "to": "L006531",
+   "category": "content",
+   "reason": "尾部评价\"就是我我听说到这个事儿我就很震惊\"重复上一句的意思",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0017",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2292.45,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.51s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0018",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2299.76,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.84s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0019",
+   "op": "cut",
+   "track": "L",
+   "from": "L006534",
+   "to": "L006536",
+   "category": "disfluency",
+   "reason": "\"诺诺诺诺兰\" 口吃, 保留一个\"诺兰\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0020",
+   "op": "cut",
+   "track": "P",
+   "from": "P003182",
+   "to": "P003186",
+   "category": "repetition",
+   "reason": "Pei 干净重启 \"所以我觉得所以我觉得\" 删第一次",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0021",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2332.93,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.13s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0022",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2338.65,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.59s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0023",
+   "op": "cut",
+   "track": "both",
+   "from": "P003324",
+   "to": "P003335",
+   "category": "disfluency",
+   "reason": "Pei 乱码式起句\"不住在一个就是不不不是跟\", 保留\"我现在已经不是在电影行业了\"",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0024",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2347.53,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.90s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0025",
+   "op": "cut",
+   "track": "P",
+   "from": "P003361",
+   "to": "P003369",
+   "category": "repetition",
+   "reason": "Pei 重启 \"就是大家对这件事情\" → 保留 \"就这件事情对大家\"",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0026",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2352.57,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.03s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0027",
+   "op": "cut",
+   "track": "P",
+   "from": "P003414",
+   "to": "P003418",
+   "category": "repetition",
+   "reason": "Pei 重启 \"这不是他最这不是他最好的\" 删第一次",
+   "confidence": 0.4
+  },
+  {
+   "id": "op0028",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2363.76,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.25s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0029",
+   "op": "cut",
+   "track": "both",
+   "from": "L006569",
+   "to": "L006570",
+   "category": "repetition",
+   "reason": "\"definitely not … definitely not\" 第二遍重复",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0030",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2366.05,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.81s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0031",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2396.39,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.33s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0032",
+   "op": "cut",
+   "track": "both",
+   "from": "L006603",
+   "to": "L006607",
+   "category": "disfluency",
+   "reason": "\"就是这个是\" 连接词碎片, 接\"本土属性很强\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0033",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2399.88,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.63s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0034",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2401.55,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.56s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0035",
+   "op": "cut",
+   "track": "both",
+   "from": "L006623",
+   "to": "L006625",
+   "category": "disfluency",
+   "reason": "\"就是 … 呃\" 填充+长停顿",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0036",
+   "op": "cut",
+   "track": "both",
+   "from": "L006647",
+   "to": "L006649",
+   "category": "disfluency",
+   "reason": "\"就是 呃\" 填充",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0037",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2413.55,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.39s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0038",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2420.15,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.97s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0039",
+   "op": "cut",
+   "track": "P",
+   "from": "P003565",
+   "to": "P003565",
+   "category": "repetition",
+   "reason": "Pei \"很 很有西方起源\" 同字重启",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0040",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2421.1,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.32s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0041",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2424.46,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.58s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0042",
+   "op": "cut",
+   "track": "P",
+   "from": "P003608",
+   "to": "P003609",
+   "category": "repetition",
+   "reason": "Pei \"去去 去关注\" 口吃",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0043",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2433.21,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.80s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0044",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2440.93,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.79s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0045",
+   "op": "cut",
+   "track": "both",
+   "from": "L006667",
+   "to": "L006667",
+   "category": "repetition",
+   "reason": "\"就就\" 口吃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0046",
+   "op": "cut",
+   "track": "both",
+   "from": "L006673",
+   "to": "L006683",
+   "category": "content",
+   "reason": "粗口插话\"我操我就我这话说了就是\", 保留\"呵呵呵吧 咱们接下来就聊…\"",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0047",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2449.01,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.01s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0048",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2453.91,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续(笑声后留 ~1s) 地板间隙 3.05s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0049",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2467.94,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.43s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0050",
+   "op": "cut",
+   "track": "both",
+   "from": "L006771",
+   "to": "L006775",
+   "category": "disfluency",
+   "reason": "\"然后 一块儿\" 半句废弃",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0051",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2469.74,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.33s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0052",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2472.22,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.53s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0053",
+   "op": "cut",
+   "track": "both",
+   "from": "L006842",
+   "to": "L006843",
+   "category": "repetition",
+   "reason": "\"老老老婆\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0054",
+   "op": "cut",
+   "track": "both",
+   "from": "L006846",
+   "to": "L006847",
+   "category": "repetition",
+   "reason": "\"之前 面前\" 重启, 保留\"面前\"",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0055",
+   "op": "cut",
+   "track": "both",
+   "from": "L006862",
+   "to": "L006866",
+   "category": "disfluency",
+   "reason": "\"那那那那就\" 卡壳",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0056",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2492.55,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 2.10s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0057",
+   "op": "cut",
+   "track": "both",
+   "from": "L006870",
+   "to": "L006872",
+   "category": "disfluency",
+   "reason": "\"是是是\" 起句填充",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0058",
+   "op": "cut",
+   "track": "both",
+   "from": "L006888",
+   "to": "L006889",
+   "category": "repetition",
+   "reason": "\"节节节奏\" 口吃",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0059",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2500.21,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.86s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0060",
+   "op": "cut",
+   "track": "both",
+   "from": "P003646",
+   "to": "P003647",
+   "category": "repetition",
+   "reason": "Pei \"你这 (1.1s) 你这很温柔\" 重启",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0061",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2503.34,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.10s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0062",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2508.85,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 2.00s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0063",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2517.92,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.43s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0064",
+   "op": "cut",
+   "track": "both",
+   "from": "L006917",
+   "to": "L006928",
+   "category": "disfluency",
+   "reason": "\"但是不是我我帮你找吧找吧\" 摸索, 接\"我觉得我的落差是在于\"",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0065",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2533.35,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.69s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0066",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2537.52,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.62s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0067",
+   "op": "cut",
+   "track": "both",
+   "from": "L006992",
+   "to": "L006997",
+   "category": "disfluency",
+   "reason": "\"我觉得是啊 嗯\" 尾巴填充",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0068",
+   "op": "cut",
+   "track": "both",
+   "from": "L007006",
+   "to": "L007007",
+   "category": "repetition",
+   "reason": "\"一这这个东西\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0069",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2543.55,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.93s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0070",
+   "op": "cut",
+   "track": "both",
+   "from": "L007014",
+   "to": "L007020",
+   "category": "disfluency",
+   "reason": "\"就是然后最后还\" 废弃起句, 保留\"哎我靠最后还反战了啊\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0071",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2547.56,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.65s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0072",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2552.3,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.28s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0073",
+   "op": "cut",
+   "track": "both",
+   "from": "L007047",
+   "to": "L007075",
+   "category": "content",
+   "reason": "\"就是是他从哪儿…那个价值\" 重复解释 out of nowhere, 下一句\"在他之前的一个半小时…\"直接接上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0074",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2559.2,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.82s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0075",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2563.16,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 2.38s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0076",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2565.09,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.58s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0077",
+   "op": "cut",
+   "track": "P",
+   "from": "P003706",
+   "to": "P003708",
+   "category": "repetition",
+   "reason": "Pei \"那这个 那你是\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0078",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2566.2,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.44s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0079",
+   "op": "cut",
+   "track": "P",
+   "from": "P003719",
+   "to": "P003723",
+   "category": "crosstalk",
+   "reason": "Pei \"我觉得还挺\" 被 Leon 盖住后重启 \"这个倒是挺\"",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0080",
+   "op": "cut",
+   "track": "L",
+   "from": "L007110",
+   "to": "L007111",
+   "category": "crosstalk",
+   "reason": "Leon \"承认\" 残句压在 Pei 上, 后面有完整\"我承认\"",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0081",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2593.07,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.05s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0082",
+   "op": "cut",
+   "track": "L",
+   "from": "L007117",
+   "to": "L007121",
+   "category": "crosstalk",
+   "reason": "Leon \"他弟他哥 嗯\" 压在 Pei 句中的插嘴",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0083",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2624.78,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.69s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0084",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2663.25,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.54s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0085",
+   "op": "cut",
+   "track": "P",
+   "from": "P004141",
+   "to": "P004147",
+   "category": "repetition",
+   "reason": "Pei \"顺时针讲就顺顺\" 重启, 保留\"顺时针开始讲故事了\"",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0086",
+   "op": "cut",
+   "track": "L",
+   "from": "L007142",
+   "to": "L007142",
+   "category": "repetition",
+   "reason": "\"流流水账\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0087",
+   "op": "cut",
+   "track": "L",
+   "from": "L007155",
+   "to": "L007157",
+   "category": "crosstalk",
+   "reason": "\"像个游 像个游戏\" 重启, 第一次压在 Pei 上",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0088",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2714.07,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.45s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0089",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2754.99,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.69s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0090",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2830.28,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.11s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0091",
+   "op": "cut",
+   "track": "both",
+   "from": "L007191",
+   "to": "L007216",
+   "category": "content",
+   "reason": "\"就因为文本里就是诺兰啊不是不是诺什么诺诺诺兰就是原来\" 摸索开头, 保留\"文本里奥德修斯那本书…\"",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0092",
+   "op": "cut",
+   "track": "both",
+   "from": "L007220",
+   "to": "L007221",
+   "category": "repetition",
+   "reason": "\"奥德奥德修斯\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0093",
+   "op": "cut",
+   "track": "both",
+   "from": "L007269",
+   "to": "L007270",
+   "category": "repetition",
+   "reason": "\"极极极度\" 口吃",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0094",
+   "op": "cut",
+   "track": "both",
+   "from": "L007293",
+   "to": "L007294",
+   "category": "repetition",
+   "reason": "\"才衔才衔接\" 重启",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0095",
+   "op": "cut",
+   "track": "both",
+   "from": "L007311",
+   "to": "L007312",
+   "category": "repetition",
+   "reason": "\"就射就冲头射了一箭\" 重启",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0096",
+   "op": "cut",
+   "track": "both",
+   "from": "L007328",
+   "to": "L007332",
+   "category": "disfluency",
+   "reason": "\"就是他我觉\" 重启, 保留\"我到最后就觉得\"",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0097",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2867.59,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续(笑声后留 ~1s) 地板间隙 1.74s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0098",
+   "op": "cut",
+   "track": "both",
+   "from": "L007367",
+   "to": "L007369",
+   "category": "disfluency",
+   "reason": "\"这就是\" 卡壳",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0099",
+   "op": "cut",
+   "track": "both",
+   "from": "L007410",
+   "to": "L007424",
+   "category": "disfluency",
+   "reason": "\"就是那个那个 叫什么太阳牛就那个\" 找词, 保留\"太阳神的牛的那场戏\"",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0100",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2883.7,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.69s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0101",
+   "op": "cut",
+   "track": "both",
+   "from": "L007434",
+   "to": "L007435",
+   "category": "disfluency",
+   "reason": "\"就是 (0.7s)\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0102",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2887.01,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.73s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0103",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2889.27,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.43s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0104",
+   "op": "cut",
+   "track": "both",
+   "from": "L007444",
+   "to": "L007468",
+   "category": "content",
+   "reason": "\"啊就是flat扁平到一种…写出来的东西\" 重复上句\"太flat了\"的评价",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0105",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2894.15,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.67s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0106",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2895.86,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.65s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0107",
+   "op": "cut",
+   "track": "both",
+   "from": "L007469",
+   "to": "L007477",
+   "category": "disfluency",
+   "reason": "\"啊反正就是真的就是\" 连接词堆叠",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0108",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2900.41,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.03s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0109",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2912.06,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.46s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0110",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2913.2,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.81s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0111",
+   "op": "cut",
+   "track": "both",
+   "from": "L007542",
+   "to": "L007544",
+   "category": "disfluency",
+   "reason": "孤立的\"对就是\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0112",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2914.94,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.26s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0113",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2921.05,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.01s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0114",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2923.1,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 2.14s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0115",
+   "op": "cut",
+   "track": "both",
+   "from": "L007586",
+   "to": "L007590",
+   "category": "repetition",
+   "reason": "\"诺兰说自己说他说这部电影\" 重启",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0116",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2933.91,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.49s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0117",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2936.3,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.47s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0118",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2949.04,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 2.72s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0119",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2953.3,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 2.47s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0120",
+   "op": "cut",
+   "track": "both",
+   "from": "L007630",
+   "to": "L007631",
+   "category": "disfluency",
+   "reason": "\"就是\" 起句填充",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0121",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2955.18,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.38s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0122",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2960.93,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.83s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0123",
+   "op": "cut",
+   "track": "both",
+   "from": "L007654",
+   "to": "L007671",
+   "category": "content",
+   "reason": "\"可能是他拍的最生理的一部电影吧就是\" 重复上一句 physical",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0124",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2964.6,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.41s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0125",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2967.51,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.36s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0126",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2976.0,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.78s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0127",
+   "op": "cut",
+   "track": "L",
+   "from": "L007722",
+   "to": "L007724",
+   "category": "crosstalk",
+   "reason": "句尾\"说这啊\"残句, 压在 Pei \"是非虎\" 上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0128",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 2977.68,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.93s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0129",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3008.03,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 0.98s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0130",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3011.57,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.79s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0131",
+   "op": "cut",
+   "track": "P",
+   "from": "P005130",
+   "to": "P005134",
+   "category": "repetition",
+   "reason": "Pei \"如果你 (1.05s) 就是如果你\" 重启",
+   "confidence": 0.4
+  },
+  {
+   "id": "op0132",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3022.44,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.61s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0133",
+   "op": "cut",
+   "track": "P",
+   "from": "P005166",
+   "to": "P005169",
+   "category": "repetition",
+   "reason": "Pei \"就是好像就是好像\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0134",
+   "op": "cut",
+   "track": "L",
+   "from": "L007729",
+   "to": "L007733",
+   "category": "crosstalk",
+   "reason": "Leon \"这而且就是\" 残句压在 Pei 上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0135",
+   "op": "cut",
+   "track": "P",
+   "from": "P005205",
+   "to": "P005206",
+   "category": "repetition",
+   "reason": "Pei \"我不我当然\" 重启",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0136",
+   "op": "cut",
+   "track": "P",
+   "from": "P005220",
+   "to": "P005223",
+   "category": "repetition",
+   "reason": "Pei \"如果是指如果是这样\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0137",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3039.13,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.82s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0138",
+   "op": "cut",
+   "track": "both",
+   "from": "L007734",
+   "to": "L007737",
+   "category": "disfluency",
+   "reason": "\"对就是 嗯\" 起句填充",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0139",
+   "op": "cut",
+   "track": "both",
+   "from": "L007742",
+   "to": "L007746",
+   "category": "repetition",
+   "reason": "\"包括像你跟你刚才说的\" 重启",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0140",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3050.69,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.69s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0141",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3053.61,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.03s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0142",
+   "op": "cut",
+   "track": "both",
+   "from": "L007804",
+   "to": "L007806",
+   "category": "repetition",
+   "reason": "\"那种大就是大的场面\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0143",
+   "op": "slip",
+   "track": "P",
+   "from": "P005244",
+   "to": "P005244",
+   "delta_s": 1.0,
+   "category": "interjection_move",
+   "reason": "嗯 压在 Leon \"这一部里面\" 词中, 挪到\"感觉就是\"后的停顿",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0144",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3071.62,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.57s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0145",
+   "op": "cut",
+   "track": "both",
+   "from": "L007860",
+   "to": "L007886",
+   "category": "content",
+   "reason": "含糊的旁枝\"就是可惜了… 他委屈不委屈 吧反正我就\", 保留\"我觉得是跟interstellar…\"",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0146",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3081.79,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.44s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0147",
+   "op": "cut",
+   "track": "both",
+   "from": "L007896",
+   "to": "L007896",
+   "category": "disfluency",
+   "reason": "片名念错的残音 \"ant\"",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0148",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3082.53,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.60s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0149",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3089.65,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.70s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0150",
+   "op": "slip",
+   "track": "P",
+   "from": "P005249",
+   "to": "P005249",
+   "delta_s": -0.6,
+   "category": "interjection_move",
+   "reason": "嗯 压在 Leon \"即使是在\" 词中, 挪到前面 0.6s 的停顿",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0151",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3096.03,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.78s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0152",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3103.3,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.61s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0153",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3105.24,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "Pei→Leon(笑声后留 ~1s) 地板间隙 2.60s → 1.0s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0154",
+   "op": "cut",
+   "track": "both",
+   "from": "L007978",
+   "to": "L007979",
+   "category": "repetition",
+   "reason": "\"就就这就\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0155",
+   "op": "cut",
+   "track": "L",
+   "from": "L007998",
+   "to": "L007998",
+   "category": "disfluency",
+   "reason": "\"我觉得就 (0.4s)\" 填充",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0156",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3116.49,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.70s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0157",
+   "op": "cut",
+   "track": "both",
+   "from": 3117.32,
+   "to": 3119.4,
+   "category": "disfluency",
+   "reason": "\"嗯我我个人认为\" 废弃起句, 重启\"然后特别有意思\"(含其间 Pei 的一个嗯)",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0158",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3124.18,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.55s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0159",
+   "op": "cut",
+   "track": "both",
+   "from": "L008059",
+   "to": "L008059",
+   "category": "repetition",
+   "reason": "\"就就找电影\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0160",
+   "op": "cut",
+   "track": "both",
+   "from": "L008064",
+   "to": "L008075",
+   "category": "content",
+   "reason": "旁枝\"就十个小时啊我也没事儿干\"",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0161",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3129.7,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.81s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0162",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3132.43,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.86s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0163",
+   "op": "cut",
+   "track": "both",
+   "from": "L008091",
+   "to": "L008168",
+   "category": "content",
+   "reason": "旁枝细节: 信条中文字幕对不上、在家只看英文字幕; 保留\"我说这次终于有一个飞机上有中文字幕了\"的笑点",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0164",
+   "op": "cut",
+   "track": "both",
+   "from": "L008187",
+   "to": "L008190",
+   "category": "repetition",
+   "reason": "\"我看那个我看看\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0165",
+   "op": "cut",
+   "track": "L",
+   "from": "L008215",
+   "to": "L008215",
+   "category": "repetition",
+   "reason": "\"用用\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0166",
+   "op": "slip",
+   "track": "P",
+   "from": "P005265",
+   "to": "P005267",
+   "delta_s": 0.6,
+   "category": "interjection_move",
+   "reason": "嗯好 盖住 Leon 笑点\"依旧看不懂\", 挪到句末",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0167",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3162.44,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.08s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0168",
+   "op": "cut",
+   "track": "both",
+   "from": "L008266",
+   "to": "L008273",
+   "category": "content",
+   "reason": "句尾嘟囔\"啊就特别熟悉了嗯\"",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0169",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3173.49,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.87s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0170",
+   "op": "cut",
+   "track": "both",
+   "from": "L008285",
+   "to": "L008292",
+   "category": "repetition",
+   "reason": "\"没有给我的感没 有没有给我\" 重启",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0171",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3179.97,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.59s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0172",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3181.3,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.87s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0173",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3187.43,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续(笑声后留 ~1s) 地板间隙 5.35s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0174",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3198.59,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 2.34s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0175",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3203.7,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.44s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0176",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3205.82,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.94s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0177",
+   "op": "cut",
+   "track": "both",
+   "from": "L008381",
+   "to": "L008381",
+   "category": "repetition",
+   "reason": "\"雷雷斯科特\" 口吃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0178",
+   "op": "cut",
+   "track": "L",
+   "from": "L008387",
+   "to": "L008392",
+   "category": "crosstalk",
+   "reason": "\"什么呀什么呀\" 压在 Pei 说片名上",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0179",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3215.38,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.47s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0180",
+   "op": "cut",
+   "track": "L",
+   "from": "L008399",
+   "to": "L008403",
+   "category": "crosstalk",
+   "reason": "\"我都不是 完\" 残句压在 Pei 上",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0181",
+   "op": "cut",
+   "track": "L",
+   "from": "L008408",
+   "to": "L008410",
+   "category": "repetition",
+   "reason": "\"不是老不是老登\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0182",
+   "op": "cut",
+   "track": "L",
+   "from": "L008416",
+   "to": "L008417",
+   "category": "crosstalk",
+   "reason": "\"dog stars\" 复读压在 Pei 句中",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0183",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3232.48,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.73s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0184",
+   "op": "cut",
+   "track": "L",
+   "from": "L008425",
+   "to": "L008428",
+   "category": "crosstalk",
+   "reason": "\"行这个是\" 残句压在 Pei 上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0185",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3245.3,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.89s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0186",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3246.78,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.97s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0187",
+   "op": "cut",
+   "track": "both",
+   "from": "L008445",
+   "to": "L008461",
+   "category": "disfluency",
+   "reason": "\"回归了半球 / 行嗯 / 反正 / 对这个是基本就是\" 含糊尾巴+一串废弃起句+停顿",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0188",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3262.21,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 2.60s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0189",
+   "op": "cut",
+   "track": "both",
+   "from": "L008496",
+   "to": "L008501",
+   "category": "disfluency",
+   "reason": "\"就特别的就是\" 连接词",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0190",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3270.4,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.88s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0191",
+   "op": "cut",
+   "track": "P",
+   "from": "P005392",
+   "to": "P005393",
+   "category": "repetition",
+   "reason": "Pei \"很想我想说\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0192",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3278.57,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.92s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0193",
+   "op": "cut",
+   "track": "P",
+   "from": "P005439",
+   "to": "P005450",
+   "category": "repetition",
+   "reason": "Pei \"在他那拍 之前的电影的时候\" 重启为 \"拍interstellar的时候\"",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0194",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3292.16,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.91s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0195",
+   "op": "cut",
+   "track": "P",
+   "from": "P005474",
+   "to": "P005475",
+   "category": "repetition",
+   "reason": "Pei \"我我我\" 口吃",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0196",
+   "op": "cut",
+   "track": "P",
+   "from": "P005492",
+   "to": "P005498",
+   "category": "repetition",
+   "reason": "Pei \"这部电影就就lisy 这部电影\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0197",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3306.51,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.13s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0198",
+   "op": "cut",
+   "track": "P",
+   "from": "P005517",
+   "to": "P005520",
+   "category": "repetition",
+   "reason": "Pei \"嗯我可能 我可能观感\" 重启",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0199",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3340.44,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.44s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0200",
+   "op": "cut",
+   "track": "both",
+   "from": "L008562",
+   "to": "L008565",
+   "category": "repetition",
+   "reason": "\"一无 就是一无是处\" 重启",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0201",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3353.26,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.84s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0202",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3359.69,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.48s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0203",
+   "op": "cut",
+   "track": "both",
+   "from": "L008632",
+   "to": "L008636",
+   "category": "disfluency",
+   "reason": "\"不是就啊对\" 连接词堆叠",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0204",
+   "op": "cut",
+   "track": "both",
+   "from": "L008660",
+   "to": "L008664",
+   "category": "disfluency",
+   "reason": "\"然后就是 呃\" 填充",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0205",
+   "op": "cut",
+   "track": "both",
+   "from": "L008678",
+   "to": "L008680",
+   "category": "disfluency",
+   "reason": "\"就是 / 呃\" 填充",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0206",
+   "op": "cut",
+   "track": "both",
+   "from": "L008689",
+   "to": "L008690",
+   "category": "disfluency",
+   "reason": "\"这次在就是\" 填充",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0207",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3373.59,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.67s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0208",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3377.16,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.71s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0209",
+   "op": "cut",
+   "track": "both",
+   "from": "L008701",
+   "to": "L008702",
+   "category": "disfluency",
+   "reason": "孤立的\"就是\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0210",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3380.53,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.60s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0211",
+   "op": "cut",
+   "track": "both",
+   "from": "L008716",
+   "to": "L008717",
+   "category": "repetition",
+   "reason": "\"我觉我觉得\" 重启",
+   "confidence": 0.7
+  },
+  {
+   "id": "op0212",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3388.22,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.83s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0213",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3393.03,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.05s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0214",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3402.7,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.43s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0215",
+   "op": "cut",
+   "track": "P",
+   "from": "P005666",
+   "to": "P005667",
+   "category": "repetition",
+   "reason": "Pei \"跟我 我这次看\" 重启",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0216",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3408.78,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.75s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0217",
+   "op": "cut",
+   "track": "both",
+   "from": "L008798",
+   "to": "L008801",
+   "category": "repetition",
+   "reason": "\"你这你看你看的是\" 重启",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0218",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3415.2,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 3.83s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0219",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3419.04,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.06s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0220",
+   "op": "cut",
+   "track": "both",
+   "from": "L008830",
+   "to": "L008830",
+   "category": "disfluency",
+   "reason": "\"切到嗯下一部\" 填充",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0221",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3424.73,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.61s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0222",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3425.8,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.42s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0223",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3435.68,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.01s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0224",
+   "op": "cut",
+   "track": "both",
+   "from": "L008873",
+   "to": "L008889",
+   "category": "disfluency",
+   "reason": "\"我老觉得蜘蛛侠给我一种就是特别 就是\" 废弃起句, 重启\"我不知道为什么\"(Pei 的\"因为\"残句一并去掉)",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0225",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3440.73,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.34s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0226",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3453.85,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.44s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0227",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3460.06,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.72s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0228",
+   "op": "cut",
+   "track": "P",
+   "from": "P005722",
+   "to": "P005722",
+   "category": "repetition",
+   "reason": "Pei \"我我觉得\" 口吃",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0229",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3466.74,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.08s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0230",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3489.6,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.50s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0231",
+   "op": "cut",
+   "track": "P",
+   "from": "P005850",
+   "to": "P005853",
+   "category": "repetition",
+   "reason": "Pei \"他没有做 任何他没有纠结于\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0232",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3490.9,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.36s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0233",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3500.44,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.74s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0234",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3586.53,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.37s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0235",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3655.55,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.07s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0236",
+   "op": "cut",
+   "track": "L",
+   "from": "L009043",
+   "to": "L009044",
+   "category": "crosstalk",
+   "reason": "\"啊啊\" 压在 Pei \"猜的\" 上",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0237",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3663.91,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 2.81s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0238",
+   "op": "cut",
+   "track": "both",
+   "from": "L009065",
+   "to": "L009070",
+   "category": "disfluency",
+   "reason": "\"对但是spider man就是\" 废弃起句, 重启\"反正对于我来说\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0239",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3667.4,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.80s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0240",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3676.3,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.89s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0241",
+   "op": "slip",
+   "track": "P",
+   "from": "P006515",
+   "to": "P006515",
+   "delta_s": -0.5,
+   "category": "interjection_move",
+   "reason": "嗯 压在 Leon \"三株合体\" 词中, 挪到 no way home 后的停顿",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0242",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3684.78,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.56s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0243",
+   "op": "cut",
+   "track": "both",
+   "from": "L009164",
+   "to": "L009223",
+   "category": "content",
+   "reason": "旁枝: 首映怕剧透的经过, 保留\"holy shit…\"和\"托比马奎尔那一版在我心里特别重要\"",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0244",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3704.96,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.42s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0245",
+   "op": "cut",
+   "track": "both",
+   "from": "L009232",
+   "to": "L009232",
+   "category": "repetition",
+   "reason": "\"那那一版\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0246",
+   "op": "cut",
+   "track": "both",
+   "from": "L009252",
+   "to": "L009252",
+   "category": "disfluency",
+   "reason": "\"就跟嗯八十年代\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0247",
+   "op": "cut",
+   "track": "both",
+   "from": "L009310",
+   "to": "L009317",
+   "category": "repetition",
+   "reason": "\"然后整个电影都在 整个电影院都在欢呼\" 重启",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0248",
+   "op": "cut",
+   "track": "both",
+   "from": "L009363",
+   "to": "L009365",
+   "category": "repetition",
+   "reason": "\"原来蜘蛛拍蜘蛛侠\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0249",
+   "op": "cut",
+   "track": "both",
+   "from": "L009434",
+   "to": "L009443",
+   "category": "disfluency",
+   "reason": "\"就是那那个反派啊就是\" 填充, 接\"特别有意思的是\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0250",
+   "op": "cut",
+   "track": "both",
+   "from": "L009453",
+   "to": "L009453",
+   "category": "repetition",
+   "reason": "\"是是他自己的\" 口吃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0251",
+   "op": "cut",
+   "track": "both",
+   "from": "L009460",
+   "to": "L009464",
+   "category": "disfluency",
+   "reason": "\"就是是那个\" 填充",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0252",
+   "op": "cut",
+   "track": "both",
+   "from": "L009491",
+   "to": "L009491",
+   "category": "repetition",
+   "reason": "\"比比那个\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0253",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3764.25,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.07s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0254",
+   "op": "cut",
+   "track": "both",
+   "from": "L009500",
+   "to": "L009507",
+   "category": "disfluency",
+   "reason": "\"对吧 一个是对吧这\" 废弃起句",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0255",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3770.72,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.46s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0256",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3774.43,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.52s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0257",
+   "op": "cut",
+   "track": "both",
+   "from": "L009555",
+   "to": "L009564",
+   "category": "disfluency",
+   "reason": "\"那 对吧就是是那那那种\" 卡壳",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0258",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3784.97,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.49s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0259",
+   "op": "cut",
+   "track": "both",
+   "from": "L009577",
+   "to": "L009578",
+   "category": "disfluency",
+   "reason": "\"我觉得就是这个\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0260",
+   "op": "cut",
+   "track": "both",
+   "from": "L009601",
+   "to": "L009603",
+   "category": "disfluency",
+   "reason": "\"因为 呃\" 废弃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0261",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3795.87,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.46s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0262",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3796.93,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.83s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0263",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3801.46,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.61s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0264",
+   "op": "cut",
+   "track": "both",
+   "from": "L009640",
+   "to": "L009645",
+   "category": "content",
+   "reason": "\"啊有一种底色\" 句尾嘟囔",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0265",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3803.13,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.52s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0266",
+   "op": "slip",
+   "track": "P",
+   "from": "P006543",
+   "to": "P006543",
+   "delta_s": 0.4,
+   "category": "interjection_move",
+   "reason": "嗯 压在 Leon \"这太惨了\" 上, 挪到其后的停顿",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0267",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3807.96,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.77s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0268",
+   "op": "cut",
+   "track": "both",
+   "from": "L009664",
+   "to": "L009677",
+   "category": "content",
+   "reason": "重复评价\"这 基本就倒了霉了这蜘蛛侠算是\"(上一句已说\"这太惨了\")",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0269",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3811.72,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.91s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0270",
+   "op": "cut",
+   "track": "P",
+   "from": "P006547",
+   "to": "P006551",
+   "category": "repetition",
+   "reason": "Pei \"我给你我我我跟你\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0271",
+   "op": "cut",
+   "track": "P",
+   "from": "P006787",
+   "to": "P006787",
+   "category": "disfluency",
+   "reason": "Pei \"给我的一 感觉\" 残音",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0272",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3879.91,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.01s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0273",
+   "op": "cut",
+   "track": "P",
+   "from": "P007028",
+   "to": "P007029",
+   "category": "repetition",
+   "reason": "Pei \"很很很享受\" 口吃(保留一个强调)",
+   "confidence": 0.25
+  },
+  {
+   "id": "op0274",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3921.62,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.46s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0275",
+   "op": "cut",
+   "track": "L",
+   "from": "L009711",
+   "to": "L009712",
+   "category": "disfluency",
+   "reason": "\"就是\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0276",
+   "op": "cut",
+   "track": "both",
+   "from": "L009716",
+   "to": "L009717",
+   "category": "disfluency",
+   "reason": "\"说呃\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0277",
+   "op": "cut",
+   "track": "both",
+   "from": "L009747",
+   "to": 3942.7,
+   "category": "content",
+   "reason": "句尾含糊的玩笑+嘟囔\"我看那秦格雷那你你那肚子还出来干干嘛呀 … 这这这就\"",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0278",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3943.06,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.73s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0279",
+   "op": "cut",
+   "track": "both",
+   "from": "L009792",
+   "to": "L009805",
+   "category": "content",
+   "reason": "\"这个基本上大家已经公认的就是\" 冗余铺垫",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0280",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3949.41,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.45s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0281",
+   "op": "cut",
+   "track": "both",
+   "from": "L009817",
+   "to": "L009822",
+   "category": "disfluency",
+   "reason": "\"那基本上就是 / 就完了\" 重启",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0282",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3953.39,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.70s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0283",
+   "op": "cut",
+   "track": "both",
+   "from": "L009839",
+   "to": "L009841",
+   "category": "disfluency",
+   "reason": "\"所以那 (0.37)\" 废弃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0284",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3958.63,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.37s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0285",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3962.26,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.54s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0286",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3967.75,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.20s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0287",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3975.43,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.64s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0288",
+   "op": "cut",
+   "track": "both",
+   "from": "L009930",
+   "to": "L009930",
+   "category": "repetition",
+   "reason": "\"太太年轻\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0289",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3981.23,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.15s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0290",
+   "op": "cut",
+   "track": "L",
+   "from": "L009938",
+   "to": "L009946",
+   "category": "crosstalk",
+   "reason": "Leon \"啊是啊你不那什么嗯\" 残句压在 Pei 上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0291",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3986.65,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.44s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0292",
+   "op": "cut",
+   "track": "both",
+   "from": "L009967",
+   "to": "L009970",
+   "category": "disfluency",
+   "reason": "\"我的就是\" 废弃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0293",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 3997.86,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.39s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0294",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4004.8,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.15s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0295",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4007.47,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.30s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0296",
+   "op": "cut",
+   "track": "both",
+   "from": "L010026",
+   "to": "L010026",
+   "category": "repetition",
+   "reason": "\"还还是\" 口吃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0297",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4011.81,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.30s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0298",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4015.05,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 3.13s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0299",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4019.3,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 2.25s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0300",
+   "op": "cut",
+   "track": "both",
+   "from": "L010060",
+   "to": "L010062",
+   "category": "disfluency",
+   "reason": "句尾\"反正嗯\"",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0301",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4027.03,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.97s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0302",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4031.61,
+   "target_s": 0.4,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 3.34s → 0.4s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0303",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4045.33,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 5.12s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0304",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4051.48,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.03s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0305",
+   "op": "cut",
+   "track": "both",
+   "from": "L010115",
+   "to": "L010142",
+   "category": "content",
+   "reason": "旁枝\"奥利斯也有他俩 / 我都忘了你要不说我都忘了…\", 保留\"整个夏天就是荷兰弟跟赞达亚呗\"",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0306",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4058.45,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.53s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0307",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4060.66,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 2.40s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0308",
+   "op": "cut",
+   "track": "both",
+   "from": "L010143",
+   "to": 4066.4,
+   "category": "content",
+   "reason": "废弃的收尾\"然后行吧 咱们今天就先聊到这儿要不然\"(他接着总结), 含 Pei 的一个嗯",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0309",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4066.66,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.52s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0310",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4070.46,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.08s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0311",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4077.74,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.61s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0312",
+   "op": "cut",
+   "track": "both",
+   "from": "L010226",
+   "to": "L010232",
+   "category": "repetition",
+   "reason": "\"就今天的模嗯 呃当代folklore\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0313",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4094.68,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.49s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0314",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4095.99,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.18s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0315",
+   "op": "cut",
+   "track": "both",
+   "from": "L010274",
+   "to": "L010288",
+   "category": "repetition",
+   "reason": "\"一个是商业文化一个是原来的就是\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0316",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4099.54,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.49s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0317",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4105.19,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 0.95s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0318",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4108.85,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.09s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0319",
+   "op": "cut",
+   "track": "both",
+   "from": "L010343",
+   "to": "L010343",
+   "category": "repetition",
+   "reason": "\"我我是\" 口吃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0320",
+   "op": "cut",
+   "track": "both",
+   "from": "L010354",
+   "to": "L010356",
+   "category": "disfluency",
+   "reason": "\"但 / 就是\" 废弃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0321",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4119.63,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.30s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0322",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4121.58,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.72s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0323",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4123.28,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.57s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0324",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4124.99,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.15s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0325",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4129.2,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.46s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0326",
+   "op": "cut",
+   "track": "both",
+   "from": "L010387",
+   "to": "L010388",
+   "category": "disfluency",
+   "reason": "\"就是 (0.55)\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0327",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4130.02,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.55s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0328",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4131.47,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 2.02s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0329",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4140.12,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.93s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0330",
+   "op": "cut",
+   "track": "L",
+   "from": "L010398",
+   "to": "L010402",
+   "category": "crosstalk",
+   "reason": "\"什么什么我\" 压在 Pei 上的抢话",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0331",
+   "op": "cut",
+   "track": "both",
+   "from": "L010412",
+   "to": "L010417",
+   "category": "disfluency",
+   "reason": "\"就是这个是 / 呃\" 废弃+填充",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0332",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4150.16,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.00s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0333",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4152.87,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.62s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0334",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4156.4,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.31s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0335",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4159.49,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.46s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0336",
+   "op": "cut",
+   "track": "L",
+   "from": "L010450",
+   "to": "L010457",
+   "category": "disfluency",
+   "reason": "\"就是嗯嗯就是因为\" 卡壳",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0337",
+   "op": "cut",
+   "track": "L",
+   "from": "L010465",
+   "to": "L010475",
+   "category": "disfluency",
+   "reason": "\"就是我是第一个接触就是\" 废弃起句",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0338",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4172.31,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 3.35s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0339",
+   "op": "cut",
+   "track": "both",
+   "from": "L010505",
+   "to": "L010513",
+   "category": "repetition",
+   "reason": "\"我这这个电影系列这\" 重启为\"这个游戏系列\"",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0340",
+   "op": "cut",
+   "track": "both",
+   "from": "L010543",
+   "to": "L010545",
+   "category": "disfluency",
+   "reason": "\"然后 / 嗯\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0341",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4191.39,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.73s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0342",
+   "op": "cut",
+   "track": "L",
+   "from": "L010579",
+   "to": "L010580",
+   "category": "crosstalk",
+   "reason": "\"然后\" 残句压在 Pei 上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0343",
+   "op": "cut",
+   "track": "L",
+   "from": "L010599",
+   "to": "L010600",
+   "category": "crosstalk",
+   "reason": "\"然后\" 残句压在 Pei 上",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0344",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4206.95,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.24s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0345",
+   "op": "cut",
+   "track": "both",
+   "from": "L010604",
+   "to": "L010605",
+   "category": "repetition",
+   "reason": "\"变变变老登\" 口吃",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0346",
+   "op": "cut",
+   "track": "both",
+   "from": "L010616",
+   "to": "L010617",
+   "category": "disfluency",
+   "reason": "\"就是就特别\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0347",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4217.23,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.57s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0348",
+   "op": "cut",
+   "track": "both",
+   "from": "L010685",
+   "to": "L010686",
+   "category": "repetition",
+   "reason": "\"那个 那个bad corp\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0349",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4226.95,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.38s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0350",
+   "op": "cut",
+   "track": "both",
+   "from": "L010691",
+   "to": "L010698",
+   "category": "repetition",
+   "reason": "\"啊 是那个corp的事儿\" 重复上半句",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0351",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4229.3,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.63s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0352",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4232.91,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.48s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0353",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4234.28,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.14s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0354",
+   "op": "cut",
+   "track": "both",
+   "from": "L010715",
+   "to": "L010716",
+   "category": "disfluency",
+   "reason": "\"就是 (0.4s)\" 填充",
+   "confidence": 0.5
+  },
+  {
+   "id": "op0355",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4235.47,
+   "target_s": 0.15,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.40s 停顿收到约 0.15s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0356",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4243.38,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 0.64s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0357",
+   "op": "cut",
+   "track": "both",
+   "from": "L010752",
+   "to": "L010756",
+   "category": "repetition",
+   "reason": "\"他就讲他这他的选角\" 重启",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0358",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4252.01,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.53s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0359",
+   "op": "cut",
+   "track": "both",
+   "from": "L010852",
+   "to": "L010880",
+   "category": "content",
+   "reason": "举例拉长\"因为以前的电影都是那么处理的…this is not leon就类似这样的啊\"",
+   "confidence": 0.45
+  },
+  {
+   "id": "op0360",
+   "op": "cut",
+   "track": "both",
+   "from": "L010883",
+   "to": "L010883",
+   "category": "repetition",
+   "reason": "\"再再选择\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0361",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4275.22,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "Leon→Pei(笑声后留 ~1s) 地板间隙 3.62s → 1.0s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0362",
+   "op": "cut",
+   "track": "L",
+   "from": "L010905",
+   "to": "L010907",
+   "category": "crosstalk",
+   "reason": "\"我觉得\" 残句, 随后完整重说",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0363",
+   "op": "cut",
+   "track": "L",
+   "from": "L010963",
+   "to": "L010971",
+   "category": "disfluency",
+   "reason": "\"那就是那种就是那个\" 卡壳",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0364",
+   "op": "cut",
+   "track": "L",
+   "from": "L010975",
+   "to": "L010975",
+   "category": "repetition",
+   "reason": "\"那那种\" 口吃",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0365",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4302.09,
+   "target_s": 0.4,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.26s → 0.4s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0366",
+   "op": "cut",
+   "track": "P",
+   "from": "P007271",
+   "to": "P007273",
+   "category": "repetition",
+   "reason": "Pei \"就就我 我是什么\" 口吃",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0367",
+   "op": "cut",
+   "track": "P",
+   "from": "P007278",
+   "to": "P007280",
+   "category": "repetition",
+   "reason": "Pei \"中中二 中二少年\" 重启",
+   "confidence": 0.35
+  },
+  {
+   "id": "op0368",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4310.76,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.93s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0369",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4315.38,
+   "target_s": 0.25,
+   "category": "pause",
+   "reason": "剪辑接缝: 原 1.22s 停顿收到约 0.25s, 让接缝约 0.3s",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0370",
+   "op": "cut",
+   "track": "P",
+   "from": "P007306",
+   "to": "P007307",
+   "category": "repetition",
+   "reason": "Pei \"但是但是\" 口吃",
+   "confidence": 0.3
+  },
+  {
+   "id": "op0371",
+   "op": "cut",
+   "track": "both",
+   "from": "L011003",
+   "to": "L011007",
+   "category": "repetition",
+   "reason": "\"他是这次玩 因为他自己\" 废弃起句",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0372",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4332.08,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.61s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0373",
+   "op": "cut",
+   "track": "both",
+   "from": "L011035",
+   "to": "L011039",
+   "category": "disfluency",
+   "reason": "\"我就是他让\" 卡壳",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0374",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4340.68,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 2.27s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0375",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4357.68,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.77s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0376",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4360.11,
+   "target_s": 0.5,
+   "category": "pause",
+   "reason": "Pei→Leon 地板间隙 1.31s → 0.5s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0377",
+   "op": "cut",
+   "track": "both",
+   "from": "L011065",
+   "to": "L011065",
+   "category": "repetition",
+   "reason": "\"安安利\" 口吃",
+   "confidence": 0.6
+  },
+  {
+   "id": "op0378",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4365.19,
+   "target_s": 0.8,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 1.67s → 0.8s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0379",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4379.96,
+   "target_s": 1.0,
+   "category": "pause",
+   "reason": "同一人继续 地板间隙 3.64s → 1.0s",
+   "confidence": 0.55
+  },
+  {
+   "id": "op0380",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4391.83,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 0.68s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0381",
+   "op": "cut",
+   "track": "L",
+   "from": "L011165",
+   "to": "L011167",
+   "category": "repetition",
+   "reason": "\"老老气老气横秋\" 重启",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0382",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4401.3,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.51s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0383",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4405.1,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.07s → 0.2s",
+   "confidence": 0.65
+  },
+  {
+   "id": "op0384",
+   "op": "tighten_pause",
+   "track": "both",
+   "at": 4408.69,
+   "target_s": 0.2,
+   "category": "pause",
+   "reason": "Leon→Pei 地板间隙 1.25s → 0.2s",
+   "confidence": 0.65
+  }
+ ]
+}

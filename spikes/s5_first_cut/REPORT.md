@@ -75,3 +75,41 @@ Whether the "false deletions" sound bad is not established. They are speech Leon
 4. Score only on the held-out half.
 
 This is the honest test of whether learning from one episode transfers.
+
+## v2 results: learned rules, blind edit on held-out half (2026-10-17)
+
+The rules came from raw 0–2200 s only (`learned_rules_calib.txt`). The blind edit covers raw 2200 s to the end, and it was scored with `score.py --min-raw 2200`. Ops: `out/ai_v2_heldout_ops.json` (384 ops). Scores: `out/ai_v2_heldout_score.json` and `out/ai_v1_heldout_score.json`.
+
+**How much is removed**
+
+| | v1 | v2 | Leon | 0.4 s baseline |
+|---|---|---|---|---|
+| Estimated final length (s) | 2072 | **1830** | 1806 | 2049 |
+| Speech removed, L / P (s) | 45 / 52 | 179 / 34 | 176 / 41 | 0 / 0 |
+| Median floor pause (s) | 0.55 | 0.41 | 0.39 | 0.40 |
+| Pauses longer than 1 s that remain | 38 | 2 | 41 | 0 |
+
+**How well it matches Leon's cuts**
+
+| | v1 | v2 | 0.4 s baseline |
+|---|---|---|---|
+| Recall by seconds, L / P | 0.23 / 0.21 | **0.50 / 0.56** | 0.26 / 0.30 |
+| Recall by events, L / P | 0.41 / 0.56 | **0.71 / 0.79** | 0.46 / 0.60 |
+| Speech precision, L | 0.69 | 0.46 | – |
+| False deletions, L / P (s) | 14 / 39 | 96 / 29 | 0 / 0 |
+| Missed removals, L / P (s) | 146 / 28 | 100 / 35 | 176 / 41 |
+
+**Diagnosis**
+
+1. **Calibration transfers.**
+   - v2 removes about as much as Leon does, its median pause matches his, and Pei stays protected.
+   - Recall roughly doubles compared with v1.
+2. **Content-trim selection is the weak point.**
+   - Precision on content trims is 0.44: v2 cut different tangents from the ones Leon cut.
+   - This is taste. The next step should be a review loop, not more rules: rank content trims for Leon to approve, and learn from his restores (D27).
+3. **Pause shaping is too uniform.**
+   - Leon keeps some long pauses (41 longer than 1 s).
+   - Treat these as dramatic or turn-taking pauses and keep them.
+4. **Interjection moves cannot be learned as slips.**
+   - They mostly follow from asymmetric per-track pause cuts.
+   - Model them that way instead.
