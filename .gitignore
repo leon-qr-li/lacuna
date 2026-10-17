@@ -12,4 +12,3 @@ web/test-results/
 web/e2e/.fixtures/
 web/playwright-report/
 /dist/
-xmly_poc_out/
