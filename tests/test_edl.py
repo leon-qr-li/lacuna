@@ -193,3 +193,53 @@ def test_insert_overlapping_existing_material_is_rejected(two_tracks):
     media, tl, a, _ = two_tracks
     with pytest.raises(EDLError):
         Project(media, tl).apply(InsertClip("B", a.media_id, 0, 10, 20_000))
+
+
+# ---------------------------------------------------------------- batch application
+
+def _shape(tl):
+    """Everything that affects rendering (clip ids excluded: they only name pieces)."""
+    return [(t.name, t.gain_db, t.ducks, [(c.media_id, c.src_in, c.src_out, c.start, c.gain_db, c.fade_in, c.fade_out)
+                                          for c in t.clips]) for t in tl.tracks]
+
+
+@pytest.mark.parametrize("seed", range(25))
+def test_apply_batch_equals_sequential(two_tracks, seed):
+    """Random episode-style op lists (gains, slips, lifts, latest-first non-overlapping cuts,
+    some on a track subset) give the same timeline batched as applied one by one."""
+    import random
+    from lacuna_core import apply_batch
+    rnd = random.Random(seed)
+    media, tl, a, b = two_tracks
+    tl = AddDuck("A", 3 * SR, 5 * SR, -6.0, 100).apply(tl)
+    tl = SetFades(tl.track("B").clips[0].id, 40, 40).apply(tl)
+    n = 10 * SR
+    ops = [SetTrackGain("B", rnd.uniform(-3, 3))]
+    for _ in range(rnd.randint(0, 3)):
+        s = rnd.randrange(n - 2000)
+        ops.append(SlipRegion(rnd.choice("AB"), s, s + rnd.randint(1, 800), rnd.randint(-500, 500)))
+    for _ in range(rnd.randint(0, 40)):
+        s = rnd.randrange(n - 1000)
+        ops.append(LiftRange(rnd.choice("AB"), s, s + rnd.randint(1, 900)))
+    pts = sorted(rnd.sample(range(n), 2 * rnd.randint(1, 30)))
+    cuts = [(pts[i], pts[i + 1]) for i in range(0, len(pts), 2) if pts[i + 1] > pts[i]]
+    for s, e in sorted(cuts, reverse=True):
+        ops.append(CutRange(s, e, rnd.choice([None, None, ("A",), ("B",)])))
+    seq = tl
+    for o in ops:
+        seq = o.apply(seq)
+    fast = apply_batch(tl, ops)
+    validate(fast, media)
+    assert _shape(fast) == _shape(seq)
+    assert fast.length == seq.length
+
+
+def test_apply_batch_rejects_like_sequential(two_tracks):
+    from lacuna_core import apply_batch
+    media, tl, a, b = two_tracks
+    with pytest.raises(EDLError):
+        apply_batch(tl, [LiftRange("A", 10, 10)])
+    with pytest.raises(EDLError):
+        apply_batch(tl, [CutRange(10, 5)])
+    with pytest.raises(EDLError):
+        apply_batch(tl, [CutRange(10, 20, ("Z",))])

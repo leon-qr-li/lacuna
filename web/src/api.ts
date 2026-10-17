@@ -15,6 +15,9 @@ export interface EditInfo {
   len: number; // seconds removed / affected
   tracks: string[] | null;
   raw: [number, number] | null; // raw recording seconds
+  op_id?: string | null; // AI editor op this edit came from
+  ai_category?: string | null;
+  speech_s?: number; // seconds of speech removed
 }
 
 export interface Proposal {
@@ -45,6 +48,7 @@ export interface Episode {
   edits: EditInfo[];
   routine: { category: string; label: string; count: number; seconds: number; restored: number }[];
   pending_review: number;
+  review: string[]; // ids of edits that need Leon's judgement, in review order
   proposals: Proposal[];
   has_transcript: boolean;
   playhead?: number;
@@ -131,7 +135,7 @@ export function fmt(s: number): string {
 }
 
 export function statusLabel(e: EditInfo): string {
-  if (e.status === "restored") return "已恢复原样";
+  if (e.status === "restored") return e.approved ? "已恢复原样" : "AI 未应用，等你决定";
   if (e.source !== "first_cut") return "聊天修改 · 已批准";
   if (e.approved) return "已确认保留";
   return e.consequential ? "待你过目" : "常规清理 · 已自动应用";

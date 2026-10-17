@@ -54,7 +54,7 @@ function Home() {
       <main className="home">
         <h1>剧集</h1>
         {err && <p className="error">{err}</p>}
-        {list?.length === 0 && <p className="muted">工作区里还没有剧集。用 scripts/make_demo_episode.py 建一个演示集。</p>}
+        {list?.length === 0 && <p className="muted">工作区里还没有剧集。用 scripts/make_ai_episode.py 导入 AI 第一刀（或 scripts/make_demo_episode.py 建演示集）。</p>}
         <ul className="ep-list">
           {list?.map((e) => (
             <li key={e.id}>
