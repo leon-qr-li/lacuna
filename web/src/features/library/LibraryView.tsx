@@ -152,8 +152,8 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
         <button
           type="button"
           className="btn btn-primary"
-          disabled={!!busy || !claude}
-          title={claude ? "" : "没有 API key，Claude 暂时不可用"}
+          disabled={!!busy || !claude || !note.trim()}
+          title={!claude ? "没有 API key，Claude 暂时不可用" : !note.trim() ? "先写备注：Claude 听不到音乐，只能按备注去查" : ""}
           onClick={() => {
             const go = note !== a.note ? libraryApi.updateAsset(a.id, { note }).then(() => libraryApi.lookupCredit(a.id)) : libraryApi.lookupCredit(a.id);
             // show what Claude filled in, ready to correct before confirming

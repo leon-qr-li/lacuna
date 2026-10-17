@@ -421,6 +421,9 @@ class Library:
 
 # ===================================================================== credit lookup (Claude + web search)
 
+# Claude can't hear the audio; without Leon's note it only has the file name, so the lookup isn't worth a call
+NEED_NOTE = "先在备注里写一句这是什么曲子（比如哪部电影的配乐），Claude 听不到音乐，只能按备注去查。"
+
 LOOKUP_SYSTEM = """\
 You identify the music Leon uses in 《洛城二三事》, a Chinese film podcast, so the show notes can \
 credit it correctly. You get a file name, the tags embedded in the file (may be empty or wrong), \
@@ -470,6 +473,8 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
     Returns {"asset", "message", "usage"}; failures come back as a message, nothing changes."""
     from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
     asset = lib.asset(asset_id)
+    if not (asset.get("note") or "").strip():      # nothing to search for: don't spend a call
+        return {"asset": asset, "message": NEED_NOTE, "usage": None}
     if client is None:
         key, _ = find_api_key()
         if not key or not sdk_installed():
