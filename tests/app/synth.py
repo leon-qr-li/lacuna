@@ -37,9 +37,8 @@ def _speech(n: int, f0: float, rng) -> np.ndarray:
     return 0.18 * x * env * ramp
 
 
-def make_workspace(root: str | Path, episode_id: str = EPISODE) -> Path:
-    root = Path(root)
-    raw = root / "episodes" / episode_id / "raw"
+def write_raw(raw: Path) -> dict[str, MediaRef]:
+    """Two synthetic host tracks (speech-like tones during TURNS, faint noise elsewhere)."""
     raw.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(7)
     n = int(DUR * SR)
@@ -53,6 +52,87 @@ def make_workspace(root: str | Path, episode_id: str = EPISODE) -> Path:
         path = raw / f"{name}.wav"
         sf.write(str(path), x.astype(np.float32), SR, subtype="PCM_16")
         refs[name] = MediaRef.probe(path)
+    return refs
+
+
+def words_by_track() -> dict[str, list[list]]:
+    """[start, end, char] per track: one 0.25 s "word" every 0.3 s through each turn."""
+    words = {"Leon": [], "Pei": []}
+    k = 0
+    for tr, a, b in TURNS:
+        t = a
+        while t + 0.25 <= b:
+            words[tr].append([round(t, 3), round(t + 0.25, 3), CHARS[k % len(CHARS)]])
+            t += 0.3
+            k += 1
+    return words
+
+
+def tokens_doc() -> dict:
+    """The words as an S5 token file (ids L000000 / P000000, raw seconds)."""
+    out = {}
+    for name, ws in words_by_track().items():
+        tag = name[0]
+        out[tag] = [{"id": f"{tag}{i:06d}", "t": w, "start": s, "end": e, "pause_after": 0.0, "flag": None}
+                    for i, (s, e, w) in enumerate(ws)]
+    return {"episode": "SYNTH", "time_base": "raw seconds", "tracks": out}
+
+
+def tok(tag: str, t: float) -> str:
+    """Id of the token of track `tag` that starts at or just before raw time t."""
+    toks = tokens_doc()["tracks"][tag]
+    return max((x for x in toks if x["start"] <= t + 1e-9), key=lambda x: x["start"])["id"]
+
+
+def ai_ops_doc() -> dict:
+    """A small AI first cut over the synthetic conversation (schema of edit_ops.schema.json)."""
+    def op(i, **kw):
+        return {"id": f"op{i:04d}", **kw}
+    return {"episode": "SYNTH", "model": "synthetic", "ops": [
+        op(1, op="tighten_pause", track="both", at=4.2, target_s=0.4, category="pause",
+           reason="两人之间的空白 1.5 秒，收到 0.4 秒", confidence=0.9),
+        op(2, op="cut", track="P", **{"from": tok("P", 11.0), "to": tok("P", 11.0)}, category="crosstalk",
+           reason="压在 Leon 说话下的附和", confidence=0.8),
+        op(3, op="cut", track="L", **{"from": tok("L", 18.2), "to": tok("L", 20.0)}, category="repetition",
+           reason="同一句话说了两遍，保留第二遍", confidence=0.7),
+        op(4, op="slip", track="P", **{"from": tok("P", 22.3), "to": tok("P", 22.6)}, delta_s=0.5,
+           category="interjection_move", reason="嗯 挪到 Leon 句末的停顿", confidence=0.4),
+        op(5, op="cut", track="both", **{"from": tok("L", 26.5), "to": tok("L", 29.6)}, category="content",
+           reason="这段题外话和主线无关，后面没有再提", confidence=0.55),
+        op(6, op="keep_flag", track="L", **{"from": tok("L", 36.5), "to": tok("L", 37.7)}, suggested="cut",
+           category="content", reason="可能离题，但也许后面会回扣", confidence=0.5),
+        op(7, op="tighten_pause", track="both", at=44.2, target_s=0.6, category="pause",
+           reason="空白 2.0 秒，收到 0.6 秒", confidence=0.85),
+        op(8, op="cut", track="L", **{"from": tok("L", 48.1), "to": tok("L", 48.4)}, category="disfluency",
+           reason="嗯 呃 口误", confidence=0.75),
+        op(9, op="cut", track="both", **{"from": 56.0, "to": 57.0}, category="content",
+           reason="窗口外", confidence=0.5),
+    ]}
+
+
+AI_EPISODE = "EP_AI_合成"
+AI_TITLE = "合成 · AI 第一刀"
+AI_WINDOW = (1.0, 0.9)    # start s, minutes -> raw 1.0 .. 55.0 s
+
+
+def make_ai_workspace(root: str | Path, episode_id: str = AI_EPISODE) -> Path:
+    """Workspace with one episode built by scripts/make_ai_episode.py from `ai_ops_doc`."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import make_ai_episode
+    from lacuna_app.ai_cut import TrackTokens
+    root = Path(root)
+    refs = write_raw(root / "episodes" / episode_id / "raw")
+    tokens = {tag: TrackTokens(t) for tag, t in tokens_doc()["tracks"].items()}
+    w0, minutes = AI_WINDOW
+    project, edits, transcript, report = make_ai_episode.build(refs, ai_ops_doc(), tokens, w0, w0 + minutes * 60)
+    meta = {"title": AI_TITLE, "demo": False, "raw_offset_s": w0, "source": "ai_cut:synthetic"}
+    create_episode(Workspace(root), episode_id, meta, project, edits, transcript)
+    return root
+
+
+def make_workspace(root: str | Path, episode_id: str = EPISODE) -> Path:
+    root = Path(root)
+    refs = write_raw(root / "episodes" / episode_id / "raw")
     tl = new_timeline(SR, ["Leon", "Pei"])
     for name, ref in refs.items():
         tl = add_source_clip(tl, name, ref)
@@ -70,19 +150,12 @@ def make_workspace(root: str | Path, episode_id: str = EPISODE) -> Path:
              "Leon 音轨 +3 dB", "两轨响度匹配", 0.95),
         Edit("e006", [cut(48.0, 48.6)], "filler", "口误重复 0.6 秒", "无意识重复", 0.7),
     ]
-    words = {"Leon": [], "Pei": []}
-    k = 0
-    for tr, a, b in TURNS:
-        t = a
-        while t + 0.25 <= b:
-            words[tr].append([round(t, 3), round(t + 0.25, 3), CHARS[k % len(CHARS)]])
-            t += 0.3
-            k += 1
+    words = words_by_track()
     meta = {"title": "合成测试集", "demo": True, "demo_note": "合成测试数据", "raw_offset_s": 0.0}
     create_episode(Workspace(root), episode_id, meta, project, edits, {"tracks": words})
     return root
 
 
 if __name__ == "__main__":
-    make_workspace(sys.argv[1])
+    (make_ai_workspace if "--ai" in sys.argv else make_workspace)(sys.argv[1])
     print(f"synthetic workspace at {sys.argv[1]}")

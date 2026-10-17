@@ -4,9 +4,10 @@ Model
 -----
 * The lacuna_core `Project` base timeline is the *uncut* recording (both tracks in sync).
 * Every edit (first-cut or chat) holds lacuna_core op dicts expressed in **base** coordinates:
-  `cut` (ripple, all tracks), `lift` (one track, no ripple) or `track_gain`.
+  `cut` (ripple, all tracks), `lift` (one track, no ripple), `slip` (move one track's range,
+  no ripple) or `track_gain`.
 * An edit's status is applied / restored / proposed / discarded. The current timeline is derived
-  from the applied set: gains, then lifts, then cuts from latest to earliest - so base
+  from the applied set: gains, then slips, then lifts, then cuts from latest to earliest - so base
   coordinates stay valid and any edit can be restored independently of the others.
   Overlapping cuts are refused.
 * History is an undo/redo stack of field changes on edits (status / approved), persisted.
@@ -15,21 +16,26 @@ Model
 """
 from __future__ import annotations
 
+import bisect
 import hashlib
 import threading
 import uuid
 from collections import OrderedDict
 from dataclasses import asdict, dataclass, field
+from functools import cached_property
 from pathlib import Path
 
 import numpy as np
 
-from lacuna_core import EDLError, MediaRef, Previewer, Project, Renderer, RenderSettings, SegmentCache, SourcePool, Timeline
+from lacuna_core import (EDLError, MediaRef, Previewer, Project, Renderer, RenderSettings, SegmentCache, SourcePool, Timeline,
+                         apply_batch, validate)
+from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
 from lacuna_core.refine import snap_cut
 
 from . import analysis
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
+from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal
 from .store import META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
 
@@ -64,6 +70,9 @@ class Edit:
     status: str = APPLIED
     approved: bool = False
     source: str = "first_cut"
+    op_id: str | None = None        # id of the AI editor op this edit came from
+    ai_category: str | None = None  # the AI editor's own category (finer than `category`)
+    speech_s: float = 0.0           # seconds of speech (ASR words) this edit removes
 
     @property
     def cuts(self) -> list[tuple[int, int]]:
@@ -76,7 +85,7 @@ class Edit:
 
     @property
     def tracks(self) -> list[str] | None:
-        ts = {o.get("track") for o in self.ops if o["op"] == "lift"}
+        ts = {o.get("track") for o in self.ops if o["op"] in ("lift", "slip")}
         return sorted(ts) if ts and not self.cuts else None
 
 
@@ -93,8 +102,27 @@ def _key(enabled: frozenset[str]) -> str:
     return hashlib.sha1("|".join(sorted(enabled)).encode()).hexdigest()[:16]
 
 
+class Cuts(list):
+    """Sorted, non-overlapping cut ranges with a prefix sum so `to_tl` is O(log n)."""
+
+    @cached_property
+    def _index(self) -> tuple[list[int], list[int]]:
+        starts, pre = [], [0]
+        for a, b in self:
+            starts.append(a)
+            pre.append(pre[-1] + (b - a))
+        return starts, pre
+
+
 def to_tl(x: int, cuts: list[tuple[int, int]]) -> int:
     """Base sample -> timeline sample under `cuts` (sorted, non-overlapping)."""
+    if isinstance(cuts, Cuts):
+        starts, pre = cuts._index
+        i = bisect.bisect_left(starts, x)          # cuts[:i] start before x
+        if i == 0:
+            return x
+        a, b = cuts[i - 1]
+        return x - pre[i - 1] - (min(b, x) - a)
     t = x
     for a, b in cuts:
         if a >= x:
@@ -137,9 +165,14 @@ class Episode:
         st = read_json(self.dir / STATE_FILE)
         if st.get("schema") != STATE_SCHEMA:
             raise ValueError(f"unsupported state schema {st.get('schema')}")
-        proj = Project.from_json(_dumps(st["project"]))
-        self.media: dict[str, MediaRef] = proj.media
-        self.base: Timeline = proj.base
+        pj = st["project"]
+        if pj.get("schema") != PROJECT_SCHEMA:
+            raise ValueError(f"unsupported project schema {pj.get('schema')}")
+        # the stored op log is derived state (the render recipe); the timeline is re-derived from
+        # base + applied edits, so it is not replayed here
+        self.media: dict[str, MediaRef] = {m["media_id"]: MediaRef.from_dict(m) for m in pj["media"]}
+        self.base: Timeline = Timeline.from_dict(pj["base"])
+        validate(self.base, self.media)
         self.sr = self.base.sample_rate
         self.edits: dict[str, Edit] = {e["id"]: Edit(**e) for e in st["edits"]}
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
@@ -160,30 +193,39 @@ class Episode:
     def ops_for(self, enabled: frozenset[str]) -> list[dict]:
         es = [self.edits[i] for i in sorted(enabled)]
         ops = [o for e in es for o in e.ops]
-        gains = [o for o in ops if o["op"] not in ("cut", "lift")]
+        gains = [o for o in ops if o["op"] not in ("cut", "lift", "slip")]
+        slips = sorted((o for o in ops if o["op"] == "slip"), key=lambda o: (o["start"], o["track"]))
         lifts = sorted((o for o in ops if o["op"] == "lift"), key=lambda o: (o["start"], o["track"]))
         cuts = sorted((o for o in ops if o["op"] == "cut"), key=lambda o: -o["start"])
-        return gains + lifts + cuts
+        return gains + slips + lifts + cuts
 
-    def cuts_for(self, enabled: frozenset[str]) -> list[tuple[int, int]]:
-        cs = sorted(c for i in enabled for c in self.edits[i].cuts)
+    def cuts_for(self, enabled: frozenset[str]) -> Cuts:
+        cs = Cuts(sorted(c for i in enabled for c in self.edits[i].cuts))
         for (a0, b0), (a1, b1) in zip(cs, cs[1:]):
             if a1 < b0:
                 raise ConflictError("两处删除重叠，不能同时应用")
         return cs
 
-    def project_for(self, enabled: frozenset[str]) -> Project:
-        self.cuts_for(enabled)
+    def project_dict(self, enabled: frozenset[str]) -> dict:
+        """lacuna_core Project JSON (media + base + op log): the exact render recipe of a version.
+        `Project.from_json` of it replays to the same timeline as `timeline_for`."""
         log = [{"seq": i, "action": "apply", "op": o} for i, o in enumerate(self.ops_for(enabled))]
+        return {"schema": PROJECT_SCHEMA, "media": [m.to_dict() for m in self.media.values()],
+                "base": self.base.to_dict(), "log": log}
+
+    def _derive(self, enabled: frozenset[str]) -> Timeline:
+        self.cuts_for(enabled)
         try:
-            return Project(self.media, self.base, log)
-        except EDLError as e:
+            tl = apply_batch(self.base, [Op.from_dict(o) for o in self.ops_for(enabled)])
+            validate(tl, self.media)
+        except (EDLError, KeyError, TypeError) as e:
             raise ConflictError(f"改动无法应用：{e}") from e
+        return tl
 
     def timeline_for(self, enabled: frozenset[str]) -> Timeline:
         tl = self._timelines.get(enabled)
         if tl is None:
-            tl = self.project_for(enabled).timeline
+            tl = self._derive(enabled)
             self._timelines[enabled] = tl
             while len(self._timelines) > 24:
                 self._timelines.popitem(last=False)
@@ -348,7 +390,7 @@ class Episode:
                 Op.from_dict(o)    # shape check
             except (KeyError, TypeError) as e:
                 raise ValueError(f"malformed op {o!r}") from e
-            if o["op"] not in ("cut", "lift", "track_gain"):
+            if o["op"] not in ("cut", "lift", "slip", "track_gain"):
                 raise ConflictError(f"op {o['op']} is not supported in this slice")
         with self.lock:
             eid = f"{'x' if source == 'chat' else 'm'}{len(self.edits) + 1:04d}"
@@ -448,9 +490,8 @@ class Episode:
 
     # ------------------------------------------------------------------ persistence
     def state_dict(self) -> dict:
-        proj = self.project_for(self.enabled)
-        import json
-        return {"schema": STATE_SCHEMA, "project": json.loads(proj.to_json()),
+        self.timeline_for(self.enabled)     # never persist an invalid state
+        return {"schema": STATE_SCHEMA, "project": self.project_dict(self.enabled),
                 "edits": [asdict(e) for e in self.edits.values()],
                 "history": self.history, "proposals": self.proposals}
 
@@ -494,7 +535,8 @@ class Episode:
         if not e.span:
             return []
         a, b = (x / self.sr for x in e.span)
-        removed = [(o["start"] / self.sr, o["end"] / self.sr, o.get("track")) for o in e.ops if "start" in o]
+        removed = [(o["start"] / self.sr, o["end"] / self.sr, o.get("track")) for o in e.ops
+                   if o["op"] in ("cut", "lift")]
         lines: list[dict] = []
         for track, s, en, w in self.words(a - ctx_s, b + ctx_s):
             mid = (s + en) / 2
@@ -518,7 +560,7 @@ class Episode:
             "title": e.title, "reason": e.reason, "confidence": e.confidence,
             "consequential": e.consequential, "status": e.status, "approved": e.approved,
             "source": e.source, "t": round(t, 3), "len": round(removed / self.sr, 3),
-            "tracks": e.tracks,
+            "tracks": e.tracks, "op_id": e.op_id, "ai_category": e.ai_category, "speech_s": e.speech_s,
             "raw": [round(sp[0] / self.sr + off, 2), round(sp[1] / self.sr + off, 2)] if sp else None,
         }
 
@@ -550,6 +592,7 @@ class Episode:
                 tracks.append({"name": tr.name, "gain_db": tr.gain_db, "clips": spans})
             undo, redo = self.history["undo"], self.history["redo"]
             pending_review = sum(1 for d in edits if d["consequential"] and not d["approved"])
+            review = [d["id"] for d in sorted((d for d in edits if d["consequential"]), key=review_sort_key)]
             return {
                 "id": self.id, "title": self.meta.get("title", self.id), "demo": bool(self.meta.get("demo")),
                 "demo_note": self.meta.get("demo_note", ""), "sample_rate": self.sr,
@@ -561,7 +604,7 @@ class Episode:
                 "redo_label": redo[-1]["label"] if redo else None,
                 "tracks": tracks, "topics": self.meta.get("topics", []),
                 "edits": edits, "routine": sorted(routine.values(), key=lambda r: -r["count"]),
-                "pending_review": pending_review,
+                "pending_review": pending_review, "review": review,
                 "proposals": [p | {"edit": self.edit_json(self.edits[p["target"]], cuts)}
                               for p in self.proposals.values() if p["state"] == "pending"],
                 "has_transcript": self.transcript is not None,
@@ -570,11 +613,6 @@ class Episode:
     def map_playhead(self, t_s: float, before: frozenset[str], after: frozenset[str]) -> float:
         base = to_base(int(t_s * self.sr), self.cuts_for(before))
         return round(to_tl(base, self.cuts_for(after)) / self.sr, 3)
-
-
-def _dumps(d) -> str:
-    import json
-    return json.dumps(d, ensure_ascii=False)
 
 
 def create_episode(ws: Workspace, episode_id: str, meta: dict, project: Project, edits: list[Edit],

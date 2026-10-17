@@ -18,6 +18,7 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass, field, fields, replace
 from functools import cached_property
+import bisect
 from typing import ClassVar, Iterable
 
 from .media import MediaRef
@@ -446,6 +447,106 @@ class SetRoomTone(Op):
     def apply(self, tl):
         rt = RoomTone(self.media_id, self.src_in, self.src_out, self.gain_db) if self.media_id else None
         return tl.with_track(replace(tl.track(self.track), room_tone=rt))
+
+
+# --------------------------------------------------------------------------- batch application
+
+def _subtract_track(tl: Timeline, clips: Iterable[Clip], ranges: list[tuple[int, int]],
+                    ripple: bool) -> tuple[Timeline, list[Clip]]:
+    """Remove the union of sorted, non-overlapping `ranges` from `clips` in one sweep; with
+    `ripple`, later material moves left by everything removed before it."""
+    if not ranges:
+        return tl, list(clips)
+    ends = [b for _, b in ranges]
+    removed_before = [0]
+    for a, b in ranges:
+        removed_before.append(removed_before[-1] + (b - a))
+    out: list[Clip] = []
+    for c in clips:
+        i = bisect.bisect_right(ends, c.start)          # first range that ends after c.start
+        pieces, cur = [], c.start
+        while i < len(ranges) and ranges[i][0] < c.end:
+            a, b = ranges[i]
+            if a > cur:
+                pieces.append((cur, a))
+            cur = max(cur, b)
+            i += 1
+        if cur < c.end:
+            pieces.append((cur, c.end))
+        for s, e in pieces:
+            if s == c.start and e == c.end:
+                piece = c
+            else:
+                if s == c.start:
+                    cid = c.id
+                else:
+                    cid, tl = _new_id(tl)
+                piece = replace(c, id=cid, src_in=c.src_in + (s - c.start), src_out=c.src_in + (e - c.start),
+                                start=s, fade_in=c.fade_in if s == c.start else 0,
+                                fade_out=c.fade_out if e == c.end else 0)
+            if ripple:
+                k = bisect.bisect_right(ends, piece.start)  # ranges entirely before the piece
+                if removed_before[k]:
+                    piece = replace(piece, start=piece.start - removed_before[k])
+            out.append(piece)
+    return tl, out
+
+
+def _merge(ranges: Iterable[tuple[int, int]]) -> list[tuple[int, int]]:
+    out: list[list[int]] = []
+    for a, b in sorted(ranges):
+        if out and a <= out[-1][1]:
+            out[-1][1] = max(out[-1][1], b)
+        else:
+            out.append([a, b])
+    return [(a, b) for a, b in out]
+
+
+def apply_batch(tl: Timeline, ops: Iterable[Op]) -> Timeline:
+    """Same result as applying `ops` one by one (up to clip ids), but runs of consecutive
+    `LiftRange` ops, and runs of consecutive non-overlapping `CutRange` ops given latest-first,
+    are applied in one O(n log n) sweep per track instead of O(n) per op. Everything else is
+    applied as usual. Does not validate (call `validate` on the result)."""
+    ops = list(ops)
+    i = 0
+    while i < len(ops):
+        op = ops[i]
+        j = i + 1
+        if isinstance(op, LiftRange):
+            while j < len(ops) and isinstance(ops[j], LiftRange):
+                j += 1
+            run = ops[i:j]
+            for o in run:
+                if o.end <= o.start:
+                    raise EDLError("empty lift")
+            for name in {o.track for o in run}:
+                tr = tl.track(name)
+                tl, kept = _subtract_track(tl, tr.clips, _merge((o.start, o.end) for o in run if o.track == name),
+                                           ripple=False)
+                tl = tl.with_track(replace(tr, clips=_sorted(kept)))
+        elif isinstance(op, CutRange):
+            while (j < len(ops) and isinstance(ops[j], CutRange)
+                   and ops[j].end <= ops[j - 1].start and ops[j].end > ops[j].start):
+                j += 1
+            run = ops[i:j]
+            if op.end <= op.start:
+                raise EDLError("empty cut")
+            for o in run:
+                for n in o.tracks or ():
+                    tl.track(n)                  # unknown track names fail like CutRange.apply
+            for tr in tl.tracks:
+                mine = sorted((o.start, o.end) for o in run if o.tracks is None or tr.name in o.tracks)
+                if not mine:
+                    continue
+                tl, kept = _subtract_track(tl, tr.clips, mine, ripple=True)
+                ducks = tr.ducks
+                for a, b in reversed(mine):      # latest first, as the sequential ops would
+                    ducks = _ripple_ducks(ducks, a, b)
+                tl = tl.with_track(replace(tr, clips=_sorted(kept), ducks=ducks))
+        else:
+            tl = op.apply(tl)
+        i = j
+    return tl
 
 
 # --------------------------------------------------------------------------- project + history

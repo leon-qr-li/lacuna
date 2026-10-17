@@ -69,7 +69,10 @@ export function usePlayer() {
     if (!a) return;
     const resume = !a.paused;
     if (a.getAttribute("src") === url) {
-      if (Math.abs(a.currentTime - at) > 0.05) a.currentTime = at;
+      // still loading: a seek now can be dropped, so apply it on loadedmetadata instead
+      if (a.readyState === 0) pendingSeek.current = at;
+      else if (Math.abs(a.currentTime - at) > 0.05) a.currentTime = at;
+      setTime(at);
       return;
     }
     pendingSeek.current = at;
