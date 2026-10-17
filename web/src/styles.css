@@ -126,10 +126,26 @@ a.brand:hover { color: var(--ink); }
 .ep-title { font-weight: 600; }
 .chip { padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); font-size: 12px; font-weight: 500; white-space: nowrap; }
 .chip-ok { background: var(--ok-soft); color: var(--ok); }
-.modes { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; padding: 5px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
-.modes a { padding: 7px 14px; border-radius: 11px; color: var(--ink-2); text-decoration: none; white-space: nowrap; font-size: 13.5px; }
+.crumb-sep { color: var(--ink-3); }
+.topbar .btn-outline { min-height: 32px; padding: 0 12px; border-color: transparent; background: none; color: var(--ink-2); font-size: 13px; }
+.topbar .btn-outline:hover { background: var(--hover); color: var(--ink); }
+.ic { flex: none; }
+
+/* episode header: status + episode-wide actions, then the flow (a pill of steps), then a group's sub-tabs */
+.ep-head { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 28px 4px; }
+.ep-head-row { width: 100%; max-width: 1360px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.modes { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; padding: 6px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); backdrop-filter: blur(16px); }
+.modes a { display: inline-flex; align-items: center; gap: 2px; padding: 8px 16px; border-radius: 13px; color: var(--ink-2); text-decoration: none; white-space: nowrap; font-size: 14px; }
 .modes a:hover { background: var(--hover); color: var(--ink); }
 .modes a[aria-current="page"] { background: var(--ink); color: var(--on-ink); font-weight: 600; }
+.mode-sep { display: inline-flex; color: var(--line-2); }
+.mode-badge { font-weight: 700; color: var(--warn); }
+.mode-badge.is-zero { color: inherit; font-weight: 400; opacity: 0.6; }
+.modes a[aria-current="page"] .mode-badge:not(.is-zero) { color: inherit; }
+.next-step { width: 100%; max-width: 1360px; margin: 0 auto; padding: 8px 28px 120px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+.subtabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 14px; background: var(--hover); }
+.subtabs a { padding: 6px 16px; border-radius: 11px; color: var(--ink-2); text-decoration: none; font-size: 13.5px; white-space: nowrap; }
+.subtabs a[aria-current="page"] { background: var(--solid); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
 .banner { margin: 0; padding: 7px 28px; background: var(--banner); color: var(--banner-ink); font-size: 12.5px; }
 .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 11px 18px; border-radius: 14px; background: var(--ink); color: var(--on-ink); box-shadow: var(--shadow-pop); }
 
@@ -179,7 +195,9 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .note { margin: 0; padding: 10px 14px; border-radius: var(--r-sm); background: var(--accent-soft); }
 
 /* ---------- episode workspace */
-.workspace { flex: 1; display: flex; flex-wrap: wrap; align-items: stretch; }
+.workspace { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; }
+.workspace > .chat { order: 2; margin: 24px 28px 24px 0; }
+.workspace.chat-closed > .chat { display: none; }
 .center { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding: 24px 28px 40px; }
 
 .topics { display: flex; gap: 6px; margin-bottom: 10px; }
@@ -214,6 +232,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .lg-restored { box-shadow: inset 0 0 0 2px var(--pei-ink); }
 .lg-pending { outline: 2px dashed var(--warn); outline-offset: -2px; }
 
+.center .player { position: sticky; bottom: 20px; z-index: 20; }
 .player { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 24px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); color: var(--ink); }
 .play { width: 52px; height: 52px; min-width: 52px; border: 0; border-radius: 50%; display: inline-grid; place-items: center; background: var(--grad); color: #fff; font-size: 18px; cursor: pointer; box-shadow: 0 8px 20px rgb(139 92 246 / 0.4); }
 .seek { flex: 1 1 200px; display: flex; }
@@ -227,7 +246,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .nearby .linkish { font-family: var(--mono); color: var(--accent-ink); background: var(--accent-soft); padding: 2px 8px; border-radius: 8px; text-decoration: none; }
 
 /* ---------- chat */
-.chat { flex: 1 1 340px; max-width: 400px; display: flex; flex-direction: column; margin: 24px 0 24px 28px; border-radius: var(--r); border: 1px solid var(--line); background: var(--solid); box-shadow: var(--shadow); max-height: calc(100vh - 120px); position: sticky; top: 84px; overflow: hidden; }
+.chat { flex: 1 1 340px; max-width: 400px; display: flex; flex-direction: column; border-radius: var(--r); border: 1px solid var(--line); background: var(--solid); box-shadow: var(--shadow); max-height: calc(100vh - 120px); position: sticky; top: 84px; overflow: hidden; }
 .chat-title { margin: 0; padding: 18px 20px 8px; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .chat-title .chip { font-weight: 500; }
 .chat-log { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 8px 20px 16px; overflow: auto; min-height: 240px; }
@@ -252,7 +271,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .dark-bar .muted { color: var(--muted); }
 
 /* ---------- review */
-.review { flex: 1; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 18px; padding: 24px 28px 40px; }
+.review { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 18px; padding: 24px 28px 40px; }
 .review-nav { flex: 1 1 300px; max-width: 380px; display: flex; flex-direction: column; gap: 18px; padding: 18px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); }
 .review-nav h2 { margin-bottom: 4px; }
 .review-nav p { margin: 0 0 10px; }

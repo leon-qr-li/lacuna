@@ -11,7 +11,8 @@ test("上传喜马拉雅: says what is missing, then WAV, title, show notes and 
   const idle = async (path: string) =>
     expect.poll(async () => (await (await page.request.get(`${api}/${path}`)).json()).job?.state ?? "none", { timeout: 30_000 }).not.toBe("running");
 
-  await page.getByRole("link", { name: "上传喜马拉雅" }).click();
+  await page.getByRole("link", { name: "发布", exact: true }).click();
+  await page.getByRole("link", { name: "上传喜马拉雅", exact: true }).click();
   await expect(page).toHaveURL(/\/upload$/);
   await expect(page.getByRole("heading", { name: "上传喜马拉雅" })).toBeVisible();
   await expect(page.getByRole("link", { name: /打开喜马拉雅创作中心/ })).toHaveAttribute("href", "https://studio.ximalaya.com/");

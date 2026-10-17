@@ -7,6 +7,7 @@ export const feature: Feature = {
     {
       mode: "upload",
       label: "上传喜马拉雅",
+      group: "publish",
       order: 60,
       render: ({ id, ep, flash }) => <UploadView id={id} version={ep.version} flash={flash} />,
     },

@@ -4,9 +4,10 @@ import { api } from "../api";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
-/** Top-bar "导出" button + popover: master the current version to MP3/WAV and show the result. */
-export function ExportPanel({ id, version }: { id: string; version: string }) {
-  const [open, setOpen] = useState(false);
+/** Master the current version to MP3/WAV and show the result: the 导出 step page (`inline`), or a button + popover. */
+export function ExportPanel({ id, version, inline = false }: { id: string; version: string; inline?: boolean }) {
+  const [popOpen, setOpen] = useState(false);
+  const open = inline || popOpen;
   const [job, setJob] = useState<ExportJob | null>(null);
   const [mp3, setMp3] = useState(true);
   const [wav, setWav] = useState(true);
@@ -47,7 +48,8 @@ export function ExportPanel({ id, version }: { id: string; version: string }) {
   // edits or music changed since this export
   const stale = job?.state === "done" && (job.version !== version || !!job.music_stale);
   return (
-    <div className="export">
+    <div className={inline ? "export export-inline" : "export"}>
+      {!inline && (
       <button
         type="button"
         className="btn btn-primary"
@@ -60,8 +62,9 @@ export function ExportPanel({ id, version }: { id: string; version: string }) {
       >
         {running ? `导出中 ${Math.round((job?.progress ?? 0) * 100)}%` : "导出"}
       </button>
+      )}
       {open && (
-        <div className="export-pop" role="dialog" aria-label="导出成品">
+        <div className={inline ? "export-page card" : "export-pop"} role={inline ? undefined : "dialog"} aria-label="导出成品">
           <h2>导出成品</h2>
           <p className="muted small">母带处理：轻压缩 + 响度 −16 LUFS + 真峰值 ≤ −1 dBTP（播客平台标准）。导出的是当前版本，原始录音不变。</p>
           <div className="row gap8">

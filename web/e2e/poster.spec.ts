@@ -5,7 +5,8 @@ import { expect, test } from "@playwright/test";
 test("cover: needs the publish pack → draw 4 versions → zoom → change one with a sentence → choose", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
-  await page.getByRole("link", { name: "海报" }).click();
+  await page.getByRole("link", { name: "发布", exact: true }).click(); // 发布 step → sub-tabs
+  await page.getByRole("link", { name: "海报", exact: true }).click();
   await expect(page).toHaveURL(/\/poster$/);
   await expect(page.getByRole("heading", { name: "海报" })).toBeVisible();
   await expect(page.getByTestId("poster-needs-pack")).toBeVisible();
