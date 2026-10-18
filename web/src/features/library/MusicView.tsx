@@ -7,6 +7,8 @@ import { DraftCard, MusicChatBox } from "./MusicAssist";
 import { EpisodeUpload } from "./Scope";
 import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
+import { SpeedButton } from "../review-speed/SpeedButton";
+import { useRate } from "../review-speed/speed";
 
 const ROLE_HELP: Record<Role, string> = {
   intro: t("整首从头放：先只有音乐，然后压低当背景，人声进来，歌在背景里放完"),
@@ -438,6 +440,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const clipRef = useRef<HTMLAudioElement | null>(null); // a suggestion's preview (not in the mix yet)
   const mixRef = useRef<HTMLAudioElement | null>(null); // the one player for the episode's music
   const [now, setNow] = useState(0);
+  const speed = useRate("lacuna.musicRate"); // 验收 V8: speed on the mix player, pitch kept
   const [playing, setPlaying] = useState(false);
   const shownMix = useRef<string | null>(null);
 
@@ -521,6 +524,16 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m?.mix_url]);
 
+  // the element mounts with the page and a new mix reloads it: (re)apply the chosen speed each time
+  const applyRate = useCallback(() => {
+    const a = mixRef.current;
+    if (!a) return;
+    a.preservesPitch = true;
+    a.defaultPlaybackRate = speed.rate;
+    a.playbackRate = speed.rate;
+  }, [speed.rate]);
+  useEffect(applyRate, [applyRate, m?.mix_url]);
+
   if (err) return <p className="error pad">{err}</p>;
   if (!m) return <PageLoading label={t("正在打开配乐…")} />;
   return (
@@ -596,6 +609,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             setPlaying(false);
             setPreview(null);
           }}
+          onLoadedMetadata={applyRate}
           onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
           onSeeked={(e) => setNow(e.currentTarget.currentTime)}
         />
@@ -606,6 +620,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
           <button type="button" className="btn btn-small btn-outline" onClick={() => skip(SKIP_S)} aria-label={t("前进 5 秒")}>
             {t("+5 秒")}
           </button>
+          <SpeedButton rate={speed.rate} onChange={speed.setRate} testId="mix-speed" hint={t("播放速度（点一下切换）")} />
           <span className="mono small muted" data-testid="mix-clock">
             {fmt(now)} / {fmt(m.duration)}
           </span>

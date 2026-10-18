@@ -188,6 +188,9 @@ function LessonCard({ epId, x, onChange, pauseMain }: { epId: string; x: Lesson;
       )}
       {relation && <p className="small lesson-related">{relation}</p>}
       {x.reply && <p className="lesson-reply">{x.reply}</p>}
+      {x.fallback && x.error && (
+        <p className="small warn">{t("这次没能改写（{message}），先按你说的原样用作这条的说法。", { message: x.error })}</p>
+      )}
       {x.why && <p className="prose lesson-why">{x.why}</p>}
       {n > 0 && (
         <details className="lesson-evidence">

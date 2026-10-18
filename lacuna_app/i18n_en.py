@@ -265,6 +265,9 @@ EN: dict[str, str | tuple[str, str]] = {
     "预告片 trailer": "Trailer",
     "其他素材": "Other",
     "同名文件太多：{base}": "Too many files named {base}",
+    # library scopes (验收 V10)
+    "这个素材属于别的剧集。先在素材库把它设为公共或加到这一集。":
+        "This file belongs to another episode. In the library, make it shared or add it to this episode first.",
     "没查到可靠的曲名。": "Couldn't find a reliable title.",
     "没有找到 ffmpeg，无法读取这个音频文件": "ffmpeg not found, can't read this audio file",
     "读不了这个音频文件：{p0}": "Can't read this audio file: {p0}",
@@ -381,7 +384,6 @@ EN: dict[str, str | tuple[str, str]] = {
         "{how}, from the {episodes} chat ({n} lines). Once adopted, the AI first cut follows it from the next episode."),
     "记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。":
         "Noted: “{ask}”. It waits for you in Learned rules; once adopted, the AI first cut follows it from the next episode.",
-    # ---- library scopes (routes/music.py)
-    "这个素材属于别的剧集。先在素材库把它设为公共或加到这一集。":
-        "This file belongs to another episode. In the library, make it shared or add it to this episode first.",
+    "LACUNA 这次没有给出结果": "LACUNA gave no result this time",
+    "AI 服务出了点问题": "Something went wrong with the AI service",
 }

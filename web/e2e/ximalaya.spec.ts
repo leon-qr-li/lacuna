@@ -35,6 +35,9 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
   await expect(styles.nth(2)).toContainText("图文");
 
   const preview = page.getByTestId("xmly-preview");
+  // 片场 is the default and starts straight at the title, no "episode · show" line on top
+  await expect(page.getByTestId("xmly-style-cinema")).toHaveAttribute("aria-checked", "true");
+  await expect(preview.locator(":scope > *").first()).not.toContainText("洛城二三事");
   for (const s of ["magazine", "cinema", "cards"]) {
     await page.getByTestId(`xmly-style-${s}`).click();
     await expect(page.getByTestId(`xmly-style-${s}`)).toHaveAttribute("aria-checked", "true");

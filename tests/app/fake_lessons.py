@@ -21,7 +21,7 @@ class FakeRuleWriter:
     def rewrite(self, payload: dict) -> tuple[dict, dict]:
         self.calls.append(("rewrite", payload))
         time.sleep(self.delay)
-        if self.boom:
+        if self.boom or "AI 出错测试" in payload["said"]:     # E2E: a failed rewrite (V6)
             raise RuntimeError("network down")
         said = payload["said"].rstrip("。.!！")
         same = next((r["id"] for r in payload["existing_rules"] if r["title"].startswith(said[:6])), "")

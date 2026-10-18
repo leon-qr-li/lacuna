@@ -15,10 +15,10 @@ from __future__ import annotations
 
 import copy
 import json
-import time
 import uuid
 from typing import Any
 
+from .ai_tools import call_tool
 from .episode import ConflictError, to_tl
 from .library import KINDS, ROLE_FOR_KIND, credit_line
 from .music import ANCHORED, APPLIED, ROLES, TUNING, EpisodeMusic, upgrade_v1
@@ -365,16 +365,15 @@ class MusicChat:
             return {"message": tr("还没接上 AI（没有 AI 密钥），LACUNA 暂时不能改配乐。"),
                     "draft": None, "usage": None}
         req = dict(model=self.model, max_tokens=4000, system=in_reply_language(SYSTEM), output_config={"effort": "low"},
-                   tools=[in_reply_language(TOOL)], tool_choice={"type": "tool", "name": "arrange_music"},
+                   tools=[in_reply_language(TOOL)],
                    messages=[{"role": "user", "content": json.dumps(context(m, instruction), ensure_ascii=False)}])
-        t0 = time.monotonic()
         try:
-            resp = self.client().beta.messages.create(betas=["server-side-fallback-2026-07-01"],
-                                                      fallbacks="default", **req)
+            out, resp, seconds = call_tool(
+                lambda **r: self.client().beta.messages.create(betas=["server-side-fallback-2026-07-01"],
+                                                               fallbacks="default", **r), req, "arrange_music")
         except Exception as e:      # noqa: BLE001
             return {"message": error_message(e), "draft": None, "usage": None}
-        usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
-        out = next((dict(b.input) for b in resp.content if b.type == "tool_use" and b.name == "arrange_music"), None)
+        usage = ClaudeEditorAdapter._usage(resp, seconds)
         if out is None:
             text = "".join(getattr(b, "text", "") for b in resp.content if b.type == "text").strip()
             return {"message": text or tr("LACUNA 没有给出修改。"), "draft": None, "usage": usage}
