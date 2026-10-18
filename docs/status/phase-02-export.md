@@ -12,3 +12,4 @@ Depends on: 母带与导出 thread merged (`lacuna_core`) · Parallel with: 3
 
 ## Open issues
 - Mastering: MP3 comes out ~0.4 LU quieter than the WAV (LAME low-pass); app preview still soft-clips (preview is not mastered). Tuning of compressor/limiter awaits Leon's listening verdict.
+- 2026-10-18 perf pass (#106): true peak measured in blocks on threads, export WAV + MP3 264.7 s → 231.5 s on the cloud box, files byte-identical (`docs/status/perf.md`).

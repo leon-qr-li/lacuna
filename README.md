@@ -99,7 +99,7 @@ Each episode is one flow: **审阅改动 → 整集试听 → 声音 → 本集�
 ### Tests
 
 ```bash
-python -m pytest -q tests                      # engine + API (synthetic audio, no network)
+python -m pytest -q -n auto tests              # engine + API (synthetic audio, no network; -n auto = all CPUs)
 cd web && npx playwright test                  # E2E in Chromium; starts its own backend
 ```
 
