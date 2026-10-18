@@ -48,7 +48,7 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
       const items = await navigator.clipboard.read();
       return {
         html: await (await items[0].getType("text/html")).text(),
-        text: await (await items[0].getType("text/plain")).text(),
+        text: (await (await items[0].getType("text/plain")).text()).replace(/\r\n/g, "\n"), // Windows clipboard
       };
     });
     expect(clip.html).not.toMatch(/<table|<ul|<li|<img/);
@@ -76,6 +76,6 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
   await page.evaluate(() => navigator.clipboard.writeText(""));
   await page.getByRole("button", { name: "复制纯文本" }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).not.toBe("");
-  const text = await page.evaluate(() => navigator.clipboard.readText());
+  const text = (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n");
   expect(text.split("\n\n").some((l) => TIME.test(l))).toBe(true);
 });
