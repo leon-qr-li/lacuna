@@ -14,9 +14,9 @@
 .dlg h2 { margin: 0 0 8px; font-size: 17px; font-weight: 650; }
 .dlg p { margin: 0; color: var(--ink-2); line-height: 1.6; overflow-wrap: anywhere; white-space: pre-line; }
 .dlg-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 22px; }
-.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
-.btn-danger:hover:not(:disabled) { background: var(--danger); filter: brightness(1.08); }
-[data-theme="dark"] .btn-danger { background: #d42a45; border-color: #d42a45; }
+.dlg .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+.dlg .btn-danger:hover:not(:disabled) { background: var(--danger); filter: brightness(1.08); }
+[data-theme="dark"] .dlg .btn-danger { background: #d42a45; border-color: #d42a45; }
 @keyframes dlg-fade { from { opacity: 0; } }
 @keyframes dlg-rise { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
 @media (prefers-reduced-motion: reduce) { .dlg-backdrop, .dlg { animation: none; } }
