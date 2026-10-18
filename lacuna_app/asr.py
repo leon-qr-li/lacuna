@@ -17,6 +17,7 @@ import os
 import subprocess
 import tarfile
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -165,27 +166,34 @@ def load_recognizers(models_dir: Path, threads: int | None = None) -> Recognizer
     return Recognizers(par, sv, str(m / VAD))
 
 
+def _decode(recognizer, chunk: np.ndarray):
+    st = recognizer.create_stream()
+    st.accept_waveform(SR, chunk)
+    recognizer.decode_stream(st)
+    return st.result
+
+
 def transcribe(audio: np.ndarray, rec: Recognizers, progress: Progress = lambda f, s: None) -> dict:
-    """VAD once, then Paraformer and SenseVoice on every segment."""
+    """VAD once, then Paraformer and SenseVoice on every segment.
+
+    The two recognisers decode each segment at the same time (SenseVoice on a worker thread;
+    sherpa-onnx releases the GIL), each with the thread count `load_recognizers` gave it, so the
+    CPU is used fully and every result is identical to decoding one after the other."""
     dur = len(audio) / SR
     segs = vad_segments(audio, rec.vad_model, progress=lambda f: progress(0.05 * f, tr("找说话段落")))
     out = []
-    for k, (s0, s1) in enumerate(segs):
-        chunk = audio[int(s0 * SR):int(s1 * SR)]
-        st = rec.paraformer.create_stream()
-        st.accept_waveform(SR, chunk)
-        rec.paraformer.decode_stream(st)
-        r = st.result
-        par = {"text": r.text, "tokens": tokens_from_starts(list(r.tokens), list(r.timestamps), s0, s1,
-                                                            list(getattr(r, "durations", []) or []))}
-        st = rec.sensevoice.create_stream()
-        st.accept_waveform(SR, chunk)
-        rec.sensevoice.decode_stream(st)
-        r = st.result
-        sv = {"text": r.text, "event": (getattr(r, "event", "") or "").strip("<|>") or None,
-              "emotion": (getattr(r, "emotion", "") or "").strip("<|>") or None,
-              "tokens": tokens_from_starts(list(r.tokens), list(r.timestamps), s0, s1)}
-        out.append({"start": round(s0, 3), "end": round(s1, 3), "par": par, "sv": sv})
-        if k % 10 == 0:
-            progress(0.05 + 0.95 * s1 / max(dur, 1e-9), tr("逐字识别 {p0}/{p1} 分钟", p0=int(s1 // 60), p1=int(dur // 60)))
+    with ThreadPoolExecutor(1, thread_name_prefix="sensevoice") as pool:
+        for k, (s0, s1) in enumerate(segs):
+            chunk = audio[int(s0 * SR):int(s1 * SR)]
+            sv_job = pool.submit(_decode, rec.sensevoice, chunk)
+            r = _decode(rec.paraformer, chunk)
+            par = {"text": r.text, "tokens": tokens_from_starts(list(r.tokens), list(r.timestamps), s0, s1,
+                                                                list(getattr(r, "durations", []) or []))}
+            r = sv_job.result()
+            sv = {"text": r.text, "event": (getattr(r, "event", "") or "").strip("<|>") or None,
+                  "emotion": (getattr(r, "emotion", "") or "").strip("<|>") or None,
+                  "tokens": tokens_from_starts(list(r.tokens), list(r.timestamps), s0, s1)}
+            out.append({"start": round(s0, 3), "end": round(s1, 3), "par": par, "sv": sv})
+            if k % 10 == 0:
+                progress(0.05 + 0.95 * s1 / max(dur, 1e-9), tr("逐字识别 {p0}/{p1} 分钟", p0=int(s1 // 60), p1=int(dur // 60)))
     return {"audio_s": round(dur, 3), "segments": out}
