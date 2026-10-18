@@ -387,7 +387,8 @@ def music_lufs(lib, asset: dict, src_in_s: float, src_out_s: float) -> float | N
             for s in range(a, b, step):
                 meter.add(pool.read(m.media_id, s, min(s + step, b)))
         v = meter.integrated()
-        out = round(v, 2) if math.isfinite(v) else None
+        # BS.1770 needs 0.4 s: a shorter sting is levelled by the whole song instead of not at all
+        out = round(v, 2) if math.isfinite(v) else (asset.get("lufs") if b - a < int(0.4 * m.sample_rate) else None)
     except Exception:      # noqa: BLE001 - a song we cannot read falls back to the library's whole-file value
         out = asset.get("lufs")
     with _lock:

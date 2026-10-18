@@ -49,3 +49,22 @@ def test_longer_track_keeps_its_tail(tmp_path, short):
     wav = ex.dir_for("EP_LEN") / st["result"]["files"]["wav"]
     assert sf.info(str(wav)).duration == pytest.approx(ep.summary()["duration"], abs=0.05)
     assert ep.summary()["duration"] > 45       # past the 40 s end of the short track
+
+
+def test_words_past_the_end_of_a_short_track_get_finite_features(tmp_path):
+    """Full scan 2026-10-18: ASR words timed past the end of the shorter track had no audio frames,
+    so their energy was NaN ("Mean of empty slice"), written as NaN into the features sent to the AI."""
+    import json
+    import warnings
+
+    rec = write_recordings(tmp_path / "rec")
+    rec["Pei"] = _trim(rec["Pei"], tmp_path / "Pei_short.wav", 40)
+    ws = Workspace(tmp_path / "ws").ensure()
+    imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=fake_asr)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        imp.start("EP_NAN", "长短不一", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    assert imp.status("EP_NAN")["state"] == "done", imp.status("EP_NAN")["error"]
+    for f in (ws.root / "imports" / "EP_NAN").rglob("*.json"):
+        assert "NaN" not in f.read_text(encoding="utf-8"), f
+        json.loads(f.read_text(encoding="utf-8"), parse_constant=lambda c: (_ for _ in ()).throw(ValueError(c)))

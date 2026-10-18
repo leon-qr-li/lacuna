@@ -28,7 +28,12 @@ export function DialogBox({ message, title, confirmLabel, cancelLabel, danger, n
     ok.current?.focus();
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); done(false); }
-      else if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); e.stopPropagation(); done(true); }
+      else if (e.key === "Enter" && !e.isComposing) {
+        // Enter presses the focused button (Tab to 取消 + Enter cancels); otherwise it confirms
+        e.preventDefault(); e.stopPropagation();
+        const f = document.activeElement;
+        if (f instanceof HTMLButtonElement && f.closest(".dlg")) f.click(); else done(true);
+      }
       else if (e.key === "Tab") {
         // keep focus inside the dialog
         const els = [...document.querySelectorAll<HTMLButtonElement>(".dlg button")];
@@ -36,6 +41,9 @@ export function DialogBox({ message, title, confirmLabel, cancelLabel, danger, n
         e.preventDefault();
         els[(i + (e.shiftKey ? els.length - 1 : 1)) % els.length]?.focus();
       }
+      // no other key reaches the page under the dialog either (Ctrl+Z, review shortcuts…);
+      // no preventDefault, so Space still presses the focused button
+      e.stopPropagation();
     };
     // capture: the review screen's shortcuts (space, ←/→, K…) must not fire under the dialog
     window.addEventListener("keydown", key, true);

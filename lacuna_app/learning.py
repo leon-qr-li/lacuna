@@ -583,6 +583,14 @@ class Learning:
         self._save(st)
         return self.overview()
 
+    def undelete(self, rule_id: str) -> None:
+        """Leon confirms again, by hand, a rule he once deleted: it may come back (re-learning never
+        brings it back on its own)."""
+        st = self._state()
+        if st["rules"].get(rule_id, {}).get("state") == "deleted":
+            st["rules"].pop(rule_id)
+            self._save(st)
+
     def accept_as_is(self, episode_id: str, on: bool = True) -> None:
         """Count this episode's first cut as accepted as delivered; its review clicks were tests."""
         st = self._state()

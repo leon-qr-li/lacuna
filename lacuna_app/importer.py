@@ -26,6 +26,7 @@ from . import asr as asr_mod
 from . import import_eta
 from . import learning
 from .ai_cut import TrackTokens, build_episode, report_dict
+from .archive import retired_ids
 from .episode import create_episode
 from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json
 from .i18n import N_, tr
@@ -142,6 +143,9 @@ class Importer:
             raise ImportError_(tr("剧集编号不能含 \\ / : * ? \" < > | 等字符"))
         if episode_id in self.ws.episode_ids():
             raise ImportError_(tr("已经有一集叫 {episode_id}，换个编号", episode_id=episode_id))
+        if episode_id in retired_ids(self.ws):
+            raise ImportError_(tr("{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号",
+                                  episode_id=episode_id))
         tracks = {"L": check_track(leon), "P": check_track(pei)}
         if tracks["L"]["path"] == tracks["P"]["path"]:
             raise ImportError_(tr("Leon 和 Pei 选了同一个文件"))

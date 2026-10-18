@@ -66,6 +66,23 @@ for (const theme of ["light", "dark"] as const) {
     await expect(dlg).toHaveCount(0);
     await expect(row).toHaveCount(1);
 
+    // Tab to 取消 + Enter cancels (Enter presses the focused button); other keys don't reach the
+    // page under the dialog (Ctrl+Z would undo an edit there)
+    await page.evaluate(() => {
+      (window as unknown as { leaked: string[] }).leaked = [];
+      window.addEventListener("keydown", (e) => (window as unknown as { leaked: string[] }).leaked.push(e.key));
+    });
+    await row.getByRole("button", { name: "移出素材库" }).click();
+    await page.keyboard.press("Control+z");
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("k");
+    expect(await page.evaluate(() => (window as unknown as { leaked: string[] }).leaked)).toEqual([]);
+    await page.keyboard.press("Tab");
+    await expect(cancel).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(dlg).toHaveCount(0);
+    await expect(row).toHaveCount(1);
+
     // Enter removes it
     await row.getByRole("button", { name: "移出素材库" }).click();
     await expect(dlg).toBeVisible();

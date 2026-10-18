@@ -213,6 +213,7 @@ class Lessons:
         self.asks.put(episode_id, {"id": aid, "title": title, "instruction": instruction, "source": source,
                                    "quotes": quotes[:6]})
         rid = f"ask:{aid}"
+        self.learning.undelete(rid)
         self.learning.decide(rid, "approve")
         return rid
 

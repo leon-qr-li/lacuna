@@ -455,8 +455,18 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
     return "\n".join(L)
 
 
-_TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$")
+_PIPE = re.compile(r"(?<!\\)\|")          # a cell border; "\|" is a pipe inside a cell
 _TABLE_RULE = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
+
+
+def _row(line: str) -> list[str] | None:
+    """The cells of a table row (outer pipes optional), or None if the line has no cell border."""
+    if not _PIPE.search(line):
+        return None
+    s = line.strip()
+    s = s[1:] if s.startswith("|") else s
+    s = s[:-1] if s.endswith("|") and not s.endswith("\\|") else s
+    return [c.strip().replace("\\|", "|") for c in _PIPE.split(s)]
 
 
 def untable(md: str) -> str:
@@ -466,10 +476,10 @@ def untable(md: str) -> str:
     out: list[str] = []
     i = 0
     while i < len(lines):
-        if _TABLE_ROW.match(lines[i]) and i + 1 < len(lines) and _TABLE_RULE.match(lines[i + 1]):
+        if (_row(lines[i]) and i + 1 < len(lines) and "|" in lines[i + 1]
+                and _TABLE_RULE.match(lines[i + 1])):
             i += 2
-            while i < len(lines) and _TABLE_ROW.match(lines[i]):
-                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+            while i < len(lines) and (cells := _row(lines[i])) is not None:
                 cells = [c for c in cells if c]
                 if cells:
                     out.append(f"- {cells[0]}" + (f"：{' · '.join(cells[1:])}" if len(cells) > 1 else ""))

@@ -183,6 +183,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "生成审阅（核对音频）": "Building the review (checking audio)",
     "生成审阅（精修剪辑点）": "Building the review (refining cut points)",
     "已经有一集叫 {episode_id}，换个编号": "There's already an episode called {episode_id}; pick another ID",
+    "{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号":
+        "{episode_id} belonged to a deleted episode (its learned habits are still filed under it); pick another ID",
     "Leon 和 Pei 选了同一个文件": "Leon and Pei have the same file",
     "这一集不需要继续": "This episode doesn't need resuming",
     "解码 {name} 的分轨": "Decoding {name}'s track",

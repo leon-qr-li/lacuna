@@ -236,7 +236,9 @@ def utt_features(toks, segs, db, f0, speech_ref_db, f0_ref):
         if b == a:
             u.update({"start": s["start"], "end": s["end"], "empty": True})
             fr = slice(int(s["start"] / HOP), int(s["end"] / HOP))
-            u["energy_rel_db"] = round(float(np.percentile(db[fr], 90) - speech_ref_db), 1)
+            e = db[fr]
+            # past the end of a track that stopped early there is no audio: as quiet as the track gets
+            u["energy_rel_db"] = round(float((np.percentile(e, 90) if len(e) else db.min()) - speech_ref_db), 1)
             utts.append(u)
             continue
         T = toks[a:b]
@@ -249,7 +251,8 @@ def utt_features(toks, segs, db, f0, speech_ref_db, f0_ref):
         e = db[fr]
         u.update({"start": st, "end": en, "empty": False, "n": nunits,
                   "rate": round(nunits / spoken, 1),
-                  "energy_rel_db": round(float(10 * np.log10(np.mean(10 ** (e / 10))) - speech_ref_db), 1)})
+                  "energy_rel_db": round(float((10 * np.log10(np.mean(10 ** (e / 10))) if len(e) else db.min())
+                                               - speech_ref_db), 1)})
         p = f0[fr]
         v = ~np.isnan(p)
         if v.sum() >= 5:
