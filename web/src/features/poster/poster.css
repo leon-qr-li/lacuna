@@ -1,7 +1,10 @@
 /* ---- cover (phase 10) */
-.poster { max-width: 1180px; }
-.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.poster-card { display: flex; flex-direction: column; gap: 8px; }
+.poster { max-width: 1100px; }
+/* 2×2: four versions fill two rows; one column on narrow screens */
+.poster-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+@media (max-width: 760px) { .poster-grid { grid-template-columns: minmax(0, 1fr); } }
+.poster-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.poster-card .prompt-bar { margin-top: auto; }
 .poster-card.is-chosen { border-color: var(--accent-mid); box-shadow: 0 0 0 2px var(--accent-mid); }
 .poster-card p { margin: 0; }
 .poster-card input { min-width: 0; }
