@@ -31,7 +31,13 @@ test("本集学到的规则: summary with evidence → adopt / edit / tell LACUN
 
   const view = page.getByTestId("lessons");
   await expect(view.getByRole("heading", { name: "本集学到的规则" })).toBeVisible();
-  await expect(page.getByTestId("waiting")).toBeVisible(); // starts by itself, shows the wait
+  // nothing runs by itself (Leon 2026-10-18): the page explains, he clicks 总结
+  await expect(view).toContainText("如果这一集已经剪完了，请点「总结」");
+  await page.waitForTimeout(600);
+  await expect(page.getByTestId("waiting")).toHaveCount(0);
+  await expect(view.getByTestId("lesson")).toHaveCount(0);
+  await view.getByTestId("lessons-run").click();
+  await expect(page.getByTestId("waiting")).toBeVisible();
   const cards = view.getByTestId("lesson");
   await expect(cards.first()).toBeVisible();
   const digress = cards.filter({ hasText: "Leon 跑题的段落剪狠一点" });
@@ -109,6 +115,9 @@ test("本集学到的规则 in English fits the layout", async ({ page, context 
   await page.goto(page.url().replace(/\/listen$/, "/lessons"));
   const view = page.getByTestId("lessons");
   await expect(view.getByRole("heading", { name: "Rules from this episode" })).toBeVisible();
+  const run = view.getByTestId("lessons-run"); // the other spec may have summarized already
+  await expect(run.or(view.getByTestId("lesson").first())).toBeVisible();
+  if (await run.isVisible()) await run.click();
   await expect(view.getByTestId("lesson").first()).toBeVisible();
   await expect(view.getByRole("button", { name: "Tell LACUNA" }).first()).toBeVisible();
   // no button text wraps or overflows its card

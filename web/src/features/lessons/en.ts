@@ -11,8 +11,10 @@ export const en: Dict = {
   "AI 建议删，你采纳了": "The AI suggested a cut and you applied it",
   "AI 建议删，你没采纳": "The AI suggested a cut and you left it",
   "你让 LACUNA 改的": "You asked LACUNA for this edit",
-  "这一集剪完了。LACUNA 根据你们的对话和你的审阅决定，总结出下面这些剪辑习惯。逐条看：满意就「采用」，想改可以直接改字，或者跟 LACUNA 说怎么改。":
-    "This episode is edited. From your chat and your review decisions, LACUNA summed up the editing habits below. Go through them one by one: Adopt the ones you like, edit the wording yourself, or tell LACUNA how to change them.",
+  "如果这一集已经剪完了，请点「总结」：LACUNA 会根据你们的对话和你的审阅决定，生成这一集新学到的剪辑习惯。逐条看：满意就「采用」，想改可以直接改字，或者跟 LACUNA 说怎么改。":
+    "Once this episode is edited, click Summarize: from your chat and your review decisions, LACUNA lists the editing habits this episode taught. Go through them one by one: Adopt the ones you like, edit the wording yourself, or tell LACUNA how to change them.",
+  "还没总结。你在「记住」卡片上点过「不用」的，不会出现在这里。": "Not summarized yet. Anything you said No to on a Remember card won't show up here.",
+  "总结": "Summarize",
   "不想现在看也没关系，直接去配乐，不影响后面的步骤。采用的规则从下一期的 AI 初剪开始照做；想撤回去「学到的规则」。":
     "No need to do it now: you can go straight to Music, nothing later waits for this. Adopted rules apply from the next AI first cut; to withdraw one, go to Learned rules.",
   "LACUNA 正在回顾这一集的对话和你的审阅决定…": "LACUNA is going over this episode's chat and your review decisions…",
