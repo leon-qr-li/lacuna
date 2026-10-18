@@ -1,0 +1,22 @@
+/* in-app confirm dialog (features/dialog): night-flight palette, true red for destructive actions */
+.dlg-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: rgb(8 10 26 / 0.45); backdrop-filter: blur(4px);
+  animation: dlg-fade 0.12s ease-out;
+}
+.dlg {
+  width: min(440px, 100%); padding: 24px 24px 20px;
+  border-radius: var(--r); background: var(--solid); color: var(--ink);
+  border: 1px solid var(--line-2); box-shadow: var(--shadow-pop);
+  animation: dlg-rise 0.14s ease-out;
+}
+.dlg h2 { margin: 0 0 8px; font-size: 17px; font-weight: 650; }
+.dlg p { margin: 0; color: var(--ink-2); line-height: 1.6; overflow-wrap: anywhere; white-space: pre-line; }
+.dlg-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; font-weight: 600; }
+.btn-danger:hover:not(:disabled) { background: var(--danger); filter: brightness(1.08); }
+[data-theme="dark"] .btn-danger { background: #d42a45; border-color: #d42a45; }
+@keyframes dlg-fade { from { opacity: 0; } }
+@keyframes dlg-rise { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { .dlg-backdrop, .dlg { animation: none; } }

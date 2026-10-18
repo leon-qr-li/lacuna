@@ -4,6 +4,7 @@ import { copyRich, copyText, markdownToHtml } from "../../markdown";
 import { publishApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
+import { confirmDialog } from "../dialog/Dialog";
 
 /** 发布资料: title, one-line blurb, show notes (Markdown, approved D40 format), chapters and the
  *  names to check, all for the version of the cut that will be published. */
@@ -66,8 +67,10 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   if (err) return <p className="error pad">{t("发布资料打不开：")}{err}</p>;
   if (!view) return <PageLoading label={t("正在打开发布资料…")} />;
 
-  const generate = () => {
-    if (pack && !window.confirm(pack.edited ? t("重新生成会覆盖你手改过的 show notes，确定吗？") : t("重新生成一版？（会再花一次 AI 的钱）"))) return;
+  const generate = async () => {
+    if (pack && !(await confirmDialog(pack.edited
+      ? { message: t("重新生成会覆盖你手改过的 show notes，确定吗？"), confirmLabel: t("重新生成"), danger: true }
+      : { message: t("重新生成一版？（会再花一次 AI 的钱）"), confirmLabel: t("重新生成") }))) return;
     setEditing(false);
     void act(publishApi.generatePublish(id));
   };
@@ -179,7 +182,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
                       {t("编辑")}
                     </button>
                     {pack.edited && (
-                      <button type="button" className="linkish small" disabled={busy} onClick={() => window.confirm(t("丢掉你手改的内容，恢复成生成的版本？")) && act(publishApi.editPublish(id, { markdown: null }), t("已恢复成生成的版本"))}>
+                      <button type="button" className="linkish small" disabled={busy} onClick={async () => (await confirmDialog({ message: t("丢掉你手改的内容，恢复成生成的版本？"), confirmLabel: t("恢复"), danger: true })) && act(publishApi.editPublish(id, { markdown: null }), t("已恢复成生成的版本"))}>
                         {t("恢复成生成的版本")}
                       </button>
                     )}
