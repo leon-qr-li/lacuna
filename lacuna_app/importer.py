@@ -14,6 +14,7 @@ import json
 import threading
 import time
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -267,28 +268,39 @@ class Importer:
         rec = None
         audio16: dict[str, Any] = {}
         asr: dict[str, dict] = {}
-        for tag, name in HOSTS:
-            step = f"asr_{tag}"
-            out = d / f"asr_{tag}.json"
-            if out.is_file():
-                asr[tag] = read_json(out)
-                continue
-            self._progress(job, step, 0.0, tr("解码 {name} 的分轨", name=name))
-            t = time.monotonic()
-            x = asr_mod.decode_16k(job["tracks"][tag]["path"])
-            audio16[tag] = x
-            if backend is None:
-                if rec is None:
-                    self._progress(job, step, 0.01, tr("加载识别模型"))
-                    rec = asr_mod.load_recognizers(self.models_dir)
-                res = asr_mod.transcribe(x, rec, lambda f, s, step=step, name=name:
-                                         self._progress(job, step, f, f"{name}：{s}"))
-            else:
-                res = backend(tag, x, lambda f, s, step=step, name=name: self._progress(job, step, f, f"{name}：{s}"))
-            atomic_write_json(out, res)
-            asr[tag] = res
-            self._done_step(job, step, {"seconds": round(time.monotonic() - t, 1),
-                                        "segments": len(res["segments"]), "audio_s": res["audio_s"]})
+        todo = [tag for tag, _ in HOSTS if not (d / f"asr_{tag}.json").is_file()]
+        # the next track is decoded (ffmpeg, ~10 s an hour) while this one is being recognised
+        prefetch = ThreadPoolExecutor(1, thread_name_prefix="decode16k")
+        decoded = {tag: prefetch.submit(asr_mod.decode_16k, job["tracks"][tag]["path"]) for tag in todo[:1]}
+        try:
+            for tag, name in HOSTS:
+                step = f"asr_{tag}"
+                out = d / f"asr_{tag}.json"
+                if out.is_file():
+                    asr[tag] = read_json(out)
+                    continue
+                self._progress(job, step, 0.0, tr("解码 {name} 的分轨", name=name))
+                t = time.monotonic()
+                x = decoded.pop(tag).result()
+                audio16[tag] = x
+                for nxt in todo[todo.index(tag) + 1:][:1]:
+                    decoded[nxt] = prefetch.submit(asr_mod.decode_16k, job["tracks"][nxt]["path"])
+                if backend is None:
+                    if rec is None:
+                        self._progress(job, step, 0.01, tr("加载识别模型"))
+                        rec = asr_mod.load_recognizers(self.models_dir)
+                    res = asr_mod.transcribe(x, rec, lambda f, s, step=step, name=name:
+                                             self._progress(job, step, f, f"{name}：{s}"))
+                else:
+                    res = backend(tag, x, lambda f, s, step=step, name=name: self._progress(job, step, f, f"{name}：{s}"))
+                atomic_write_json(out, res)
+                asr[tag] = res
+                self._done_step(job, step, {"seconds": round(time.monotonic() - t, 1),
+                                            "segments": len(res["segments"]), "audio_s": res["audio_s"]})
+        finally:
+            for f in decoded.values():
+                f.cancel()
+            prefetch.shutdown(wait=False)     # a cancelled import does not wait for a decode it no longer needs
         rec = None
 
         # 3. features + editor document (cached)
