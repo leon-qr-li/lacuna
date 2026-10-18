@@ -15,20 +15,30 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const timer = useRef<number | null>(null);
+  const shown = useRef<string | null>(id); // the episode on screen; null once the page is gone
 
+  // one polling chain at most, and none after the page is left or another episode is opened
+  // (an answer still on its way then must not show or poll again)
+  const poll = (v: View) => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = v.job?.state === "running" ? window.setTimeout(load, 800) : null;
+  };
   const load = () =>
     publishApi
       .publish(id)
       .then((v) => {
+        if (shown.current !== id) return;
         setView(v);
-        if (v.job?.state === "running") timer.current = window.setTimeout(load, 800);
+        poll(v);
       })
-      .catch((e) => setErr(String(e.message ?? e)));
+      .catch((e) => shown.current === id && setErr(String(e.message ?? e)));
 
   // reload when the cut changes, so "stale" shows up right after an edit
   useEffect(() => {
+    shown.current = id;
     void load();
     return () => {
+      shown.current = null;
       if (timer.current) window.clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -40,8 +50,9 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
     setBusy(true);
     try {
       const v = await p;
+      if (shown.current !== id) return true;
       setView(v);
-      if (v.job?.state === "running") timer.current = window.setTimeout(load, 800);
+      poll(v);
       if (msg) flash(msg);
       return true;
     } catch (e) {
