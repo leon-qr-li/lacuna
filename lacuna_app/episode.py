@@ -300,7 +300,7 @@ class Episode:
             yield data[lo:hi]
 
     def ab(self, before: frozenset[str], after: frozenset[str], span: tuple[int, int] | None,
-           ctx_s: float = 10.0, max_s: float = 80.0) -> dict:
+           ctx_s: float = 5.0, max_s: float = 80.0) -> dict:
         a, b = span or (0, 0)
         out = {}
         for side, enabled in (("before", before), ("after", after)):

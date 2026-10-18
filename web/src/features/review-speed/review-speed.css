@@ -1,0 +1,5 @@
+/* review dock speed chip: shows the current speed, a tap steps to the next */
+.rs-btn { min-height: 36px; min-width: 58px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--hover); color: var(--ink-2); font: 600 13px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; cursor: pointer; }
+.rs-btn:hover { color: var(--ink); }
+.rs-btn.is-on { background: var(--primary); color: var(--on-primary); }
+.rs-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
