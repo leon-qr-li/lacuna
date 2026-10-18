@@ -15,6 +15,7 @@ Issues Leon raised while validating v2026.10.18.2/.3; tracked in
 | V8 | 配乐 page player had no speed | Fixed (#112): speed chip like review (1×–2×, pitch kept) |
 | V9 | 片场 started with an "episode · show" line; default was 杂志 | Fixed (#111, second scan): starts at the title, 片场 is the default for everyone once |
 | V10 | 素材库 公共 / 本集 | Done (#114). `docs/status/library-scopes.md` |
+| V11 | (validating .4) 本集学到的规则 ran by itself and showed "AI 出错"; 总结 brought back a 「记住」 rule he had said 不用 to | Fixed: the step runs only when he clicks 总结 (new intro text: "如果这一集已经剪完了，请点「总结」…"); 「记住」 turns are left out of the summary (confirmed = already a rule, dropped = never again) and dropped/confirmed drafts are filtered by title; a pre-V6 raw error shows as "not summarized yet". Decision `docs/decisions/2026-10-18-lessons-on-click.md` |
 
 All of V1–V10 were checked together by the second full scan: `docs/status/sweep-2.md`.
 

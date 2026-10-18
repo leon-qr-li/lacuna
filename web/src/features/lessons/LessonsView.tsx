@@ -1,7 +1,8 @@
 // 本集学到的规则 (首次检测 #12): a step between 整集试听 and 配乐. LACUNA reads this episode's chat and review
 // decisions and proposes the habits it teaches, each with its evidence; Leon adopts, edits or skips each.
+// Runs only when he clicks 总结 (Leon 2026-10-18: steps can be opened in any order, so never by itself).
 // Skippable: nothing later in the flow waits for it.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fmt } from "../../api";
 import { t } from "../../i18n";
 import { BusyLabel, Waiting } from "../loading/Loading";
@@ -26,16 +27,10 @@ const VERDICT: Record<LessonEdit["verdict"], string> = {
 export function LessonsView({ id, pauseMain }: { id: string; pauseMain: () => void }) {
   const [v, setV] = useState<View | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const started = useRef(false);
 
   const load = useCallback(async () => {
     try {
-      let r = await lessonsApi.view(id);
-      if (r.state === "none" && !started.current) {
-        started.current = true; // first visit: start right away, no extra click
-        r = await lessonsApi.run(id);
-      }
-      setV(r);
+      setV(await lessonsApi.view(id));
       setErr(null);
     } catch (e) {
       setErr((e as Error).message);
@@ -68,7 +63,7 @@ export function LessonsView({ id, pauseMain }: { id: string; pauseMain: () => vo
       <header className="lessons-head">
         <h2>{t("本集学到的规则")}</h2>
         <p className="muted">
-          {t("这一集剪完了。LACUNA 根据你们的对话和你的审阅决定，总结出下面这些剪辑习惯。逐条看：满意就「采用」，想改可以直接改字，或者跟 LACUNA 说怎么改。")}
+          {t("如果这一集已经剪完了，请点「总结」：LACUNA 会根据你们的对话和你的审阅决定，生成这一集新学到的剪辑习惯。逐条看：满意就「采用」，想改可以直接改字，或者跟 LACUNA 说怎么改。")}
         </p>
         <p className="small muted">{t("不想现在看也没关系，直接去配乐，不影响后面的步骤。采用的规则从下一期的 AI 初剪开始照做；想撤回去「学到的规则」。")}</p>
       </header>
@@ -77,6 +72,14 @@ export function LessonsView({ id, pauseMain }: { id: string; pauseMain: () => vo
       {!v && !err && <Waiting label={t("正在打开…")} />}
       {v?.state === "running" && (
         <Waiting label={t("LACUNA 正在回顾这一集的对话和你的审阅决定…")} hint={t("通常半分钟左右")} />
+      )}
+      {v?.state === "none" && (
+        <div className="card row gap8 wrap lessons-note">
+          <span className="grow muted">{t("还没总结。你在「记住」卡片上点过「不用」的，不会出现在这里。")}</span>
+          <button type="button" className="btn btn-primary" onClick={rerun} data-testid="lessons-run">
+            {t("总结")}
+          </button>
+        </div>
       )}
       {v?.state === "demo" && <p className="card muted">{t("这是演示剧集，不从它学习。")}</p>}
       {v?.state === "no_key" && (

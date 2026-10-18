@@ -340,7 +340,38 @@ def test_an_old_raw_summary_error_is_not_shown(ai_ws):
     p.write_text(json.dumps({"schema": 1, "episode": AI_EPISODE, "drafts": [], "lessons": [],
                              "summary": {"state": "error", "error": "Error code: 400 - {'type': 'error'}"}}))
     v = client(ai_ws).get(f"{EP}/lessons").json()
-    assert v["state"] == "error" and v["error"] == "AI 服务出了点问题"
+    assert v["state"] == "none" and v["error"] is None     # the old version's failure: just offer 总结
+
+
+def test_a_dropped_remember_never_comes_back_as_a_lesson(ai_ws):
+    """Leon 2026-10-18: he said 不用 to a 「记住」 card, then 总结 proposed that very rule again."""
+    lessons = [{"title": "开头别剪", "instruction": "x", "why": "你说过。", "relation": "new", "related": "",
+                "turns": [2], "edits": []},
+               {"title": "片头保留完整", "instruction": "x", "why": "你说过。", "relation": "new", "related": "",
+                "turns": [2], "edits": []},
+               {"title": "Leon 跑题的段落剪狠一点", "instruction": "x", "why": "第 1 句。", "relation": "new",
+                "related": "", "turns": [1], "edits": []}]
+    w = FakeRuleWriter(lessons=lessons)
+    c = client(ai_ws, w, MockEditorAdapter())
+    chat(c, "这段跑题了删掉")                                                     # turn 1
+    d = c.post(f"{EP}/remember", json={"text": "开头别剪", "playhead": 1.0}).json()["remember"]   # turn 2
+    c.post(f"{EP}/remember/{d['id']}", json={"action": "drop"})
+    v = run(c)
+    sent = w.calls[-1][1]
+    assert [t["turn"] for t in sent["chat"]] == [1]                     # 「记住」 turns are not shown at all
+    assert {"title": d["title"], "decision": "skipped"} in sent["already_reviewed"]
+    assert [x["title"] for x in v["lessons"]] == ["Leon 跑题的段落剪狠一点"]
+    assert v["lessons"][0]["turns"][0]["said"] == "这段跑题了删掉"
+
+
+def test_nothing_runs_until_he_clicks_summarize(ai_ws):
+    w = FakeRuleWriter()
+    c = client(ai_ws, w, MockEditorAdapter())
+    chat(c, "这段跑题了删掉")
+    for _ in range(3):
+        assert c.get(f"{EP}/lessons").json()["state"] == "none"
+    assert not [k for k, _ in w.calls if k == "summarize"]
+    assert run(c)["state"] == "done"
 
 
 def test_no_module_forces_a_tool():

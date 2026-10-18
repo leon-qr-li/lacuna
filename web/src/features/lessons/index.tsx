@@ -3,7 +3,7 @@ import { LessonsView } from "./LessonsView";
 import "./lessons.css";
 import { t } from "../../i18n";
 
-/** 本集学到的规则 (首次检测 #12): a step of the episode flow between 整集试听 and 配乐 (order 20). */
+/** 本集学到的规则 (首次检测 #12): a step of the episode flow between 声音 and 配乐 (order 20); runs only when he clicks 总结. */
 export const feature: Feature = {
   tabs: [
     {

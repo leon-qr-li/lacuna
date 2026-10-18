@@ -6,9 +6,9 @@ Two ways in, both shown to him before anything is stored as a rule:
   says how it understood it. The chat shows that draft with 记住这条 / 改一下 / 不用; 改一下 sends his
   correction back for another rewrite. Only 记住这条 stores it, and then it is in force at once (he has just
   confirmed it), on 学到的规则 as kind ``ask``. His own sentence is kept as the evidence, never as the rule.
-* 本集学到的规则, a step between 整集试听 and 配乐: one AI call reads the episode's chat log and his review
+* 本集学到的规则, a step between 整集试听 and 配乐: when he clicks 总结 (never by itself), one AI call reads the episode's chat log and his review
   decisions and proposes the habits this episode teaches, each with its evidence and whether it is new,
-  reinforces an existing rule or conflicts with one. He adopts, edits (by hand or by telling LACUNA), or
+  reinforces an existing rule or conflicts with one. 「记住」 turns are left out: he already decided them. He adopts, edits (by hand or by telling LACUNA), or
   skips each; the step can be skipped. This replaces the silent after-export summary (D: 2026-10-18).
 
 Habits are never deleted here (Leon 2026-10-17): skipped lessons and dropped drafts stay in the file;
@@ -339,8 +339,8 @@ class Lessons:
         lessons = [x | {"rule_state": ids[x["rule"]]["state"] if x.get("rule") in ids else None}
                    for x in doc["lessons"]]
         error = s.get("error")
-        if error and not s.get("friendly"):    # stored before errors were explained: never show the raw one
-            error = tr("AI 服务出了点问题")
+        if s.get("state") == "error" and not s.get("friendly"):
+            s["state"], error = "none", None   # a failure from before V6 (old API call): not this version's
         return {"state": s["state"], "at": s.get("at"), "error": error, "stale": stale,
                 "lessons": lessons, "pending": sum(x["state"] == "draft" for x in doc["lessons"])}
 
@@ -371,22 +371,29 @@ class Lessons:
             return []
         log, ds = self._evidence(ep)
         sig = self._sig(log, ds)
-        shown, first = log[-MAX_TURNS:], max(len(log) - MAX_TURNS, 0)
+        # 「记住」 turns were already decided on their card: a confirmed one is a rule, a dropped one is a
+        # "不用" that must never come back here (Leon 2026-10-18). Turn numbers stay those of the full log.
+        shown = [(i, t) for i, t in enumerate(log) if not t.get("remember")][-MAX_TURNS:]
+        allowed = {i for i, _ in shown}
         ds_shown = sorted(ds, key=lambda d: (d.how != "single", -d.length_s))[:MAX_DECISIONS]
         rules = self._rules()
         with self.lock:
-            done = [x for x in self.load(ep.id)["lessons"] if x["state"] != "draft"]
+            doc = self.load(ep.id)
+        done = [x for x in doc["lessons"] if x["state"] != "draft"]
+        drafts = [d for d in doc.get("drafts", []) if d["state"] in ("confirmed", "dropped")]
         payload = {
             "episode": ep.meta.get("title") or ep.id,
             "chat": [{"turn": i + 1, "leon_said": t["said"], "producer_replied": t.get("reply", "")[:300],
                       "outcome": {"approved": "change approved", "discarded": "change rejected"}.get(
                           t.get("state", ""), "proposed, not decided" if t.get("proposal") else "no change")}
-                     for i, t in enumerate(shown)],
+                     for i, t in shown],
             "review": [{"edit": d.edit_id, "kind": d.kind, "host": d.host, "verdict": d.verdict,
                         "how": d.how, "seconds": round(d.length_s, 1), "words": d.text, "ai_reason": d.reason}
                        for d in ds_shown],
             "existing_rules": rules,
-            "already_reviewed": [{"title": x["title"], "decision": x["state"]} for x in done],
+            "already_reviewed": [{"title": x["title"], "decision": x["state"]} for x in done] + [
+                {"title": d["title"], "decision": "skipped" if d["state"] == "dropped" else "adopted"}
+                for d in drafts],
         }
         try:
             found, usage = self.writer.summarize(payload)
@@ -397,7 +404,7 @@ class Lessons:
         self._usage(ep.id, usage, "lessons")
         by_rule = {r["id"]: r for r in rules}
         by_edit = {d.edit_id: d for d in ds}
-        seen = {x["title"] for x in done}
+        seen = {x["title"] for x in done} | {d["title"] for d in drafts} | {d["said"] for d in drafts}
         new = []
         for f in found[:MAX_LESSONS]:
             title, instr = _clean(f.get("title")), _clean(f.get("instruction"), 600)
@@ -406,8 +413,8 @@ class Lessons:
             seen.add(title)
             turns = []
             for n in f.get("turns") or []:
-                i = first + int(n) - 1
-                if first <= i < len(log):
+                i = int(n) - 1
+                if i in allowed:
                     turns.append({"turn": i + 1, "said": log[i]["said"][:MAX_ASK], "at": log[i].get("at", 0.0),
                                   "reply": (log[i].get("reply") or "")[:200]})
             edits = [{"edit": d.edit_id, "verdict": d.verdict, "kind": d.kind, "host": d.host, "text": d.text,
