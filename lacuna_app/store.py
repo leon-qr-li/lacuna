@@ -19,6 +19,7 @@ import json
 import os
 import re
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 STATE_FILE = "state.json"
@@ -34,6 +35,11 @@ _BAD_ID = re.compile(r"[\\/:*?\"<>|\x00-\x1f]")
 
 class PathError(ValueError):
     """A user-supplied name would escape the workspace."""
+
+
+def now_iso() -> str:
+    """Current UTC time as ISO 8601 to the second: every timestamp the app stores."""
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def check_id(name: str) -> str:

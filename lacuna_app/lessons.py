@@ -24,13 +24,12 @@ import re
 import threading
 import time
 import traceback
-from datetime import datetime, timezone
 from typing import Any, Callable
 
 from .chat_learning import MAX_ASK, ChatAsks, _id as ask_id
 from .editor import ClaudeEditorAdapter, find_api_key, sdk_installed
 from .learning import LEARN_DIR, Learning, decisions
-from .store import Workspace, atomic_write_json, check_id, read_json
+from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
 from .i18n import AI_NAME_RULE, in_reply_language
 
 LESSONS_DIR = "lessons"
@@ -112,10 +111,6 @@ it contradicts an existing rule.
 - related: the id of that existing rule for reinforce / conflict, else "".
 - turns: the chat turn numbers it comes from; edits: the review edit ids it comes from. At least one of them.
 Do not repeat anything in already_reviewed.""" + AI_NAME_RULE  # i18n-ignore
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def _hid(*parts: str) -> str:

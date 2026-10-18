@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from .. import import_tracks
 from ..archive import retired_ids
-from ..importer import ImportBusy, ImportError_, Importer, check_track, list_dir
+from ..importer import ImportBusy, ImportError_, Importer, check_track
 from ..server import next_episode_id
 from ..store import META_FILE, PathError, read_json
 from ..i18n import tr
@@ -74,13 +74,6 @@ def register(app, ctx) -> None:
         if body.path in tracks_in_use():
             return {"removed": False}
         return {"removed": import_tracks.remove(ws, body.path)}
-
-    @app.get("/api/fs")
-    def browse(path: str | None = None):
-        try:
-            return list_dir(path, ws.root)
-        except ImportError_ as e:
-            raise HTTPException(404, str(e))
 
     @app.get("/api/imports")
     def imports():

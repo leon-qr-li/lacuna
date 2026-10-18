@@ -1,11 +1,9 @@
 """Media library + music placement / ducking (phase 6a, D45)."""
 import json
 import shutil
-from pathlib import Path
 
 import numpy as np
 import pytest
-import soundfile as sf
 
 from lacuna_app.episode import Episode
 from lacuna_app.library import CONFIRMED, NEED_NOTE, SUGGESTED, UNKNOWN, Library, credit_line, lookup_credit

@@ -26,12 +26,11 @@ import os
 import shutil
 import threading
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
 from . import import_tracks
-from .store import CHAT_FILE, PathError, Workspace, atomic_write_json, check_id, inside, read_json
+from .store import CHAT_FILE, PathError, Workspace, atomic_write_json, check_id, inside, read_json, now_iso as _now
 from .i18n import tr
 
 ARCHIVE_FILE = "archive.json"
@@ -53,10 +52,6 @@ def retired_ids(ws: Workspace) -> set[str]:
 
 class ArchiveError(RuntimeError):
     """Something Leon can act on (message in the interface language)."""
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 class Archive:

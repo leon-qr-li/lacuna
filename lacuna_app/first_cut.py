@@ -21,8 +21,9 @@ from pathlib import Path
 from typing import Any, Callable
 
 from .ai_cut import TrackTokens
-from .editor import PRICES, ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
+from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .i18n import AI_NAME_RULE, in_reply_language, lang, tr
+from .store import atomic_write_json, read_json
 
 PROMPTS = Path(__file__).resolve().parent / "prompts"
 WINDOW_S = 600.0
@@ -239,8 +240,6 @@ class ClaudeFirstCut:
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
             cancelled: Callable[[], bool] = lambda: False, extra_rules: str = "") -> FirstCutResult:
         """All windows; finished windows are cached in `cache_dir` so a retry resumes."""
-        import json
-
         system = system_prompt(extra_rules)
         wins = windows(duration)
         n = len(wins)
@@ -250,7 +249,10 @@ class ClaudeFirstCut:
             for k in range(n):
                 p = cache_dir / f"window_{k:02d}.json"
                 if p.is_file():
-                    d = json.loads(p.read_text(encoding="utf-8"))
+                    try:
+                        d = read_json(p)
+                    except (OSError, ValueError):
+                        continue            # torn by a crash mid-write: cut this window again
                     if d.get("window") == list(wins[k]) and d.get("system_len") == len(system):
                         results[k] = (d["ops"], d["notes"], {})
         lock = threading.Lock()
@@ -266,9 +268,9 @@ class ClaudeFirstCut:
             with lock:
                 results[k] = (ops, notes, usage)
                 if cache_dir:
-                    (cache_dir / f"window_{k:02d}.json").write_text(json.dumps(
-                        {"window": [a, b], "system_len": len(system), "ops": ops, "notes": notes,
-                         "usage": usage}, ensure_ascii=False), encoding="utf-8")
+                    atomic_write_json(cache_dir / f"window_{k:02d}.json",
+                                      {"window": [a, b], "system_len": len(system), "ops": ops, "notes": notes,
+                                       "usage": usage})
             report()
 
         report()

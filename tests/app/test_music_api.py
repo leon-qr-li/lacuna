@@ -13,7 +13,7 @@ from lacuna_app import create_app
 from lacuna_app.editor import MockEditorAdapter
 from lacuna_core.master import measure
 
-from .synth import EPISODE, SR, make_workspace, write_music
+from .synth import EPISODE, make_workspace, write_music
 from .fake_claude import FakeCreditAnthropic as FakeAnthropic
 
 pytestmark = pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not installed")

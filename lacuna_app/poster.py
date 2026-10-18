@@ -27,14 +27,13 @@ import traceback
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode
 from .publish import Publisher, episode_label
-from .store import POSTER_FILE, Workspace, atomic_write_json, inside, read_json
+from .store import POSTER_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
 from .i18n import N_, tr
 
 POSTER_SCHEMA = 1
@@ -409,7 +408,7 @@ class Posters:
             n = max((int(v["id"][1:]) for v in doc["variants"]), default=0) + 1
             v = {"id": f"v{n}", "direction": direction, "name": design.name, "concept": design.concept,
                  "svg": svg, "parent": parent, "instruction": instruction, "notes": notes,
-                 "usage": design.usage, "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+                 "usage": design.usage, "created_at": now_iso()}
             _write_bytes(self.preview_path(ep, v["id"]), png)
             doc["variants"].append(v)
             self.save(ep, doc)
@@ -484,7 +483,7 @@ class Posters:
                 doc["cover"] = {"variant": vid, "px": COVER_PX, "folder": str(out),
                                 "jpg": str(out / "cover.jpg"), "png": str(out / "cover.png"),
                                 "jpg_bytes": len(jpg), "png_bytes": len(png),
-                                "rendered_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+                                "rendered_at": now_iso()}
                 self.save(ep, doc)
 
         return self._run(ep, "choose", tr("准备"), work, wait)

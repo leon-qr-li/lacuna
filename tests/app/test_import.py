@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from lacuna_app import create_app
 from lacuna_app.editor import MockEditorAdapter
 from lacuna_app.first_cut import (TOOL, ClaudeFirstCut, RuleFirstCut, system_prompt, to_s5_ops, windows)
-from lacuna_app.importer import Importer, check_track, list_dir
+from lacuna_app.importer import Importer, check_track
 from lacuna_app.server import next_episode_id
 from lacuna_app.store import Workspace
 
@@ -260,14 +260,6 @@ def test_next_episode_id():
     assert next_episode_id([]) == "EP001"
 
 
-def test_check_track_and_browser(rec, tmp_path):
+def test_check_track(rec):
     info = check_track(rec["Leon"])
     assert info["duration"] == 60.0 and info["sample_rate"] == 16000
-    lst = list_dir(str(rec["Leon"].parent), tmp_path)
-    assert [f["name"] for f in lst["files"]] == ["Leon.wav", "Pei.wav"]
-    assert lst["files"][0]["duration"] == 60.0 and lst["parent"] == str(tmp_path.resolve())
-    up = list_dir(str(tmp_path), tmp_path)
-    assert {"name": "Riverside 下载", "path": str(rec["Leon"].parent.resolve())} in up["dirs"]
-    assert lst["files"][1]["path"] == str(rec["Pei"].resolve())
-    with pytest.raises(Exception, match="打不开"):
-        list_dir(str(tmp_path / "missing"), tmp_path)

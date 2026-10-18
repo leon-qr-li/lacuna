@@ -23,12 +23,11 @@ import hashlib
 import json
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
 from .review import REVIEW_CONFIDENCE, ReviewPolicy
-from .store import Workspace, atomic_write_json, check_id, read_json
+from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
 from .i18n import N_, lang, tr
 
 LEARN_DIR = "learning"
@@ -68,10 +67,6 @@ MAX_EXAMPLES = 6
 TASTE_EXAMPLES = 8        # per side, longest first
 MISSED_SPEECH_S = 3.0     # speech he cut himself (AI untouched) worth showing as a missed example
 CONF_BUCKETS = (0.4, 0.5, 0.6, 0.7)
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 # ============================================================================ decisions

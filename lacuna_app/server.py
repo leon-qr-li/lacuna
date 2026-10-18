@@ -9,7 +9,6 @@ import json
 import threading
 import weakref
 from collections import OrderedDict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -19,7 +18,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .editor import EditorAdapter, make_adapter
 from .episode import ConflictError, Episode
-from .store import PathError, Workspace
+from .store import PathError, Workspace, now_iso
 
 WEB_DIST = Path(__file__).resolve().parent.parent / "web" / "dist"
 USAGE_LOG = "ai_usage.jsonl"     # one line per Claude call: tokens, seconds, estimated cost
@@ -29,7 +28,7 @@ _USAGE_LOCK = threading.Lock()     # parallel calls (4 covers at once): appends 
 
 
 def log_usage(path: Path, episode_id: str, usage: dict) -> None:
-    line = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "episode": episode_id, **usage}
+    line = {"at": now_iso(), "episode": episode_id, **usage}
     try:
         with _USAGE_LOCK, open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(line, ensure_ascii=False) + "\n")

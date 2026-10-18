@@ -31,14 +31,12 @@ Public functions used by other modules (D42): `bgm_credits`, `final_time`, `fina
 """
 from __future__ import annotations
 
-import bisect
 import hashlib
 import json
 import math
 import threading
 import uuid
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -50,7 +48,7 @@ from lacuna_core.master import LoudnessMeter
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .episode import ConflictError, Episode, to_base, to_tl
 from .library import Library, credit_line
-from .store import Workspace, atomic_write_json, read_json
+from .store import Workspace, atomic_write_json, read_json, now_iso as _now
 from .i18n import N_, tr
 
 SCHEMA = 2
@@ -80,10 +78,6 @@ ROLE_TUNING = ("solo_s", "ramp_s", "ramp_out_s", "pre_s", "bye_s", "fade_out_s",
 # schema 1 (before the full-play rule) cut music at these lengths and overlapped it with the voice
 _V1_MAX = {"intro": 30.0, "interlude": 20.0, "outro": 60.0, "bed": 120.0, "clip": 60.0}
 _V1_OVERLAP = {"intro": 4.0, "interlude": 2.0, "outro": 4.0}
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 @dataclass
@@ -652,7 +646,6 @@ class EpisodeMusic:
             lay = self.layout(enabled, placements)
             with ep.lock:
                 voice = ep.timeline_for(enabled)
-            sr = ep.sr
             tl = voice
             for T, _, n in sorted(lay.inserts, reverse=True):      # latest first keeps earlier points valid
                 tl = InsertGap(T, n).apply(tl)

@@ -22,8 +22,7 @@ import re
 import threading
 import uuid
 from collections import OrderedDict
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
 from functools import cached_property
 from itertools import accumulate
 from pathlib import Path
@@ -40,7 +39,7 @@ from . import analysis, room_tone
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
-from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
+from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json, now_iso
 from .i18n import N_, tr
 
 STATE_SCHEMA = 1
@@ -497,7 +496,7 @@ class Episode:
     # ------------------------------------------------------------------ chat
     CHAT_RADIUS_S = 45.0       # transcript / pauses the editor sees around the playhead
     CHAT_HISTORY = 6           # earlier turns sent along ("再短一点", "不是这句")
-    CHAT_KEEP = 2000           # turns kept in chat.json (learning reads them after export)
+    CHAT_KEEP = 2000           # turns kept in chat.json (chat history, 「记住」 drafts in lessons.py)
 
     def chat_context(self, text: str, playhead_s: float) -> tuple[ChatContext, dict]:
         """What the editor sees around the playhead, plus what is needed to turn its answer into
@@ -549,7 +548,7 @@ class Episode:
         with self.lock:
             self._chat_log.append({"said": said, "at": round(at, 2), "reply": reply,
                                    "proposal": proposal["id"] if proposal else None, "state": "pending",
-                                   "time": datetime.now(timezone.utc).isoformat(timespec="seconds"), **extra})
+                                   "time": now_iso(), **extra})
             del self._chat_log[:-self.CHAT_KEEP]
             self._save_chat()
 
