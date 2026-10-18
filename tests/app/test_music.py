@@ -239,8 +239,8 @@ def test_intro_interlude_outro_mix_and_contract(ws, lib, ep, song, tmp_path):
         music_only = type(tl)(tl.sample_rate, tuple(t for t in tl.tracks if t.name.startswith("♪")))
         it = next(x for x in lay.items if x.p["id"] == mid["id"])
         track = next(t for t in music_only.tracks if mid["id"] in t.name)
-        # one constant background stretch after the gap, 20 dB down; no ducking that follows the speech
-        assert [(d.start, d.end, d.depth_db) for d in track.ducks] == [(it.anchor + 4 * SR, it.end, 20.0)]
+        # one constant background stretch after the gap, 22 dB down (the default for new placements); no ducking that follows the speech
+        assert [(d.start, d.end, d.depth_db) for d in track.ducks] == [(it.anchor + 4 * SR, it.end, 22.0)]
         full = r.render(music_only, it.anchor + int(1.2 * SR), it.anchor + int(2.8 * SR))
         under = r.render(music_only, it.anchor + 5 * SR, it.anchor + 7 * SR)
         assert 15 < _rms_db(full) - _rms_db(under) < 25
@@ -292,9 +292,9 @@ def test_bed_and_clip(ws, lib, ep, tmp_path):
     louder = m.update(b["id"], bg_db=10.0)
     assert louder["bg_db"] == 10.0
     tl2, _, _ = m.mix()
-    assert next(t for t in tl2.tracks if b["id"] in t.name).clips[0].gain_db == pytest.approx(bed_track.clips[0].gain_db + 10, abs=0.01)
+    assert next(t for t in tl2.tracks if b["id"] in t.name).clips[0].gain_db == pytest.approx(bed_track.clips[0].gain_db + 12, abs=0.01)
     with pytest.raises(ValueError):
-        m.add(bed["id"], "bed")              # a bed needs a position
+        m.add(bed["id"], "interlude")        # an interlude needs a position (a bed without one is automatic)
 
 
 def test_schema_1_file_and_series_rule_are_upgraded(ws, lib, ep, tmp_path):
