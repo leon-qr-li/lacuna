@@ -15,10 +15,10 @@ from __future__ import annotations
 
 import copy
 import json
-import time
 import uuid
 from typing import Any
 
+from .ai_tools import call_tool
 from .episode import ConflictError, to_tl
 from .library import KINDS, ROLE_FOR_KIND, credit_line
 from .music import ANCHORED, APPLIED, ROLES, TUNING, EpisodeMusic, upgrade_v1
@@ -116,14 +116,15 @@ def auto_place(m: EpisodeMusic) -> dict:
     """Suggest music from the library's uses. Returns {"draft": draft or None, "message"}."""
     current = [p for p in m.placements() if p.get("status", APPLIED) == APPLIED]
     have = {p["role"] for p in current}
-    assets = sorted(m.lib.assets(), key=lambda a: a.get("added_at") or "", reverse=True)
+    assets = sorted(m.lib.for_episode(m.ep.id), key=lambda a: a.get("added_at") or "", reverse=True)
     rule = m.lib.series_rule(m.load().get("series"))
     ps = copy.deepcopy(current)
     changes, alternatives, left = [], {}, []
 
     def pick(kind: str) -> dict | None:
         if kind in ("intro", "outro") and (rule or {}).get(kind):
-            a = next((x for x in assets if x["id"] == rule[kind]["asset_id"]), None)
+            # the series rule holds wherever its file now belongs (applying the series does too)
+            a = next((x for x in m.lib.assets() if x["id"] == rule[kind]["asset_id"]), None)
             if a:
                 return a
         return next((a for a in assets if a.get("kind") == kind), None)
@@ -250,7 +251,7 @@ def context(m: EpisodeMusic, instruction: str) -> dict:
                            **{k: p.get(k) for k in SET_FIELDS},
                            "file_duration_s": p["asset_duration_s"], "talk_nearby": near(at)})
     library = [{"asset_id": a["id"], "file": a["name"], "use": KINDS.get(a.get("kind"), ""), "note": a.get("note") or "",
-                "music": credit_line(a), "duration_s": a["duration_s"]} for a in m.lib.assets()]
+                "music": credit_line(a), "duration_s": a["duration_s"]} for a in m.lib.for_episode(m.ep.id)]
     chapters = []
     try:
         from .publish import Publisher
@@ -275,7 +276,7 @@ def apply_actions(m: EpisodeMusic, actions: list[dict]) -> tuple[list[dict], lis
     lay = m.layout(placements=current)
     by = {p["id"]: p for p in ps}
     anchors = {it.p["id"]: it.anchor for it in lay.items}
-    assets = {a["id"]: a for a in m.lib.assets()}
+    assets = {a["id"]: a for a in m.lib.for_episode(m.ep.id)}     # shared + this episode's own
     changes = []
 
     def voice_at(final_s: float, exclude: str | None) -> float:
@@ -364,16 +365,15 @@ class MusicChat:
             return {"message": tr("还没接上 AI（没有 AI 密钥），LACUNA 暂时不能改配乐。"),
                     "draft": None, "usage": None}
         req = dict(model=self.model, max_tokens=4000, system=in_reply_language(SYSTEM), output_config={"effort": "low"},
-                   tools=[in_reply_language(TOOL)], tool_choice={"type": "tool", "name": "arrange_music"},
+                   tools=[in_reply_language(TOOL)],
                    messages=[{"role": "user", "content": json.dumps(context(m, instruction), ensure_ascii=False)}])
-        t0 = time.monotonic()
         try:
-            resp = self.client().beta.messages.create(betas=["server-side-fallback-2026-07-01"],
-                                                      fallbacks="default", **req)
+            out, resp, seconds = call_tool(
+                lambda **r: self.client().beta.messages.create(betas=["server-side-fallback-2026-07-01"],
+                                                               fallbacks="default", **r), req, "arrange_music")
         except Exception as e:      # noqa: BLE001
             return {"message": error_message(e), "draft": None, "usage": None}
-        usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
-        out = next((dict(b.input) for b in resp.content if b.type == "tool_use" and b.name == "arrange_music"), None)
+        usage = ClaudeEditorAdapter._usage(resp, seconds)
         if out is None:
             text = "".join(getattr(b, "text", "") for b in resp.content if b.type == "text").strip()
             return {"message": text or tr("LACUNA 没有给出修改。"), "draft": None, "usage": usage}

@@ -1,4 +1,4 @@
-"""Media library (phase 6a, D45/D48): upload, uses, credit lookup."""
+"""Media library (phase 6a, D45/D48): upload, uses, credit lookup, scopes (公共 / 本集)."""
 from __future__ import annotations
 
 from fastapi import HTTPException, Request
@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from ..library import Library, LibraryError, lookup_credit
-from ..store import PathError
+from ..store import PathError, check_id
 from ..i18n import tr
 
 MAX_UPLOAD = 4 * 1024 ** 3   # a 2-hour 48 kHz stereo WAV is ~1.4 GB
@@ -18,6 +18,11 @@ class AssetBody(BaseModel):
     kind: str | None = Field(None, pattern="^(intro|outro|interlude|bed|dialogue|trailer|other)$")
     credit: dict | None = None
     confirm: bool = False
+
+
+class ScopeBody(BaseModel):
+    action: str = Field(pattern="^(move|share|add)$", description="move: this episode only; share: every episode; add: one more episode")
+    episode: str | None = Field(None, max_length=120)
 
 
 def library_of(ctx) -> Library:
@@ -36,14 +41,59 @@ def register(app, ctx) -> None:
     library = library_of(ctx)
     credit_client = ctx.option("credit_client")
 
+    def episode_or_404(episode_id: str) -> str:
+        """An existing episode's id (400 malformed, 404 unknown)."""
+        try:
+            check_id(episode_id)
+        except (PathError, ValueError):
+            raise HTTPException(400, "invalid episode id")
+        if episode_id not in ctx.ws.episode_ids():
+            raise HTTPException(404, "no such episode")
+        return episode_id
+
+    def episodes() -> list[dict]:
+        """The episodes an asset can belong to (titles for the scope labels and pickers)."""
+        from .archive import archive_of
+        index = ctx.provide("episode_index")
+        rows = index.rows() if index is not None else [{"id": e, "title": e} for e in ctx.ws.episode_ids()]
+        archived = archive_of(ctx).archived()
+        return [{"id": r["id"], "title": r.get("title") or r["id"], "archived": r["id"] in archived} for r in rows]
+
     @app.get("/api/library")
-    def library_view():
+    def library_view(episode: str | None = None):
+        """`episode`: only what that episode's music page offers (shared + its own)."""
         from ..editor import find_api_key, sdk_installed
+        if episode:
+            episode_or_404(episode)
         lookup = credit_client is not None or (bool(find_api_key()[0]) and sdk_installed())
-        return library.view() | {"lookup": lookup}
+        return library.view(episode or None) | {"lookup": lookup, "episodes": episodes()}
+
+    @app.post("/api/library/assets/{asset_id}/scope")
+    def library_scope(asset_id: str, body: ScopeBody):
+        """「挪到某一集」 (move) / 「设为公共」 (share) / 「也加到另一集」 (add)."""
+        asset_or_404(library, asset_id)
+        if body.action != "share":
+            if not body.episode:
+                raise HTTPException(422, "episode is required")
+            episode_or_404(body.episode)
+        try:
+            if body.action == "move":
+                a = library.move_to(asset_id, body.episode)
+            elif body.action == "add":
+                a = library.add_to_episode(asset_id, body.episode)
+            else:
+                a = library.make_shared(asset_id)
+        except KeyError:
+            raise HTTPException(404, "no such asset")
+        message = None
+        if body.action == "move" and len(a["episodes"]) > 1:
+            titles = {e["id"]: e["title"] for e in episodes()}
+            message = tr("{episodes} 的配乐已经用了它，所以那边也留着。",
+                         episodes="、".join(titles.get(e, e) for e in a["episodes"][1:]))
+        return {"asset": library.asset_view(a), "message": message}
 
     @app.post("/api/library/upload")
-    async def library_upload(request: Request, name: str, kind: str = "other", note: str = ""):
+    async def library_upload(request: Request, name: str, kind: str = "other", note: str = "", episode: str = ""):
         """A file dragged into (or picked in) the browser, raw bytes in the body. It is written
         straight into the library folder; nothing leaves this machine. The octet-stream type is
         required so another web page can't post here without the browser's CORS preflight."""
@@ -51,6 +101,8 @@ def register(app, ctx) -> None:
             raise HTTPException(415, "expected application/octet-stream")
         if len(note) > 500:
             raise HTTPException(422, "note too long")
+        if episode:          # added on an episode's music page, or into an episode on the library page
+            episode_or_404(episode)
         try:
             part = library.upload_target(name, kind)
         except LibraryError as e:
@@ -65,7 +117,8 @@ def register(app, ctx) -> None:
                     f.write(chunk)
             if not size:
                 raise HTTPException(422, tr("文件是空的"))
-            asset, duplicate = await run_in_threadpool(library.add_upload, part, kind, note.strip())
+            asset, duplicate = await run_in_threadpool(library.add_upload, part, kind, note.strip(),
+                                                       episode or None)
         except HTTPException:
             part.unlink(missing_ok=True)
             raise

@@ -32,9 +32,9 @@ export function ArchiveView() {
     const ok = await confirmDialog({
       title: t("永久删除「{title}」？", { title: e.title }),
       message:
-        t("会删掉这一集的剪辑、对话记录、发布资料、封面，以及导入时复制进 App 的音频。这一步不能撤销。") +
+        t("会删掉这一集的剪辑、对话记录、发布资料、封面、导入时复制进 App 的音频，以及只属于这一集的素材。这一步不能撤销。") +
         "\n" +
-        t("学到的习惯和规则都会保留；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。"),
+        t("学到的习惯和规则都会保留；公共素材和别的剧集也在用的素材留着；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。"),
       confirmLabel: t("永久删除"),
       danger: true,
     });
@@ -43,7 +43,10 @@ export function ArchiveView() {
     setErr(null);
     try {
       const r = await episodesApi.remove(e.id);
-      setNote(t("「{title}」已永久删除，腾出 {size}。学到的习惯都还在。", { title: e.title, size: mb(r.freed_bytes) }));
+      setNote(
+        t("「{title}」已永久删除，腾出 {size}。学到的习惯都还在。", { title: e.title, size: mb(r.freed_bytes) }) +
+          (r.assets?.length ? t("一起删掉了 {n} 个本集素材：{names}", { n: r.assets.length, names: r.assets.join("、") }) : ""),
+      );
       load();
     } catch (x) {
       setErr((x as Error).message);

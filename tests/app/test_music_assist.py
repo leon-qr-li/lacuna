@@ -145,7 +145,8 @@ def test_chat_makes_a_suggestion(ws, ep, lib):
     assert next(p for p in out["draft"]["placements"] if p["id"] == mid["id"])["gain_db"] == -3.0
     assert m.placements()[0]["gain_db"] == 0.0                  # not applied until accepted
     sent = fake.calls[0]
-    assert sent["tool_choice"]["name"] == "arrange_music" and "间奏" in sent["messages"][0]["content"]
+    assert sent["tool_choice"] == {"type": "auto"} and "间奏" in sent["messages"][0]["content"]
+    assert "calling the arrange_music tool" in sent["system"]
     assert "talk_nearby" in sent["messages"][0]["content"]       # text only: no audio leaves the machine
     # nothing to change -> a question, no suggestion
     out = MusicChat(FakeMusicAnthropic(lambda c: {"message": "放哪一首？", "actions": []})).ask(m, "加点音乐")

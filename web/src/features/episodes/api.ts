@@ -10,5 +10,5 @@ export const episodesApi = {
   archived: () => req<{ episodes: ArchivedItem[] }>("GET", "/api/archive"),
   archive: (id: string) => req<{ archived: string; at: string }>("POST", `${ep(id)}/archive`),
   restore: (id: string) => req<{ restored: string }>("POST", `${ep(id)}/restore`),
-  remove: (id: string) => req<{ deleted: string; freed_bytes: number; tracks: string[] }>("DELETE", ep(id)),
+  remove: (id: string) => req<{ deleted: string; freed_bytes: number; tracks: string[]; assets?: string[] }>("DELETE", ep(id)),
 };

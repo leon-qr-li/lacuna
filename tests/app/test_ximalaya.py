@@ -68,6 +68,14 @@ def test_the_three_styles_differ():
     assert out["cards"]["images"] == [] and "【插图" not in out["cards"]["text"]
 
 
+def test_cinema_starts_at_the_title():
+    doc = ximalaya.parse(EXAMPLE)
+    out = ximalaya.build(EXAMPLE, "EP001")["cinema"]
+    assert out["text"].startswith(ximalaya._plain(doc.title))
+    assert "EP001" not in out["text"] and "·　洛城二三事" not in out["text"]
+    assert "EP001" not in out["html"]
+
+
 def test_cards_get_a_banner_and_a_films_card(tmp_path):
     out = ximalaya.build(EXAMPLE, "EP001", tmp_path)["cards"]
     assert out["images"] == ["banner.png", "films.png"]

@@ -27,10 +27,11 @@ import traceback
 from typing import Any, Callable
 
 from .chat_learning import MAX_ASK, ChatAsks, _id as ask_id
-from .editor import ClaudeEditorAdapter, find_api_key, sdk_installed
+from .ai_tools import call_tool
+from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .learning import LEARN_DIR, Learning, decisions
 from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
-from .i18n import AI_NAME_RULE, in_reply_language
+from .i18n import AI_NAME_RULE, in_reply_language, tr
 
 LESSONS_DIR = "lessons"
 MAX_TURNS = 300           # most recent chat turns shown to the summariser
@@ -113,6 +114,19 @@ it contradicts an existing rule.
 Do not repeat anything in already_reviewed.""" + AI_NAME_RULE  # i18n-ignore
 
 
+class NoAnswer(RuntimeError):
+    """The model answered without calling the tool (or refused / ran out of room)."""
+
+
+def ai_failure(e: Exception) -> str:
+    """What went wrong, for Leon, in the interface language (never the raw API error)."""
+    if isinstance(e, NoAnswer):
+        return tr("LACUNA 这次没有给出结果")
+    if type(e).__module__.startswith("anthropic"):
+        return error_message(e, tail="")
+    return tr("AI 服务出了点问题")
+
+
 def _hid(*parts: str) -> str:
     return hashlib.sha1("\x1f".join(parts).encode()).hexdigest()[:10]
 
@@ -147,16 +161,14 @@ class ClaudeRuleWriter:
         return self._client
 
     def _call(self, system: str, tool: dict, payload: dict, max_tokens: int) -> tuple[dict, dict]:
-        t0 = time.monotonic()
-        resp = self.client.messages.create(
+        out, resp, seconds = call_tool(self.client.messages.create, dict(
             model=self.model, max_tokens=max_tokens, system=in_reply_language(system),
-            tools=[in_reply_language(tool)], tool_choice={"type": "tool", "name": tool["name"]},
-            messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}])
-        usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
-        for block in resp.content:
-            if block.type == "tool_use" and block.name == tool["name"]:
-                return dict(block.input), usage
-        raise RuntimeError("no answer from the model")
+            tools=[in_reply_language(tool)],
+            messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]), tool["name"])
+        usage = ClaudeEditorAdapter._usage(resp, seconds)
+        if out is None:
+            raise NoAnswer(getattr(resp, "stop_reason", ""))
+        return out, usage
 
     def rewrite(self, payload: dict) -> tuple[dict, dict]:
         return self._call(REWRITE_SYSTEM, REWRITE_TOOL, payload, 1000)
@@ -225,11 +237,16 @@ class Lessons:
                     same = str(out.get("same_as") or "").removeprefix("ask:")
                     return {"title": title, "understood": _clean(out.get("understood"), 600),
                             "instruction": _clean(out.get("instruction"), 600) or self._verbatim(title),
-                            "same_as": same if same in known else "", "fallback": False}
-            except Exception:              # noqa: BLE001 - he can still confirm his own words
+                            "same_as": same if same in known else "", "fallback": False, "error": ""}
+            except Exception as e:         # noqa: BLE001 - he can still confirm his own words
                 traceback.print_exc()
-        return {"title": fallback, "understood": "", "instruction": self._verbatim(fallback), "same_as": "",
-                "fallback": True}
+                return self._fallback(fallback, ai_failure(e))
+        return self._fallback(fallback, "")
+
+    def _fallback(self, words: str, error: str) -> dict:
+        """His own words; `error` says why the AI didn't rewrite them ("" = no AI key)."""
+        return {"title": words, "understood": "", "instruction": self._verbatim(words), "same_as": "",
+                "fallback": True, "error": error}
 
     @staticmethod
     def _verbatim(title: str) -> str:
@@ -321,7 +338,10 @@ class Lessons:
         ids = {r["id"]: r for r in self.learning.overview()["rules"]}
         lessons = [x | {"rule_state": ids[x["rule"]]["state"] if x.get("rule") in ids else None}
                    for x in doc["lessons"]]
-        return {"state": s["state"], "at": s.get("at"), "error": s.get("error"), "stale": stale,
+        error = s.get("error")
+        if error and not s.get("friendly"):    # stored before errors were explained: never show the raw one
+            error = tr("AI 服务出了点问题")
+        return {"state": s["state"], "at": s.get("at"), "error": error, "stale": stale,
                 "lessons": lessons, "pending": sum(x["state"] == "draft" for x in doc["lessons"])}
 
     def start(self, ep) -> dict:
@@ -372,7 +392,7 @@ class Lessons:
             found, usage = self.writer.summarize(payload)
         except Exception as e:             # noqa: BLE001 - the step must never break the episode
             traceback.print_exc()
-            self._set_summary(ep.id, state="error", error=str(e)[:300])
+            self._set_summary(ep.id, state="error", error=ai_failure(e), friendly=True)
             return []
         self._usage(ep.id, usage, "lessons")
         by_rule = {r["id"]: r for r in rules}
@@ -441,7 +461,7 @@ class Lessons:
             x = self._get(doc, "lessons", lid)
             x["history"].append(current | {"feedback": feedback, "by": "chat", "at": _now()})
             x.update(title=rule["title"], instruction=rule["instruction"], reply=rule["understood"],
-                     edited=True, fallback=rule["fallback"])
+                     edited=True, fallback=rule["fallback"], error=rule["error"])
             self._save(ep.id, doc)
         return x
 

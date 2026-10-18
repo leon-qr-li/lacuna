@@ -77,6 +77,24 @@ test("music page: picker, defaults, player and strip together, beds, changing a 
   await page.getByRole("button", { name: "后退 5 秒" }).click();
   await expect.poll(() => mixTime(page)).toBeCloseTo(5, 0);
 
+  // 验收 V8: speed chip on the mix player, pitch kept, remembered after a reload
+  const speed = page.getByTestId("mix-speed");
+  const rateOf = () => page.getByTestId("mix-audio").evaluate((a: HTMLAudioElement) => ({ rate: a.playbackRate, pitch: a.preservesPitch }));
+  await expect(speed).toHaveText("1×");
+  await speed.click();
+  await speed.click();
+  await expect(speed).toHaveText("1.5×");
+  await expect(speed).toHaveAccessibleName("播放速度 1.5×");
+  await expect.poll(rateOf).toEqual({ rate: 1.5, pitch: true });
+  await page.reload();
+  await expect(page.getByTestId("mix-speed")).toHaveText("1.5×");
+  await expect.poll(rateOf).toEqual({ rate: 1.5, pitch: true });
+  await page.getByTestId("mix-speed").click();
+  await page.getByTestId("mix-speed").click(); // 2× → 1×
+  await expect(page.getByTestId("mix-speed")).toHaveText("1×");
+  await page.getByRole("button", { name: "前进 5 秒" }).click();
+  await expect.poll(() => mixTime(page)).toBeCloseTo(5, 0);
+
   // 19: a block on the strip moves the player below (and plays), the playhead follows the player
   const m1 = await music(page);
   const gap = m1.placements.find((p) => p.role === "interlude")!;
