@@ -97,10 +97,19 @@ test("media library → credits → music on the episode → series rule", async
   const head = await page.request.get(mixUrl!, { headers: { Range: "bytes=0-43" } });
   expect(head.status()).toBe(206);
 
-  // gain change is saved
+  // the whole song plays; Leon's numbers for the gap are saved and read back in plain words
+  await expect(page.getByTestId("placement").filter({ hasText: "片头" }).getByTestId("placement-plan")).toContainText("只有音乐");
+  await expect(mid.getByTestId("placement-plan")).toContainText("整首");
+  await mid.getByLabel("正常音量（秒）").fill("3");
+  await mid.getByLabel("背景压低（dB）").fill("16");
+  await mid.getByLabel("裁到").fill("0:09");
   await mid.getByLabel("音量（dB）").fill("-4");
   await mid.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("已保存")).toBeVisible();
+  await expect(mid.getByTestId("placement-plan")).toContainText("歌的 0:00–0:09");
+  await expect(mid.getByTestId("placement-plan")).toContainText("正常音量 3 秒");
+  await expect(mid.getByTestId("placement-plan")).toContainText("压低 16 dB");
+  await expect(mid.getByRole("button", { name: "保存" })).toBeDisabled();
 
   // remember the intro as the series rule, then it is offered once the episode has none
   await page.getByRole("button", { name: "记成系列片头片尾" }).click();

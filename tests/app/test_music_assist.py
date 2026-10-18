@@ -98,7 +98,7 @@ def test_stale_and_discarded_suggestions(ws, ep, lib):
 def test_actions_move_set_remove_add(ws, ep, lib):
     m = EpisodeMusic(ws, ep, lib)
     a = by_role(lib)
-    m.add(a["intro"]["id"], "intro", overlap_s=2.0)
+    m.add(a["intro"]["id"], "intro", solo_s=2.0)
     mid = m.add(a["interlude"]["id"], "interlude", at_s=20.0)
     m.add(a["outro"]["id"], "outro")
     lay = m.layout()
@@ -112,9 +112,12 @@ def test_actions_move_set_remove_add(ws, ep, lib):
     at2 = next(it.anchor for it in new.items if it.p["id"] == mid["id"]) / SR
     # roughly two seconds later (snapped to a pause), and the change reads like Leon would say it
     assert 0 < at2 - at < 2.0 + 4.1 and ch[0]["kind"] == "move" and "间奏" in ch[0]["text"]
-    ps, ch = apply_actions(m, [act("set", placement_id=mid["id"], gain_change_db=-3.0, overlap_s=1.5)])
+    ps, ch = apply_actions(m, [act("set", placement_id=mid["id"], gain_change_db=-3.0, solo_s=12.0, bg_db=23.0)])
     assert next(p for p in ps if p["id"] == mid["id"])["gain_db"] == -3.0
-    assert ch[0]["text"] == "间奏：音量 -3 dB，和人声重叠 1.5 秒"
+    assert ch[0]["text"] == "间奏：音量 -3 dB，全音量 12.0 秒，背景压低 23.0 dB"
+    ps, ch = apply_actions(m, [act("set", placement_id=next(p["id"] for p in m.placements() if p["role"] == "outro"),
+                                   src_out_s=150.0, bye_s=120.0, fade_out_s=10.0)])
+    assert ch[0]["text"] == "片尾：到文件第 150.0 秒，拜拜落在歌的第 120.0 秒，淡出 10.0 秒"
     outro = next(p for p in m.placements() if p["role"] == "outro")
     ps, ch = apply_actions(m, [act("remove", placement_id=outro["id"])])
     assert "outro" not in {p["role"] for p in ps} and ch[0]["text"] == "去掉片尾"

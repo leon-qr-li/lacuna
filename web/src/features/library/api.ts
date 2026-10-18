@@ -53,9 +53,15 @@ export interface Placement {
   status: "applied" | "proposed";
   src_in_s: number;
   src_out_s: number;
-  overlap_s: number;
   gain_db: number;
-  lead_s?: number;
+  solo_s?: number | null; // intro: music alone before the voice; interlude: full level in the gap
+  ramp_s?: number | null; // rise / fall between full level and background
+  ramp_out_s?: number | null; // interlude: fall back to background after the gap
+  bg_db?: number | null; // background = this much under full level
+  pre_s?: number | null; // interlude: plays under the talk before the gap
+  bye_s?: number | null; // outro: second of the song where the voice ends
+  fade_out_s?: number | null; // null = automatic
+  lead_s?: number | null;
   asset_name: string | null;
   asset_duration_s?: number;
   credit_line: string;
@@ -64,6 +70,7 @@ export interface Placement {
   end_s: number | null;
   voice_at_s?: number | null;
   at_s?: number | null; // where it sits on the final mix (interlude / bed / clip)
+  until_at_s?: number | null; // a bed's end point on the final mix
   inserted_s?: number;
   missing: boolean;
 }
@@ -112,8 +119,14 @@ export type PlacementPatch = Partial<{
   until_s: number;
   src_in_s: number;
   src_out_s: number;
-  overlap_s: number;
   gain_db: number;
+  solo_s: number;
+  ramp_s: number;
+  ramp_out_s: number;
+  bg_db: number;
+  pre_s: number;
+  bye_s: number;
+  fade_out_s: number;
   lead_s: number;
 }>;
 

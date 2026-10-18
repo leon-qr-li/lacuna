@@ -120,6 +120,7 @@ class Music:
     to_final: ``music.final_time`` - voice-cut seconds -> final seconds (inserted intro/interludes)."""
     credits: list[dict] | None = None
     to_final: Callable[[float], float] = lambda t: t
+    inserts: list[list[float]] | None = None   # time music adds to the talk: [voice s, length s]
 
     @property
     def library(self) -> bool:
@@ -148,7 +149,8 @@ def music_info(ws: Workspace, ep: Episode) -> Music:
         traceback.print_exc()
         return Music()
     sr = lay.sr
-    return Music(credits, lambda t: lay.final(int(round(t * sr))) / sr)
+    inserts = [[round(T / sr, 3), round(n / sr, 3)] for T, _, n in lay.inserts if n > 0]
+    return Music(credits, lambda t: lay.final(int(round(t * sr))) / sr, inserts)
 
 
 # ---------------------------------------------------------------------------- names (词表)
@@ -655,7 +657,7 @@ class Publisher:
         first: dict[int, float] = {}
         for r in rows:
             first.setdefault(r["section"], r["t"])
-        pack.update(version=ep.version_key(), music=music.credits, times=[mmss(r["t"]) for r in rows],
+        pack.update(version=ep.version_key(), music=music.credits, music_inserts=music.inserts, times=[mmss(r["t"]) for r in rows],
                     chapters=[{"t": round(first.get(i, 0.0), 2), "time": mmss(first.get(i, 0.0)),
                                "heading": s["heading"]} for i, s in enumerate(pack["draft"]["sections"])],
                     gone=[r["text"] for r in rows if r["gone"]])
@@ -675,7 +677,8 @@ class Publisher:
             "title": d["title"], "alt_titles": d["alt_titles"], "blurb": d["blurb"],
             "markdown": pack["markdown"], "edited": pack["edited"], "chapters": pack["chapters"],
             "names": [{k: n[k] for k in ("heard", "suggested", "why", "state")} for n in d["names"]],
-            "stale": pack["version"] != ep.version_key() or music.credits != pack.get("music"),
+            "stale": pack["version"] != ep.version_key() or music.credits != pack.get("music")
+                     or ("music_inserts" in pack and music.inserts != pack["music_inserts"]),
             "gone": pack.get("gone", []), "notes": pack.get("notes", []), "adapter": pack["adapter"],
             "usage": pack.get("usage") or {}, "generated_at": pack["generated_at"],
             "library": music.library,

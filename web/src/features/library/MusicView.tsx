@@ -8,23 +8,74 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 
 const ROLE_HELP: Record<Role, string> = {
-  intro: t("从头放，人声在音乐结束前进来，重叠处音乐自动压低淡出"),
-  interlude: t("在两句话之间插入，正常音量；前后重叠处压在人声下"),
-  outro: t("人声快结束时进来，人声说完后正常音量"),
-  bed: t("垫在说话下面，很低，有人说话时再压低"),
+  intro: t("整首从头放：先只有音乐，然后压低当背景，人声进来，歌在背景里放完"),
+  interlude: t("对话停下，音乐升起来正常音量放几秒，再压低当背景，对话接着来，歌放完为止"),
+  outro: t("先压低垫在最后的对话下，说完拜拜升起来，放到结尾淡出"),
+  bed: t("整段固定压低当背景，从你写的位置放到结束点"),
   clip: t("插入一段台词，前后各留一点空"),
 };
 const ANCHORED: Role[] = ["interlude", "bed", "clip"];
 // the asset picker shows one short line per piece; the full credit is in the library and the credits list
 const shortLabel = (t: string, max = 44) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
 
-function Num({ label, value, onChange, step = 0.5, min = 0 }: { label: string; value: number; onChange: (v: number) => void; step?: number; min?: number }) {
-  return (
-    <label className="row gap8 small">
-      {label}
-      <input type="number" className="num" step={step} min={min} value={value} onChange={(e) => onChange(Number(e.target.value))} />
-    </label>
-  );
+type Tune = "src_in_s" | "src_out_s" | "gain_db" | "solo_s" | "ramp_s" | "ramp_out_s" | "bg_db" | "pre_s" | "bye_s" | "fade_out_s";
+type FieldDef = { k: Tune; label: string; time?: boolean; auto?: boolean };
+// which numbers Leon sets for each use; times in the song accept 2:30 or 150
+const FIELDS: Record<Role, FieldDef[]> = {
+  intro: [
+    { k: "solo_s", label: t("只放音乐（秒）") },
+    { k: "bg_db", label: t("背景压低（dB）") },
+    { k: "ramp_s", label: t("压低用时（秒）") },
+  ],
+  interlude: [
+    { k: "ramp_s", label: t("淡入（秒）") },
+    { k: "solo_s", label: t("正常音量（秒）") },
+    { k: "ramp_out_s", label: t("淡出到背景（秒）") },
+    { k: "bg_db", label: t("背景压低（dB）") },
+    { k: "pre_s", label: t("间隙前先垫（秒）") },
+  ],
+  outro: [
+    { k: "bye_s", label: t("说拜拜在歌的"), time: true },
+    { k: "ramp_s", label: t("升起用时（秒）") },
+    { k: "bg_db", label: t("背景压低（dB）") },
+    { k: "fade_out_s", label: t("结尾淡出（秒）"), auto: true },
+  ],
+  bed: [
+    { k: "bg_db", label: t("背景压低（dB）") },
+    { k: "fade_out_s", label: t("结尾淡出（秒）"), auto: true },
+  ],
+  clip: [],
+};
+const COMMON: FieldDef[] = [
+  { k: "src_in_s", label: t("歌从"), time: true },
+  { k: "src_out_s", label: t("裁到"), time: true },
+];
+
+const show = (v: number | null | undefined, time?: boolean) => (v == null ? "" : time ? fmt(v) : String(v));
+
+/** One line in plain words: what Leon will hear for this piece of music. */
+function describe(p: Placement): string {
+  const whole = p.asset_duration_s != null && p.src_out_s >= p.asset_duration_s - 0.05 && p.src_in_s < 0.05;
+  const len = whole ? t("整首 {p0}", { p0: fmt(p.src_out_s - p.src_in_s) }) : t("歌的 {p0}–{p1}", { p0: fmt(p.src_in_s), p1: fmt(p.src_out_s) });
+  const bg = p.bg_db ?? 20;
+  switch (p.role) {
+    case "intro":
+      return t("{len}：前 {solo} 秒只有音乐，再用 {ramp} 秒压低 {bg} dB，人声进来，歌在背景里放完", {
+        len, solo: Math.min(p.solo_s ?? 0, p.src_out_s - p.src_in_s), ramp: p.ramp_s ?? 0, bg,
+      });
+    case "interlude":
+      return t("{len}：对话停，{ramp} 秒淡入，正常音量 {solo} 秒，再 {out} 秒压低 {bg} dB，对话接着来，歌在背景里放完", {
+        len, solo: p.solo_s ?? 0, ramp: p.ramp_s ?? 0, out: p.ramp_out_s ?? p.ramp_s ?? 0, bg,
+      });
+    case "outro":
+      return t("{len}：压低 {bg} dB 垫在对话下，你说拜拜时在歌的 {bye}，之后升起来，放到 {end} 结束", {
+        len, bg, bye: fmt(p.bye_s ?? 0), end: fmt(p.src_out_s),
+      });
+    case "bed":
+      return t("{len}：整段压低 {bg} dB 当背景", { len, bg });
+    default:
+      return len;
+  }
 }
 
 function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
@@ -34,16 +85,34 @@ function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
   onPreview: () => void;
   previewing: boolean;
 }) {
-  const [d, setD] = useState({ src_in_s: p.src_in_s, src_out_s: p.src_out_s, overlap_s: p.overlap_s, gain_db: p.gain_db });
-  useEffect(
-    () => setD({ src_in_s: p.src_in_s, src_out_s: p.src_out_s, overlap_s: p.overlap_s, gain_db: p.gain_db }),
-    [p.src_in_s, p.src_out_s, p.overlap_s, p.gain_db],
-  );
-  const dirty = d.src_in_s !== p.src_in_s || d.src_out_s !== p.src_out_s || d.overlap_s !== p.overlap_s || d.gain_db !== p.gain_db;
-  const save = () => void onSave({ ...d });
+  const fields = [...COMMON, ...FIELDS[p.role], { k: "gain_db" as Tune, label: t("音量（dB）") }];
+  const fromP = () => Object.fromEntries(fields.map((f) => [f.k, show(p[f.k], f.time)])) as Record<Tune, string>;
+  const key = fields.map((f) => p[f.k]).join("|");
+  const [d, setD] = useState(fromP);
+  useEffect(() => setD(fromP()), [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const parsed = (f: FieldDef) => (f.time ? parseTime(d[f.k]) : d[f.k].trim() === "" ? null : Number(d[f.k]));
+  const changed = fields.filter((f) => d[f.k] !== show(p[f.k], f.time));
+  const bad = changed.some((f) => {
+    const v = parsed(f);
+    return (v == null && !f.auto) || (v != null && !isFinite(v));
+  });
+  const save = () => {
+    const patch: PlacementPatch = {};
+    for (const f of changed) {
+      const v = parsed(f);
+      if (v != null) patch[f.k] = v;
+    }
+    void onSave(patch);
+  };
   const [pos, setPos] = useState(p.at_s != null ? fmt(p.at_s) : "");
   useEffect(() => setPos(p.at_s != null ? fmt(p.at_s) : ""), [p.at_s]);
   const moveTo = (t: number | null) => t != null && void onSave({ at_s: Math.max(0, Math.round(t * 1000) / 1000) });
+  const [until, setUntil] = useState(p.until_at_s != null ? fmt(p.until_at_s) : "");
+  useEffect(() => setUntil(p.until_at_s != null ? fmt(p.until_at_s) : ""), [p.until_at_s]);
+  const untilTo = () => {
+    const v = parseTime(until);
+    if (v != null && (p.until_at_s == null || Math.abs(v - p.until_at_s) >= 1)) void onSave({ until_s: v });
+  };
   return (
     <li className="card music-row" data-testid="placement">
       <div className="row gap12 wrap">
@@ -60,13 +129,28 @@ function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
         <span>{t("BGM 署名：")}{p.credit_line}</span>
         {p.credit_status && <span className={`badge badge-${p.credit_status}`}>{CREDIT_LABEL[p.credit_status]}</span>}
       </div>
+      {!p.missing && p.start_s != null && (
+        <p className="small muted music-plan" data-testid="placement-plan">
+          {describe(p)}
+        </p>
+      )}
       {!p.missing && (
         <div className="row gap12 wrap music-tune">
-          <Num label={t("从（秒）")} value={d.src_in_s} onChange={(v) => setD({ ...d, src_in_s: v })} />
-          <Num label={t("到（秒）")} value={d.src_out_s} onChange={(v) => setD({ ...d, src_out_s: v })} />
-          {p.role !== "bed" && p.role !== "clip" && <Num label={t("和人声重叠（秒）")} value={d.overlap_s} onChange={(v) => setD({ ...d, overlap_s: v })} />}
-          <Num label={t("音量（dB）")} value={d.gain_db} step={1} min={-30} onChange={(v) => setD({ ...d, gain_db: v })} />
-          <button type="button" className="btn btn-small" disabled={!dirty} onClick={save}>
+          {fields.map((f) => (
+            <label key={f.k} className="row gap8 small">
+              {f.label}
+              <input
+                className={f.time ? "time" : "num"}
+                inputMode="decimal"
+                value={d[f.k]}
+                placeholder={f.auto ? t("自动") : f.time ? "2:30" : ""}
+                onChange={(e) => setD({ ...d, [f.k]: e.target.value })}
+                onKeyDown={(e) => e.key === "Enter" && changed.length > 0 && !bad && save()}
+                aria-label={f.label}
+              />
+            </label>
+          ))}
+          <button type="button" className="btn btn-small" disabled={!changed.length || bad} onClick={save}>
             {t("保存")}
           </button>
         </div>
@@ -89,6 +173,20 @@ function PlacementRow({ p, onSave, onRemove, onPreview, previewing }: {
             <button type="button" className="btn btn-small btn-outline" onClick={() => moveTo(p.at_s! + 1)}>
               {t("晚 1 秒")}
             </button>
+            {p.role === "bed" && (
+              <>
+                {t("到")}
+                <input
+                  className="time"
+                  value={until}
+                  placeholder={t("歌放完")}
+                  onChange={(e) => setUntil(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && untilTo()}
+                  onBlur={untilTo}
+                  aria-label={t("铺到（成品时间）")}
+                />
+              </>
+            )}
           </span>
         )}
         <span className="grow" />
@@ -280,7 +378,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             <span className="mono">
               {t("人声剪辑 {voice} → 成品 {final}", { voice: fmt(m.voice_duration), final: fmt(m.duration) })}
             </span>
-            <span className="music-hero-sep">·</span>{t("时间都按成品算；音乐会在人声下自动压低")}
+            <span className="music-hero-sep">·</span>{t("时间都按成品算；歌都整首放完，有人说话时压低当背景")}
           </p>
         </div>
         <div className="music-auto">

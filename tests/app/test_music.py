@@ -9,7 +9,8 @@ import soundfile as sf
 
 from lacuna_app.episode import Episode
 from lacuna_app.library import CONFIRMED, NEED_NOTE, SUGGESTED, UNKNOWN, Library, credit_line, lookup_credit
-from lacuna_app.music import EpisodeMusic, bgm_credits, final_duration, final_time, layout, speech_regions
+from lacuna_app.music import (EpisodeMusic, bgm_credits, credits, final_duration, final_time, layout, speech_regions,
+                               upgrade_v1)
 from lacuna_app.store import Workspace
 
 from .fake_claude import FakeCreditAnthropic as FakeAnthropic
@@ -131,23 +132,52 @@ def test_lookup_without_answer_changes_nothing(lib, song):
 
 # ------------------------------------------------------------------ layout arithmetic
 
-def test_layout_inserts_time_and_maps_both_ways():
+def test_layout_full_play_and_background_stretches():
     sr = 100
-    assets = {"x": {"id": "x", "duration_s": 10.0}}
-    ps = [{"id": "i", "asset_id": "x", "role": "intro", "src_in_s": 0, "src_out_s": 10, "overlap_s": 2},
-          {"id": "m", "asset_id": "x", "role": "interlude", "src_in_s": 0, "src_out_s": 6, "overlap_s": 1,
-           "at_base": 3000},
-          {"id": "o", "asset_id": "x", "role": "outro", "src_in_s": 0, "src_out_s": 10, "overlap_s": 3}]
-    lay = layout(ps, assets, sr, voice_len=6000, to_voice=lambda b: b - 500)      # 5 s were cut before the point
+    assets = {"x": {"id": "x", "duration_s": 180.0}, "y": {"id": "y", "duration_s": 90.0}}
+    ps = [{"id": "i", "asset_id": "x", "role": "intro", "solo_s": 10, "ramp_s": 2},
+          {"id": "m", "asset_id": "y", "role": "interlude", "solo_s": 15, "ramp_s": 2, "at_base": 3000},
+          {"id": "o", "asset_id": "x", "role": "outro", "src_out_s": 150, "bye_s": 120, "ramp_s": 2}]
+    lay = layout(ps, assets, sr, voice_len=60000, to_voice=lambda b: b - 500)     # 5 s were cut before the point
     intro, mid, outro = lay.items
-    assert (intro.start, intro.length, intro.gap) == (0, 1000, 800)                 # voice enters at 8 s
-    assert mid.gap_at == 2500 and mid.gap == 400 and mid.start == 2500 + 800 - 100
-    assert lay.final(0) == 800 and lay.final(2499) == 3299 and lay.final(2500) == 3700
-    assert outro.start == 6000 + 1200 - 300 and lay.length == outro.end == 7900
-    assert lay.voice(3700) == 2500 and lay.voice(3500) == 2500 and lay.voice(100) == 0 and lay.voice(900) == 100
+    # intro: the whole 3-minute song; alone for 10 s, then background under the talk to its end
+    assert (intro.start, intro.length, intro.gap) == (0, 18000, 1000)
+    assert intro.bg == [(1000, 18000)] and intro.ramp == 200
+    # interlude at 25 s of the voice (+10 s of intro): rise 2 + full 15 + fall 2 s inserted, then background
+    assert mid.gap_at == 2500 and mid.gap == 1900 and mid.anchor == mid.start == 3500
+    assert mid.length == 9000 and mid.bg == [(5400, 12500)]
+    assert lay.final(0) == 1000 and lay.final(2499) == 3499 and lay.final(2500) == 5400
+    assert lay.voice(5400) == 2500 and lay.voice(4000) == 2500 and lay.voice(900) == 0
+    # outro: trimmed at 2:30, the voice ends at its 2:00 -> it starts 2 min before the voice ends
+    v_end = lay.final(60000)
+    assert v_end == 62900 and outro.start == v_end - 12000 and outro.bg == [(outro.start, v_end)]
+    assert outro.length == 15000 and lay.length == outro.end == v_end + 3000
+    # played a few seconds under the talk before the gap
+    lay2 = layout([dict(ps[1], pre_s=5)], assets, sr, 60000, lambda b: b)
+    (m2,) = lay2.items
+    assert m2.start == 3000 - 500 and m2.anchor == 3000 and m2.bg[0] == (2500, 3000) and m2.gap == 1900
+    assert credits(lay2)[0]["start_s"] == 30.0          # show notes: the interlude is where the talk stops
+    # fade in and fall back to background over different times
+    (m3,) = layout([dict(ps[1], ramp_s=1, ramp_out_s=4)], assets, sr, 60000, lambda b: b).items
+    assert m3.gap == 100 + 1500 + 400 and (m3.ramp, m3.ramp_out) == (100, 400) and m3.bg == [(3000 + 2000, 3000 + 9000)]
     # proposed / missing placements do not move anything
-    lay2 = layout(ps + [{"id": "z", "asset_id": "gone", "role": "clip", "at_base": 10}], assets, sr, 6000, lambda b: b)
-    assert [p["id"] for p in lay2.skipped] == ["z"]
+    lay3 = layout(ps + [{"id": "z", "asset_id": "gone", "role": "clip", "at_base": 10}], assets, sr, 6000, lambda b: b)
+    assert [p["id"] for p in lay3.skipped] == ["z"]
+
+
+def test_old_placements_play_whole_and_keep_their_timing():
+    song = {"id": "x", "duration_s": 180.0}
+    # cut at the automatic 30 s before: now the whole song; the voice still comes in at 26 s
+    p = upgrade_v1({"role": "intro", "asset_id": "x", "src_in_s": 0.0, "src_out_s": 30.0, "overlap_s": 4.0}, song)
+    assert p["src_out_s"] == 180.0 and p["solo_s"] == 26.0 and "overlap_s" not in p and p["bg_db"] == 20.0
+    # trimmed by Leon: stays trimmed
+    p = upgrade_v1({"role": "intro", "asset_id": "x", "src_in_s": 0.0, "src_out_s": 20.0, "overlap_s": 4.0}, song)
+    assert p["src_out_s"] == 20.0 and p["solo_s"] == 16.0
+    p = upgrade_v1({"role": "interlude", "asset_id": "x", "src_in_s": 0.0, "src_out_s": 20.0, "overlap_s": 2.0}, song)
+    assert p["src_out_s"] == 180.0 and p["solo_s"] == 12.0         # the same 16 s gap
+    p = upgrade_v1({"role": "outro", "asset_id": "x", "src_in_s": 0.0, "src_out_s": 60.0, "overlap_s": 4.0}, song)
+    assert p["src_out_s"] == 180.0 and p["bye_s"] == 4.0
+    assert upgrade_v1(dict(p), song) == p                              # already upgraded: unchanged
 
 
 def test_speech_regions_bridge_short_pauses():
@@ -178,18 +208,20 @@ def test_intro_interlude_outro_mix_and_contract(ws, lib, ep, song, tmp_path):
     m = EpisodeMusic(ws, ep, lib)
     voice_len = ep.timeline_for(ep.enabled).length / SR
     assert bgm_credits(ws, EPISODE) == [] and final_time(ws, EPISODE, 10.0) == 10.0
-    m.add(jingle["id"], "intro", src_out_s=8.0, overlap_s=3.0)
-    mid = m.add(a["id"], "interlude", at_s=20.0, src_out_s=6.0)               # default overlap 2 s
-    m.add(jingle["id"], "outro", overlap_s=2.0)
-    # voice now starts at 5 s, 2 s are inserted at 20 s
-    assert final_time(ws, EPISODE, 0.0) == 5.0
-    assert final_time(ws, EPISODE, 19.9) == pytest.approx(24.9, abs=0.01)
+    intro = m.add(jingle["id"], "intro", solo_s=3.0, ramp_s=1.0)
+    assert intro["src_out_s"] == pytest.approx(8.0, abs=0.05)                  # the whole file by default
+    mid = m.add(a["id"], "interlude", at_s=20.0, solo_s=2.0, ramp_s=1.0)        # 1 + 2 + 1 s inserted
+    m.add(jingle["id"], "outro", bye_s=5.0)
+    # voice now starts at 3 s, 4 s are inserted at 20 s; the outro starts 5 s before the voice ends
+    assert final_time(ws, EPISODE, 0.0) == 3.0
+    assert final_time(ws, EPISODE, 19.9) == pytest.approx(22.9, abs=0.01)
     assert final_time(ws, EPISODE, 20.0) == pytest.approx(27.0, abs=0.01)
-    assert final_duration(ws, EPISODE) == pytest.approx(voice_len + 7.0 + 8.0 - 2.0, abs=0.01)
+    assert final_duration(ws, EPISODE) == pytest.approx(voice_len + 7.0 + 3.0, abs=0.02)
     cr = bgm_credits(ws, EPISODE)
     assert [c["role"] for c in cr] == ["intro", "interlude", "outro"]
     assert cr[1]["title"] == "The Sea" and cr[1]["credit_status"] == "suggested"
     assert cr[1]["start_s"] == pytest.approx(23.0, abs=0.01) and cr[0]["credit_line"] == "jingle"
+    assert cr[1]["end_s"] - cr[1]["start_s"] == pytest.approx(12.0, abs=0.05)  # plays to the end, under the talk
     # the anchor moves with later voice edits: restoring the 4.2-5.3 s cut shifts it right by 1.1 s
     ep.review("e001", "restore")
     assert m.summary()["placements"][1]["voice_at_s"] == pytest.approx(21.1, abs=0.01)
@@ -201,29 +233,30 @@ def test_intro_interlude_outro_mix_and_contract(ws, lib, ep, song, tmp_path):
     stl, smedia, _ = m.mix(channels=2)
     assert len(stl.tracks) == 2 + 6 and {t.pan for t in stl.tracks[2:]} == {-1.0, 1.0}
 
-    # loudness relation: the interlude in its gap plays near voice level; ducked under speech it is far lower
     from lacuna_core import Renderer, RenderSettings, SourcePool
     with SourcePool(media) as pool:
         r = Renderer(pool, RenderSettings(channels=1))
         music_only = type(tl)(tl.sample_rate, tuple(t for t in tl.tracks if t.name.startswith("♪")))
         it = next(x for x in lay.items if x.p["id"] == mid["id"])
-        gap_mid = it.start + it.length // 2
-        full = r.render(music_only, gap_mid - SR // 2, gap_mid + SR // 2)
-        ducks = next(t for t in music_only.tracks if mid["id"] in t.name).ducks
-        assert ducks, "music under speech must be ducked"
-        d = ducks[0]
-        under = r.render(music_only, d.start + d.ramp, min(d.end, d.start + d.ramp + SR // 4))
-        assert _rms_db(full) - _rms_db(under) > 12
+        track = next(t for t in music_only.tracks if mid["id"] in t.name)
+        # one constant background stretch after the gap, 20 dB down; no ducking that follows the speech
+        assert [(d.start, d.end, d.depth_db) for d in track.ducks] == [(it.anchor + 4 * SR, it.end, 20.0)]
+        full = r.render(music_only, it.anchor + int(1.2 * SR), it.anchor + int(2.8 * SR))
+        under = r.render(music_only, it.anchor + 5 * SR, it.anchor + 7 * SR)
+        assert 15 < _rms_db(full) - _rms_db(under) < 25
         # intro alone at the head: close to the voice loudness (within a few dB), not blasting
         voice = Renderer(pool, RenderSettings(channels=1)).render(tl, int(10 * SR), int(14 * SR))
-        head = r.render(music_only, int(0.5 * SR), int(2.5 * SR))
+        head = r.render(music_only, int(0.5 * SR), int(1.5 * SR))
         assert abs(_rms_db(head) - _rms_db(voice)) < 8
+        # outro: background under the last words, full after them
+        o = next(x for x in lay.items if x.p["role"] == "outro")
+        assert o.bg == [(o.start, o.start + 5 * SR)]
 
 
 def test_preview_series_rule_and_stream(ws, lib, ep, tmp_path):
     jingle = lib.add_file(write_music(tmp_path / "in" / "theme.wav", 10.0, stereo=False), "intro")
     m = EpisodeMusic(ws, ep, lib)
-    p = m.add(jingle["id"], "intro", src_out_s=10.0)
+    p = m.add(jingle["id"], "intro", solo_s=4.0)
     wav, start = m.preview(p["id"])
     assert start == 0.0 and wav[:4] == b"RIFF" and len(wav) > SR * 2 * 10
     rule = m.save_as_series("洛城二三事")
@@ -239,7 +272,7 @@ def test_preview_series_rule_and_stream(ws, lib, ep, tmp_path):
     total = other.wav_size(ep.enabled)
     body = b"".join(other.iter_wav(ep.enabled, 0, total - 1))
     assert len(body) == total and body[:4] == b"RIFF"
-    assert total > (ep.timeline_for(ep.enabled).length + 6 * SR) * 2
+    assert total > (ep.timeline_for(ep.enabled).length + 4 * SR) * 2
 
 
 def test_bed_and_clip(ws, lib, ep, tmp_path):
@@ -254,6 +287,32 @@ def test_bed_and_clip(ws, lib, ep, tmp_path):
     assert ic.gap == 4 * SR and ic.start == lay.final(ic.gap_at) - 4 * SR + SR // 2
     tl, media, _ = m.mix()
     bed_track = next(t for t in tl.tracks if b["id"] in t.name)
-    assert bed_track.ducks and bed_track.clips[0].gain_db < -5
+    assert not bed_track.ducks and bed_track.clips[0].gain_db < -5          # simply lower, all the way
+    assert bed_track.clips[0].fade_out == 3 * SR                               # cut at its end point: 3 s fade
+    louder = m.update(b["id"], bg_db=10.0)
+    assert louder["bg_db"] == 10.0
+    tl2, _, _ = m.mix()
+    assert next(t for t in tl2.tracks if b["id"] in t.name).clips[0].gain_db == pytest.approx(bed_track.clips[0].gain_db + 10, abs=0.01)
     with pytest.raises(ValueError):
         m.add(bed["id"], "bed")              # a bed needs a position
+
+
+def test_schema_1_file_and_series_rule_are_upgraded(ws, lib, ep, tmp_path):
+    theme = lib.add_file(write_music(tmp_path / "in" / "theme.wav", 40.0, stereo=False), "intro")
+    m = EpisodeMusic(ws, ep, lib)
+    (ep.dir / "music.json").write_text(json.dumps({"schema": 1, "series": None, "series_dismissed": False, "draft": None,
+        "placements": [{"id": "mu_old", "asset_id": theme["id"], "role": "intro", "at_base": None, "until_base": None,
+                        "src_in_s": 0.0, "src_out_s": 30.0, "overlap_s": 4.0, "gain_db": 0.0, "lead_s": None,
+                        "status": "applied", "source": "manual"}]}), "utf-8")
+    (p,) = m.placements()
+    assert p["src_out_s"] == 40.0 and p["solo_s"] == 26.0
+    assert final_time(ws, EPISODE, 0.0) == 26.0                     # the voice comes in where it did
+    m.update("mu_old", gain_db=-2.0)
+    assert json.loads((ep.dir / "music.json").read_text("utf-8"))["schema"] == 2
+    # a series rule saved before the full-play rule
+    doc = json.loads((lib.dir / "library.json").read_text("utf-8"))
+    doc.setdefault("series", []).append({"name": "旧", "default": True, "intro": {
+        "asset_id": theme["id"], "src_in_s": 0.0, "src_out_s": 30.0, "overlap_s": 4.0, "gain_db": 0.0}, "outro": None})
+    (lib.dir / "library.json").write_text(json.dumps(doc), "utf-8")
+    (added,) = m.apply_series("旧")
+    assert added["src_out_s"] == 40.0 and added["solo_s"] == 26.0
