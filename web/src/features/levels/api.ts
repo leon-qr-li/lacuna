@@ -11,8 +11,10 @@ export interface TrackLevel {
   peak_db: number | null;
   loud_peak_db: number | null;
   out_peak_db: number | null;
-  clip_count: number;
-  clip_times: number[]; // seconds on the current cut
+  clip_count: number; // clipping spots in the recording (repaired automatically where safe)
+  clip_repaired: number;
+  clip_kept: number; // spots left as recorded that are still in the cut
+  clip_times: number[]; // those spots, seconds on the current cut (first 30)
 }
 
 export interface Levels {

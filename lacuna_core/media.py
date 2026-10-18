@@ -1,13 +1,15 @@
 """Immutable source media references and a read-only, seekable sample pool.
 
 Source audio is never modified. A `MediaRef` is identified by a content hash (`media_id`);
-the path is only a locator and can be relinked without touching the EDL.
+the path is only a locator and can be relinked without touching the EDL. A ref may carry
+`patches` (rebuilt samples from `declip`): `SourcePool` overlays them on read, so the file on
+disk stays untouched while everything that reads through the pool hears the repaired audio.
 """
 from __future__ import annotations
 
 import hashlib
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
 
@@ -42,6 +44,7 @@ class MediaRef:
     sample_rate: int
     channels: int
     frames: int
+    patches: object = field(default=None, compare=False, repr=False)   # declip.Patches; never saved
 
     @classmethod
     def probe(cls, path: str | Path, media_id: str | None = None) -> "MediaRef":
@@ -93,10 +96,13 @@ def conform(src: str | Path, dst: str | Path, sample_rate: int, channels: int = 
 
 
 class SourcePool:
-    """Read-only access to registered media by id; reads are seeks, never whole-file loads."""
+    """Read-only access to registered media by id; reads are seeks, never whole-file loads.
+    With `repaired` (the default) a ref's patches are overlaid; `repaired=False` reads the file
+    exactly as recorded."""
 
-    def __init__(self, media: dict[str, MediaRef]):
+    def __init__(self, media: dict[str, MediaRef], repaired: bool = True):
         self.media = dict(media)
+        self.repaired = repaired
         self._handles: dict[str, sf.SoundFile] = {}
 
     def _handle(self, media_id: str) -> sf.SoundFile:
@@ -116,7 +122,15 @@ class SourcePool:
             h.seek(lo)
             x = h.read(hi - lo, dtype="float32", always_2d=True)
             out[lo - start:lo - start + len(x)] = x.mean(axis=1) if x.shape[1] > 1 else x[:, 0]
+        p = self.media[media_id].patches
+        if p is not None and self.repaired:
+            p.apply(start, out)
         return out
+
+    def patch_key(self, media_id: str) -> str:
+        """Identifies the repair overlaid on a source ("" = read as recorded), for cache keys."""
+        p = self.media[media_id].patches
+        return p.digest() if p is not None and self.repaired and len(p) else ""
 
     def close(self) -> None:
         for h in self._handles.values():

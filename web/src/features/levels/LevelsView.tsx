@@ -97,6 +97,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
     return xs.length > 1 ? Math.max(...xs) - Math.min(...xs) : 0;
   })();
   const clipped = lv.tracks.filter((x) => x.clip_count > 0);
+  const kept = clipped.some((x) => x.clip_times.length > 0);
 
   return (
     <>
@@ -153,42 +154,58 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
 
         {clipped.length > 0 && (
           <section
-            className="levels-card levels-clips"
+            className={`levels-card levels-clips${kept ? " warn" : ""}`}
             data-testid="levels-clips"
           >
             <h2>{t("破音")}</h2>
             <p className="small">
               {t(
-                "原始录音里有声音过载被削平的地方（破音）。LACUNA 只标出来，不修补；点时间可以从前 2 秒开始听，听着刺耳可以在审阅里把那句删掉。",
+                "原始录音里声音过载被削平的地方（破音），LACUNA 会自动修好：审阅、试听和导出听到的都是修好的声音，原始录音不动。",
               )}
             </p>
             {clipped.map((tr) => (
               <div key={tr.name} className="levels-cliprow">
-                <strong>
-                  {t("{name}：{n} 处", { name: tr.name, n: tr.clip_count })}
+                <strong data-testid={`levels-clips-${tr.name}`}>
+                  {t("{name}：{n} 处，已自动修复 {r} 处", {
+                    name: tr.name,
+                    n: tr.clip_count,
+                    r: tr.clip_repaired,
+                  })}
                 </strong>
-                <span className="levels-times">
-                  {tr.clip_times.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className="btn btn-small btn-outline"
-                      onClick={() => listenAt(s)}
-                    >
-                      {fmt(s)}
-                    </button>
-                  ))}
-                  {tr.clip_count > tr.clip_times.length && (
-                    <span className="muted small">
-                      {t("（只列出前 {n} 处）", { n: tr.clip_times.length })}
+                {tr.clip_times.length > 0 && (
+                  <span className="levels-times">
+                    <span className="small">
+                      {t(
+                        "{n} 处太严重，硬修反而更难听，保持原样；点时间可以从前 2 秒开始听：",
+                        { n: tr.clip_kept },
+                      )}
                     </span>
-                  )}
-                </span>
+                    {tr.clip_times.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className="btn btn-small btn-outline"
+                        onClick={() => listenAt(s)}
+                      >
+                        {fmt(s)}
+                      </button>
+                    ))}
+                    {tr.clip_kept > tr.clip_times.length && (
+                      <span className="muted small">
+                        {t("（只列出前 {n} 处）", {
+                          n: tr.clip_times.length,
+                        })}
+                      </span>
+                    )}
+                  </span>
+                )}
               </div>
             ))}
-            <p className="muted small">
-              {t("下次录音时把这条音轨的输入音量调低一点，就不会再破音。")}
-            </p>
+            {kept && (
+              <p className="muted small">
+                {t("下次录音时把这条音轨的输入音量调低一点，就不会再破音。")}
+              </p>
+            )}
           </section>
         )}
 

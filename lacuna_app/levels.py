@@ -2,7 +2,7 @@
 gain Leon can change (「声音」 page or the editing chat), and music levelled on what actually plays.
 
 * Each host track of the uncut recording is measured once (BS.1770 integrated loudness on the
-  dual-mono scale `music.voice_lufs` uses, sample peak, a robust "loud peak", clipped runs) and
+  dual-mono scale `music.voice_lufs` uses, sample peak, a robust "loud peak") as recorded and
   cached in ``<episode>/levels.json``. Reading is a straight pass over the source clips, so an hour
   of audio takes seconds.
 * The level of a track is a `track_gain` edit (category ``loudness``, source ``level``): review
@@ -13,8 +13,9 @@ gain Leon can change (「声音」 page or the editing chat), and music levelled
   renderer's soft-clip knee (-1 dBFS); when one track cannot reach the target, both aim lower (up
   to MAX_SHORTFALL) so the two stay even. Export mastering (lacuna_core/master.py) measures the
   whole mix again and normalises it, so these gains change the balance, never stack loudness.
-* Clipping in a source (flat-topped runs at full scale) is detected and shown with its times; it is
-  not repaired (docs/decisions/2026-10-18-loudness-leveling.md).
+* Clipping in a source is repaired automatically where that is safe (`declip.py`, decision
+  2026-10-18-auto-declip); the page says how many spots were repaired and lists the ones left as
+  recorded.
 * Music: full level = voice loudness + `music.LEVEL_LU`, measured on the part of the song that
   plays (src_in..src_out) rather than the whole file, so a quiet opening or a loud finale that is
   trimmed away does not throw the level off. Leon's「音量（dB）」 stays an offset on top.
@@ -33,6 +34,7 @@ import numpy as np
 from lacuna_core import SourcePool
 from lacuna_core.master import LoudnessMeter
 
+from . import declip
 from .episode import APPLIED, DISCARDED, PROPOSED, ConflictError, Episode, to_tl
 from .i18n import tr
 from .store import atomic_write_json, read_json, now_iso as _now
@@ -45,10 +47,7 @@ MAX_SHORTFALL = 6.0         # how far under the target both hosts may go to keep
 GAIN_MIN, GAIN_MAX = -20.0, 24.0
 STEP_DB = 2.0               # "太低" / "大一点" without a number
 SMALL_STEP_DB = 1.0         # "稍微 / 一点点"
-CLIP_LEVEL = 0.989          # |x| at or above -0.1 dBFS ...
-CLIP_RUN = 3                # ... for this many samples in a row = a clipped (flat-topped) peak
-CLIP_MERGE_S = 0.25         # clipped peaks closer than this are one event
-CLIP_TIMES = 30             # event times kept per track
+CLIP_TIMES = 30             # unrepaired clipping spots listed per track
 _BLOCK_S = 10.0
 
 _lock = threading.Lock()
@@ -68,28 +67,20 @@ def _track_key(ep: Episode, name: str) -> str:
 
 
 def measure_track(ep: Episode, name: str) -> dict:
-    """Loudness, peaks and clipped runs of one host track of the uncut recording (base samples)."""
+    """Loudness and peaks of one host track of the uncut recording as recorded (base samples)."""
     sr = ep.sr
     tr_ = ep.base.track(name)
     meter = LoudnessMeter(sr, 1, dual_mono=True, true_peak=False)
     peak = 0.0
     maxima: list[np.ndarray] = []            # max |x| per 10 ms, for the robust loud peak
     hop = max(1, int(0.01 * sr))
-    clips: list[float] = []                  # base seconds of clipped runs
     block = int(_BLOCK_S * sr)
-    with SourcePool(ep.media) as pool:
+    with SourcePool(ep.media, repaired=False) as pool:
         for c in sorted(tr_.clips, key=lambda c: c.start):
             g = 10 ** ((c.gain_db + tr_.gain_db) / 20)
             for s in range(c.src_in, c.src_out, block):
                 e = min(s + block, c.src_out)
                 x = pool.read(c.media_id, s, e)
-                at = c.start + (s - c.src_in)
-                hot = np.abs(x) >= CLIP_LEVEL     # clipping is a property of the source, before gain
-                if hot.any():
-                    for i in _runs(hot, CLIP_RUN):
-                        t = (at + i) / sr
-                        if not clips or t - clips[-1] > CLIP_MERGE_S:
-                            clips.append(t)
                 x = x * g if g != 1.0 else x
                 meter.add(x)
                 a = np.abs(x)
@@ -101,15 +92,7 @@ def measure_track(ep: Episode, name: str) -> dict:
     m = np.concatenate(maxima) if maxima else np.zeros(0)
     loud = float(np.percentile(m, 99.9)) if len(m) else 0.0
     return {"lufs": round(lufs, 2) if math.isfinite(lufs) else None, "peak_db": _db(peak),
-            "loud_peak_db": _db(loud), "clip_count": len(clips), "clip_times": [round(t, 2) for t in clips[:CLIP_TIMES]],
-            "seconds": round(sum(c.src_out - c.src_in for c in tr_.clips) / sr, 1)}
-
-
-def _runs(hot: np.ndarray, n: int) -> list[int]:
-    """Start indices of runs of at least `n` True values."""
-    d = np.diff(np.concatenate([[0], hot.astype(np.int8), [0]]))
-    starts, ends = np.flatnonzero(d == 1), np.flatnonzero(d == -1)
-    return [int(s) for s, e in zip(starts, ends) if e - s >= n]
+            "loud_peak_db": _db(loud), "seconds": round(sum(c.src_out - c.src_in for c in tr_.clips) / sr, 1)}
 
 
 def voice_tracks(ep: Episode) -> list[str]:
@@ -254,9 +237,10 @@ def view(ep: Episode) -> dict:
     for name in voice_tracks(ep):
         m = meas.get(name, {})
         g = gains.get(name, 0.0)
+        rep = declip.track_report(ep.dir, ep.media, ep.base, name)
         times = []
-        for t in m.get("clip_times", []):
-            b = int(t * ep.sr)
+        for t in rep["skipped_times"]:                        # spots left as recorded
+            b = int(round(t * ep.sr))
             if not any(a <= b < e for a, e in cuts):          # still in the cut
                 times.append(round(to_tl(b, cuts) / ep.sr, 2))
         tracks.append({"name": name, "gain_db": g, "lufs": m.get("lufs"),
@@ -264,7 +248,8 @@ def view(ep: Episode) -> dict:
                        "suggested_gain_db": suggested.get(name), "peak_db": m.get("peak_db"),
                        "loud_peak_db": m.get("loud_peak_db"),
                        "out_peak_db": round(m["loud_peak_db"] + g, 1) if m.get("loud_peak_db") is not None else None,
-                       "clip_count": m.get("clip_count", 0), "clip_times": times})
+                       "clip_count": rep["events"], "clip_repaired": rep["repaired"],
+                       "clip_kept": len(times), "clip_times": times[:CLIP_TIMES]})
     even = all(t["suggested_gain_db"] is None or abs(t["suggested_gain_db"] - t["gain_db"]) < 0.5 for t in tracks)
     return {"target_lufs": TARGET_LUFS, "tracks": tracks, "even": even,
             "min_db": GAIN_MIN, "max_db": GAIN_MAX}
