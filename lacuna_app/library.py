@@ -101,6 +101,7 @@ def decode(src: Path, dst: Path, sample_rate: int, layout: str) -> MediaRef:
     except FileNotFoundError as e:
         raise LibraryError(tr("没有找到 ffmpeg，无法读取这个音频文件")) from e
     except subprocess.CalledProcessError as e:
+        tmp.unlink(missing_ok=True)    # ffmpeg may leave half a file behind
         raise LibraryError(tr("读不了这个音频文件：{p0}", p0=e.stderr.decode('utf-8', 'replace')[-200:].strip())) from e
     os.replace(tmp, dst)
     return MediaRef.probe(dst, media_id=f"lib:{dst.stem}")

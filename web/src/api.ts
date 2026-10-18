@@ -190,18 +190,21 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  if (!res.ok) {
-    // signed out or session expired: the sign-in screen comes back (features/auth/AuthGate)
-    if (res.status === 401 && !url.startsWith("/api/auth/")) window.dispatchEvent(new Event("lacuna:auth"));
-    let msg = res.statusText;
-    try {
-      msg = (await res.json()).detail ?? msg;
-    } catch {
-      /* not JSON */
-    }
-    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
-  }
+  if (!res.ok) throw await failure(res, url);
   return res.json() as Promise<T>;
+}
+
+/** The error for a failed request (the server's `detail`); a 401 also brings the sign-in screen
+ *  back (features/auth/AuthGate). Every raw fetch of the app goes through this. */
+export async function failure(res: Response, url: string): Promise<Error> {
+  if (res.status === 401 && !url.startsWith("/api/auth/")) window.dispatchEvent(new Event("lacuna:auth"));
+  let msg = res.statusText;
+  try {
+    msg = (await res.json()).detail ?? msg;
+  } catch {
+    /* not JSON */
+  }
+  return new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
 }
 
 export const ep = (id: string) => `/api/episodes/${encodeURIComponent(id)}`;
@@ -212,20 +215,13 @@ async function dictate(audio: Blob, ctx: DictationContext = {}): Promise<Dictate
   if (ctx.at !== undefined && Number.isFinite(ctx.at)) q.set("at", ctx.at.toFixed(2));
   if (ctx.where) q.set("where", ctx.where);
   const qs = q.toString();
-  const res = await fetch(`/api/dictation${qs ? `?${qs}` : ""}`, {
+  const url = `/api/dictation${qs ? `?${qs}` : ""}`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": audio.type || "application/octet-stream" },
     body: audio,
   });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      msg = (await res.json()).detail ?? msg;
-    } catch {
-      /* not JSON */
-    }
-    throw new Error(String(msg));
-  }
+  if (!res.ok) throw await failure(res, url);
   return res.json() as Promise<Dictated>;
 }
 
