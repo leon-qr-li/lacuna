@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "../api";
+import { api, type DictationContext } from "../api";
 import { t } from "../i18n";
 import { BusyLabel } from "../features/loading/Loading";
 
@@ -12,11 +12,13 @@ interface Props {
   onStart: () => void; // e.g. pause the episode so the speakers don't talk into the mic
   onText: (text: string) => void;
   onError: (msg: string) => void;
+  context?: () => DictationContext; // episode / playhead, read when recording stops
 }
 
-/** Click to talk, click again to stop: the clip is transcribed on this machine and the text
- * lands in the chat box for Leon to read before sending. Audio is never sent anywhere else. */
-export function MicButton({ available, note, disabled, onStart, onText, onError }: Props) {
+/** Click to talk, click again to stop: the clip is transcribed on this machine, names and homophones
+ * are fixed from the episode context (text only), and the text lands in the box for Leon to read
+ * before sending. Audio is never sent anywhere else. */
+export function MicButton({ available, note, disabled, onStart, onText, onError, context }: Props) {
   const [state, setState] = useState<"idle" | "starting" | "recording" | "busy">("idle");
   const [secs, setSecs] = useState(0);
   const rec = useRef<MediaRecorder | null>(null);
@@ -66,7 +68,7 @@ export function MicButton({ available, note, disabled, onStart, onText, onError 
       rec.current = null;
       setState("busy");
       try {
-        const out = await api.dictate(new Blob(chunks, { type: r.mimeType }));
+        const out = await api.dictate(new Blob(chunks, { type: r.mimeType }), context?.() ?? {});
         if (out.text) onText(out.text);
         else onError(t("没听清，再说一次试试"));
       } catch (err) {

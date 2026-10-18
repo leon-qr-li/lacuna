@@ -207,6 +207,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
               input.current?.focus();
             }}
             onError={(msg) => push({ role: "ai", text: msg })}
+            context={() => ({ episode: ep.id, at: time, where: "chat" })}
           />
           <RememberButton epId={ep.id} disabled={busy || !text.trim()} onSend={run} />
           <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>

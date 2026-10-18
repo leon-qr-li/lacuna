@@ -216,6 +216,7 @@ function PosterCard(props: {
           onStart={props.onPauseMain}
           onText={(t) => setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${t}` : t))}
           onError={props.flash}
+          context={() => ({ episode: id, where: "poster" })}
         />
         <button type="submit" className="btn btn-outline btn-small" disabled={busy || !text.trim()}>
           {t("改")}
