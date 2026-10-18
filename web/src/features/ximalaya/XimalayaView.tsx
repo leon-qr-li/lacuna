@@ -8,12 +8,13 @@ import { ximalayaApi } from "./api";
 const KEY = "lacuna.ximalaya.style";
 const IDS: XimalayaStyleId[] = ["magazine", "cinema", "cards"];
 
+/** 片场 is the default style (Leon, 2026-10-18); a style picked before is remembered. */
 function remembered(): XimalayaStyleId {
   try {
     const v = localStorage.getItem(KEY);
-    return IDS.includes(v as XimalayaStyleId) ? (v as XimalayaStyleId) : "magazine";
+    return IDS.includes(v as XimalayaStyleId) ? (v as XimalayaStyleId) : "cinema";
   } catch {
-    return "magazine";
+    return "cinema";
   }
 }
 

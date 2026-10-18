@@ -10,4 +10,5 @@ the real 喜马拉雅 editor (steps: /mnt/project-files/lacuna/docs/验收_2026-
   banner.png, films.png). The POC images were drawn with WenQuanYi; the app uses the system font (微软雅黑 on Windows, 苹方 on macOS).
 - Tests: tests/app/test_ximalaya.py, tests/app/test_publish.py (no-table cases), web/e2e/ximalaya.spec.ts.
 
-Next: Leon picks a layout after pasting into 喜马拉雅; then remove or keep the others.
+2026-10-18 (V9): Leon picked 「片场」. It is now the default and starts at the title (no "<episode> · 洛城二三事" line);
+decision docs/decisions/2026-10-18-ximalaya-cinema-default.md. Waiting for the batched update + validation.

@@ -261,8 +261,10 @@ RULE = "━━━━━━━━━━━━"
 
 
 def cinema(doc: Doc, label: str) -> list[tuple]:
-    """「片场」: like a film's title cards and end credits; English labels, ▍ and ◆ marks."""
-    n: list[tuple] = [("b", f"{label}　·　洛城二三事")]  # i18n-ignore
+    """「片场」: like a film's title cards and end credits; English labels, ▍ and ◆ marks.
+
+    Starts straight at the title: no "<episode> · <show>" line above it (Leon, 2026-10-18)."""
+    n: list[tuple] = []
     if doc.title:
         n.append(("h", doc.title))
     if doc.byline:
