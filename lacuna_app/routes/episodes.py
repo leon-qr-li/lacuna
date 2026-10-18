@@ -12,7 +12,6 @@ from ..chat_learning import remember_text
 from ..episode import ConflictError
 from ..episode_index import EpisodeIndex
 from ..levels import chat_volume
-from ..i18n import tr
 from .archive import archive_of
 
 
@@ -134,7 +133,7 @@ def register(app, ctx) -> None:
     def chat(episode_id: str, body: ChatBody):
         if (out := chat_volume(get(episode_id), body.text, body.playhead)) is not None:   # "我的声音太低", no AI call
             return out
-        if (ask := remember_text(body.text)) is not None:      # "记住：……" -> a candidate rule, no AI call
+        if (ask := remember_text(body.text)) is not None:      # "记住：……" -> a draft rule to confirm
             return remember(ctx, get(episode_id), ask, body.playhead)
         out = get(episode_id).chat(body.text, body.playhead, adapter)
         if out.get("usage"):
@@ -160,7 +159,6 @@ def register(app, ctx) -> None:
 
 
 def remember(ctx, ep, ask: str, playhead: float) -> dict:
-    ctx.provide("chat_learner").asks.remember(ep.id, ask, playhead)   # built by routes/learning.py
-    reply = tr("记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。", ask=ask)
-    ep.log_turn(f"记住：{ask}", playhead, reply, remember=True)  # i18n-ignore
-    return {"reply": reply, "notes": [], "adapter": "remember", "proposal": None, "usage": None}
+    """LACUNA's reading of what Leon asked to remember, as a draft he confirms; nothing is stored as a rule yet."""
+    draft = ctx.provide("lessons").remember(ep, ask, playhead)    # built by routes/lessons.py
+    return {"reply": "", "notes": [], "adapter": "remember", "proposal": None, "usage": None, "remember": draft}
