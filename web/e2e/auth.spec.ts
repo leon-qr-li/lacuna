@@ -72,6 +72,16 @@ test("设置 → 账号与邮件: test email, open sign-up, sign out, sign in ag
   await card.getByRole("button", { name: "退出登录" }).click();
   await expect(page.getByRole("heading", { name: "欢迎回来" })).toBeVisible();
   await expect(page.getByRole("button", { name: "注册" })).toBeVisible();      // sign-up is open now
+
+  // signing in again lands on 剧集, not back on 设置 where the sign-out happened
+  await page.getByTestId("auth-email").fill("leon@example.com");
+  await page.getByTestId("auth-password").fill(PW);
+  await page.getByRole("button", { name: "登录", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "剧集" })).toBeVisible();
+  expect(new URL(page.url()).hash).toBe("#/");
+  await page.goto("/#/settings");
+  await page.getByRole("region", { name: "账号与邮件" }).getByRole("button", { name: "退出登录" }).click();
+  await expect(page.getByRole("heading", { name: "欢迎回来" })).toBeVisible();
 });
 
 test("a second account needs an email code", async ({ page, request }) => {

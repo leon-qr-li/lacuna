@@ -23,6 +23,7 @@ import soundfile as sf
 from lacuna_core.media import MediaRef, conform
 
 from . import asr as asr_mod
+from . import import_eta
 from . import learning
 from .ai_cut import TrackTokens, build_episode, report_dict
 from .episode import create_episode
@@ -84,6 +85,7 @@ class Importer:
         self._running: str | None = None
         self._cancel: set[str] = set()
         self.jobs: dict[str, dict] = {}
+        self._history: dict | None = None      # past imports' step times (import_eta.py), read lazily
         self._load()
 
     # ------------------------------------------------------------------ persistence
@@ -116,8 +118,21 @@ class Importer:
         with self._lock:
             if episode_id is not None:
                 j = self.jobs.get(episode_id)
-                return dict(j) if j else None
-            return sorted((dict(j) for j in self.jobs.values()), key=lambda j: j.get("created", ""), reverse=True)
+                return self._view(j) if j else None
+            return sorted((self._view(j) for j in self.jobs.values()), key=lambda j: j.get("created", ""), reverse=True)
+
+    def _view(self, job: dict) -> dict:
+        out = dict(job)
+        if job.get("state") == "running":
+            if self._history is None:
+                self._history = import_eta.history(self.root)
+            out["eta_s"] = import_eta.estimate(job, self._history)
+        return out
+
+    def track_paths(self) -> list[str]:
+        """Every raw track a listed import refers to (imported_tracks.py keeps those copies)."""
+        with self._lock:
+            return [t["path"] for j in self.jobs.values() for t in j.get("tracks", {}).values()]
 
     # ------------------------------------------------------------------ control
     def start(self, episode_id: str, title: str, leon: str, pei: str, wait: bool = False) -> dict:
@@ -167,6 +182,12 @@ class Importer:
             self._save(j)
             del self.jobs[episode_id]
 
+    def drop(self, episode_id: str) -> None:
+        """Forget a job whose cache is being deleted with its episode (archive.py)."""
+        with self._lock:
+            if self.jobs.get(episode_id, {}).get("state") not in ("queued", "running"):
+                self.jobs.pop(episode_id, None)
+
     def _launch(self, job: dict, wait: bool) -> dict:
         with self._lock:
             if self._running:
@@ -188,6 +209,10 @@ class Importer:
         before = sum(w for s, w in STEPS[:[s for s, _ in STEPS].index(step)])
         weight = dict(STEPS)[step]
         with self._lock:
+            if job.get("step") != step:          # when each step started, for the time-left estimate
+                job.update(step_at=time.time(), step_first=None)
+            elif frac > 0 and not job.get("step_first"):
+                job["step_first"] = [round(time.time() - job["step_at"], 1), round(frac, 4)]
             job["step"] = step
             job["stage"] = stage
             job["progress"] = round(min(before + weight * min(max(frac, 0.0), 1.0), 0.999), 4)
@@ -195,6 +220,8 @@ class Importer:
     def _done_step(self, job: dict, step: str, info: dict | None = None) -> None:
         with self._lock:
             job["steps"][step] = {"done": now(), **(info or {})}
+            if job.get("step") == step and job.get("step_at"):
+                job["steps"][step].setdefault("seconds", round(time.time() - job["step_at"], 1))
         self._save(job)
 
     def _run(self, job: dict) -> None:
@@ -223,6 +250,7 @@ class Importer:
                 job["elapsed_s"] = round(job.get("elapsed_s", 0) + time.monotonic() - t0, 1)
                 self._running = None
                 self._cancel.discard(job["id"])
+                self._history = None             # this run's step times count from now on
             self._save(job)
 
     def _steps(self, job: dict, d: Path) -> None:
