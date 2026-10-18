@@ -381,4 +381,7 @@ EN: dict[str, str | tuple[str, str]] = {
         "{how}, from the {episodes} chat ({n} lines). Once adopted, the AI first cut follows it from the next episode."),
     "记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。":
         "Noted: “{ask}”. It waits for you in Learned rules; once adopted, the AI first cut follows it from the next episode.",
+    # ---- library scopes (routes/music.py)
+    "这个素材属于别的剧集。先在素材库把它设为公共或加到这一集。":
+        "This file belongs to another episode. In the library, make it shared or add it to this episode first.",
 }

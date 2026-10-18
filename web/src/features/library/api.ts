@@ -32,7 +32,18 @@ export interface Asset {
   credit: Credit;
   credit_line: string;
   added_at: string;
+  shared: boolean; // 公共: offered on every episode's music page
+  episodes: string[]; // 本集: the episodes it belongs to (when not shared)
 }
+
+/** An episode an asset can belong to (library scopes). */
+export interface EpisodeRef {
+  id: string;
+  title: string;
+  archived: boolean;
+}
+
+export type ScopeAction = "move" | "share" | "add";
 
 export interface LibraryView {
   assets: Asset[];
@@ -41,6 +52,7 @@ export interface LibraryView {
   kinds: Record<Kind, string>; // Leon's fixed list of uses, in display order
   kind_roles: Record<Kind, Role>; // where the music page puts an asset of that use
   lookup: boolean; // Claude credit lookup available (API key found)
+  episodes: EpisodeRef[];
 }
 
 export type Role = "intro" | "interlude" | "outro" | "bed" | "clip";
@@ -137,8 +149,10 @@ export type PlacementPatch = Partial<{
   loop: boolean;
 }>;
 
-async function uploadAsset(file: File, kind: string, note = ""): Promise<{ asset: Asset; duplicate: boolean }> {
+/** `episode`: the upload belongs to that episode (本集); without it, it is shared (公共). */
+async function uploadAsset(file: File, kind: string, note = "", episode = ""): Promise<{ asset: Asset; duplicate: boolean }> {
   const q = new URLSearchParams({ name: file.name, kind, note });
+  if (episode) q.set("episode", episode);
   const url = `/api/library/upload?${q}`;
   const res = await fetch(url, {
     method: "POST",
@@ -150,7 +164,11 @@ async function uploadAsset(file: File, kind: string, note = ""): Promise<{ asset
 }
 
 export const libraryApi = {
-  library: () => req<LibraryView>("GET", "/api/library"),
+  /** With `episode`: only what that episode's music page offers (shared + its own). */
+  library: (episode?: string) =>
+    req<LibraryView>("GET", episode ? `/api/library?${new URLSearchParams({ episode })}` : "/api/library"),
+  setScope: (aid: string, action: ScopeAction, episode?: string) =>
+    req<{ asset: Asset }>("POST", `/api/library/assets/${aid}/scope`, { action, episode }),
   uploadAsset,
   scanLibrary: () => req<LibraryView & { added: Asset[] }>("POST", "/api/library/scan"),
   openLibrary: () => req<{ folder: string }>("POST", "/api/library/open"),

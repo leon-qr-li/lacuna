@@ -1,0 +1,7 @@
+/* library scopes: 公共 / 本集 */
+.scope-badge.scope-shared { background: var(--accent-soft); color: var(--accent); }
+.scope-badge.scope-episode { background: var(--warn-soft); color: var(--warn); }
+.scope-select { max-width: 100%; font-size: 12px; padding: 3px 8px; border-radius: 999px; }
+.scope-actions { align-items: center; }
+.scope-upload { align-items: center; }
+.scope-filter select { max-width: 60vw; }

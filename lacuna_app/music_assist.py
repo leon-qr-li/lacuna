@@ -116,14 +116,15 @@ def auto_place(m: EpisodeMusic) -> dict:
     """Suggest music from the library's uses. Returns {"draft": draft or None, "message"}."""
     current = [p for p in m.placements() if p.get("status", APPLIED) == APPLIED]
     have = {p["role"] for p in current}
-    assets = sorted(m.lib.assets(), key=lambda a: a.get("added_at") or "", reverse=True)
+    assets = sorted(m.lib.for_episode(m.ep.id), key=lambda a: a.get("added_at") or "", reverse=True)
     rule = m.lib.series_rule(m.load().get("series"))
     ps = copy.deepcopy(current)
     changes, alternatives, left = [], {}, []
 
     def pick(kind: str) -> dict | None:
         if kind in ("intro", "outro") and (rule or {}).get(kind):
-            a = next((x for x in assets if x["id"] == rule[kind]["asset_id"]), None)
+            # the series rule holds wherever its file now belongs (applying the series does too)
+            a = next((x for x in m.lib.assets() if x["id"] == rule[kind]["asset_id"]), None)
             if a:
                 return a
         return next((a for a in assets if a.get("kind") == kind), None)
@@ -250,7 +251,7 @@ def context(m: EpisodeMusic, instruction: str) -> dict:
                            **{k: p.get(k) for k in SET_FIELDS},
                            "file_duration_s": p["asset_duration_s"], "talk_nearby": near(at)})
     library = [{"asset_id": a["id"], "file": a["name"], "use": KINDS.get(a.get("kind"), ""), "note": a.get("note") or "",
-                "music": credit_line(a), "duration_s": a["duration_s"]} for a in m.lib.assets()]
+                "music": credit_line(a), "duration_s": a["duration_s"]} for a in m.lib.for_episode(m.ep.id)]
     chapters = []
     try:
         from .publish import Publisher
@@ -275,7 +276,7 @@ def apply_actions(m: EpisodeMusic, actions: list[dict]) -> tuple[list[dict], lis
     lay = m.layout(placements=current)
     by = {p["id"]: p for p in ps}
     anchors = {it.p["id"]: it.anchor for it in lay.items}
-    assets = {a["id"]: a for a in m.lib.assets()}
+    assets = {a["id"]: a for a in m.lib.for_episode(m.ep.id)}     # shared + this episode's own
     changes = []
 
     def voice_at(final_s: float, exclude: str | None) -> float:

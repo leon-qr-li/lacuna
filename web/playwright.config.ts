@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = 8799;
 export const AI_PORT = 8798;
 export const IMPORT_PORT = 8797;
+export const SCOPES_PORT = 8796;
 const PYTHON = process.env.PYTHON ?? (process.platform === "win32" ? "python" : "python3");
 
 export default defineConfig({
@@ -36,6 +37,14 @@ export default defineConfig({
       // empty workspace + two raw tracks; fake ASR and fake Claude first cut (phase 4 import)
       command: `${PYTHON} ../tests/app/serve_e2e.py ${IMPORT_PORT} --import`,
       url: `http://127.0.0.1:${IMPORT_PORT}/api/health`,
+      reuseExistingServer: false,
+      timeout: 60_000,
+    },
+    {
+      // the default workspace plus a second episode (tests/app/e2e/library_scopes.py): library scopes
+      command: `${PYTHON} ../tests/app/serve_e2e.py ${SCOPES_PORT}`,
+      url: `http://127.0.0.1:${SCOPES_PORT}/api/health`,
+      env: { LACUNA_E2E_SECOND_EPISODE: "1" },
       reuseExistingServer: false,
       timeout: 60_000,
     },

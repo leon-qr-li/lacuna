@@ -6,6 +6,7 @@ from starlette.concurrency import run_in_threadpool
 
 from ..archive import Archive, ArchiveError
 from ..learning import Learning
+from .library import library_of
 from ..i18n import tr
 
 
@@ -72,7 +73,8 @@ def register(app, ctx) -> None:
             raise HTTPException(409, tr("先归档，才能永久删除"))
         try:
             return await run_in_threadpool(archive.delete, episode_id, release=release,
-                                           keep_learning=keep_learning, busy=busy)
+                                           keep_learning=keep_learning, busy=busy,
+                                           drop_media=library_of(ctx).drop_episode)
         except ArchiveError as e:
             raise HTTPException(409, str(e))
         except KeyError:
