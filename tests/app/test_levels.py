@@ -96,13 +96,16 @@ def test_peaks_cap_the_gain_for_both_hosts(tmp_path):
     assert m["Pei"]["lufs"] + g2["Pei"] == pytest.approx(levels.TARGET_LUFS - levels.MAX_SHORTFALL, abs=0.1)
 
 
-def test_clipping_is_detected_with_times_on_the_current_timeline(tmp_path):
+def test_clipping_left_as_recorded_is_listed_with_times_on_the_current_timeline(tmp_path):
+    """Two shouts pinned at the ceiling far too long to rebuild (declip leaves them; repaired
+    spots are covered in test_declip.py): listed with their times on the current cut."""
     ws = uneven_workspace(tmp_path, pei_db=-6.0, clip_pei=True)
     ep = Episode(ws, EP)
     v = levels.view(ep)
     pei = next(t for t in v["tracks"] if t["name"] == "Pei")
     leon = next(t for t in v["tracks"] if t["name"] == "Leon")
     assert pei["clip_count"] == 2 and pei["clip_times"] == pytest.approx([6.0, 14.0], abs=0.02)
+    assert pei["clip_repaired"] == 0 and pei["clip_kept"] == 2
     assert leon["clip_count"] == 0 and leon["clip_times"] == []
     # cut 2 s before the second clip: it moves 2 s earlier; the first one is cut away
     ep.apply_op({"op": "cut", "start": int(5.5 * SR), "end": int(7.5 * SR), "tracks": None}, "删")

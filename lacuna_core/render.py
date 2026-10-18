@@ -269,5 +269,6 @@ class Renderer:
                 lo = min(max(plans[0].t1 - x - a, 0), n)
                 hi = min(max(plans[-1].t0 + x - a, 0), n)
                 room = (rt.media_id, rt.src_in, rt.src_out, rt.gain_db, a % loop_len, lo, hi)
-            parts.append((tr.name, tr.gain_db, tr.pan, tr.mute, items, ducks, room))
+            repair = sorted({k for it in items if (k := self.pool.patch_key(it[2]))})
+            parts.append((tr.name, tr.gain_db, tr.pan, tr.mute, items, ducks, room) + ((repair,) if repair else ()))
         return hashlib.sha256(canonical_json(parts).encode()).hexdigest()

@@ -17,9 +17,16 @@ export const en: Dict = {
   "也可以在「整集试听」里直接对 AI 制作人说「我的声音太低」「Pei 小一点 3 dB」「两人音量统一一下」。每次调整都能撤销。":
     "You can also tell the AI producer in Full listen “my voice is too quiet”, “Pei 3 dB lower” or “even out the hosts”. Every change can be undone.",
   "破音": "Clipping",
-  "原始录音里有声音过载被削平的地方（破音）。LACUNA 只标出来，不修补；点时间可以从前 2 秒开始听，听着刺耳可以在审阅里把那句删掉。":
-    "The raw recording overloaded in some spots and the peaks were flattened (clipping). LACUNA only marks them and doesn't repair them; click a time to listen from 2 s before, and if it sounds harsh, cut that sentence in review.",
-  "{name}：{n} 处": { one: "{name}: {n} spot", other: "{name}: {n} spots" },
+  "原始录音里声音过载被削平的地方（破音），LACUNA 会自动修好：审阅、试听和导出听到的都是修好的声音，原始录音不动。":
+    "Where the raw recording overloaded and its peaks were flattened (clipping), LACUNA repairs it automatically: review, listening and export all hear the repaired sound, and the original recording is left untouched.",
+  "{name}：{n} 处，已自动修复 {r} 处": {
+    one: "{name}: {n} spot, {r} repaired automatically",
+    other: "{name}: {n} spots, {r} repaired automatically",
+  },
+  "{n} 处太严重，硬修反而更难听，保持原样；点时间可以从前 2 秒开始听：": {
+    one: "{n} spot is too severe to repair without making it sound worse, so it stays as recorded; click to listen from 2 s before:",
+    other: "{n} spots are too severe to repair without making them sound worse, so they stay as recorded; click to listen from 2 s before:",
+  },
   "（只列出前 {n} 处）": "(first {n} listed)",
   "下次录音时把这条音轨的输入音量调低一点，就不会再破音。": "Next time, record this track with the input level a little lower and it won't clip.",
   "导出时还会对整集做一次响度标准化（−16 LUFS）和轻压缩；这里调的是两人之间的平衡，以及审阅时听到的音量。":

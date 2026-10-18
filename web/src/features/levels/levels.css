@@ -17,7 +17,7 @@
 .levels-extra { grid-area: extra; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .levels-extra:empty { display: none; }
 .levels-note { margin: 0; }
-.levels-clips { border-color: var(--warn); background: var(--warn-soft); }
+.levels-clips.warn { border-color: var(--warn); background: var(--warn-soft); }
 .levels-clips p { margin: 0; }
 .levels-cliprow { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 .levels-times { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// 声音 (backlog 7): both hosts evened out, per-track gain, volume from the chat, clipped spots.
+// 声音 (backlog 7): both hosts evened out, per-track gain, volume from the chat, clipping repair (V7).
 // The synthetic episode's first cut already raises Leon by 3 dB (its "响度匹配" edit). Every test
 // leaves the episode's gains as it found them (the backend is shared with the other specs).
 
@@ -80,22 +80,41 @@ test.describe.serial("声音", () => {
     await expect(gain(page, "Pei")).toHaveText("±0.0 dB");
   });
 
-  test("clipped spots are listed and play from 2 s before", async ({ page }) => {
-    // the synthetic recordings never clip: add three spots to Pei's measurement
+  test("clipping repaired automatically: the count, and the spots left as recorded play from 2 s before", async ({ page }) => {
+    // the synthetic recordings never clip: Pei had 40 spots, 37 repaired, 3 left as recorded
     await page.route(/\/levels$/, async (route) => {
       if (route.request().method() !== "GET") return route.fallback();
       const r = await route.fetch();
       const body = await r.json();
-      body.tracks[1] = { ...body.tracks[1], clip_count: 3, clip_times: [12.4, 33.0, 47.25] };
+      body.tracks[1] = { ...body.tracks[1], clip_count: 40, clip_repaired: 37, clip_kept: 3, clip_times: [12.4, 33.0, 47.25] };
       await route.fulfill({ response: r, json: body });
     });
     await openLevels(page);
     const box = page.getByTestId("levels-clips");
-    await expect(box).toContainText("Pei：3 处");
+    await expect(box).toContainText("Pei：40 处，已自动修复 37 处");
+    await expect(box).toContainText("3 处太严重");
+    await expect(box).toHaveClass(/warn/);
     await box.getByRole("button", { name: "0:33" }).click();
     const audio = page.getByTestId("levels-audio");
     await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => !a.paused && a.currentTime >= 30.9)).toBe(true);
     await page.getByTestId("levels").getByTestId("play").click(); // pause
+  });
+
+  test("everything repaired: a quiet note, no times, no warning colour", async ({ page }) => {
+    await page.route(/\/levels$/, async (route) => {
+      if (route.request().method() !== "GET") return route.fallback();
+      const r = await route.fetch();
+      const body = await r.json();
+      body.tracks[1] = { ...body.tracks[1], clip_count: 813, clip_repaired: 813, clip_kept: 0, clip_times: [] };
+      await route.fulfill({ response: r, json: body });
+    });
+    await openLevels(page);
+    const box = page.getByTestId("levels-clips");
+    await expect(box).toContainText("Pei：813 处，已自动修复 813 处");
+    await expect(box).toContainText("自动修好");
+    await expect(box).not.toHaveClass(/warn/);
+    await expect(box.getByRole("button")).toHaveCount(0);
+    await expect(box).not.toContainText("下次录音");
   });
 
   for (const theme of ["light", "dark"] as const) {

@@ -35,7 +35,7 @@ from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
 from lacuna_core.refine import snap_cut
 
-from . import analysis, room_tone
+from . import analysis, declip, room_tone
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
@@ -194,6 +194,7 @@ class Episode:
         self.media: dict[str, MediaRef] = {m["media_id"]: MediaRef.from_dict(m) for m in pj["media"]}
         self.base: Timeline = Timeline.from_dict(pj["base"])
         validate(self.base, self.media)
+        self.media = declip.attach(self.dir, self.media, self.base)   # clipping repaired on read (V7)
         self.sr = self.base.sample_rate
         self.edits: dict[str, Edit] = {e["id"]: Edit(**e) for e in st["edits"]}
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
