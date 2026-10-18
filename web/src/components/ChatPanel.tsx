@@ -7,6 +7,8 @@ import { MicButton } from "./MicButton";
 import { t } from "../i18n";
 import { Waiting } from "../features/loading/Loading";
 import { RememberButton, type Ask } from "../features/learning/RememberButton";
+import { RememberCard } from "../features/lessons/RememberCard";
+import type { RememberDraft, RememberReply } from "../features/lessons/api";
 
 interface Msg {
   id: number;
@@ -17,6 +19,7 @@ interface Msg {
   at?: number;
   proposal?: Proposal;
   pstate?: "pending" | "approved" | "discarded";
+  remember?: RememberDraft; // 「记住」: LACUNA's reading, confirmed in the card
 }
 
 interface Props {
@@ -93,6 +96,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
         usage: r.usage,
         proposal: r.proposal ?? undefined,
         pstate: r.proposal ? "pending" : undefined,
+        remember: (r as RememberReply).remember,
       });
       onEpisode(await api.episode(ep.id));
     } catch (err) {
@@ -165,6 +169,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
                 Claude · {t("{s} 秒 · ≈${cost}", { s: m.usage.seconds.toFixed(1), cost: m.usage.cost_usd.toFixed(3) })}
               </div>
             )}
+            {m.remember && <RememberCard epId={ep.id} draft={m.remember} onPauseMain={onPauseMain} />}
             {m.proposal && (
               <ProposalCard
                 p={m.proposal}

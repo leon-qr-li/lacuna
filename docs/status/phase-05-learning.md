@@ -26,6 +26,17 @@ Depends on: Leon's full review of EP001; 3 · Parallel with: 4
 - Tests: `web/e2e/learning.spec.ts` (groups, move on decide, 23-rule stubbed paging), `web/e2e/chat_learning.spec.ts`. Screenshots `/mnt/project-files/lacuna/screenshots/learning/`.
 - Delete (Leon 2026-10-17 20:22Z): a rejected rule has 「删除」 (two-step confirm). `Learning.decide(id, "delete")` stores state `deleted` in `learning/rules.json`; `overview` skips it, so it never comes back even when re-learned. Also more space between 看例子 and the buttons.
 
+## Confirmed learning (2026-10-18, 首次检测 #9, #12)
+- 「记住」 no longer stores his words: LACUNA rewrites the ask and shows its reading in the chat with 记住这条 /
+  改一下 / 不用; only 记住这条 stores it (in force at once). `lacuna_app/lessons.py` (`Lessons.remember`,
+  `revise_draft`, `decide_draft`), card `web/src/features/lessons/RememberCard.tsx`.
+- New step 本集学到的规则 between 整集试听 and 配乐 (`web/src/features/lessons/LessonsView.tsx`, routes
+  `lacuna_app/routes/lessons.py`): AI summary of the episode's chat + review decisions, each lesson with evidence
+  and new / reinforce / conflict; adopt, edit by hand, tell LACUNA, skip. Replaces the silent after-export
+  `ChatLearner` (removed). Decision `docs/decisions/2026-10-18-confirmed-learning.md`.
+- Tests: `tests/app/test_lessons.py`, `tests/app/test_chat_learning.py`, `web/e2e/chat_learning.spec.ts`,
+  `web/e2e/lessons.spec.ts` (light, dark, English); fake writer `tests/app/fake_lessons.py`.
+
 ## Open issues
-- Chat asks (kind `ask`) feed only the AI first cut, not the chat producer itself; if Leon wants an adopted ask to also steer chat answers, pass `learning.prompt_rules` into the chat scene.
+- Chat asks (kind `ask`, now confirmed ones) feed only the AI first cut, not the chat producer itself; if Leon wants an adopted ask to also steer chat answers, pass `learning.prompt_rules` into the chat scene.
 - Content-trim selection is taste: phase 5 turns Leon's cut/kept passages into examples for the first-cut prompt (D39); effect measurable only on a new episode (phase 4).

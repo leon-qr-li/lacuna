@@ -11,7 +11,6 @@ from ..editor import editor_status
 from ..chat_learning import remember_text
 from ..episode import ConflictError
 from ..episode_index import EpisodeIndex
-from ..i18n import tr
 
 
 class PlayheadBody(BaseModel):
@@ -128,7 +127,7 @@ def register(app, ctx) -> None:
 
     @app.post("/api/episodes/{episode_id}/chat")
     def chat(episode_id: str, body: ChatBody):
-        if (ask := remember_text(body.text)) is not None:      # "记住：……" -> a candidate rule, no AI call
+        if (ask := remember_text(body.text)) is not None:      # "记住：……" -> a draft rule to confirm
             return remember(ctx, get(episode_id), ask, body.playhead)
         out = get(episode_id).chat(body.text, body.playhead, adapter)
         if out.get("usage"):
@@ -154,7 +153,6 @@ def register(app, ctx) -> None:
 
 
 def remember(ctx, ep, ask: str, playhead: float) -> dict:
-    ctx.provide("chat_learner").asks.remember(ep.id, ask, playhead)   # built by routes/learning.py
-    reply = tr("记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。", ask=ask)
-    ep.log_turn(f"记住：{ask}", playhead, reply, remember=True)  # i18n-ignore
-    return {"reply": reply, "notes": [], "adapter": "remember", "proposal": None, "usage": None}
+    """LACUNA's reading of what Leon asked to remember, as a draft he confirms; nothing is stored as a rule yet."""
+    draft = ctx.provide("lessons").remember(ep, ask, playhead)    # built by routes/lessons.py
+    return {"reply": "", "notes": [], "adapter": "remember", "proposal": None, "usage": None, "remember": draft}

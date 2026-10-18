@@ -1,0 +1,44 @@
+/* confirmed learning (首次检测 #9, #12) */
+
+/* 「记住」 card in the AI producer chat */
+.remember-card { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--solid); }
+.remember-card .remember-understood { margin: 0; line-height: 1.7; }
+.remember-card .remember-label { margin-top: 2px; }
+.remember-rule { margin: 0; padding: 8px 12px; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; background: var(--accent-soft); color: var(--ink); font-weight: 600; line-height: 1.6; }
+.remember-card .remember-ask { margin: 2px 0 0; font-size: 13px; }
+.remember-card.is-confirmed .remember-rule { border-left-color: var(--ok); background: var(--ok-soft); }
+.remember-card.is-dropped .remember-rule { opacity: .6; }
+.remember-card .pstate { margin-top: 0; }
+
+/* the box to tell LACUNA how to change a rule */
+.talkbox { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--panel); }
+.talkbox:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.talkbox .grow-text { border: 0; background: none; padding: 4px 6px; box-shadow: none; }
+.talkbox .talkbox-row .btn { white-space: nowrap; }
+
+/* 本集学到的规则 step */
+.lessons { width: 100%; max-width: 880px; margin: 0 auto; padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 14px; }
+.lessons-head h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+.lessons-head p { margin: 0 0 4px; line-height: 1.7; }
+.lessons-bar { align-items: center; }
+.lessons-bar .btn { white-space: nowrap; }
+.lessons-note { align-items: center; }
+.lessons-sub { margin: 10px 0 0; font-size: 15px; color: var(--ink-2); }
+.lessons-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.lesson { display: flex; flex-direction: column; gap: 8px; }
+.lesson.is-adopted { border-color: var(--ok); }
+.lesson.is-skipped { opacity: .7; }
+.lesson-title { margin: 2px 0 0; font-size: 17px; font-weight: 650; line-height: 1.5; }
+.lesson-related { margin: 0; color: var(--ink-2); }
+.lesson-why { margin: 0; color: var(--ink-2); }
+.lesson-reply { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--hover); line-height: 1.6; }
+.lesson-reply::before { content: "LACUNA · "; font-weight: 600; color: var(--accent-ink); }
+.lesson-evidence summary { cursor: pointer; width: max-content; }
+.lesson-evidence ul { margin: 8px 0 0; padding-left: 18px; line-height: 1.8; }
+.lesson-edit { display: flex; flex-direction: column; gap: 8px; }
+.lesson-edit input { width: 100%; }
+.lesson-actions { margin-top: 6px; }
+.lesson-actions .btn { white-space: nowrap; }
+.lesson-rel.rel-new { background: var(--accent-soft); color: var(--accent-ink); }
+.lesson-rel.rel-reinforce { background: var(--ok-soft); color: var(--ok); }
+.lesson-rel.rel-conflict { background: var(--warn-soft); color: var(--warn); }

@@ -6,7 +6,7 @@ test.use({ baseURL: "http://127.0.0.1:8798" });
 test("learning: candidate rule from review decisions → 采用 → in force, survives reload → 撤回", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/); // a single episode opens directly
-  const link = page.getByRole("link", { name: /学到的规则/ });
+  const link = page.getByRole("link", { name: /^学到的规则/ });
   await expect(link).toContainText("条待确认");
   await link.click();
   await expect(page).toHaveURL(/#\/learning/);
