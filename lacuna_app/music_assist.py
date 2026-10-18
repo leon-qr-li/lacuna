@@ -22,7 +22,7 @@ from typing import Any
 from .episode import ConflictError, to_tl
 from .library import KINDS, ROLE_FOR_KIND, credit_line
 from .music import ANCHORED, APPLIED, ROLES, TUNING, EpisodeMusic, upgrade_v1
-from .i18n import N_, in_reply_language, join_list, lang, tr
+from .i18n import AI_NAME_RULE, N_, in_reply_language, join_list, lang, tr
 
 MIN_BREAK_S = 0.6          # a pause this long between utterances can take an interlude
 SNAP_WINDOW_S = 4.0
@@ -156,11 +156,11 @@ def auto_place(m: EpisodeMusic) -> dict:
     if not changes:
         msg = tr("按用途能自动放的都已经放好了。") if have else tr("素材库里还没有标成片头、片尾或休息间隙的音乐。")
         if left:
-            msg += tr("{p0}要放在哪由你定，可以在下面跟 Claude 说。", p0=join_list(left))
+            msg += tr("{p0}要放在哪由你定，可以在下面跟 LACUNA 说。", p0=join_list(left))
         return {"draft": None, "message": msg}
     msg = tr("按素材的用途放好了，先试听，满意再点「采用」。")
     if left:
-        msg += tr("{p0}放哪要你定，可以在下面跟 Claude 说。", p0=join_list(left))
+        msg += tr("{p0}放哪要你定，可以在下面跟 LACUNA 说。", p0=join_list(left))
     m.set_draft(ps, changes, msg, "auto", alternatives)
     return {"draft": m.draft_view(), "message": msg}
 
@@ -196,7 +196,7 @@ Leave unused fields null. Use an empty list when nothing should change, and when
 which music or where, ask one short question in `message` instead of guessing. Positions are \
 snapped to the nearest pause automatically. `message` (Simplified Chinese, one or two short \
 sentences) says what will change and where (m:ss). The host hears your suggestion before it is \
-applied."""  # i18n-ignore
+applied.""" + AI_NAME_RULE  # i18n-ignore
 
 _N = {"type": ["number", "null"]}
 SET_FIELDS = ("src_in_s", "src_out_s", "solo_s", "ramp_s", "ramp_out_s", "bg_db", "pre_s", "bye_s", "fade_out_s")
@@ -361,7 +361,7 @@ class MusicChat:
         """-> {"message", "draft" (or None), "usage"}. Failures come back as a message."""
         from .editor import ClaudeEditorAdapter, error_message
         if not self.available():
-            return {"message": tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），Claude 暂时不能改配乐。"),
+            return {"message": tr("还没接上 AI（没有 AI 密钥），LACUNA 暂时不能改配乐。"),
                     "draft": None, "usage": None}
         req = dict(model=self.model, max_tokens=4000, system=in_reply_language(SYSTEM), output_config={"effort": "low"},
                    tools=[in_reply_language(TOOL)], tool_choice={"type": "tool", "name": "arrange_music"},
@@ -376,7 +376,7 @@ class MusicChat:
         out = next((dict(b.input) for b in resp.content if b.type == "tool_use" and b.name == "arrange_music"), None)
         if out is None:
             text = "".join(getattr(b, "text", "") for b in resp.content if b.type == "text").strip()
-            return {"message": text or tr("Claude 没有给出修改。"), "draft": None, "usage": usage}
+            return {"message": text or tr("LACUNA 没有给出修改。"), "draft": None, "usage": usage}
         msg = out.get("message") or ""
         if not out.get("actions"):
             return {"message": msg or tr("没有要改的。"), "draft": None, "usage": usage}

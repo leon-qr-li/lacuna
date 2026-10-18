@@ -89,9 +89,9 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
           {t("海报按「发布资料」里的标题和简介来画，请先去")} <a href={`#/ep/${encodeURIComponent(id)}/publish`}>{t("发布资料")}</a> {t("生成一次。")}
         </p>
       )}
-      {view.has_pack && !claude && <p className="card">{t("LACUNA 的 AI 没接上（没找到 API key，或缺少运行组件），画不了海报。")}</p>}
+      {view.has_pack && !claude && <p className="card">{t("还没接上 AI（没有 AI 密钥），画不了海报。")}</p>}
       {view.has_pack && claude && !view.variants.length && !running && (
-        <p className="card">{t("只把标题、简介和片名这些文字发给 AI，{n} 版同时画，大约 2–4 分钟，一共约 $1。", { n })}</p>
+        <p className="card">{t("只发标题、简介和片名这些文字给 LACUNA，{n} 版同时画，大约 2–4 分钟，一共约 $1。", { n })}</p>
       )}
       {running && (
         <JobProgress

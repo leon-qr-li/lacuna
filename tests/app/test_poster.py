@@ -75,7 +75,7 @@ def test_sanitize_removes_anything_reaching_outside_the_file():
         assert bad not in svg, bad
     assert 'href="#ok"' in svg and 'fill="url(#g)"' in svg and ".a{fill:url(#g)}" in svg
     assert "EP 002" in svg and "TWO FILMS" in svg
-    assert notes == ["Claude 在海报上写了中文，已经去掉（只用英文）。"]
+    assert notes == ["LACUNA 在海报上写了中文，已经去掉（只用英文）。"]
     assert render_png(svg, 200)        # still a valid SVG
 
 
@@ -121,7 +121,7 @@ def test_needs_the_publish_pack_first(ws, ep, pub):
 
 def test_needs_claude(ws, packed, pub):
     p = Posters(ws, pub, lambda: types.SimpleNamespace(available=False))
-    with pytest.raises(PosterError, match="没有接上 Claude"):
+    with pytest.raises(PosterError, match="还没接上 AI"):
         p.generate(packed, wait=True)
 
 
@@ -174,7 +174,7 @@ def test_one_failed_direction_keeps_the_others(ws, packed, pub):
 def test_all_failed_is_a_job_error(ws, packed, pub):
     p = posters_with(ws, pub, FakePosterAnthropic(fail=tuple(b.split(":")[0] for _, _, b in DIRECTIONS)))
     job = p.generate(packed, wait=True)
-    assert job["state"] == "error" and "调用 Claude 失败" in job["error"]
+    assert job["state"] == "error" and "调用 AI 服务失败" in job["error"]
     assert p.view(packed)["variants"] == []
 
 
@@ -182,7 +182,7 @@ def test_chinese_text_from_claude_is_dropped_with_a_note(ws, packed, pub):
     p = posters_with(ws, pub, FakePosterAnthropic(extra='<text x="100" y="100">两部电影</text>'))
     p.generate(packed, ["emblem"], wait=True)
     v = p.view(packed)["variants"][0]
-    assert v["notes"] == ["Claude 在海报上写了中文，已经去掉（只用英文）。"]
+    assert v["notes"] == ["LACUNA 在海报上写了中文，已经去掉（只用英文）。"]
 
 
 def test_revise_adds_a_new_version_from_one_sentence(ws, packed, pub):

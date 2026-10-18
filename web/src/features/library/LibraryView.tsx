@@ -138,7 +138,7 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
         <span data-testid="credit-line">{t("BGM 署名：")}{a.credit_line}</span>
         <span className={`badge badge-${c.status}`}>{CREDIT_LABEL[c.status]}</span>
         {c.source === "file_tags" && c.status === "suggested" && <span className="muted small">{t("来自文件标签")}</span>}
-        {c.source === "claude" && c.status === "suggested" && <span className="muted small">{t("Claude 查的")}</span>}
+        {c.source === "claude" && c.status === "suggested" && <span className="muted small">{t("LACUNA 查的")}</span>}
       </div>
       {c.sources?.length > 0 && (
         <p className="small muted">
@@ -156,14 +156,14 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           type="button"
           className="btn btn-primary"
           disabled={!!busy || !claude || !note.trim()}
-          title={!claude ? t("没有 API key，Claude 暂时不可用") : !note.trim() ? t("先写备注：Claude 听不到音乐，只能按备注去查") : ""}
+          title={!claude ? t("没有 AI 密钥，暂时查不了") : !note.trim() ? t("先写备注：LACUNA 听不到音乐，只能按备注去查") : ""}
           onClick={() => {
             const go = note !== a.note ? libraryApi.updateAsset(a.id, { note }).then(() => libraryApi.lookupCredit(a.id)) : libraryApi.lookupCredit(a.id);
             // show what Claude filled in, ready to correct before confirming
             void run("lookup", go.then((r) => (setDraft({ ...r.asset.credit }), setEdit(true), r)));
           }}
         >
-          <BusyLabel busy={busy === "lookup"} label={t("让 Claude 查正式曲名")} busyLabel={t("Claude 正在查…")} />
+          <BusyLabel busy={busy === "lookup"} label={t("让 LACUNA 查正式曲名")} busyLabel={t("LACUNA 正在查…")} />
         </button>
         {c.status === "suggested" && (
           <button type="button" className="btn btn-outline" disabled={!!busy} onClick={() => void run("confirm", libraryApi.updateAsset(a.id, { confirm: true }))}>
@@ -319,7 +319,7 @@ export function LibraryView() {
         </ul>
       )}
       <p className="muted small">
-        {t("文件会复制到素材库文件夹")} <span className="mono">{lib.folder}</span>{t("，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 Claude。")}
+        {t("文件会复制到素材库文件夹")} <span className="mono">{lib.folder}</span>{t("，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 LACUNA。")}
       </p>
       {note && <p className="small">{note}</p>}
       {lib.assets.length === 0 && <p className="muted">{t("素材库还是空的。把片头、配乐或台词片段拖进来就行。")}</p>}

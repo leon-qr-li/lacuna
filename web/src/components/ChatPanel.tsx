@@ -144,9 +144,9 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
           <span
             className={`chip small ${claude ? "chip-ok" : ""}`}
             data-testid="editor-badge"
-            title={claude ? t("接的是 Claude API（只发送逐字稿和数字，不发送音频）") : health.editor_note}
+            title={claude ? t("接的是 LACUNA 云端 AI（只发送逐字稿和数字，不发送音频）") : health.editor_note}
           >
-            {claude ? "Claude" : t("演示规则")}
+            {claude ? "LACUNA" : t("演示规则")}
           </span>
         )}
       </h2>
@@ -162,7 +162,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             ))}
             {m.usage && (
               <div className="meta muted small mono" data-testid="usage">
-                Claude · {t("{s} 秒 · ≈${cost}", { s: m.usage.seconds.toFixed(1), cost: m.usage.cost_usd.toFixed(3) })}
+                LACUNA · {t("{s} 秒 · ≈${cost}", { s: m.usage.seconds.toFixed(1), cost: m.usage.cost_usd.toFixed(3) })}
               </div>
             )}
             {m.proposal && (
@@ -178,7 +178,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             )}
           </div>
         ))}
-        {busy && <Waiting className="msg msg-ai" label={claude ? t("Claude 正在看这附近的逐字稿…") : t("正在看这附近…")} />}
+        {busy && <Waiting className="msg msg-ai" label={claude ? t("LACUNA 正在看这附近的逐字稿…") : t("正在看这附近…")} />}
       </div>
       <form className="chat-form" onSubmit={send}>
         <label htmlFor="say" className="sr-only">
