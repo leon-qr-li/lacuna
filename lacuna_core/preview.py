@@ -1,4 +1,4 @@
-"""Localized preview: render only [t - ctx, t + ctx] of a timeline, with a segment cache.
+"""Localized preview: render only [t - ctx, t + ctx] (5 s either side by default) of a timeline, with a segment cache.
 
 The window is rendered as fixed blocks on an absolute grid. Each block is cached under
 `Renderer.range_key` (a hash of exactly the content that affects that block), so:
@@ -82,11 +82,11 @@ class Previewer:
         audio = np.concatenate(parts)[a - g0:b - g0] if parts else np.zeros((0, self.renderer.settings.channels), np.float32)
         return PreviewResult(audio, a, time.perf_counter() - t_start, len(parts), rendered)
 
-    def around(self, tl: Timeline, t: int, ctx_s: float = 10.0) -> PreviewResult:
+    def around(self, tl: Timeline, t: int, ctx_s: float = 5.0) -> PreviewResult:
         c = int(ctx_s * tl.sample_rate)
         return self.render(tl, t - c, t + c)
 
     def ab(self, before: Timeline, after: Timeline, t_before: int, t_after: int,
-           ctx_s: float = 10.0) -> tuple[PreviewResult, PreviewResult]:
+           ctx_s: float = 5.0) -> tuple[PreviewResult, PreviewResult]:
         """Before/after pair around the same edit (positions given in each timeline)."""
         return self.around(before, t_before, ctx_s), self.around(after, t_after, ctx_s)

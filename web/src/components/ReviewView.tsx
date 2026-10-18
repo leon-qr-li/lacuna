@@ -8,6 +8,8 @@ import { t } from "../i18n";
 import { Skel, Waiting } from "../features/loading/Loading";
 import { reviewAction } from "../features/review-keys/keys";
 import { DockProgress, ShortcutsButton } from "../features/review-keys/Shortcuts";
+import { SpeedButton } from "../features/review-speed/SpeedButton";
+import { useReviewRate } from "../features/review-speed/speed";
 
 interface Props {
   ep: Episode;
@@ -41,6 +43,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
   const [tweaking, setTweaking] = useState(false);
   const [help, setHelp] = useState(false);
   const abRef = useRef<ABHandle>(null);
+  const speed = useReviewRate();
   const listRef = useRef<HTMLUListElement>(null);
 
   // load A/B renders + original words whenever the selected edit (or its state) changes
@@ -95,6 +98,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
       else if (a === "b") abRef.current?.select("after");
       else if (a === "keep" && cur) void decide(cur.status === "applied" ? "keep" : "restore");
       else if (a === "restore" && cur && cur.status === "applied") void decide("restore");
+      else if (a === "speed") speed.cycle();
       else if (a === "help") setHelp((h) => !h);
       else return;
       if (a === "prev" || a === "next") e.preventDefault();
@@ -257,14 +261,15 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
             </form>
             {tweaking && <Waiting label={t("LACUNA 正在看这附近的逐字稿…")} />}
             {reply && !tweaking && <p className="note">{reply}</p>}
-            <p className="muted small">{t("快捷键：空格播放，← / → 上一处下一处，K 保留，R 恢复原话，A / B 切换原始与剪后，? 看全部。")}</p>
+            <p className="muted small">{t("快捷键：空格播放，← / → 上一处下一处，K 保留，R 恢复原话，A / B 切换原始与剪后，S 倍速，? 看全部。")}</p>
 
             {/* the floating dock: listen, compare, decide; everything for this edit in one place */}
             <section className="dock rv-dock" aria-label={t("试听和决定")}>
               <button type="button" className="btn btn-ghost btn-round" onClick={() => go(-1)} disabled={idx <= 0} title={t("上一处（←）")} aria-label={t("上一处")}>
                 <Icon name="chevl" size={18} />
               </button>
-              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={[t("A · 原始"), t("B · 剪后")]} onPlay={onPauseMain} compact />
+              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={[t("A · 原始"), t("B · 剪后")]} onPlay={onPauseMain} compact rate={speed.rate} />
+              <SpeedButton rate={speed.rate} onChange={speed.setRate} />
               <span className="grow" />
               <DockProgress done={done} total={all.length} />
               <ShortcutsButton open={help} onToggle={() => setHelp((h) => !h)} />

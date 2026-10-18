@@ -122,13 +122,14 @@ def test_edit_ab(client):
     ab = client.get(f"{EP}/edits/e003/ab").json()
     b, a = ab["before"], ab["after"]
     assert b["edit_len"] == pytest.approx(4.4, abs=1e-3) and a["edit_len"] == 0
-    assert b["edit_at"] == pytest.approx(10.0, abs=1e-3)
+    assert b["edit_at"] == pytest.approx(5.0, abs=1e-3)   # 5 s either side (backlog item 11)
     assert b["duration"] - a["duration"] == pytest.approx(4.4, abs=1e-3)
+    assert b["duration"] == pytest.approx(5.0 + 4.4 + 5.0, abs=1e-3)
     xb, sr = wav_of(client.get(b["url"]).content)
     xa, _ = wav_of(client.get(a["url"]).content)
     assert sr == SR and len(xb) - len(xa) == int(round(4.4 * SR))
     # identical before the edit point (same source, same mix)
-    k = int(9.0 * SR)
+    k = int(4.0 * SR)
     assert np.max(np.abs(xb[:k] - xa[:k])) < 1e-3
     assert client.get(f"{EP}/edits/zzz/ab").status_code == 404
     assert client.get(f"{EP}/clips/nothere.wav").status_code == 404

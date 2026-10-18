@@ -199,7 +199,8 @@ function PosterCard(props: {
         submitLabel={t("改")}
         hint={t("Enter 发送 · Shift+Enter 换行")}
         disabled={busy}
-        mic={{ available: !!health?.dictation, note: health?.dictation_note, onStart: props.onPauseMain, onError: props.flash }}
+        mic={{ available: !!health?.dictation, note: health?.dictation_note, onStart: props.onPauseMain, onError: props.flash,
+          context: () => ({ episode: id, where: "poster" }) }}
         onSubmit={props.onRevise}
         testId="poster-revise"
       />

@@ -49,7 +49,6 @@ export const en: Dict = {
   "快捷键 {key}": "Shortcut {key}",
   "前后对比试听": "Before / after comparison",
   "正在渲染…": "Rendering…",
-  "前后各约 10 秒，切换时位置同步": "About 10 s either side; switching keeps the position",
 
   // export
   "导出中 {p0}%": "Exporting {p0}%",
