@@ -26,4 +26,5 @@ Nothing is skipped or reduced: same 462 pytest tests and 65 E2E tests on Windows
 same build checks (tsc, i18n, brand), same install smoke job. "CI ok" still is the single merge gate and
 now waits for pytest, e2e and install. The repo is public, so the extra jobs cost no Actions minutes.
 
-**Measured after**: see `docs/status/ci.md`.
+**Measured after** (first full run on GitHub): push → CI ok 3 min 18 s instead of 5–7.5 min; Windows pytest 100 s
+(was 157–176 s), E2E shards 102 s + 80 s in parallel. Same pass/skip counts. Table in `docs/status/ci.md`.
