@@ -15,6 +15,8 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
   await page.goto(`/#/ep/${ep}/publish`);
   await expect(page.getByRole("heading", { name: "发布资料" })).toBeVisible();
   const gen = page.getByRole("button", { name: "生成发布资料" });
+  // wait until the page knows whether a pack exists (a bare isVisible() raced the load on slow runners)
+  await expect(gen.or(page.getByTestId("publish-title"))).toBeVisible({ timeout: 15_000 });
   if (await gen.isVisible()) {
     await page.goto(`/#/ep/${ep}/ximalaya`);
     await expect(page.getByText("还没有发布资料。先去")).toBeVisible();
