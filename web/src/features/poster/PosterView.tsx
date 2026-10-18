@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { GrowText } from "../../components/GrowText";
 import type { Health } from "../../api";
 import type { PosterVariant, PosterView as View } from "./api";
 import { api } from "../../api";
-import { MicButton } from "../../components/MicButton";
+import { PromptBar } from "../../components/PromptBar";
 import { posterApi } from "./api";
 import { joinList, lang, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
-/** 海报: Claude draws several square covers (SVG) from the publish pack, rendered on this machine;
+/** 海报: the AI (LACUNA to Leon) draws several square covers (SVG) from the publish pack, rendered on this machine;
  *  Leon picks one (rendered at 3000×3000 into the publish folder) or changes one with a sentence. */
 export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: string) => void; onPauseMain: () => void }) {
   const [view, setView] = useState<View | null>(null);
@@ -61,7 +60,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   const n = view.directions.length;
   const chosen = view.variants.find((v) => v.id === view.chosen) ?? null;
   const generate = () => {
-    if (view.variants.length && !window.confirm(t("再画 {n} 版？之前的版本都会留着。（会再花一次 Claude 的钱）", { n }))) return;
+    if (view.variants.length && !window.confirm(t("再画 {n} 版？之前的版本都会留着。（会再花一次 AI 的钱）", { n }))) return;
     void act(posterApi.generatePoster(id));
   };
 
@@ -71,7 +70,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
         <div>
           <h1>{t("海报")}</h1>
           <p className="muted small">
-            {t("Claude 按这一集的标题和简介画 {n} 版方形封面（{styles}），在本机渲染。挑一张，或者说一句话让它改。", { n, styles: joinList(view.directions.map((d) => d.label)) })}
+            {t("LACUNA 按这一集的标题和简介画 {n} 版方形封面（{styles}），在本机渲染。挑一张，或者说一句话让它改。", { n, styles: joinList(view.directions.map((d) => d.label)) })}
           </p>
         </div>
         <span className="grow" />
@@ -90,9 +89,9 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
           {t("海报按「发布资料」里的标题和简介来画，请先去")} <a href={`#/ep/${encodeURIComponent(id)}/publish`}>{t("发布资料")}</a> {t("生成一次。")}
         </p>
       )}
-      {view.has_pack && !claude && <p className="card">{t("没有接上 Claude（没找到 ANTHROPIC_API_KEY，或没装 anthropic 包），画不了海报。")}</p>}
+      {view.has_pack && !claude && <p className="card">{t("LACUNA 的 AI 没接上（没找到 API key，或缺少运行组件），画不了海报。")}</p>}
       {view.has_pack && claude && !view.variants.length && !running && (
-        <p className="card">{t("只发标题、简介和片名这些文字给 Claude，{n} 版同时画，大约 2–4 分钟，一共约 $1。", { n })}</p>
+        <p className="card">{t("只把标题、简介和片名这些文字发给 AI，{n} 版同时画，大约 2–4 分钟，一共约 $1。", { n })}</p>
       )}
       {running && (
         <JobProgress
@@ -167,7 +166,6 @@ function PosterCard(props: {
   flash: (m: string) => void;
 }) {
   const { id, v, chosen, busy, health } = props;
-  const [text, setText] = useState("");
   return (
     <article className={`card poster-card${chosen ? " is-chosen" : ""}`} data-testid="poster-card" aria-label={t("海报 {name}", { name: v.name })}>
       <button type="button" className="poster-img" onClick={props.onBig} title={t("看大图")}>
@@ -195,32 +193,16 @@ function PosterCard(props: {
         </button>
         {v.cost_usd ? <span className="muted small">{t("约 ${cost}", { cost: v.cost_usd.toFixed(2) })}</span> : null}
       </div>
-      <form
-        className="row gap8 align-end"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (text.trim() && (await props.onRevise(text.trim()))) setText("");
-        }}
-      >
-        <GrowText
-          aria-label={t("改一改 {name}", { name: v.name })}
-          placeholder={t("一句话改，如：换成暖色")}
-          value={text}
-          onChange={setText}
-          disabled={busy}
-        />
-        <MicButton
-          available={!!health?.dictation}
-          note={health?.dictation_note}
-          disabled={busy}
-          onStart={props.onPauseMain}
-          onText={(t) => setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${t}` : t))}
-          onError={props.flash}
-        />
-        <button type="submit" className="btn btn-outline btn-small" disabled={busy || !text.trim()}>
-          {t("改")}
-        </button>
-      </form>
+      <PromptBar
+        label={t("改一改 {name}", { name: v.name })}
+        placeholder={t("一句话改，如：换成暖色")}
+        submitLabel={t("改")}
+        hint={t("Enter 发送 · Shift+Enter 换行")}
+        disabled={busy}
+        mic={{ available: !!health?.dictation, note: health?.dictation_note, onStart: props.onPauseMain, onError: props.flash }}
+        onSubmit={props.onRevise}
+        testId="poster-revise"
+      />
     </article>
   );
 }
