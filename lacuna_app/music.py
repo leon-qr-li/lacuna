@@ -763,8 +763,10 @@ def credits(lay: Layout) -> list[dict]:
     out = []
     for it in lay.items:
         a, c = it.asset, (it.asset.get("credit") or {})
+        # an interlude is heard where the talk stops, even when it already played under the talk before
+        start = it.anchor if it.p["role"] == "interlude" and it.anchor is not None else it.start
         out.append({"role": it.p["role"], "role_label": ROLES[it.p["role"]],
-                    "start_s": round(it.start / sr, 3), "end_s": round(it.end / sr, 3), "asset_id": a["id"],
+                    "start_s": round(start / sr, 3), "end_s": round(it.end / sr, 3), "asset_id": a["id"],
                     "title": c.get("title"), "artist": c.get("artist"), "composer": c.get("composer"),
                     "album": c.get("album"), "film": c.get("film"), "year": c.get("year"),
                     "credit_status": c.get("status", "unknown"), "credit_line": credit_line(a)})

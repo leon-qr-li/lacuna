@@ -20,3 +20,8 @@
 - Clip (film line): unchanged.
 - `music.json` schema 2. Schema-1 files and series rules upgrade on read (`music.upgrade_v1`): a length that was only
   the automatic cap becomes the whole file; the voice still comes in / resumes / ends where it did.
+- Show notes (phase 9) keep reading times from the music layout (`music.final_time`): the intro's music-alone
+  seconds and every interlude gap push later timestamps. The pack now also remembers the inserted time
+  (`music_inserts`), so changing a gap or the intro length flags the timestamps stale even when the BGM lines
+  stay the same; 「更新时间戳」 re-times locally. An interlude's timestamp / BGM line is where the talk stops,
+  not where it started under the talk (`pre_s`).

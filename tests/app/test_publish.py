@@ -239,6 +239,10 @@ def fake_music(monkeypatch, credits, inserts):
     class Lay:
         sr = 16000
 
+        @property
+        def inserts(self):
+            return [(int(at * self.sr), i, int(n * self.sr)) for i, (at, n) in enumerate(inserts)]
+
         def final(self, x):
             t = x / self.sr
             return int(round((t + sum(n for at, n in inserts if at <= t + 1e-6)) * self.sr))
@@ -260,7 +264,8 @@ def test_music_from_the_library_moves_times_and_fills_bgm(ws, ep, pub, monkeypat
     credits = [credit("intro", "片头", 0.0, 30.0, "《蜘蛛侠》原声 · Michael Giacchino — “Main Theme”"),
                credit("interlude", "间奏", 55.0, 65.0, "interlude.wav", "unknown"),
                credit("outro", "片尾", 91.0, 111.0, "“End”", "suggested")]
-    fake_music(monkeypatch, credits, [(0.0, 30.0), (25.0, 10.0)])
+    inserts = [(0.0, 30.0), (25.0, 10.0)]
+    fake_music(monkeypatch, credits, inserts)
 
     pub.start(ep, wait=True)
     v = pub.view(ep)["pack"]
@@ -281,6 +286,13 @@ def test_music_from_the_library_moves_times_and_fills_bgm(ws, ep, pub, monkeypat
     pub.retime(ep)
     md = pub.view(ep)["pack"]["markdown"]
     assert "- **00:55 间奏**：《奥德赛》原声 — “Interlude”" in md and "- **00:00** 开场" in md
+    # Leon lengthens the interlude's full-volume part: same credits, but everything after it moves
+    assert pub.view(ep)["pack"]["stale"] is False
+    inserts[1] = (25.0, 20.0)
+    assert pub.view(ep)["pack"]["stale"] is True
+    pub.retime(ep)
+    v = pub.view(ep)["pack"]
+    assert v["stale"] is False and "- **01:15** Pei 聊到「电影真的很好」" in timeline_lines(v["markdown"])
 
 
 def test_library_without_music_says_bgm_not_set(ws, ep, pub, monkeypatch):

@@ -9,7 +9,7 @@ import soundfile as sf
 
 from lacuna_app.episode import Episode
 from lacuna_app.library import CONFIRMED, NEED_NOTE, SUGGESTED, UNKNOWN, Library, credit_line, lookup_credit
-from lacuna_app.music import (EpisodeMusic, bgm_credits, final_duration, final_time, layout, speech_regions,
+from lacuna_app.music import (EpisodeMusic, bgm_credits, credits, final_duration, final_time, layout, speech_regions,
                                upgrade_v1)
 from lacuna_app.store import Workspace
 
@@ -156,6 +156,7 @@ def test_layout_full_play_and_background_stretches():
     lay2 = layout([dict(ps[1], pre_s=5)], assets, sr, 60000, lambda b: b)
     (m2,) = lay2.items
     assert m2.start == 3000 - 500 and m2.anchor == 3000 and m2.bg[0] == (2500, 3000) and m2.gap == 1900
+    assert credits(lay2)[0]["start_s"] == 30.0          # show notes: the interlude is where the talk stops
     # fade in and fall back to background over different times
     (m3,) = layout([dict(ps[1], ramp_s=1, ramp_out_s=4)], assets, sr, 60000, lambda b: b).items
     assert m3.gap == 100 + 1500 + 400 and (m3.ramp, m3.ramp_out) == (100, 400) and m3.bg == [(3000 + 2000, 3000 + 9000)]
