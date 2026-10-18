@@ -705,12 +705,12 @@ class Publisher:
 
     # ---- view
     def view(self, ep: Episode) -> dict:
+        job = self.status(ep.id)       # before the pack: a job seen finished has its result in the pack read next
         pack = self.load(ep)
         if pack is not None and has_table(pack["markdown"]):      # written before item 26
             with ep.lock:
                 pack = self.load(ep)
                 self.save(ep, pack)
-        job = self.status(ep.id)
         out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
         if pack is None:
             return out

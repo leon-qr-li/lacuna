@@ -497,6 +497,7 @@ class Posters:
 
     # ---- view
     def view(self, ep: Episode) -> dict:
+        job = self.status(ep.id)       # before the doc: a job seen finished has its result in the doc read next
         doc = self.load(ep)
         has_pack = self.publisher.load(ep) is not None
         variants = []
@@ -510,5 +511,5 @@ class Posters:
         except Exception:      # noqa: BLE001
             available = False
         return {"variants": variants, "chosen": doc.get("chosen"), "cover": doc.get("cover"), "available": available,
-                "errors": doc.get("last_errors", []), "job": self.status(ep.id), "has_pack": has_pack,
+                "errors": doc.get("last_errors", []), "job": job, "has_pack": has_pack,
                 "directions": [{"key": k, "label": tr(label)} for k, label, _ in DIRECTIONS]}
