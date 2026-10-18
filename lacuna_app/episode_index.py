@@ -57,7 +57,8 @@ class EpisodeIndex:
                     if ep is not None:
                         with ep.lock:     # stamp and summary of the same saved state
                             stamp = _stamp(self.ws, eid)
-                            row = {k: ep.summary()[k] for k in FIELDS}
+                            s = ep.summary()
+                            row = {k: s[k] for k in FIELDS}
                     else:
                         stamp = _stamp(self.ws, eid)
                         hit = cached.get(eid)
