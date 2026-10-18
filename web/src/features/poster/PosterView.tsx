@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { GrowText } from "../../components/GrowText";
 import type { Health } from "../../api";
 import type { PosterVariant, PosterView as View } from "./api";
 import { api } from "../../api";
-import { MicButton } from "../../components/MicButton";
+import { PromptBar } from "../../components/PromptBar";
 import { posterApi } from "./api";
 import { joinList, lang, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
-/** 海报: Claude draws several square covers (SVG) from the publish pack, rendered on this machine;
+/** 海报: the AI (LACUNA to Leon) draws several square covers (SVG) from the publish pack, rendered on this machine;
  *  Leon picks one (rendered at 3000×3000 into the publish folder) or changes one with a sentence. */
 export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: string) => void; onPauseMain: () => void }) {
   const [view, setView] = useState<View | null>(null);
@@ -167,7 +166,6 @@ function PosterCard(props: {
   flash: (m: string) => void;
 }) {
   const { id, v, chosen, busy, health } = props;
-  const [text, setText] = useState("");
   return (
     <article className={`card poster-card${chosen ? " is-chosen" : ""}`} data-testid="poster-card" aria-label={t("海报 {name}", { name: v.name })}>
       <button type="button" className="poster-img" onClick={props.onBig} title={t("看大图")}>
@@ -195,32 +193,16 @@ function PosterCard(props: {
         </button>
         {v.cost_usd ? <span className="muted small">{t("约 ${cost}", { cost: v.cost_usd.toFixed(2) })}</span> : null}
       </div>
-      <form
-        className="row gap8 align-end"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (text.trim() && (await props.onRevise(text.trim()))) setText("");
-        }}
-      >
-        <GrowText
-          aria-label={t("改一改 {name}", { name: v.name })}
-          placeholder={t("一句话改，如：换成暖色")}
-          value={text}
-          onChange={setText}
-          disabled={busy}
-        />
-        <MicButton
-          available={!!health?.dictation}
-          note={health?.dictation_note}
-          disabled={busy}
-          onStart={props.onPauseMain}
-          onText={(t) => setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${t}` : t))}
-          onError={props.flash}
-        />
-        <button type="submit" className="btn btn-outline btn-small" disabled={busy || !text.trim()}>
-          {t("改")}
-        </button>
-      </form>
+      <PromptBar
+        label={t("改一改 {name}", { name: v.name })}
+        placeholder={t("一句话改，如：换成暖色")}
+        submitLabel={t("改")}
+        hint={t("Enter 发送 · Shift+Enter 换行")}
+        disabled={busy}
+        mic={{ available: !!health?.dictation, note: health?.dictation_note, onStart: props.onPauseMain, onError: props.flash }}
+        onSubmit={props.onRevise}
+        testId="poster-revise"
+      />
     </article>
   );
 }

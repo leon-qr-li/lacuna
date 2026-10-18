@@ -11,3 +11,4 @@
 .upload-h { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; }
 .step-n { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--grad); color: #fff; font: 600 13px var(--mono); }
 .upload-cover { border-radius: 14px; border-color: var(--line); }
+.upload-path { display: block; word-break: break-all; }

@@ -30,4 +30,5 @@ export const en: Dict = {
   "改一改 {name}": "Revise {name}",
   "一句话改，如：换成暖色": "Change in a sentence, e.g. warmer colours",
   "改": "Revise",
+  "Enter 发送 · Shift+Enter 换行": "Enter to send · Shift+Enter for a new line",
 };
