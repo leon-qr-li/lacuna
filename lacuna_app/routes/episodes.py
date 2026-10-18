@@ -11,6 +11,7 @@ from ..editor import editor_status
 from ..chat_learning import remember_text
 from ..episode import ConflictError
 from ..episode_index import EpisodeIndex
+from .archive import archive_of
 
 
 class PlayheadBody(BaseModel):
@@ -48,7 +49,9 @@ def register(app, ctx) -> None:
 
     @app.get("/api/episodes")
     def list_episodes():
-        return {"episodes": index.rows()} | editor_status(adapter)
+        hidden = archive_of(ctx).archived()     # archived episodes live on the 已归档 page
+        rows = [r for r in index.rows() if r["id"] not in hidden]
+        return {"episodes": rows, "archived": len(hidden)} | editor_status(adapter)
 
     @app.get("/api/episodes/{episode_id}")
     def load_episode(episode_id: str):

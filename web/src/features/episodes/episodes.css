@@ -1,2 +1,27 @@
 /* 「剧集」 top-bar link: selected (navy tint, style 夜航) while the episode overview is open */
 .topbar .nav-episodes[aria-current="page"] { background: color-mix(in srgb, var(--primary) 10%, transparent); color: var(--ink); font-weight: 600; }
+
+/* episode tiles with a corner action (归档 / 恢复 · 永久删除), 首检 #3 */
+.ep-list .ep-item { position: relative; }
+.ep-list .ep-tile { flex: 1; display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); }
+.ep-list .ep-item:has(.ep-actions) .ep-body > strong { padding-right: 52px; }
+.ep-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+.ep-list .ep-body { min-width: 0; }
+.ep-tile-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.ep-archive { opacity: .72; }
+.ep-item:hover .ep-archive, .ep-archive:focus-visible { opacity: 1; }
+.ep-archived-link { margin-top: 20px; }
+.ep-note { padding: 10px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--ink); }
+.ep-toast { display: flex; align-items: center; gap: 12px; }
+.ep-toast-undo { background: transparent; color: var(--on-ink); border-color: color-mix(in srgb, var(--on-ink) 50%, transparent); }
+.btn-danger-outline { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); background: transparent; }
+.btn-danger-outline:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
+
+/* in-app confirmation (until the shared one from 全局弹窗 lands) */
+.ep-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #000 45%, transparent); }
+.ep-dialog { background: var(--solid); width: min(480px, 100%); padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-pop); }
+.ep-dialog h2 { margin: 0; font-size: 18px; }
+.ep-dialog-body p { margin: 0 0 8px; }
+.ep-dialog-actions { justify-content: flex-end; }
+.ep-dialog .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+[data-theme="dark"] .ep-dialog .btn-danger { color: #1d0408; }   /* white on the brighter dark-mode red is under 4.5:1 */

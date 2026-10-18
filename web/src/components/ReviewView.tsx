@@ -217,6 +217,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                   <span className="chip chip-plain">{cur.category_label}</span>
                   {cur.speech_s ? <span className="chip chip-plain">{t("删掉说话 {s} 秒", { s: cur.speech_s.toFixed(1) })}</span> : null}
                   <span className="chip chip-plain">{statusLabel(cur)}</span>
+                  {cur.room_tone && <span className="chip chip-plain">{t("只抹 {who}，用底噪补上", { who: (cur.tracks ?? []).join(" / ") })}</span>}
                   <span className="chip chip-ok">{t("可随时恢复")}</span>
                 </div>
               </div>

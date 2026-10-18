@@ -118,12 +118,12 @@ def _host(ep, e) -> tuple[str, float, float]:
     """(host, Leon speech s, Pei speech s) removed by edit `e` (lifts: their track)."""
     per: dict[str, float] = defaultdict(float)
     sr = ep.sr
-    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
+    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift", "erase")]
     for a, b, track in ranges:
         for trk, s, en, _w in ep.words(a, b):
             if track is None or trk == track:
                 per[trk] += max(0.0, min(b, en) - max(a, s))
-    lift_tracks = {o["track"] for o in e.ops if o["op"] in ("lift", "slip")}
+    lift_tracks = {o["track"] for o in e.ops if o["op"] in ("lift", "erase", "slip")}
     if lift_tracks and not e.cuts:
         return (lift_tracks.pop() if len(lift_tracks) == 1 else "both"), per["Leon"], per["Pei"]
     top = max(per.values(), default=0.0)
@@ -136,7 +136,7 @@ def _host(ep, e) -> tuple[str, float, float]:
 def _text(ep, e, host: str, limit: int = 40) -> str:
     """The words edit `e` removes, per track (no interleaving of the two hosts)."""
     sr = ep.sr
-    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
+    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift", "erase")]
     per: dict[str, list[str]] = defaultdict(list)
     for a, b, track in ranges:
         for trk, s, en, w in ep.words(a, b):
@@ -437,7 +437,7 @@ def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list]
     for e in ep.edits.values():
         if e.source != "first_cut" or not e.span:
             continue
-        ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
+        ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift", "erase")]
         if not ranges or e.category == "pause":
             for a, b, track in ranges:
                 for trk in ([track] if track else list(rem)):

@@ -188,6 +188,9 @@ export function JobProgress(props: {
   steps?: JobStep[];
   started?: number | string | null;
   typical?: number;
+  /** seconds left as the server estimates it (e.g. the importer, from each step's real speed);
+   *  null = no estimate yet; leave out to estimate here from progress and `typical` */
+  left?: number | null;
   actions?: ReactNode;
   testId?: string;
   /** test id of the current step's row */
@@ -198,7 +201,7 @@ export function JobProgress(props: {
 }) {
   const { title, stage, progress, steps, started, typical, actions, testId, stepTestId, flat, className = "" } = props;
   const elapsed = useElapsed(started);
-  const left = estimateLeft(elapsed, progress, typical);
+  const left = props.left !== undefined ? props.left : estimateLeft(elapsed, progress, typical);
   const known = progress != null;
   const pct = known ? Math.round(Math.min(Math.max(progress!, 0), 1) * 100) : null;
   const n = steps?.length ?? 0;

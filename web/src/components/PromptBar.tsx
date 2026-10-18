@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { GrowText } from "./GrowText";
+import type { DictationContext } from "../api";
 import { MicButton } from "./MicButton";
 import "./PromptBar.css";
 
@@ -11,7 +12,13 @@ interface Props {
   hint?: ReactNode; // small text left of the buttons, e.g. "Enter 发送"
   disabled?: boolean;
   /** Voice input (local recogniser); leave out to hide the mic. */
-  mic?: { available: boolean; note?: string; onStart: () => void; onError: (msg: string) => void };
+  mic?: {
+    available: boolean;
+    note?: string;
+    onStart: () => void;
+    onError: (msg: string) => void;
+    context?: () => DictationContext; // episode etc. for fixing names / homophones
+  };
   /** Resolves true when the text was taken (the box then empties). */
   onSubmit: (text: string) => Promise<boolean> | boolean;
   testId?: string;
@@ -57,6 +64,7 @@ export function PromptBar({ label, placeholder, submitLabel, hint, disabled, mic
             note={mic.note}
             disabled={disabled}
             onStart={mic.onStart}
+            context={mic.context}
             onText={(said) => setText((cur) => (cur.trim() ? `${cur.trimEnd()} ${said}` : said))}
             onError={mic.onError}
             idleIcon={<MicIcon />}
