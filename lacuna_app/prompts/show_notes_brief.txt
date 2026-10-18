@@ -45,4 +45,6 @@ WHAT TO WRITE (call submit_publish_pack exactly once)
 - names_to_check: proper nouns that are probably misheard by the ASR (film titles, names): what
   the transcript says, what you think it should be, the segment id, and a short why. Only real
   candidates; use the corrected spelling everywhere else in your answer.
+- NO TABLES anywhere (喜马拉雅's editor cannot show them): every list is one line per item, e.g.
+  films come back as name + note fields and are laid out by the app as 「- 《片名》英文名：导演/备注」.
 - The BGM section, the header line and the footer are filled in by the app; do not write them.
