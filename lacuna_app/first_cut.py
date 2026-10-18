@@ -22,7 +22,7 @@ from typing import Any, Callable
 
 from .ai_cut import TrackTokens
 from .editor import PRICES, ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
-from .i18n import in_reply_language, lang, tr
+from .i18n import AI_NAME_RULE, in_reply_language, lang, tr
 
 PROMPTS = Path(__file__).resolve().parent / "prompts"
 WINDOW_S = 600.0
@@ -199,7 +199,7 @@ class ClaudeFirstCut:
 
     def request(self, system: str, doc: str, user: str, model: str | None = None) -> dict:
         return dict(model=model or self.model, max_tokens=64000,
-                    system=[{"type": "text", "text": system},
+                    system=[{"type": "text", "text": system + AI_NAME_RULE},
                             {"type": "text", "text": doc, "cache_control": {"type": "ephemeral"}}],
                     output_config={"effort": self.effort}, tools=[in_reply_language(TOOL)],
                     tool_choice={"type": "auto"}, messages=[{"role": "user", "content": user}])
@@ -225,7 +225,7 @@ class ClaudeFirstCut:
             cat = getattr(getattr(resp, "stop_details", None), "category", None)
             self.on_usage(usage | {"refusal": cat or True})      # refused calls are billed too
             if model == self.FALLBACK_MODEL:
-                raise FirstCutError(tr("Claude 拒绝处理第 {p0} 段", p0=k + 1) + (f"（{cat}）" if cat else ""))
+                raise FirstCutError(tr("LACUNA 拒绝处理第 {p0} 段", p0=k + 1) + (f"（{cat}）" if cat else ""))
             model = self.FALLBACK_MODEL
         self.on_usage(usage)
         for block in resp.content:
@@ -233,7 +233,7 @@ class ClaudeFirstCut:
                 return list(block.input.get("ops") or []), str(block.input.get("notes") or ""), usage
         if resp.stop_reason == "max_tokens":
             raise FirstCutError(tr("第 {p0} 段的回答太长被截断", p0=k + 1))
-        raise FirstCutError(tr("Claude 没有交回第 {p0} 段的剪辑", p0=k + 1))
+        raise FirstCutError(tr("LACUNA 没有交回第 {p0} 段的剪辑", p0=k + 1))
 
     def run(self, doc: str, duration: float, tokens: dict[str, TrackTokens], episode: str,
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
@@ -318,7 +318,7 @@ class RuleFirstCut:
     def run(self, doc: str, duration: float, tokens: dict[str, TrackTokens], episode: str,
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
             cancelled: Callable[[], bool] = lambda: False, extra_rules: str = "") -> FirstCutResult:
-        progress(0.0, tr("规则第一刀（没有 Claude）：收紧停顿"))
+        progress(0.0, tr("规则第一刀（AI 没接上）：收紧停顿"))
         words = sorted((t["start"], t["end"], tag) for tag, tr in tokens.items() for t in tr.toks)
         ops = []
         end, who = None, None
@@ -333,9 +333,9 @@ class RuleFirstCut:
             if end is None or e > end:
                 end, who = e, tag
         progress(1.0, tr("规则第一刀完成"))
-        return FirstCutResult({"episode": episode, "model": "rules (no Claude): pause targets only",
-                               "notes": tr("没有 Claude：只按学到的停顿目标收紧了停顿。"), "ops": ops},
-                              {}, [tr("没有 Claude：只收紧了停顿。")])
+        return FirstCutResult({"episode": episode, "model": "rules (AI not connected): pause targets only",
+                               "notes": tr("AI 没接上：只按学到的停顿目标收紧了停顿。"), "ops": ops},
+                              {}, [tr("AI 没接上：只收紧了停顿。")])
 
 
 def make_first_cut(kind: str = "auto"):

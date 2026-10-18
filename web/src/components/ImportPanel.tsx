@@ -191,7 +191,7 @@ function NewImport({ nextId, onStarted, onCancel }: { nextId: string; onStarted:
       </div>
       {picking && <FileBrowser start={lastDir} onPick={pick} onClose={() => setPicking(null)} />}
       <p className="muted small">
-        {t("原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给 Claude 做第一刀。 长录音要跑一阵，可以关掉这页，进度不会丢。")}
+        {t("原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给云端的 LACUNA AI 做第一刀。 长录音要跑一阵，可以关掉这页，进度不会丢。")}
       </p>
       {err && <p className="error small">{err}</p>}
       <div className="row gap8">
@@ -236,7 +236,7 @@ function JobRow({ j, onChange }: { j: ImportJob; onChange: () => void }) {
       {j.state === "done" && j.result && (
         <p className="small">
           {j.result.engine === "rules"
-            ? t("AI 第一刀（没有 Claude，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: j.result.to_review })
+            ? t("AI 第一刀（AI 没接上，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: j.result.to_review })
             : t("AI 第一刀：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: j.result.to_review })}
         </p>
       )}

@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from .editor import ClaudeEditorAdapter, find_api_key, sdk_installed
-from .i18n import in_reply_language, join_list, tr
+from .i18n import AI_NAME_RULE, in_reply_language, join_list, tr
 from .learning import LEARN_DIR, Rule
 from .store import Workspace, atomic_write_json, check_id, read_json
 
@@ -70,7 +70,7 @@ For each preference return:
 - instruction: one sentence in English telling an AI first-cut editor what to do differently.
 - turns: the numbers of the turns it comes from.
 - same_as: the id of an EXISTING preference (listed in the input) that says the same thing, else "".
-Do not repeat an existing preference as new. Return an empty list when there is none; that is common."""  # i18n-ignore
+Do not repeat an existing preference as new. Return an empty list when there is none; that is common.""" + AI_NAME_RULE  # i18n-ignore
 
 
 def _now() -> str:      # microseconds: the latest wording of an ask is picked by this

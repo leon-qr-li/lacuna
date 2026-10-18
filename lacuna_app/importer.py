@@ -291,7 +291,7 @@ class Importer:
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
-            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（没有 Claude）"))
+            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（AI 没接上）"))
             try:
                 res = fc.run(doc, duration, tokens, job["id"],
                              progress=lambda f, s: self._progress(job, "first_cut", f, s),

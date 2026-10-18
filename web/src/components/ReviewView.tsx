@@ -255,7 +255,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 placeholder={t("或者直接说：恢复这处 / 停顿短一点")}
               />
             </form>
-            {tweaking && <Waiting label={t("Claude 正在看这附近的逐字稿…")} />}
+            {tweaking && <Waiting label={t("LACUNA 正在看这附近的逐字稿…")} />}
             {reply && !tweaking && <p className="note">{reply}</p>}
             <p className="muted small">{t("快捷键：空格播放，← / → 上一处下一处，K 保留，R 恢复原话，A / B 切换原始与剪后，? 看全部。")}</p>
 

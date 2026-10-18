@@ -133,7 +133,7 @@ def test_without_claude_a_rule_draft_still_works(ws, ep, monkeypatch):
     p = Publisher(ws, lambda: RulePublisher())
     assert p.start(ep, wait=True)["state"] == "done"
     v = p.view(ep)["pack"]
-    assert v["adapter"] == "rules" and "没有 Claude" in v["markdown"]
+    assert v["adapter"] == "rules" and "AI 没接上" in v["markdown"]
     assert timeline_lines(v["markdown"])[0].startswith("- **00:00** ")
 
 
@@ -142,7 +142,7 @@ def test_api_failure_is_a_chinese_error(ws, ep):
         beta = types.SimpleNamespace(messages=types.SimpleNamespace(stream=lambda **kw: (_ for _ in ()).throw(RuntimeError("x"))))
     p = Publisher(ws, lambda: ClaudePublisher(client=Broken()))
     job = p.start(ep, wait=True)
-    assert job["state"] == "error" and "调用 Claude 失败" in job["error"]
+    assert job["state"] == "error" and "调用 AI 服务失败" in job["error"]
     assert p.view(ep)["pack"] is None
 
 

@@ -76,6 +76,12 @@ def reply_language() -> str:
     return "English" if lang() == "en" else "Simplified Chinese"
 
 
+# appended to every system prompt whose output Leon reads: the AI is "LACUNA" to users (brand rule,
+# backlog item 28); the vendor's name never shows up in the app
+AI_NAME_RULE = ("\n\nIf you ever refer to yourself, you are LACUNA, the AI inside LACUNA Studio. Never call "
+                "yourself Claude and never mention Anthropic.")
+
+
 def in_reply_language(obj):
     """A prompt or tool schema whose "Simplified Chinese" means "what Leon reads" (chat replies, edit
     reasons, notes), switched to English when that is the interface language. Not for show content."""

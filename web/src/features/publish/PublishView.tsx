@@ -67,7 +67,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   if (!view) return <PageLoading label={t("正在打开发布资料…")} />;
 
   const generate = () => {
-    if (pack && !window.confirm(pack.edited ? t("重新生成会覆盖你手改过的 show notes，确定吗？") : t("重新生成一版？（会再花一次 Claude 的钱）"))) return;
+    if (pack && !window.confirm(pack.edited ? t("重新生成会覆盖你手改过的 show notes，确定吗？") : t("重新生成一版？（会再花一次 AI 的钱）"))) return;
     setEditing(false);
     void act(publishApi.generatePublish(id));
   };
@@ -92,8 +92,8 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
       {!pack && !running && (
         <p className="card">
           {claude
-            ? t("Claude 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。")
-            : t("没有接上 Claude（{p0}），只能生成按时间切的草稿。", { p0: view.editor_note || t("没找到 API key") })}
+            ? t("LACUNA 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。")
+            : t("还没接上 AI（{p0}），只能生成按时间切的草稿。", { p0: view.editor_note || t("没找到 AI 密钥") })}
         </p>
       )}
       {running && (
@@ -261,7 +261,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
           )}
 
           <p className="muted small">
-            {pack.adapter === "claude" ? t("Claude 写的") : t("规则草稿（没有 Claude）")}
+            {pack.adapter === "claude" ? t("LACUNA 写的") : t("规则草稿（AI 没接上）")}
             {pack.usage?.cost_usd ? t(" · 约 ${p0}", { p0: pack.usage.cost_usd.toFixed(2) }) : ""} {t("· 生成于 {time}", { time: fmtDateTime(pack.generated_at) })}
           </p>
         </>

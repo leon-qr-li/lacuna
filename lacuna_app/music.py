@@ -436,7 +436,7 @@ class EpisodeMusic:
             if not d or d["id"] != draft_id:
                 raise KeyError(draft_id)
             if d["base"] != self.digest(doc["placements"]):
-                raise ConflictError(tr("这条建议之后配乐又改过了，建议已经过期，请重新让 Claude 看一次"))
+                raise ConflictError(tr("这条建议之后配乐又改过了，建议已经过期，请重新让 LACUNA 看一次"))
             doc["placements"] = [dict(p, status=APPLIED) for p in d["placements"]]
             doc["draft"] = None
             self.save(doc)

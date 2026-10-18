@@ -21,16 +21,16 @@ test("media library → credits → music on the episode → series rule", async
   const theme = page.getByTestId("asset-row").filter({ hasText: "odyssey_theme.mp3" });
   await expect(theme).toContainText("待确认"); // from the file's own tags
   // Claude can't hear the music: no note, no lookup
-  await expect(theme.getByRole("button", { name: "让 Claude 查正式曲名" })).toBeDisabled();
+  await expect(theme.getByRole("button", { name: "让 LACUNA 查正式曲名" })).toBeDisabled();
   await theme.getByLabel("备注").fill("这是奥德赛的主题曲");
   await theme.getByRole("button", { name: "保存备注" }).click();
   await expect(theme.getByRole("button", { name: "保存备注" })).toBeDisabled();
   await expect(theme.getByTestId("credit-line")).toContainText("Odyssey Main Theme");
 
   // Claude looks up the official title (fake client), Leon confirms it
-  await theme.getByRole("button", { name: "让 Claude 查正式曲名" }).click();
+  await theme.getByRole("button", { name: "让 LACUNA 查正式曲名" }).click();
   await expect(theme.getByTestId("credit-line")).toContainText("《奥德赛》原声 · Ludwig Göransson — “Odysseus”");
-  await expect(theme).toContainText("Claude 查的");
+  await expect(theme).toContainText("LACUNA 查的");
   await expect(theme.getByLabel("曲名")).toHaveValue("Odysseus"); // filled in, ready to correct
   await theme.getByRole("button", { name: "收起" }).click();
   await theme.getByRole("button", { name: "对，就是这首" }).click();
@@ -167,7 +167,7 @@ test("place by use → hear the suggestion → accept → nudge → change it by
   await expect.poll(async () => secs(await pos.inputValue())).toBe(secs(before));
 
   // talk: quieter interlude → a suggestion → accepted
-  const box = page.getByLabel("跟 Claude 说配乐怎么改");
+  const box = page.getByLabel("跟 LACUNA 说配乐怎么改");
   await box.fill("间奏小 3 dB");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByTestId("music-draft")).toContainText("间奏：音量 -3 dB");

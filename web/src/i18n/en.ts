@@ -89,12 +89,12 @@ export const en: Dict = {
   "Pei 的分轨": "Pei's track",
   "还没选": "Not chosen",
   "选择文件…": "Choose file…",
-  "原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给 Claude 做第一刀。 长录音要跑一阵，可以关掉这页，进度不会丢。":
-    "The original recordings are read-only. Transcription and analysis run on this computer; only text and numbers go to Claude for the first cut. Long recordings take a while: you can close this page without losing progress.",
+  "原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给云端的 LACUNA AI 做第一刀。 长录音要跑一阵，可以关掉这页，进度不会丢。":
+    "The original recordings are read-only. Transcription and analysis run on this computer; only text and numbers go to LACUNA's cloud AI for the first cut. Long recordings take a while: you can close this page without losing progress.",
   "开始导入": "Start import",
   "取消": "Cancel",
-  "AI 第一刀（没有 Claude，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。":
-    "AI first cut (no Claude, pauses tightened only): {edits} edits, {review} for you to review.",
+  "AI 第一刀（AI 没接上，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。":
+    "AI first cut (AI not connected, pauses tightened only): {edits} edits, {review} for you to review.",
   "AI 第一刀：{edits} 处改动，{review} 处需要你过目。": "AI first cut: {edits} edits, {review} for you to review.",
   "开始审阅": "Start reviewing",
   "继续": "Resume",
@@ -151,10 +151,10 @@ export const en: Dict = {
   "没能应用：{message}": "Couldn't apply it: {message}",
   "说说要怎么改，比如：再短一点 / 只删后半句": "Say how to change it, e.g. shorter / only cut the second half",
   "AI 制作人对话": "AI producer chat",
-  "接的是 Claude API（只发送逐字稿和数字，不发送音频）": "Connected to the Claude API (sends only transcript text and numbers, never audio)",
+  "接的是 LACUNA 云端 AI（只发送逐字稿和数字，不发送音频）": "Connected to LACUNA's cloud AI (sends only transcript text and numbers, never audio)",
   "演示规则": "Demo rules",
   "{s} 秒 · ≈${cost}": "{s} s · ≈${cost}",
-  "Claude 正在看这附近的逐字稿…": "Claude is reading the transcript around here…",
+  "LACUNA 正在看这附近的逐字稿…": "LACUNA is reading the transcript around here…",
   "正在看这附近…": "Looking around here…",
   "对 AI 制作人说（锚定在当前播放位置）": "Tell the AI producer (anchored at the playhead)",
   "指令锚定在当前播放位置": "Instructions refer to the current playhead",

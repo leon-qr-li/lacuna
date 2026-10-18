@@ -33,7 +33,7 @@ from typing import Any, Callable
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
 from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json
-from .i18n import tr
+from .i18n import AI_NAME_RULE, tr
 
 PUBLISH_SCHEMA = 1
 NAMES_SCHEMA = 1
@@ -266,7 +266,7 @@ class ClaudePublisher:
     def system() -> str:
         return ((PROMPTS / "show_notes_brief.txt").read_text(encoding="utf-8")
                 + "\n\nAPPROVED EXAMPLE (EP001, format and voice only):\n\n"
-                + (PROMPTS / "show_notes_example.md").read_text(encoding="utf-8"))
+                + (PROMPTS / "show_notes_example.md").read_text(encoding="utf-8") + AI_NAME_RULE)
 
     def request(self, user: str) -> dict:
         return dict(model=self.model, max_tokens=32000, system=self.system(),
@@ -285,13 +285,13 @@ class ClaudePublisher:
             raise PublishError(error_message(e, tail="")) from e
         usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            raise PublishError(tr("Claude 没有处理这次请求"))
+            raise PublishError(tr("LACUNA 没有处理这次请求"))
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_publish_pack":
                 return Draft(dict(block.input), usage, self.name)
         if resp.stop_reason == "max_tokens":
             raise PublishError(tr("回答太长被截断了"))
-        raise PublishError(tr("Claude 没有交回发布资料"))
+        raise PublishError(tr("LACUNA 没有交回发布资料"))
 
 
 class RulePublisher:
@@ -315,9 +315,9 @@ class RulePublisher:
             del sec["_part"]
         title = ep.meta.get("title", ep.id)
         data = {"title": title, "alt_titles": [], "blurb": "",
-                "intro": "（没有 Claude：这是按时间切的草稿，开场白、片名表和小词典要接上 Claude 才会写。）",  # i18n-ignore
+                "intro": "（AI 没接上：这是按时间切的草稿，开场白、片名表和小词典要接上 AI 才会写。）",  # i18n-ignore
                 "sections": sections, "films": [], "shows": [], "things": [], "glossary": [], "names_to_check": []}
-        return Draft(data, {}, self.name, [tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），只生成了按时间切的草稿。")])
+        return Draft(data, {}, self.name, [tr("还没接上 AI（没有 AI 密钥），只生成了按时间切的草稿。")])
 
 
 def make_publisher(kind: str = "auto"):
@@ -554,7 +554,7 @@ class Publisher:
             version = ep.version_key()
             duration = music.to_final(ep.timeline_for(ep.enabled).length / ep.sr)
         writer = self.factory()
-        stage(tr("Claude 在写标题和 show notes") if writer.name == "claude" else tr("生成草稿（没有 Claude）"))
+        stage(tr("LACUNA 在写标题和 show notes") if writer.name == "claude" else tr("生成草稿（AI 没接上）"))
         out = writer.write(ep, segs, music, names, duration)
         if out.usage:
             self.on_usage(ep.id, out.usage)

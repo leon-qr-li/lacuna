@@ -182,9 +182,9 @@ export function SettingsView() {
         )}
       </section>
 
-      <section className="card" aria-label="Claude API key">
+      <section className="card" aria-label={t("AI 密钥")}>
         <div className="card-head">
-          <h2>Claude API key</h2>
+          <h2>{t("AI 密钥")}</h2>
           <span className={info.key.present ? "badge badge-confirmed" : "badge badge-unknown"} data-testid="key-state">
             {info.key.present ? t("已设置（{p0}）", { p0: KEY_SOURCE[info.key.source ?? ""] ?? info.key.source }) : t("没有设置")}
           </span>
@@ -197,7 +197,7 @@ export function SettingsView() {
             className="grow"
             type="password"
             autoComplete="off"
-            placeholder="sk-ant-…"
+            placeholder={t("粘贴 AI 密钥")}
             aria-label="API key"
             value={key}
             onChange={(e) => setKey(e.target.value)}
