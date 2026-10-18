@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from lacuna_app import create_app
 from lacuna_app.dictation import Dictation
+from lacuna_app.dictation_fix import DictationFixer
 from lacuna_app.editor import MockEditorAdapter
 
 from .synth import make_workspace
@@ -48,7 +49,8 @@ def ws(tmp_path):
 
 
 def client(ws, dictation):
-    return TestClient(create_app(ws, MockEditorAdapter(), web_dist=Path("/nonexistent"), dictation=dictation))
+    return TestClient(create_app(ws, MockEditorAdapter(), web_dist=Path("/nonexistent"), dictation=dictation,
+                                 dictation_fixer=DictationFixer(api_key="")))  # local text only (see test_dictation_fix.py)
 
 
 def test_clip_to_text_resampled_to_16k(ws):

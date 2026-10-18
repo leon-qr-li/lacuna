@@ -55,4 +55,9 @@ test("上传喜马拉雅: says what is missing, then WAV, title, show notes and 
   const res = await page.request.get((await cover).url());
   expect(res.headers()["content-type"]).toBe("image/jpeg");
   expect(res.headers()["content-disposition"]).toContain(`${encodeURIComponent(ep)}_cover.jpg`);
+  // …and the same click saved it into the episode's export folder, next to the WAV
+  const saved = page.getByTestId("upload-cover-saved");
+  await expect(saved).toContainText("也存到了导出文件夹");
+  const path = (await saved.locator(".mono").textContent())!;
+  expect(path.replace(/\\/g, "/").endsWith(`/exports/${ep}/${ep}_cover.jpg`)).toBe(true);
 });
