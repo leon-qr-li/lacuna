@@ -51,3 +51,35 @@ def test_a_music_sting_shorter_than_the_meter_window_is_still_levelled(tmp_path)
     short, longer = m.summary()["placements"]
     assert longer["level_db"] < -3
     assert short["level_db"] == pytest.approx(longer["level_db"], abs=1.0)
+
+
+def test_episodes_with_a_pre_fix_room_tone_are_repaired_on_open(tmp_path):
+    """Erases stored before the fix keep the wrong tone (resolve skips ops that already have one):
+    Leon heard Pei's own deleted words from the first minute, looped three times, at 9:00
+    (验收 V5). Opening the episode picks those tones again, near the erase, and saves them."""
+    import json
+    rng = np.random.default_rng(3)
+    x = 0.2 * rng.standard_normal(120 * SR)
+    x[95 * SR:97 * SR] = 3e-4 * rng.standard_normal(2 * SR)
+    ws = one_track_workspace(tmp_path, "Pei", x)
+    ep = Episode(ws, EP)
+    media = next(iter(ep.media))
+    bad = {"op": "erase", "track": "Pei", "start": 100 * SR, "end": int(100.5 * SR),
+           "tone_media_id": media, "tone_src_in": 5 * SR, "tone_src_out": int(5.5 * SR)}   # old bug
+    near = {**bad, "start": 20 * SR, "end": int(20.5 * SR)}                                # inside the window: kept
+    assert room_tone.misplaced(bad, ep.base) and not room_tone.misplaced(near, ep.base)
+    ep.close()
+    p = ws.episode_dir(EP) / "state.json"
+    st = json.loads(p.read_text(encoding="utf-8"))
+    st["edits"] = [{"id": "e1", "ops": [bad], "category": "interjection", "title": "t", "reason": "",
+                    "confidence": 0.9, "consequential": True, "status": "applied", "source": "ai"},
+                   {"id": "e2", "ops": [near], "category": "interjection", "title": "t", "reason": "",
+                    "confidence": 0.9, "consequential": True, "status": "applied", "source": "ai"}]
+    p.write_text(json.dumps(st), encoding="utf-8")
+    ep = Episode(ws, EP)
+    fixed, kept = ep.edits["e1"].ops[0], ep.edits["e2"].ops[0]
+    assert 95.0 <= fixed["tone_src_in"] / SR and fixed["tone_src_out"] / SR <= 97.0
+    assert kept == near
+    ep.close()
+    saved = json.loads(p.read_text(encoding="utf-8"))["edits"][0]["ops"][0]
+    assert saved["tone_src_in"] == fixed["tone_src_in"]

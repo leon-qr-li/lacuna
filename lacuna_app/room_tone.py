@@ -51,6 +51,24 @@ def pick(x: np.ndarray, sr: int, x0: int, start: int, end: int, length: int,
     return None if not np.isfinite(score[i]) else x0 + i * w
 
 
+TONE_KEYS = ("tone_media_id", "tone_src_in", "tone_src_out")
+
+
+def misplaced(op: dict, base: Timeline) -> bool:
+    """True for an erase whose stored tone lies outside the search window around it. Before
+    v2026.10.18.3 `pick` returned an offset into the window instead of a track position, so erases
+    later than SEARCH_S into a track took their "room tone" from the track's first minute - often
+    words, looped over the erase (Leon 2026-10-18, 验收 V5). Such ops are picked again."""
+    if op.get("op") != "erase" or not op.get("tone_media_id"):
+        return False
+    clip = next((c for c in base.track(op["track"]).clips if c.start <= op["start"] < c.end), None)
+    if clip is None or clip.media_id != op["tone_media_id"]:
+        return False
+    margin = int((SEARCH_S + MAX_TONE_S) * base.sample_rate)
+    a, b = (clip.src_in + (op[k] - clip.start) for k in ("start", "end"))
+    return op["tone_src_in"] < a - margin or op["tone_src_out"] > b + margin
+
+
 def resolve(op: dict, base: Timeline, pool: SourcePool, words: list[tuple[float, float]] = ()) -> dict:
     """An `erase` op with its room tone filled in (unchanged if it already has one or none is found).
     `words` are this track's transcript words in base seconds."""
