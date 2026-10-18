@@ -2,6 +2,8 @@
 
 _Status: CONSTRAINT（硬约束）· Recorded 2026-10-16 from Leon · 所有工程设计必须满足本文件_
 
+> 现状（2026-10-18 注）：下面第 2 节的自动分档没有实现，也暂时不需要。实际做法：ASR 用 Paraformer + SenseVoice（sherpa-onnx int8，D30）在 CPU 上跑，不用 GPU；Leon 电脑上 73.5 分钟两轨导入时 ASR 约 268 s + 197 s、内存峰值约 1.5 GB；2 小时一集的云端预演见 `docs/status/rehearsal-e2e.md`。AI 剪辑走 API，不占本地资源。第 4 节的资源规则（16 kHz 代理、分块、原始文件只读、长任务可续跑）仍然适用。
+
 ## 1. 目标机器
 
 ### Primary — Leon（Windows）

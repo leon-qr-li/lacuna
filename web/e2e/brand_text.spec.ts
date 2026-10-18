@@ -38,12 +38,13 @@ async function sweep(page: Page, screens: string[]) {
 }
 
 test("no screen names the AI vendor (zh + en)", async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
   const ep = /#\/ep\/([^/]+)/.exec(page.url())![1];
-  const screens = ["#/", `#/ep/${ep}/listen`, `#/ep/${ep}/review`, `#/ep/${ep}/music`, `#/ep/${ep}/export`,
-    `#/ep/${ep}/publish`, `#/ep/${ep}/poster`, `#/ep/${ep}/upload`, "#/learning", "#/library", "#/settings"];
+  // every episode tab and page (new tabs / pages: add them here)
+  const tabs = ["listen", "review", "lessons", "levels", "music", "export", "publish", "ximalaya", "poster", "upload"];
+  const screens = ["#/", ...tabs.map((m) => `#/ep/${ep}/${m}`), "#/learning", "#/library", "#/archive", "#/settings"];
   expect(await sweep(page, screens)).toEqual([]);
 });
 
