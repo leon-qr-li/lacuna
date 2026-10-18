@@ -16,15 +16,19 @@ Decision: `docs/decisions/2026-10-17-ui-redesign-c-focus.md`.
   Under the title: status chip, ghost 撤销 / 重做, primary 导出. Step pill 审阅改动 → 整集试听 → 配乐 → 导出 → 发布;
   tabs can declare `group` (registry) and grouped tabs become one step with sub-tabs (发布 = 发布资料 / 海报 /
   上传喜马拉雅). 导出 is its own step (`features/export`, ExportPanel `inline`). Each step ends with 「下一步：…」.
-  设置 → 外观 (浅色 / 深色 / 跟随系统; language row, English disabled until i18n).
+  设置 → 外观 (浅色 / 深色 / 跟随系统; language row, English disabled until i18n — enabled with #58, `i18n.md`).
 - PR #51: 审阅改动 floating dock (prev / A·B pill / 恢复原话 R / 保留这个删除 Y / next), cleaner detail cards;
   配乐 header with 按用途自动放好, whole-episode music strip (click a block to hear it), tuning box per placement.
 - PR 4: home hero + episode cards with a cover tile and status chip; 设置 link on every screen; 上传喜马拉雅 step
   numbers.
 
 ## Next
-- Batch update (coordinator), then Leon validates and we iterate on colours / spacing / layout.
-- Then the i18n thread resumes (labels already flexible; English mockups checked in round 2).
+- Done: batch update + Leon's acceptance (17:11Z); i18n shipped (#58, `i18n.md`); colours now follow the logo (`palette.md`).
+
+## Current shell (2026-10-18, for orientation; each item is owned by its own status file)
+- Top bar: 剧集 (`ui-backlog.md`) / 素材库 / 学到的规则 / 设置 / theme.
+- Step pill: 审阅改动 → 整集试听 → 声音 (`levels.md`) → 本集学到的规则 (phase 5) → 配乐 → 导出 → 发布 (发布资料 / 喜马拉雅版 / 海报 / 上传喜马拉雅); order = `order` in each `web/src/features/*/index.tsx`.
+- Confirmations use the in-app dialog (`features/dialog`, `dialog-brand.md`), not the browser's.
 
 ## Coordination
 - 6a thread no longer touches App.tsx, the review player, MusicView or ExportPanel (done with #47 / #49).

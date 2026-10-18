@@ -25,3 +25,5 @@
   (`music_inserts`), so changing a gap or the intro length flags the timestamps stale even when the BGM lines
   stay the same; 「更新时间戳」 re-times locally. An interlude's timestamp / BGM line is where the talk stops,
   not where it started under the talk (`pre_s`).
+
+Changed by: `2026-10-18-bed-auto-loop` (new placements default to `bg_db` 22 dB; beds can be automatic / looping) and `2026-10-18-loudness-leveling` (full level measured on the part that plays).

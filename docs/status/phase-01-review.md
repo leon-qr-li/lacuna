@@ -8,5 +8,9 @@ Depends on: — · Parallel with: 母带与导出 (thread)
 
 ## How it is built (审阅提速 (2026-10-17))
 - API: `POST /api/episodes/{id}/review` `{action: approve|keep|restore, ids?}`; one undo step; default = every edit still pending. `approve` signs off the current state (cut stays cut, AI's unapplied suggestion stays unapplied).
-- UI: progress meter, 「剩下 N 处全部通过」, auto-advance to the next pending edit after a decision (wraps to skipped ones), `Y` = 通过当前状态, `R` = 恢复原话, 「只看没过目的」 filter, 「不删，保持原话」 for unapplied AI suggestions.
+- UI: progress meter, 「剩下 N 处全部通过」, auto-advance to the next pending edit after a decision (wraps to skipped ones), `Y` = 通过当前状态 (now `K`, `Y` kept as alias — see `review-keys.md`), `R` = 恢复原话, 「只看没过目的」 filter, 「不删，保持原话」 for unapplied AI suggestions.
 - Tests: `tests/app/test_ai_cut.py::test_batch_review_*`, `web/e2e/ai_cut.spec.ts` (review flow).
+
+## Later changes (owned elsewhere)
+- Shortcuts (Space / ← → / K / R / A·B / S / ?) and the dock's 已过目 count: `review-keys.md`.
+- Player speed 1×–2× (S), A/B previews 5 s either side of an edit, one-host erase with room tone: `review-edit.md`.

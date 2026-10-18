@@ -21,3 +21,5 @@ Alternatives not taken: B 光环 (ring + %), C 静点 (three dots + segmented ba
 rejected: polls are GETs every second and would make it flicker forever.
 
 New screens follow these rules: import from `features/loading/Loading`, no bare "加载中…" text.
+
+Changed by: `2026-10-17-loading-logo` — the look is now style C「信号」 (logo pulse line); the rules and the component API above are unchanged.

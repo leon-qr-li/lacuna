@@ -17,3 +17,5 @@
 - Storage `<workspace>/learning/asks/<episode>.json`; they show on 学到的规则 as kind `ask` (「你说过的」) with
   his sentences as examples. Like every learned rule (D17) they act only after 采用, then go into the first-cut
   prompt via `learning.prompt_rules`.
+
+Changed by: `2026-10-18-confirmed-learning` — 「记住」 and the typed prefix now draft a rule that LACUNA reads back and Leon confirms (nothing stored before that); the after-export summary is removed, replaced by the 本集学到的规则 step.
