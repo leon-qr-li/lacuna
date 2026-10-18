@@ -122,3 +122,33 @@ test.describe.serial("声音", () => {
     });
   }
 });
+
+// item 20: each music placement says how much it was levelled automatically (AI-cut backend, its own library)
+test.describe("music level", () => {
+  test.use({ baseURL: "http://127.0.0.1:8798" });
+
+  test("a placement shows its automatic level next to 音量（dB）", async ({ page, request }) => {
+    const { readFileSync } = await import("node:fs");
+    const { dirname, join } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const song = join(dirname(fileURLToPath(import.meta.url)), ".fixtures", "music_inbox", "odyssey_theme.mp3");
+    const up = await request.post("/api/library/upload?name=level_test.mp3&kind=bed", {
+      headers: { "content-type": "application/octet-stream" },
+      data: readFileSync(song),
+    });
+    expect(up.ok()).toBe(true);
+    const asset = (await up.json()).asset.id;
+    const ep = encodeURIComponent("EP_AI_合成");
+    const add = await request.post(`/api/episodes/${ep}/music`, { data: { asset_id: asset, role: "bed", at_s: 5 } });
+    expect(add.ok()).toBe(true);
+    try {
+      await page.goto(`/#/ep/${ep}/music`);
+      const row = page.getByTestId("placement").filter({ hasText: "level_test.mp3" });
+      await expect(row.getByTestId("placement-level")).toContainText(/已自动调平 [+−±]\d+\.\d dB/);
+    } finally {
+      const m = await (await request.get(`/api/episodes/${ep}/music`)).json();
+      for (const p of m.placements) if (p.asset_id === asset) await request.delete(`/api/episodes/${ep}/music/${p.id}`);
+      await request.delete(`/api/library/assets/${asset}`);
+    }
+  });
+});

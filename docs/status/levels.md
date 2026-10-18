@@ -1,6 +1,6 @@
 # Voice + music levels (backlog 7, 20) - 2026-10-18
 
-State: in PR, then waiting for the next batched release.
+State: merged (#94 + follow-up), waiting for the next batched release.
 
 - `lacuna_app/levels.py`: measure host tracks (cached in `<episode>/levels.json`), plan even gains (−20 LUFS,
   peak-capped), gains as `track_gain` edits (one per track), chat volume parser, music loudness of the played range.
@@ -11,5 +11,5 @@ State: in PR, then waiting for the next batched release.
   (`onEpisode` in `EpisodeTabProps`), so a gain change updates undo/redo and the main player.
 - Music: `music.py` `_music_tracks` uses `EpisodeMusic.level_db` (played-range loudness); placements carry `level_db`.
 - Tests: `tests/app/test_levels.py`, `web/e2e/levels.spec.ts`.
-- Open: 配乐 page doesn't show `level_db` yet (配乐 thread owns MusicView; asked them to add a line next to 「音量（dB）」).
+- 配乐 page shows each placement's automatic level under its numbers (`placement-level`, follow-up PR).
 - Decision: docs/decisions/2026-10-18-loudness-leveling.md

@@ -76,6 +76,7 @@ export interface Placement {
   inserted_s?: number;
   listen_s?: number; // where on the final mix to start listening to it (just before its transition)
   no_room?: boolean; // an automatic bed with no free stretch left
+  level_db?: number | null; // automatic level (measured on the part that plays); gain_db is Leon's offset on top
   missing: boolean;
 }
 

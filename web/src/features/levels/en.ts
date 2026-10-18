@@ -32,4 +32,6 @@ export const en: Dict = {
   "{name} 大 1 dB": "{name} 1 dB louder",
   "用建议值 {db}": "Use suggested {db}",
   "最响的地方会被轻轻压住": "The loudest peaks will be gently limited",
+  "已自动调平 {db} dB，和人声相称；「音量（dB）」是在这之上的微调。":
+    "Levelled automatically by {db} dB to sit with the voices; “Volume (dB)” fine-tunes on top of that.",
 };
