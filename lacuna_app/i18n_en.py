@@ -347,6 +347,9 @@ EN: dict[str, str | tuple[str, str]] = {
     "生成期间剪辑有变化，时间已按最新剪辑重新对过。": "The cut changed while generating; times were re-aligned to the latest cut.",
     "这一集没有在导入": "This episode isn't importing",
     "还没有生成发布资料": "No publish pack yet",
+    # ---- 喜马拉雅版 (routes/ximalaya.py)
+    "设计图没画出来，「图文」这一版先用纯文字。": "The designed images couldn't be drawn, so the “Cards” layout uses text only for now.",
+    "这张图还没有生成": "This image hasn't been made yet",
     # chat learning
     "你用「记住」说的": "You said it with “remember”",
     "导出后从对话里总结出的": "Summarised from the chat after export",

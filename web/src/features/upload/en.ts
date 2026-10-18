@@ -44,4 +44,7 @@ export const en: Dict = {
   "海报": "Cover art",
   "画一版，点「用这张」。": "to make one and click “Use this”.",
   "最后在喜马拉雅上选专辑「洛城二三事」，确认后发布。": "Finally, pick the album 《洛城二三事》 on Ximalaya, confirm and publish.",
+  "想排得更好看、时间戳能点：用": "For a nicer layout with tappable timestamps, use",
+  "喜马拉雅版": "Ximalaya layout",
+  "（三种排版，一键复制）。": " (three layouts, one-click copy).",
 };
