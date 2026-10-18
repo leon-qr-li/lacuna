@@ -367,7 +367,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           {tabs
             .filter((t) => t.mode === mode)
             .map((t) => (
-              <Fragment key={t.mode}>{t.render({ id, ep, flash, pauseMain: player.pause })}</Fragment>
+              <Fragment key={t.mode}>{t.render({ id, ep, flash, pauseMain: player.pause, onEpisode: setEp })}</Fragment>
             ))}
           {next && (
             <div className="next-step">
