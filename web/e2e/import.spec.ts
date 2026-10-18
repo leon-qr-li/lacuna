@@ -98,6 +98,22 @@ test("import: drag both tracks in → progress with time left → straight into 
   await expect(page.locator(".ep-list")).toContainText("EP001 · 导入测试");
   await page.getByRole("link", { name: "开始审阅" }).click();
   await expect(page).toHaveURL(/#\/ep\/EP001\/review$/);
+
+  // the task follows the review (验收 V3): once everything is looked at, the episode card says so
+  // and the task card goes, instead of still asking for "2 处需要你过目"
+  await items.first().click();
+  await page.keyboard.press("k");
+  await expect(page.getByTestId("dock-progress")).toHaveText("已过目 1 / 2");
+  await page.locator("a.brand").click();
+  await expect(page.getByTestId("import-job")).toContainText("1 处需要你过目");
+  await page.getByRole("link", { name: "开始审阅" }).click();
+  await items.nth(1).click();
+  await page.keyboard.press("k");
+  await expect(page.getByTestId("dock-progress")).toHaveText("已过目 2 / 2");
+  await page.locator("a.brand").click();
+  await expect(page.locator(".ep-list")).toContainText("EP001 · 导入测试");
+  await expect(page.getByTestId("import-job")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "导入任务" })).toHaveCount(0);
 });
 
 test("import: a file dropped anywhere on 剧集 opens the form; a slot takes a drop of its own", async ({ page }) => {

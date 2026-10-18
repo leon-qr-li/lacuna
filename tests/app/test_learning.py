@@ -202,11 +202,15 @@ def test_rules_need_approval_and_approved_snapshot_is_what_counts(tmp_path, monk
     # more evidence, same wording: still approved, no update
     fake_rules(monkeypatch, [RULE | {"evidence": {"restored": 9}}])
     assert lr.overview()["rules"][0]["updated"] is False
-    # new wording: shown as an update, but the approved version stays in force
-    fake_rules(monkeypatch, [RULE | {"prompt": "Never cut Pei."}])
+    # new examples change the wording: the same rule stays approved and the new version applies,
+    # no second approval (only a brand-new rule waits for Leon)
+    fake_rules(monkeypatch, [RULE | {"prompt": "Cut Pei's disfluencies less often, e.g. \"嗯\"."}])
     ov = lr.overview()
-    assert ov["rules"][0]["updated"] is True and ov["pending"] == 1
-    assert "much less often" in prompt_rules(ws) and "Never cut Pei" not in prompt_rules(ws)
+    assert ov["rules"][0]["state"] == "approved" and ov["rules"][0]["updated"] is False and ov["pending"] == 0
+    assert '"嗯"' in prompt_rules(ws) and "much less often" not in prompt_rules(ws)
+    # a brand-new rule still waits for approval
+    fake_rules(monkeypatch, [RULE, RULE | {"id": "protect:disfluency:Leon", "key": {"category": "disfluency", "host": "Leon"}}])
+    assert lr.overview()["pending"] == 1
     # evidence gone: an approved rule stays (marked stale) until Leon drops it
     fake_rules(monkeypatch, [])
     ov = lr.overview()

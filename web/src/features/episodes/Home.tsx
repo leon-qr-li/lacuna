@@ -58,7 +58,7 @@ export function Home({ nav }: { nav: ReactNode }) {
           <h1>{t("剧集")}</h1>
           <p className="muted">{t("导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。")}</p>
         </div>
-        <ImportPanel onEpisodesChanged={reload} onOpen={open} />
+        <ImportPanel episodes={list} onEpisodesChanged={reload} onOpen={open} />
         {err && <p className="error">{err}</p>}
         {list?.length === 0 && <p className="muted">{t("工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。")}</p>}
         {!list && !err && <EpisodeListSkeleton />}

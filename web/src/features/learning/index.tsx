@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Feature } from "../registry";
+import { navCurrent, type Feature } from "../registry";
 import { learningApi } from "./api";
 import { LearningView } from "./LearningView";
 import "./learning.css";
@@ -14,7 +14,7 @@ function LearningLink() {
       .catch(() => setPending(null));
   }, []);
   return (
-    <a className="btn btn-outline row" href="#/learning">
+    <a className="btn btn-outline row" href="#/learning" aria-current={navCurrent("learning")}>
       {t("学到的规则")}{pending ? t(" · {pending} 条待确认", { pending }) : ""}
     </a>
   );

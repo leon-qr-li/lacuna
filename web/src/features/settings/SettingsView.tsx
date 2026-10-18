@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppInfo } from "./api";
 import { settingsApi } from "./api";
+import { navCurrent } from "../registry";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { AccountCard } from "../auth/AccountCard";
 import { joinList, t } from "../../i18n";
@@ -55,7 +56,7 @@ export function SettingsLink() {
       .catch(() => setUpdate(false));
   }, []);
   return (
-    <a className="btn btn-outline row" href="#/settings">
+    <a className="btn btn-outline row" href="#/settings" aria-current={navCurrent("settings")}>
       {t("设置")}{update ? t(" · 有新版本") : ""}
     </a>
   );

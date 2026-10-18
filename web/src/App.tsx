@@ -63,11 +63,11 @@ export default function App() {
   return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home nav={<Nav on="home" />} />;
 }
 
-function Nav({ on, except }: { on: NavLink["on"][number]; except?: string }) {
+function Nav({ on }: { on: NavLink["on"][number] }) {
   return (
     <>
       {navLinks
-        .filter((l) => l.on.includes(on) && l.path !== except)
+        .filter((l) => l.on.includes(on))
         .map((l) => (
           <Fragment key={l.path}>{l.render()}</Fragment>
         ))}
@@ -88,7 +88,7 @@ function PageScreen({ path }: { path: string }) {
         </span>
         <span className="ep-title">{page.title}</span>
         <span className="grow" />
-        <Nav on="page" except={path} />
+        <Nav on="page" />
       </header>
       {page.render()}
     </div>
