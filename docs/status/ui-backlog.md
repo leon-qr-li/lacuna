@@ -1,7 +1,7 @@
 # UI backlog from 首次检测 (docs: /mnt/project-files/lacuna/docs/UI_BACKLOG_首次检测.md)
 
 State (2026-10-18): all 28 items merged on main. #1 validated earlier; #2–#28 wait for Leon's validation in
-the 2026-10-18 batch (steps: /mnt/project-files/lacuna/docs/验收_2026-10-18/00_完整验收清单.md).
+the 2026-10-18 batch (release 2026.10.18.2) (steps: /mnt/project-files/lacuna/docs/验收_2026-10-18/00_完整验收清单.md).
 
 | # | Item | PR | Details |
 |---|---|---|---|
