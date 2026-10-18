@@ -41,10 +41,11 @@ from pathlib import Path
 
 import numpy as np
 
-from lacuna_core import (Clip, InsertGap, MediaRef, Previewer, Renderer, RenderSettings, SegmentCache, SourcePool,
+from lacuna_core import (Clip, InsertGap, MediaRef, Previewer, Renderer, RenderSettings, SegmentCache,
                          Timeline, Track, validate)
 from lacuna_core.master import LoudnessMeter
 
+from . import declip
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .episode import ConflictError, Episode, to_base, to_tl
 from .library import Library, credit_line
@@ -652,7 +653,7 @@ class EpisodeMusic:
             media = dict(ep.media)
             vl = self.voice_lufs(enabled) if lay.items else -20.0
             # where the voice speaks, on the final timeline (for ducking)
-            pool = SourcePool(media)
+            pool = declip.pool_for(ep, media, wait=False)
             vr = Renderer(pool, RenderSettings(channels=1))
             tracks = list(tl.tracks)
             try:
@@ -733,7 +734,7 @@ class EpisodeMusic:
             for _, (_, pv, pool) in list(self._players.items()):
                 pool.close()
             self._players.clear()
-            pool = SourcePool(media)
+            pool = declip.pool_for(self.ep, media, wait=False)
             pv = Previewer(Renderer(pool, RenderSettings(channels=1)), SegmentCache(96 << 20), block_s=2.0)
             hit = self._players[k] = (tl, pv, pool)
         return hit[0], hit[1]

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { Episode } from "../../api";
-import { fmt } from "../../api";
 import { PlayerBar } from "../../components/PlayerBar";
 import { usePlayer } from "../../usePlayer";
 import { t } from "../../i18n";
@@ -20,7 +19,7 @@ const db = (x: number) =>
   `${x > 0 ? "+" : x < 0 ? "−" : "±"}${Math.abs(x).toFixed(1)} dB`;
 const COMMIT_MS = 450; // a slider drag becomes one change once it rests
 
-/** 声音: both hosts at one loudness, a gain per track, and the spots where a recording clipped.
+/** 声音: both hosts at one loudness, a gain per track, and a line on the clipping LACUNA repaired.
  *  The gains are ordinary undoable edits of the episode (they show up in 撤销 / 重做). */
 export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
   const [lv, setLv] = useState<Levels | null>(null);
@@ -66,10 +65,6 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
     run(track, () => levelsApi.setGain(id, track, g, player.time));
   const auto = () =>
     run("auto", () => levelsApi.auto(id, player.time), t("两人音量已统一"));
-  const listenAt = (s: number) => {
-    player.seek(Math.max(s - 2, 0));
-    player.play();
-  };
 
   // usePlayer wires its <audio> on the first render: it stays mounted at the same place throughout
   const audio = (
@@ -96,7 +91,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
       .filter((x): x is number => x !== null);
     return xs.length > 1 ? Math.max(...xs) - Math.min(...xs) : 0;
   })();
-  const clipped = lv.tracks.filter((x) => x.clip_count > 0);
+  const clipped = lv.tracks.filter((x) => x.clip_fixed + x.clip_left > 0);
 
   return (
     <>
@@ -152,44 +147,19 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
         </section>
 
         {clipped.length > 0 && (
-          <section
-            className="levels-card levels-clips"
-            data-testid="levels-clips"
-          >
-            <h2>{t("破音")}</h2>
-            <p className="small">
-              {t(
-                "原始录音里有声音过载被削平的地方（破音）。LACUNA 只标出来，不修补；点时间可以从前 2 秒开始听，听着刺耳可以在审阅里把那句删掉。",
-              )}
-            </p>
+          <p className="muted small levels-declip" data-testid="levels-declip">
             {clipped.map((tr) => (
-              <div key={tr.name} className="levels-cliprow">
-                <strong>
-                  {t("{name}：{n} 处", { name: tr.name, n: tr.clip_count })}
-                </strong>
-                <span className="levels-times">
-                  {tr.clip_times.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className="btn btn-small btn-outline"
-                      onClick={() => listenAt(s)}
-                    >
-                      {fmt(s)}
-                    </button>
-                  ))}
-                  {tr.clip_count > tr.clip_times.length && (
-                    <span className="muted small">
-                      {t("（只列出前 {n} 处）", { n: tr.clip_times.length })}
-                    </span>
-                  )}
-                </span>
-              </div>
+              <span key={tr.name}>
+                {t("{name}：", { name: tr.name })}
+                {tr.clip_fixed > 0 &&
+                  t("LACUNA 已自动修好 {n} 处短促破音。", { n: tr.clip_fixed })}
+                {tr.clip_left > 0 &&
+                  t("{n} 处较长的破音没有修（修了反而失真）。", {
+                    n: tr.clip_left,
+                  })}
+              </span>
             ))}
-            <p className="muted small">
-              {t("下次录音时把这条音轨的输入音量调低一点，就不会再破音。")}
-            </p>
-          </section>
+          </p>
         )}
 
         <section className="levels-listen">

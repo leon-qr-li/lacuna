@@ -255,7 +255,7 @@ class Renderer:
         phase) do not."""
         parts: list = [self.settings.xfade_ms, self.settings.channels, self.settings.ceiling_db,
                        self.settings.limit_db,
-                       tl.sample_rate, b - a]
+                       tl.sample_rate, b - a, list(getattr(self.pool, "repair_key", ()))]
         x = self.settings.xfade(tl.sample_rate)
         for tr, plans in zip(tl.tracks, self.plans(tl)):
             items = [_plan_in_range(p, a, b) for p in plans if p.t0 < b and p.t1 > a]

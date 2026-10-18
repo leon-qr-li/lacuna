@@ -30,10 +30,12 @@ def uneven_workspace(root, pei_db=-12.0, clip_pei=False, pei_spikes=False):
         x, sr = sf.read(refs[name].path, dtype="float32")
         if name == "Pei":
             x = x * 10 ** (pei_db / 20)
-            if clip_pei:                                   # a shout that hit the ceiling at 6 s and 14 s
-                for t in (6.0, 14.0):
-                    i = int(t * sr)
-                    x[i:i + 400] = np.clip(x[i:i + 400] * 40, -1.0, 1.0)
+            if clip_pei:   # at 6 s a word just over the ceiling (short flat tops), at 14 s a shout far over it
+                i = int(6.0 * sr)
+                seg = x[i:i + 400]
+                x[i:i + 400] = np.clip(seg / np.abs(seg).max() * (1 + 0.15 * np.hanning(400)), -1.0, 1.0)
+                i = int(14.0 * sr)
+                x[i:i + 400] = np.clip(x[i:i + 400] * 40, -1.0, 1.0)
         if name == "Pei" and pei_spikes:                   # short loud laughs: peaks far above her speech level
             for t in np.arange(1.0, 58.0, 4.0):
                 i = int(t * sr)
@@ -96,18 +98,22 @@ def test_peaks_cap_the_gain_for_both_hosts(tmp_path):
     assert m["Pei"]["lufs"] + g2["Pei"] == pytest.approx(levels.TARGET_LUFS - levels.MAX_SHORTFALL, abs=0.1)
 
 
-def test_clipping_is_detected_with_times_on_the_current_timeline(tmp_path):
+def test_clipping_is_counted_as_repaired_or_left_on_the_current_cut(tmp_path):
     ws = uneven_workspace(tmp_path, pei_db=-6.0, clip_pei=True)
     ep = Episode(ws, EP)
+    m = levels.measurements(ep)
+    assert m["Pei"]["clip_fixed"] == pytest.approx([6.0], abs=0.02)      # short flat tops: repaired
+    assert m["Pei"]["clip_left"] == pytest.approx([14.0], abs=0.02)      # far over: left alone
+    assert m["Leon"]["clip_fixed"] == [] and m["Leon"]["clip_left"] == []
     v = levels.view(ep)
     pei = next(t for t in v["tracks"] if t["name"] == "Pei")
     leon = next(t for t in v["tracks"] if t["name"] == "Leon")
-    assert pei["clip_count"] == 2 and pei["clip_times"] == pytest.approx([6.0, 14.0], abs=0.02)
-    assert leon["clip_count"] == 0 and leon["clip_times"] == []
-    # cut 2 s before the second clip: it moves 2 s earlier; the first one is cut away
+    assert (pei["clip_fixed"], pei["clip_left"]) == (1, 1)
+    assert (leon["clip_fixed"], leon["clip_left"]) == (0, 0)
+    # a cut over the first spot: only the second one is still in the episode
     ep.apply_op({"op": "cut", "start": int(5.5 * SR), "end": int(7.5 * SR), "tracks": None}, "删")
     pei = next(t for t in levels.view(ep)["tracks"] if t["name"] == "Pei")
-    assert pei["clip_times"] == pytest.approx([12.0], abs=0.02)
+    assert (pei["clip_fixed"], pei["clip_left"]) == (0, 1)
 
 
 def test_measurements_are_cached_until_the_source_changes(tmp_path, monkeypatch):

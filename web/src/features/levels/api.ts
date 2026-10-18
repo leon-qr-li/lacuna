@@ -11,8 +11,8 @@ export interface TrackLevel {
   peak_db: number | null;
   loud_peak_db: number | null;
   out_peak_db: number | null;
-  clip_count: number;
-  clip_times: number[]; // seconds on the current cut
+  clip_fixed: number; // clipped spots on the current cut, repaired automatically (lacuna_app/declip.py)
+  clip_left: number; // ... and left alone (too long to repair without distortion)
 }
 
 export interface Levels {

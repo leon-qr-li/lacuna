@@ -11,7 +11,8 @@ Layout (user-chosen root, e.g. ``C:\\Projects\\LACUNA_Workspace``)::
     <workspace>/episodes/.index.json                 home-page list cache (episode_index.py)
 
 The app only ever writes ``state.json``, ``publish.json``, ``poster.json``, ``chat.json`` (and their ``.bak``) and the
-``posters/`` preview cache inside an episode folder.
+``posters/`` preview cache inside an episode folder, plus ``levels.json`` and the ``declip/`` repair cache
+(declip.py: restored samples of clipped peaks, applied when the recordings are read).
 """
 from __future__ import annotations
 

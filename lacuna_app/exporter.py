@@ -18,10 +18,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
-from lacuna_core import SourcePool
 from lacuna_core.export import FORMATS, export, timeline_source
 from lacuna_core.master import MasterSettings
 
+from . import declip
 from .episode import Episode
 from .music import EpisodeMusic, credits
 from .store import Workspace, atomic_write_json, check_id, inside
@@ -90,7 +90,7 @@ class Exporter:
             try:
                 progress(0.0, tr("配乐与 ducking"))
                 tl, media, lay = EpisodeMusic(self.ws, ep).mix(enabled, channels)
-                pool = SourcePool(media)
+                pool = declip.pool_for(ep, media)     # clipped peaks restored before mastering
                 res = export(timeline_source(pool, tl, channels), tl.sample_rate, channels, out_dir,
                              job["basename"], tuple(formats), MasterSettings(), tl.length,
                              mp3_kbps, {"title": title, "artist": show, "album": show},

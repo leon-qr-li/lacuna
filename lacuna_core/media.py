@@ -93,11 +93,26 @@ def conform(src: str | Path, dst: str | Path, sample_rate: int, channels: int = 
 
 
 class SourcePool:
-    """Read-only access to registered media by id; reads are seeks, never whole-file loads."""
+    """Read-only access to registered media by id; reads are seeks, never whole-file loads.
 
-    def __init__(self, media: dict[str, MediaRef]):
+    `repairs` (media id -> `declip.Repair`) restores clipped runs in what is read; the files
+    themselves are never touched."""
+
+    def __init__(self, media: dict[str, MediaRef], repairs: dict | None = None):
         self.media = dict(media)
+        self.repairs: dict = {}
+        self.set_repairs(repairs or {})
         self._handles: dict[str, sf.SoundFile] = {}
+
+    def set_repairs(self, repairs: dict) -> None:
+        """Swap the repairs in one step (a background scan may finish while the pool is in use;
+        `repair_key` changes with them, so cached renders made without them are not reused)."""
+        self.repairs = {k: r for k, r in repairs.items() if k in self.media}
+
+    @property
+    def repair_key(self) -> tuple:
+        """What the repairs change, for render cache keys."""
+        return tuple(sorted((k, len(r.starts), int(r.fixed.sum())) for k, r in self.repairs.items()))
 
     def _handle(self, media_id: str) -> sf.SoundFile:
         h = self._handles.get(media_id)
@@ -116,6 +131,9 @@ class SourcePool:
             h.seek(lo)
             x = h.read(hi - lo, dtype="float32", always_2d=True)
             out[lo - start:lo - start + len(x)] = x.mean(axis=1) if x.shape[1] > 1 else x[:, 0]
+            r = self.repairs.get(media_id)
+            if r is not None:
+                out[lo - start:hi - start] = r.apply(out[lo - start:hi - start], lo)
         return out
 
     def close(self) -> None:

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// 声音 (backlog 7): both hosts evened out, per-track gain, volume from the chat, clipped spots.
+// 声音 (backlog 7): both hosts evened out, per-track gain, volume from the chat, the repaired-clipping line.
 // The synthetic episode's first cut already raises Leon by 3 dB (its "响度匹配" edit). Every test
 // leaves the episode's gains as it found them (the backend is shared with the other specs).
 
@@ -80,22 +80,31 @@ test.describe.serial("声音", () => {
     await expect(gain(page, "Pei")).toHaveText("±0.0 dB");
   });
 
-  test("clipped spots are listed and play from 2 s before", async ({ page }) => {
-    // the synthetic recordings never clip: add three spots to Pei's measurement
+  test("repaired clipping is one short line, no list of times", async ({ page }) => {
+    // the synthetic recordings never clip: give Pei twelve repaired spots and two left alone
     await page.route(/\/levels$/, async (route) => {
       if (route.request().method() !== "GET") return route.fallback();
       const r = await route.fetch();
       const body = await r.json();
-      body.tracks[1] = { ...body.tracks[1], clip_count: 3, clip_times: [12.4, 33.0, 47.25] };
+      body.tracks[1] = { ...body.tracks[1], clip_fixed: 12, clip_left: 2 };
       await route.fulfill({ response: r, json: body });
     });
     await openLevels(page);
-    const box = page.getByTestId("levels-clips");
-    await expect(box).toContainText("Pei：3 处");
-    await box.getByRole("button", { name: "0:33" }).click();
-    const audio = page.getByTestId("levels-audio");
-    await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => !a.paused && a.currentTime >= 30.9)).toBe(true);
-    await page.getByTestId("levels").getByTestId("play").click(); // pause
+    const line = page.getByTestId("levels-declip");
+    await expect(line).toContainText("Pei：LACUNA 已自动修好 12 处短促破音。2 处较长的破音没有修（修了反而失真）。");
+    await expect(line).not.toContainText("Leon");
+    await expect(line.getByRole("button")).toHaveCount(0);
+    await expect(page.getByTestId("levels")).not.toContainText("只标出来");
+    await page.evaluate(() => localStorage.setItem("lacuna.lang", "en"));
+    await page.reload();
+    await expect(line).toContainText("Pei: LACUNA repaired 12 short clipped spots automatically. 2 longer clipped spots were left alone");
+    await page.evaluate(() => localStorage.setItem("lacuna.lang", "zh"));
+  });
+
+  test("no clipping, no line", async ({ page }) => {
+    await openLevels(page);
+    await expect(page.getByTestId("levels-track-Pei")).toBeVisible();
+    await expect(page.getByTestId("levels-declip")).toHaveCount(0);
   });
 
   for (const theme of ["light", "dark"] as const) {

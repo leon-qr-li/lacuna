@@ -35,7 +35,7 @@ from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
 from lacuna_core.refine import snap_cut
 
-from . import analysis, room_tone
+from . import analysis, declip, room_tone
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
@@ -275,7 +275,7 @@ class Episode:
     @property
     def previewer(self) -> Previewer:
         if self._previewer is None:
-            self._pool = SourcePool(self.media)
+            self._pool = declip.pool_for(self, wait=False)   # hosts play with short clipped peaks restored
             self._previewer = Previewer(Renderer(self._pool, RenderSettings(channels=1)),
                                         SegmentCache(192 << 20), block_s=2.0)
         return self._previewer
