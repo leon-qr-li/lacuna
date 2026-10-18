@@ -1,6 +1,8 @@
 # Review and editing fixes from the first full test (2026-10-18)
 
 Backlog items 6, 8, 11 (`/mnt/project-files/lacuna/docs/UI_BACKLOG_首次检测.md`).
+State: merged (6 + 11 in PR #86, 8 in PR #90), waiting for Leon's validation in the 2026-10-18 batch
+(steps: /mnt/project-files/lacuna/docs/验收_2026-10-18/03_审阅与剪辑.md).
 
 - 6 review speed: done. `web/src/features/review-speed/` (chip + `useReviewRate`), wired in `ReviewView` and
   `ABPlayer` (`rate` prop), key S in `review-keys`. Test `web/e2e/review_speed.spec.ts`.
