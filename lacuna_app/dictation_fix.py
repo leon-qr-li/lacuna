@@ -20,12 +20,13 @@ from pathlib import Path
 from typing import Any
 
 from .editor import find_api_key, sdk_installed
+from .i18n import AI_NAME_RULE
 
 HOSTS = ("Leon", "Pei")
 TIMEOUT_S = 8.0
 MIN_SIMILARITY = 0.5      # below this the "fix" rewrote the sentence: keep what was heard
 
-SYSTEM = (Path(__file__).resolve().parent / "prompts" / "dictation_fix.txt").read_text(encoding="utf-8").strip()
+SYSTEM = (Path(__file__).resolve().parent / "prompts" / "dictation_fix.txt").read_text(encoding="utf-8").strip() + AI_NAME_RULE
 
 SCHEMA = {
     "type": "object",
