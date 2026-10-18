@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { fmtDateTime, t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
-import { ConfirmDialog } from "./ConfirmDialog";
+import { confirmDialog } from "../dialog/Dialog";
 import { EpisodeCard } from "./EpisodeCard";
 import { episodesApi, type ArchivedItem } from "./api";
 
@@ -12,8 +12,7 @@ export function ArchiveView() {
   const [list, setList] = useState<ArchivedItem[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [asking, setAsking] = useState<ArchivedItem | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
   const load = useCallback(() => {
     episodesApi
       .archived()
@@ -30,18 +29,26 @@ export function ArchiveView() {
       })
       .catch((x) => setErr((x as Error).message));
   const remove = async (e: ArchivedItem) => {
-    setBusy(true);
+    const ok = await confirmDialog({
+      title: t("永久删除「{title}」？", { title: e.title }),
+      message:
+        t("会删掉这一集的剪辑、对话记录、发布资料、封面，以及导入时复制进 App 的音频。这一步不能撤销。") +
+        "\n" +
+        t("学到的习惯和规则都会保留；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。"),
+      confirmLabel: t("永久删除"),
+      danger: true,
+    });
+    if (!ok) return;
+    setBusy(e.id);
     setErr(null);
     try {
       const r = await episodesApi.remove(e.id);
       setNote(t("「{title}」已永久删除，腾出 {size}。学到的习惯都还在。", { title: e.title, size: mb(r.freed_bytes) }));
-      setAsking(null);
       load();
     } catch (x) {
       setErr((x as Error).message);
-      setAsking(null);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   };
   if (!list && !err) return <PageLoading label={t("正在打开已归档…")} shape="list" />;
@@ -70,7 +77,7 @@ export function ArchiveView() {
                   <button type="button" className="btn btn-outline btn-small" onClick={() => void restore(e)}>
                     {t("恢复")}
                   </button>
-                  <button type="button" className="btn btn-small btn-danger-outline" onClick={() => setAsking(e)}>
+                  <button type="button" className="btn btn-small btn-danger-outline" disabled={busy === e.id} onClick={() => void remove(e)}>
                     {t("永久删除")}
                   </button>
                 </span>
@@ -79,21 +86,6 @@ export function ArchiveView() {
           />
         ))}
       </ul>
-      {asking && (
-        <ConfirmDialog
-          title={t("永久删除「{title}」？", { title: asking.title })}
-          confirmLabel={t("永久删除")}
-          danger
-          busy={busy}
-          onConfirm={() => void remove(asking)}
-          onCancel={() => setAsking(null)}
-        >
-          <p>{t("会删掉这一集的剪辑、对话记录、发布资料、封面，以及导入时复制进 App 的音频。这一步不能撤销。")}</p>
-          <p className="muted small">
-            {t("学到的习惯和规则都会保留；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。")}
-          </p>
-        </ConfirmDialog>
-      )}
     </main>
   );
 }

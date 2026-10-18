@@ -6,7 +6,7 @@
 
 首检 #3. Archiving writes one line to `<workspace>/archive.json`; nothing inside the episode moves, so
 restoring is exact and the archived episode still opens by URL. Only an archived episode can be
-deleted for good (one in-app confirmation, red button, cancel focused). Deleting removes the episode
+deleted for good (the shared in-app confirmation, red button). Deleting removes the episode
 folder, its import cache `imports/<id>/` (so a new import under the same id starts clean) and the
 copies the app made of dragged-in tracks (`imported_tracks/`). It keeps `learning/` (before the folder
 goes, the episode's review verdicts are snapshotted to `learning/decisions/<id>.json` and its chat log

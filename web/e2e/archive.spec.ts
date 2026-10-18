@@ -44,11 +44,12 @@ for (const theme of ["light", "dark"] as const) {
     expect((await scan(page)).bad).toEqual([]);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/archive_${theme}.png` });
 
-    // the delete dialog: cancel has the focus (Enter never deletes), Esc closes it
+    // the delete dialog is the app's shared one (features/dialog); Esc closes it
     await row.getByRole("button", { name: "永久删除" }).click();
     const dlg = page.getByRole("alertdialog", { name: `永久删除「${title}」？` });
     await expect(dlg).toBeVisible();
-    await expect(dlg.getByRole("button", { name: "取消" })).toBeFocused();
+    await expect(dlg).toContainText("学到的习惯和规则都会保留");
+    await page.waitForTimeout(400);                    // the dialog fades in
     expect((await scan(page)).bad).toEqual([]);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/delete_dialog_${theme}.png` });
     await page.keyboard.press("Escape");
