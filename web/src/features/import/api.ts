@@ -1,5 +1,6 @@
 import type { ImportJob } from "../../api";
 import { req } from "../../api";
+import { AUTH_EVENT } from "../auth/api";
 
 /** A raw track the server has (copied in from a drop, or picked): what the import form keeps. */
 export interface PickedTrack {
@@ -29,6 +30,7 @@ export function uploadTrack(file: File, onProgress: (f: number) => void): { done
       } catch {
         /* not JSON */
       }
+      if (xhr.status === 401) window.dispatchEvent(new Event(AUTH_EVENT)); // session over: sign in again
       if (xhr.status >= 200 && xhr.status < 300 && body.track) resolve(body.track);
       else reject(new Error(String(body.detail ?? xhr.statusText ?? xhr.status)));
     };

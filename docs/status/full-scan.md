@@ -17,6 +17,13 @@ interactions between the 26 首检 changes, fixed what was broken. Each fix has 
 | 导入 | Words timed past the end of a shorter track gave NaN energy in the features sent to the AI | `tests/app/test_rehearsal_fixes.py` |
 | E2E | ECONNRESET flake: uvicorn's 5 s keep-alive vs. a test reusing the connection; E2E servers now keep connections 120 s | — |
 
+## Fixed (second PR; found by the 代码与性能优化 thread, handed over)
+| Area | Bug | Test |
+|---|---|---|
+| 发布资料 / 海报 | An answer still on its way when the page was left started a polling chain that never stopped (and could show the previous episode after switching) | `web/e2e/publish_poll.spec.ts` |
+| 登录 | Library upload, voice input and track upload used their own fetch: a 401 showed an inline error instead of the sign-in screen | `web/e2e/auth_expiry.spec.ts` |
+| 素材库 | Without ffmpeg the soxr check crashed before the 「没有找到 ffmpeg」 message; a failed decode could leave a `.part.wav` | `tests/app/test_full_scan_library.py` |
+
 ## Checked and fine
 Per-track gain applied exactly once in preview and export; music levels follow host gain; erase keeps
 the timeline length in export; gain undo/redo survives reload; old episodes without levels.json; archive

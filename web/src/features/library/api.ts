@@ -1,6 +1,6 @@
 // API of this feature (moved out of src/api.ts so features don't all edit one file)
 import type { Usage } from "../../api";
-import { ep, req } from "../../api";
+import { ep, failure, req } from "../../api";
 
 export type CreditStatus = "confirmed" | "suggested" | "unknown";
 
@@ -139,20 +139,13 @@ export type PlacementPatch = Partial<{
 
 async function uploadAsset(file: File, kind: string, note = ""): Promise<{ asset: Asset; duplicate: boolean }> {
   const q = new URLSearchParams({ name: file.name, kind, note });
-  const res = await fetch(`/api/library/upload?${q}`, {
+  const url = `/api/library/upload?${q}`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/octet-stream" },
     body: file,
   });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      msg = (await res.json()).detail ?? msg;
-    } catch {
-      /* not JSON */
-    }
-    throw new Error(String(msg));
-  }
+  if (!res.ok) throw await failure(res, url);
   return res.json() as Promise<{ asset: Asset; duplicate: boolean }>;
 }
 
