@@ -56,6 +56,7 @@ export interface Placement {
   gain_db: number;
   solo_s?: number | null; // intro: music alone before the voice; interlude: full level in the gap
   ramp_s?: number | null; // rise / fall between full level and background
+  ramp_out_s?: number | null; // interlude: fall back to background after the gap
   bg_db?: number | null; // background = this much under full level
   pre_s?: number | null; // interlude: plays under the talk before the gap
   bye_s?: number | null; // outro: second of the song where the voice ends
@@ -121,6 +122,7 @@ export type PlacementPatch = Partial<{
   gain_db: number;
   solo_s: number;
   ramp_s: number;
+  ramp_out_s: number;
   bg_db: number;
   pre_s: number;
   bye_s: number;

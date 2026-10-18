@@ -295,6 +295,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "到文件第 {s} 秒": "to {s} s into the file",
     "全音量 {s} 秒": "full volume {s} s",
     "升降 {s} 秒": "rise / fall {s} s",
+    "淡出到背景 {s} 秒": "down to background over {s} s",
     "背景压低 {s} dB": "background {s} dB lower",
     "间隙前垫 {s} 秒": "{s} s under the talk before",
     "拜拜落在歌的第 {s} 秒": "goodbye at {s} s of the song",

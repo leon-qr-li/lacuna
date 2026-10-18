@@ -21,6 +21,7 @@ class PlacementBody(BaseModel):
     gain_db: float | None = Field(None, ge=-30, le=12)
     solo_s: float | None = Field(None, ge=0, le=600, description="intro: music alone; interlude: full level in the gap")
     ramp_s: float | None = Field(None, ge=0, le=10, description="rise / fall between full level and background")
+    ramp_out_s: float | None = Field(None, ge=0, le=10, description="interlude: fall back to background")
     bg_db: float | None = Field(None, ge=0, le=40, description="background: this much under full level")
     pre_s: float | None = Field(None, ge=0, le=600, description="interlude: plays under the talk before the gap")
     bye_s: float | None = Field(None, ge=0, description="outro: second of the file where the voice ends")

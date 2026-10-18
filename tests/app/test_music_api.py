@@ -104,9 +104,9 @@ def test_episode_music_and_mix_stream(client, tmp_path):
     assert mid["voice_at_s"] == pytest.approx(16.0, abs=0.01) and mid["start_s"] == pytest.approx(20.0, abs=0.01)
     assert mid["inserted_s"] == pytest.approx(3.0, abs=0.01) and mid["end_s"] == pytest.approx(26.0, abs=0.01)
     # Leon's numbers: background level, rise/fall, trim
-    m = client.patch(f"{EP}/music/{mid['id']}", json={"bg_db": 12, "ramp_s": 0.5, "src_out_s": 5}).json()
+    m = client.patch(f"{EP}/music/{mid['id']}", json={"bg_db": 12, "ramp_s": 0.5, "ramp_out_s": 1.5, "src_out_s": 5}).json()
     mid = next(p for p in m["placements"] if p["id"] == mid["id"])
-    assert (mid["bg_db"], mid["ramp_s"], mid["src_out_s"], mid["inserted_s"]) == (12, 0.5, 5, 2.0)
+    assert (mid["bg_db"], mid["ramp_s"], mid["ramp_out_s"], mid["src_out_s"], mid["inserted_s"]) == (12, 0.5, 1.5, 5, 3.0)
     assert client.patch(f"{EP}/music/{mid['id']}", json={"bg_db": 99}).status_code == 422
     assert [c["role"] for c in m["credits"]] == ["intro", "interlude"]
     m = client.patch(f"{EP}/music/{mid['id']}", json={"gain_db": -3}).json()

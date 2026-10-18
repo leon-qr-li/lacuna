@@ -156,6 +156,9 @@ def test_layout_full_play_and_background_stretches():
     lay2 = layout([dict(ps[1], pre_s=5)], assets, sr, 60000, lambda b: b)
     (m2,) = lay2.items
     assert m2.start == 3000 - 500 and m2.anchor == 3000 and m2.bg[0] == (2500, 3000) and m2.gap == 1900
+    # fade in and fall back to background over different times
+    (m3,) = layout([dict(ps[1], ramp_s=1, ramp_out_s=4)], assets, sr, 60000, lambda b: b).items
+    assert m3.gap == 100 + 1500 + 400 and (m3.ramp, m3.ramp_out) == (100, 400) and m3.bg == [(3000 + 2000, 3000 + 9000)]
     # proposed / missing placements do not move anything
     lay3 = layout(ps + [{"id": "z", "asset_id": "gone", "role": "clip", "at_base": 10}], assets, sr, 6000, lambda b: b)
     assert [p["id"] for p in lay3.skipped] == ["z"]

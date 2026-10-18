@@ -11,7 +11,8 @@
 - Intro: full level alone for `solo_s` (default 10 s), down to background over `ramp_s` (default 2 s); the voice
   starts there and the song plays on to its end.
 - Interlude: at Leon's point the talk stops; the song rises over `ramp_s`, plays full for `solo_s` (default 15 s),
-  falls over `ramp_s`, the talk resumes over it and it plays on to its end. Inserted time = 2·ramp + solo.
+  falls over `ramp_out_s` (its own number, default = `ramp_s`), the talk resumes over it and it plays on to its end.
+  Inserted time = ramp_s + solo_s + ramp_out_s.
   `pre_s` (default 0) lets it already play under the talk before the point.
 - Outro: background under the last words, placed so the voice ends at `bye_s` of the file (default 30 s before its
   end); then rises over `ramp_s` and plays to `src_out_s`.

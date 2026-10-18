@@ -16,7 +16,7 @@ def music_answer(ctx: dict) -> dict:
 
     def act(type_, **kw):
         base = {k: None for k in ("placement_id", "asset_id", "role", "at_s", "until_s", "shift_s", "gain_db",
-                                  "gain_change_db", "src_in_s", "src_out_s", "solo_s", "ramp_s", "bg_db",
+                                  "gain_change_db", "src_in_s", "src_out_s", "solo_s", "ramp_s", "ramp_out_s", "bg_db",
                                   "pre_s", "bye_s", "fade_out_s")}
         return {"type": type_, **base, **kw}
 

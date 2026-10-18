@@ -18,7 +18,7 @@ const ANCHORED: Role[] = ["interlude", "bed", "clip"];
 // the asset picker shows one short line per piece; the full credit is in the library and the credits list
 const shortLabel = (t: string, max = 44) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
 
-type Tune = "src_in_s" | "src_out_s" | "gain_db" | "solo_s" | "ramp_s" | "bg_db" | "pre_s" | "bye_s" | "fade_out_s";
+type Tune = "src_in_s" | "src_out_s" | "gain_db" | "solo_s" | "ramp_s" | "ramp_out_s" | "bg_db" | "pre_s" | "bye_s" | "fade_out_s";
 type FieldDef = { k: Tune; label: string; time?: boolean; auto?: boolean };
 // which numbers Leon sets for each use; times in the song accept 2:30 or 150
 const FIELDS: Record<Role, FieldDef[]> = {
@@ -28,8 +28,9 @@ const FIELDS: Record<Role, FieldDef[]> = {
     { k: "ramp_s", label: t("压低用时（秒）") },
   ],
   interlude: [
+    { k: "ramp_s", label: t("淡入（秒）") },
     { k: "solo_s", label: t("正常音量（秒）") },
-    { k: "ramp_s", label: t("淡入淡出（秒）") },
+    { k: "ramp_out_s", label: t("淡出到背景（秒）") },
     { k: "bg_db", label: t("背景压低（dB）") },
     { k: "pre_s", label: t("间隙前先垫（秒）") },
   ],
@@ -63,8 +64,8 @@ function describe(p: Placement): string {
         len, solo: Math.min(p.solo_s ?? 0, p.src_out_s - p.src_in_s), ramp: p.ramp_s ?? 0, bg,
       });
     case "interlude":
-      return t("{len}：对话停，{ramp} 秒淡入，正常音量 {solo} 秒，再 {ramp} 秒压低 {bg} dB，对话接着来，歌在背景里放完", {
-        len, solo: p.solo_s ?? 0, ramp: p.ramp_s ?? 0, bg,
+      return t("{len}：对话停，{ramp} 秒淡入，正常音量 {solo} 秒，再 {out} 秒压低 {bg} dB，对话接着来，歌在背景里放完", {
+        len, solo: p.solo_s ?? 0, ramp: p.ramp_s ?? 0, out: p.ramp_out_s ?? p.ramp_s ?? 0, bg,
       });
     case "outro":
       return t("{len}：压低 {bg} dB 垫在对话下，你说拜拜时在歌的 {bye}，之后升起来，放到 {end} 结束", {

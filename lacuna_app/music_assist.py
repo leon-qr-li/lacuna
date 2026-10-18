@@ -179,7 +179,7 @@ Every piece of music plays whole (src_in_s to src_out_s, by default the whole fi
 keeps playing as background, bg_db lower than full level, at a constant level. Roles: intro (starts \
 at 0, full level alone for solo_s, then down to background over ramp_s while the voice starts), \
 interlude (at a point between two sentences the talk stops; it rises over ramp_s, plays at full \
-level for solo_s, goes back down over ramp_s and the talk resumes over it; pre_s = how long it \
+level for solo_s, goes back down over ramp_out_s and the talk resumes over it; pre_s = how long it \
 already plays under the talk before the point), outro (background under the last words, placed so \
 the voice ends at second bye_s of the file, then full level to src_out_s, fading out over \
 fade_out_s), bed (background under the talk from a point, optionally to an end), clip (a film line \
@@ -199,9 +199,9 @@ sentences) says what will change and where (m:ss). The host hears your suggestio
 applied."""  # i18n-ignore
 
 _N = {"type": ["number", "null"]}
-SET_FIELDS = ("src_in_s", "src_out_s", "solo_s", "ramp_s", "bg_db", "pre_s", "bye_s", "fade_out_s")
+SET_FIELDS = ("src_in_s", "src_out_s", "solo_s", "ramp_s", "ramp_out_s", "bg_db", "pre_s", "bye_s", "fade_out_s")
 SET_TEXT = {"src_in_s": N_("从文件第 {s} 秒"), "src_out_s": N_("到文件第 {s} 秒"), "solo_s": N_("全音量 {s} 秒"),
-            "ramp_s": N_("升降 {s} 秒"), "bg_db": N_("背景压低 {s} dB"), "pre_s": N_("间隙前垫 {s} 秒"),
+            "ramp_s": N_("升降 {s} 秒"), "ramp_out_s": N_("淡出到背景 {s} 秒"), "bg_db": N_("背景压低 {s} dB"), "pre_s": N_("间隙前垫 {s} 秒"),
             "bye_s": N_("拜拜落在歌的第 {s} 秒"), "fade_out_s": N_("淡出 {s} 秒")}
 _S = {"type": ["string", "null"]}
 TOOL = {

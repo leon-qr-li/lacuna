@@ -12,7 +12,7 @@ Model
   - interlude: at a point between two sentences (anchored in *base* samples, like edits, so it
     moves with later voice edits). The talk stops: the song rises over ``ramp_s`` (optionally it
     already played ``pre_s`` under the talk before), plays at full level for ``solo_s``, goes back
-    down over ``ramp_s`` and the talk resumes while the song plays on as background.
+    down over ``ramp_out_s`` and the talk resumes while the song plays on as background.
   - outro: background under the last words, placed so the voice ends at ``bye_s`` of the file;
     then it rises over ``ramp_s`` and plays to ``src_out_s``, fading out over ``fade_out_s``.
   - bed: from a point (to an end point or the end of the song), constantly ``bg_db`` lower.
@@ -66,7 +66,8 @@ LEVEL_LU = -1.0                              # full level vs voice loudness
 CLIP_DUCK_DB = 12.0
 DUCK_RAMP_S = 0.25
 STEREO_HALF_DB = -3.01                       # each hard-panned half of a stereo file vs a centred mono track
-TUNING = ("src_in_s", "src_out_s", "gain_db", "solo_s", "ramp_s", "bg_db", "pre_s", "bye_s", "fade_out_s", "lead_s")
+TUNING = ("src_in_s", "src_out_s", "gain_db", "solo_s", "ramp_s", "ramp_out_s", "bg_db", "pre_s", "bye_s", "fade_out_s",
+          "lead_s")
 # schema 1 (before the full-play rule) cut music at these lengths and overlapped it with the voice
 _V1_MAX = {"intro": 30.0, "interlude": 20.0, "outro": 60.0, "bed": 120.0, "clip": 60.0}
 _V1_OVERLAP = {"intro": 4.0, "interlude": 2.0, "outro": 4.0}
@@ -88,6 +89,7 @@ class Placed:
     anchor: int | None = None   # final-mix sample of the placement's position (anchored roles)
     bg: list[tuple[int, int]] = field(default_factory=list)   # final-mix stretches played as background
     ramp: int = 0               # samples to rise / fall between full level and background
+    ramp_out: int | None = None # interlude: samples to fall back to background after the gap (None: `ramp`)
 
     @property
     def end(self) -> int:
@@ -155,7 +157,7 @@ def layout(placements: list[dict], assets: dict[str, dict], sr: int, voice_len: 
             g = solo
         elif r == "interlude":
             pre = min(S(max(_f(p, "pre_s", 0.0), 0.0)), n)
-            g = min(2 * ramp + solo, n - pre)
+            g = min(ramp + S(max(_f(p, "ramp_out_s", _f(p, "ramp_s", RAMP_S)), 0.0)) + solo, n - pre)
         elif r == "clip":
             g = 2 * S(_f(p, "lead_s", LEAD_S)) + n
         T = None
@@ -180,7 +182,8 @@ def layout(placements: list[dict], assets: dict[str, dict], sr: int, voice_len: 
             gs = gap_start(T, i)
             start = max(gs - min(S(max(_f(p, "pre_s", 0.0), 0.0)), n), 0)
             bg = ([(start, gs)] if gs > start else []) + ([(gs + g, start + n)] if start + n > gs + g else [])
-            it = Placed(p, a, start, n, T, g, gs, bg=bg, ramp=min(ramp, g // 2))
+            ramp_out = S(max(_f(p, "ramp_out_s", _f(p, "ramp_s", RAMP_S)), 0.0))
+            it = Placed(p, a, start, n, T, g, gs, bg=bg, ramp=min(ramp, g // 2), ramp_out=min(ramp_out, g // 2))
         elif r == "clip":
             lead = S(_f(p, "lead_s", LEAD_S))
             it = Placed(p, a, gap_start(T, i) + lead, n, T, g, gap_start(T, i))
@@ -338,11 +341,12 @@ class EpisodeMusic:
             p["solo_s"] = clamp("solo_s", SOLO_S[r], 0.0, 600.0)
         if r == "interlude":
             p["pre_s"] = clamp("pre_s", 0.0, 0.0, src_out - src_in)
+            p["ramp_out_s"] = clamp("ramp_out_s", p["ramp_s"], 0.0, 10.0)
         if r == "outro":
             p["bye_s"] = clamp("bye_s", max(src_out - OUTRO_TAIL_S, src_in), src_in, src_out)
         if r == "clip":
             p["lead_s"] = clamp("lead_s", LEAD_S, 0.0, 5.0)
-        relevant = {"solo_s": r in SOLO_S, "pre_s": r == "interlude", "bye_s": r == "outro", "lead_s": r == "clip",
+        relevant = {"solo_s": r in SOLO_S, "pre_s": r == "interlude", "ramp_out_s": r == "interlude", "bye_s": r == "outro", "lead_s": r == "clip",
                     "ramp_s": r in ("intro", "interlude", "outro"), "bg_db": r != "clip", "fade_out_s": r != "clip"}
         for k, keep in relevant.items():
             if not keep:
@@ -614,7 +618,9 @@ class EpisodeMusic:
                 ducks = [Duck(s, e, CLIP_DUCK_DB, ramp) for s, e in speech_regions(x, sr, voice_lufs - 22.0, lo)]
         else:
             depth = _f(p, "bg_db", BG_DB)
-            ducks = [Duck(s, e, depth, it.ramp) for s, e in it.bg if e > s and depth > 0]
+            after_gap = (it.anchor or 0) + it.gap if r == "interlude" else None
+            ducks = [Duck(s, e, depth, it.ramp_out if s == after_gap and it.ramp_out is not None else it.ramp)
+                     for s, e in it.bg if e > s and depth > 0]
         layouts = [("m", 0.0, 0.0)] if channels == 1 else [("L", -1.0, STEREO_HALF_DB), ("R", 1.0, STEREO_HALF_DB)]
         out = []
         for lay_, pan, extra in layouts:
