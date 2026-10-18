@@ -168,7 +168,7 @@ export const libraryApi = {
   library: (episode?: string) =>
     req<LibraryView>("GET", episode ? `/api/library?${new URLSearchParams({ episode })}` : "/api/library"),
   setScope: (aid: string, action: ScopeAction, episode?: string) =>
-    req<{ asset: Asset }>("POST", `/api/library/assets/${aid}/scope`, { action, episode }),
+    req<{ asset: Asset; message?: string | null }>("POST", `/api/library/assets/${aid}/scope`, { action, episode }),
   uploadAsset,
   scanLibrary: () => req<LibraryView & { added: Asset[] }>("POST", "/api/library/scan"),
   openLibrary: () => req<{ folder: string }>("POST", "/api/library/open"),

@@ -85,7 +85,12 @@ def register(app, ctx) -> None:
                 a = library.make_shared(asset_id)
         except KeyError:
             raise HTTPException(404, "no such asset")
-        return {"asset": library.asset_view(a)}
+        message = None
+        if body.action == "move" and len(a["episodes"]) > 1:
+            titles = {e["id"]: e["title"] for e in episodes()}
+            message = tr("{episodes} 的配乐已经用了它，所以那边也留着。",
+                         episodes="、".join(titles.get(e, e) for e in a["episodes"][1:]))
+        return {"asset": library.asset_view(a), "message": message}
 
     @app.post("/api/library/upload")
     async def library_upload(request: Request, name: str, kind: str = "other", note: str = "", episode: str = ""):

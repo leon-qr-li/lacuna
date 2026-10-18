@@ -268,6 +268,7 @@ EN: dict[str, str | tuple[str, str]] = {
     # library scopes (验收 V10)
     "这个素材属于别的剧集。先在素材库把它设为公共或加到这一集。":
         "This file belongs to another episode. In the library, make it shared or add it to this episode first.",
+    "{episodes} 的配乐已经用了它，所以那边也留着。": "The music of {episodes} already uses it, so it stays there too.",
     "没查到可靠的曲名。": "Couldn't find a reliable title.",
     "没有找到 ffmpeg，无法读取这个音频文件": "ffmpeg not found, can't read this audio file",
     "读不了这个音频文件：{p0}": "Can't read this audio file: {p0}",

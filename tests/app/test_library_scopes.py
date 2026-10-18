@@ -176,7 +176,7 @@ def test_archive_leaves_assets_and_delete_removes_only_its_own(ws, c, tmp_path):
     assert c.post(f"/api/episodes/{AI_EPISODE}/restore").status_code == 200
 
     out = delete_episode(c, AI_EPISODE)
-    assert out["assets"] == [only["id"]]
+    assert out["assets"] == ["only.wav"]          # names, for the notice on the 已归档 page
     left = {a["id"]: a for a in c.get("/api/library").json()["assets"]}
     assert set(left) == {both["id"], shared["id"], other["id"]}
     assert left[both["id"]]["episodes"] == [EPISODE] and left[shared["id"]]["shared"]
@@ -189,7 +189,11 @@ def test_archive_leaves_assets_and_delete_removes_only_its_own(ws, c, tmp_path):
 def test_delete_keeps_an_asset_another_episode_still_plays(ws, c, tmp_path):
     a = upload(c, write_music(tmp_path / "in" / "used.wav", 3.0))
     assert c.post(f"/api/episodes/{EPISODE}/music", json={"asset_id": a["id"], "role": "intro"}).status_code == 200
-    c.post(f"/api/library/assets/{a['id']}/scope", json={"action": "move", "episode": AI_EPISODE})
+    r = c.post(f"/api/library/assets/{a['id']}/scope", json={"action": "move", "episode": AI_EPISODE}).json()
+    # moving it doesn't take it from the episode whose music already plays it
+    assert r["asset"]["episodes"] == [AI_EPISODE, EPISODE] and "已经用了它" in r["message"]
+    pid = c.get(f"/api/episodes/{EPISODE}/music").json()["placements"][0]["id"]
+    assert c.patch(f"/api/episodes/{EPISODE}/music/{pid}", json={"asset_id": a["id"], "gain_db": -2}).status_code == 200
     rule = upload(c, write_music(tmp_path / "in" / "series.wav", 3.5), kind="intro", episode=AI_EPISODE)
     Library(Workspace(ws)).save_series("洛城二三事", {"asset_id": rule["id"]}, None)
 
@@ -204,5 +208,5 @@ def test_delete_keeps_an_asset_another_episode_still_plays(ws, c, tmp_path):
 
 def test_drop_episode_without_assets_is_a_no_op(ws):
     lib = Library(Workspace(ws))
-    assert lib.drop_episode(EPISODE) == {"removed": [], "kept": []}
+    assert lib.drop_episode(EPISODE) == {"removed": [], "kept": [], "names": []}
     assert not lib.index_path.exists()

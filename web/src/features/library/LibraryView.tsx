@@ -88,7 +88,7 @@ function AssetRow({ a, kinds, eps, onChange, onRemoved, claude }: { a: Asset; ki
   const [msg, setMsg] = useState<string | null>(null);
   useEffect(() => setNote(a.note), [a.note]);
 
-  const run = async (label: string, p: Promise<{ asset: Asset; message?: string }>) => {
+  const run = async (label: string, p: Promise<{ asset: Asset; message?: string | null }>) => {
     setBusy(label);
     setMsg(null);
     try {

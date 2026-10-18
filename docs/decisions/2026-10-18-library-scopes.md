@@ -8,6 +8,8 @@ Each library asset carries `shared: bool` and `episodes: [episode ids]`. The fil
 asset id is still the content hash); scope is only metadata. Assets indexed before this (no fields)
 are shared; an asset that is neither shared nor in any episode is treated as shared rather than lost.
 
+- 「挪到某一集」 keeps any other episode whose music already plays the asset in its list (the reply
+  names them), so its music page still offers what it plays and deleting the target episode can't take it.
 - 素材库 page: new files go to 公共 or into a chosen episode (「加到」 next to 用途); each asset shows its
   scope and has 「挪到某一集」 (this episode only), 「设为公共」 and 「也加到另一集」; the list filters by
   全部 / 公共 / one episode's own. The same file added again joins where it was added (shared, or one

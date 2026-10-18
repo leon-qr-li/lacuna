@@ -415,9 +415,11 @@ class Library:
             return a
 
     def move_to(self, asset_id: str, episode_id: str) -> dict:
-        """「挪到某一集」: the asset belongs to that episode only (no longer shared). Credits and
-        placements already made elsewhere are untouched (they refer to the asset id)."""
-        return self._change_scope(asset_id, lambda a: a.update(shared=False, episodes=[episode_id]))
+        """「挪到某一集」: the asset belongs to that episode (no longer shared). Episodes whose music
+        already uses it keep it too, so their music page still offers what they play (and a
+        permanent delete of `episode_id` can't take it from them). Credits travel with the asset."""
+        users = sorted(self._used_by_music(episode_id).get(asset_id, set()))
+        return self._change_scope(asset_id, lambda a: a.update(shared=False, episodes=[episode_id, *users]))
 
     def make_shared(self, asset_id: str) -> dict:
         """「设为公共」: offered on every episode's music page."""
@@ -450,13 +452,13 @@ class Library:
         """An episode was deleted for good: it leaves every asset's list, and the assets that were
         only its own are removed the usual way (file to _removed/). An asset another episode's music
         still uses stays and belongs to those episodes; one in a series rule becomes shared.
-        Returns {"removed": [ids], "kept": [ids]}."""
+        Returns {"removed": [ids], "kept": [ids], "names": [file names of the removed]}."""
         removed, kept = [], []
         with self.lock:
             doc = self.load()
             mine = [a for a in doc["assets"] if episode_id in a["episodes"]]
             if not mine:
-                return {"removed": [], "kept": []}
+                return {"removed": [], "kept": [], "names": []}
             used = self._used_by_music(episode_id)
             in_series = {(s.get(k) or {}).get("asset_id") for s in doc["series"] for k in ("intro", "outro")}
             gone = []
@@ -473,10 +475,11 @@ class Library:
                 else:
                     gone.append(a["id"])
             self.save(doc)
+            names = {a["id"]: a["name"] for a in mine}
             for aid in gone:
                 self.remove(aid)
                 removed.append(aid)
-        return {"removed": removed, "kept": kept}
+        return {"removed": removed, "kept": kept, "names": [names[i] for i in removed]}
 
     # ------------------------------------------------------------------ decoded copies for rendering
     def decoded_path(self, asset_id: str, sample_rate: int, layout: str) -> Path:

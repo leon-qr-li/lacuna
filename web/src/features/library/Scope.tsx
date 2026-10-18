@@ -35,7 +35,7 @@ export function ScopeActions({ a, eps, disabled, onChange }: {
   a: Asset;
   eps: EpisodeRef[];
   disabled: boolean;
-  onChange: (p: Promise<{ asset: Asset }>) => void;
+  onChange: (p: Promise<{ asset: Asset; message?: string | null }>) => void;
 }) {
   const live = eps.filter((e) => !e.archived);
   const moveTo = live.filter((e) => a.shared || a.episodes.length !== 1 || a.episodes[0] !== e.id);

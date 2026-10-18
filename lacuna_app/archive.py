@@ -170,7 +170,7 @@ class Archive:
             if drop_media is None:
                 from .library import Library
                 drop_media = Library(self.ws).drop_episode
-            assets = list(drop_media(episode_id).get("removed") or [])
+            assets = list(drop_media(episode_id).get("names") or [])     # file names, for the notice
         except (OSError, ValueError, KeyError):
             pass          # the episode is gone either way; a library hiccup must not undo that
         self.empty_trash()
