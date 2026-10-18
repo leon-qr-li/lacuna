@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import re
 
-from lacuna_app import editor, i18n, lessons, library, music_assist, publish
+from lacuna_app import dictation_fix, editor, i18n, lessons, library, music_assist, publish
 from lacuna_app.i18n_en import EN
 from tests.test_i18n import _scan
 
@@ -24,7 +24,7 @@ def test_server_interface_text_never_names_the_vendor():
 
 
 def test_prompts_whose_output_leon_reads_name_the_ai_lacuna():
-    for system in (editor.SYSTEM, lessons.REWRITE_SYSTEM, lessons.LESSONS_SYSTEM, music_assist.SYSTEM, library.LOOKUP_SYSTEM,
+    for system in (dictation_fix.SYSTEM, editor.SYSTEM, lessons.REWRITE_SYSTEM, lessons.LESSONS_SYSTEM, music_assist.SYSTEM, library.LOOKUP_SYSTEM,
                    publish.ClaudePublisher.system()):
         assert system.endswith(i18n.AI_NAME_RULE)
     assert "LACUNA" in i18n.AI_NAME_RULE
