@@ -18,7 +18,7 @@ export function DraftCard({ d, previewing, onPreview, onMove, onAccept, onDiscar
   return (
     <div className="card banner-card music-draft" data-testid="music-draft">
       <div className="row gap8 wrap baseline">
-        <strong className="grow">{d.source === "auto" ? t("建议的配乐") : t("Claude 建议这样改")}</strong>
+        <strong className="grow">{d.source === "auto" ? t("建议的配乐") : t("LACUNA 建议这样改")}</strong>
         <span className="small muted">{t("成品变成 {time}", { time: fmt(d.duration) })}</span>
       </div>
       {d.message && <p className="small">{d.message}</p>}
@@ -79,21 +79,21 @@ export function MusicChatBox({ onSend }: { onSend: (text: string) => Promise<boo
   };
   return (
     <div className="card music-chat">
-      <h2>{t("跟 Claude 说配乐怎么改")}</h2>
+      <h2>{t("跟 LACUNA 说配乐怎么改")}</h2>
       <div className="row gap8 align-end">
         <GrowText
           value={text}
           onChange={setText}
           onEnter={send}
           placeholder={t("比如：间奏晚两秒 / 背景音小 3 dB / 片尾去掉")}
-          aria-label={t("跟 Claude 说配乐怎么改")}
+          aria-label={t("跟 LACUNA 说配乐怎么改")}
           disabled={busy}
         />
         <button type="button" className="btn btn-primary" onClick={send} disabled={busy || !text.trim()}>
-          <BusyLabel busy={busy} label={t("发送")} busyLabel={t("Claude 在想…")} />
+          <BusyLabel busy={busy} label={t("发送")} busyLabel={t("LACUNA 在想…")} />
         </button>
       </div>
-      <p className="small muted">{t("Claude 只看文字（配乐位置、素材名和备注、附近的对话），不听音频。改动先变成建议，试听满意再采用。")}</p>
+      <p className="small muted">{t("LACUNA 只看文字（配乐位置、素材名和备注、附近的对话），不听音频。改动先变成建议，试听满意再采用。")}</p>
     </div>
   );
 }

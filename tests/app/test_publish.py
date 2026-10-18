@@ -11,8 +11,8 @@ from fastapi.testclient import TestClient
 
 from lacuna_app import Episode, Workspace, create_app
 from lacuna_app.editor import MockEditorAdapter
-from lacuna_app.publish import (TOOL, ClaudePublisher, Publisher, RulePublisher, clean, load_names,
-                                make_publisher, mmss, retime_markdown, segments)
+from lacuna_app.publish import (PROMPTS, TOOL, ClaudePublisher, Publisher, RulePublisher, clean, has_table, load_names,
+                                make_publisher, mmss, retime_markdown, segments, untable)
 
 from .fake_claude import FakePublishAnthropic
 from .synth import EPISODE, make_workspace
@@ -100,7 +100,8 @@ def test_generate_writes_the_approved_format(ws, ep, pub, fake):
     assert tl[0] == "- **00:00** Leon 聊到「我们今天聊一」"
     assert len(tl) == 6                       # the made-up segment s9999 was dropped ...
     assert any("不存在的段落" in n for n in v["notes"])     # ... and said so
-    assert "| 片名 | 导演 / 备注 |" in md and "| 《一部电影》 | 结尾 |" in md
+    # no tables (喜马拉雅 can't show them, backlog 26): one line per film
+    assert "## 🎬 本期提到的电影\n\n- 《一部电影》：结尾" in md and "|" not in md
     assert "## 😏 内部梗小词典" in md and "- **网大**：夸人用的，真的。" in md
     assert "## 🎵 本期 BGM\n\n- BGM：未设置" in md           # BGM section is always there (no music placed)
     assert md.rstrip().endswith("分享给一个也爱看电影的朋友吧。*")
@@ -133,7 +134,7 @@ def test_without_claude_a_rule_draft_still_works(ws, ep, monkeypatch):
     p = Publisher(ws, lambda: RulePublisher())
     assert p.start(ep, wait=True)["state"] == "done"
     v = p.view(ep)["pack"]
-    assert v["adapter"] == "rules" and "没有 Claude" in v["markdown"]
+    assert v["adapter"] == "rules" and "AI 没接上" in v["markdown"]
     assert timeline_lines(v["markdown"])[0].startswith("- **00:00** ")
 
 
@@ -142,7 +143,7 @@ def test_api_failure_is_a_chinese_error(ws, ep):
         beta = types.SimpleNamespace(messages=types.SimpleNamespace(stream=lambda **kw: (_ for _ in ()).throw(RuntimeError("x"))))
     p = Publisher(ws, lambda: ClaudePublisher(client=Broken()))
     job = p.start(ep, wait=True)
-    assert job["state"] == "error" and "调用 Claude 失败" in job["error"]
+    assert job["state"] == "error" and "调用 AI 服务失败" in job["error"]
     assert p.view(ep)["pack"] is None
 
 
@@ -344,3 +345,31 @@ def test_without_the_music_module_bgm_is_a_placeholder(ws, ep, pub, monkeypatch)
     pub.start(ep, wait=True)
     v = pub.view(ep)["pack"]
     assert "素材库还没接上" in v["markdown"] and v["library"] is False
+
+
+# ---------------------------------------------------------------------------- no tables (backlog 26)
+
+def test_untable_turns_rows_into_lines():
+    md = "x\n\n| 片名 | 导演 / 备注 |\n|---|---|\n| 《A》 | 甲 |\n| 《B》 |  |\n| 《C》 | 丙 | 丁 |\n\ny | z"
+    assert untable(md) == "x\n\n- 《A》：甲\n- 《B》\n- 《C》：丙 · 丁\n\ny | z"
+    assert not has_table(untable(md)) and has_table(md)
+
+
+def test_prompt_and_example_say_no_tables():
+    brief = (PROMPTS / "show_notes_brief.txt").read_text(encoding="utf-8")
+    example = (PROMPTS / "show_notes_example.md").read_text(encoding="utf-8")
+    assert "NO TABLES" in brief and "喜马拉雅" in brief
+    assert not has_table(example) and "- 《Obsession》：Curry Barker" in example
+
+
+def test_a_table_never_reaches_the_saved_notes(ws, ep, pub):
+    pub.start(ep, wait=True)
+    table = "# T\n\n| 片名 | 备注 |\n|---|---|\n| 《A》 | 甲 |\n"
+    md = pub.edit(ep, markdown=table)["markdown"]           # Leon pasted a table while editing
+    assert md == "# T\n\n- 《A》：甲\n"
+    # a pack written before this change is cleaned when it is opened
+    saved = json.loads((ep.dir / "publish.json").read_text(encoding="utf-8"))
+    saved["markdown"] = table
+    (ep.dir / "publish.json").write_text(json.dumps(saved, ensure_ascii=False), encoding="utf-8")
+    assert pub.view(ep)["pack"]["markdown"] == "# T\n\n- 《A》：甲\n"
+    assert (ws.root / "exports" / EPISODE / "publish" / "notes.md").read_text(encoding="utf-8") == "# T\n\n- 《A》：甲\n"

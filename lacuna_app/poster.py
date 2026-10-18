@@ -166,7 +166,7 @@ def sanitize(svg: str) -> tuple[str, list[str]]:
 
     clean(root)
     if dropped_cjk:
-        notes.append(tr("Claude 在海报上写了中文，已经去掉（只用英文）。"))
+        notes.append(tr("LACUNA 在海报上写了中文，已经去掉（只用英文）。"))
     return ET.tostring(root, encoding="unicode"), notes
 
 
@@ -279,14 +279,14 @@ class ClaudeDesigner:
             raise PosterError(error_message(e, tail="")) from e
         usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            raise PosterError(tr("Claude 没有处理这次请求"))
+            raise PosterError(tr("LACUNA 没有处理这次请求"))
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_poster":
                 d = dict(block.input)
                 return Design(str(d.get("name", ""))[:60], str(d.get("concept", ""))[:600], str(d.get("svg", "")), usage)
         if resp.stop_reason == "max_tokens":
             raise PosterError(tr("海报太复杂，回答被截断了"))
-        raise PosterError(tr("Claude 没有交回海报"))
+        raise PosterError(tr("LACUNA 没有交回海报"))
 
     def design(self, context: str, direction: str) -> Design:
         brief = dict((k, b) for k, _, b in DIRECTIONS)[direction]
@@ -396,7 +396,7 @@ class Posters:
     def _designer(self):
         d = self.factory()
         if not getattr(d, "available", True):
-            raise PosterError(tr("没有接上 Claude（没找到 API key 或没装 anthropic 包），画不了海报"))
+            raise PosterError(tr("还没接上 AI（没有 AI 密钥），画不了海报"))
         return d
 
     def _add(self, ep: Episode, design: Design, direction: str, parent: str | None = None,
@@ -422,7 +422,7 @@ class Posters:
 
         def work(stage: Callable[[str], None]) -> None:
             done, errors = [], []
-            stage(tr("Claude 在画 {p0} 版海报", p0=len(keys)))
+            stage(tr("LACUNA 在画 {p0} 版海报", p0=len(keys)))
 
             def one(k: str) -> None:
                 try:
@@ -431,7 +431,7 @@ class Posters:
                         self.on_usage(ep.id, d.usage)
                     self._add(ep, d, k)
                     done.append(k)
-                    stage(tr("Claude 在画 {p0} 版海报（已完成 {p1}）", p0=len(keys), p1=len(done)))
+                    stage(tr("LACUNA 在画 {p0} 版海报（已完成 {p1}）", p0=len(keys), p1=len(done)))
                 except Exception as e:  # noqa: BLE001 - one bad version must not lose the others
                     if not isinstance(e, PosterError):
                         traceback.print_exc()
@@ -458,7 +458,7 @@ class Posters:
         designer = self._designer()
 
         def work(stage: Callable[[str], None]) -> None:
-            stage(tr("Claude 在按你的话改「{name}」", name=base['name']))
+            stage(tr("LACUNA 在按你的话改「{name}」", name=base['name']))
             d = designer.revise(context, base["svg"], instruction)
             if d.usage:
                 self.on_usage(ep.id, d.usage)

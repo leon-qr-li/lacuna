@@ -34,7 +34,7 @@ from lacuna_core.master import LoudnessMeter
 from lacuna_core.media import resample_filter
 
 from .store import PathError, Workspace, atomic_write_json, inside, read_json
-from .i18n import N_, lang, tr
+from .i18n import AI_NAME_RULE, N_, lang, tr
 
 SCHEMA = 1
 INDEX = "library.json"
@@ -424,7 +424,7 @@ class Library:
 # ===================================================================== credit lookup (Claude + web search)
 
 # Claude can't hear the audio; without Leon's note it only has the file name, so the lookup isn't worth a call
-NEED_NOTE = N_("先在备注里写一句这是什么曲子（比如哪部电影的配乐），Claude 听不到音乐，只能按备注去查。")
+NEED_NOTE = N_("先在备注里写一句这是什么曲子（比如哪部电影的配乐），LACUNA 听不到音乐，只能按备注去查。")
 
 LOOKUP_SYSTEM = """\
 You identify the music Leon uses in 《洛城二三事》, a Chinese film podcast, so the show notes can \
@@ -436,7 +436,7 @@ album, the composer (or performing artist for a song), the album, the film or se
 the release year. Use web search to confirm; prefer the official soundtrack listing, the label, \
 Apple Music / Spotify, or Wikipedia over fan pages. If the duration does not match the track you \
 found, mention it in note. Never invent a title: when you cannot identify the track with \
-reasonable confidence, return null fields and say why in note. Then call submit_credit once."""  # i18n-ignore
+reasonable confidence, return null fields and say why in note. Then call submit_credit once.""" + AI_NAME_RULE  # i18n-ignore
 
 NOTE_FOR_LEON = "one short sentence in Simplified Chinese for Leon"
 CREDIT_TOOL = {
@@ -488,7 +488,7 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
     if client is None:
         key, _ = find_api_key()
         if not key or not sdk_installed():
-            return {"asset": asset, "message": tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），没法查曲名。"), "usage": None}
+            return {"asset": asset, "message": tr("还没接上 AI（没有 AI 密钥），没法查曲名。"), "usage": None}
         import anthropic
         client = anthropic.Anthropic(api_key=key, timeout=180.0, max_retries=1)
     req = lookup_request(asset)
@@ -515,7 +515,7 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
             found = dict(block.input)
     if resp.stop_reason == "refusal" or found is None:
         text = "".join(getattr(b, "text", "") for b in resp.content if b.type == "text").strip()
-        return {"asset": asset, "message": text or tr("Claude 没有给出曲名。"), "usage": usage}
+        return {"asset": asset, "message": text or tr("LACUNA 没有给出曲名。"), "usage": usage}
     asset = lib.set_suggestion(asset_id, found, list(dict.fromkeys(sources)))
     msg = found.get("note") or ""
     if not (found.get("title") or found.get("film")):

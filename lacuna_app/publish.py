@@ -33,7 +33,7 @@ from typing import Any, Callable
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
 from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json
-from .i18n import tr
+from .i18n import AI_NAME_RULE, tr
 
 PUBLISH_SCHEMA = 1
 NAMES_SCHEMA = 1
@@ -266,7 +266,7 @@ class ClaudePublisher:
     def system() -> str:
         return ((PROMPTS / "show_notes_brief.txt").read_text(encoding="utf-8")
                 + "\n\nAPPROVED EXAMPLE (EP001, format and voice only):\n\n"
-                + (PROMPTS / "show_notes_example.md").read_text(encoding="utf-8"))
+                + (PROMPTS / "show_notes_example.md").read_text(encoding="utf-8") + AI_NAME_RULE)
 
     def request(self, user: str) -> dict:
         return dict(model=self.model, max_tokens=32000, system=self.system(),
@@ -285,13 +285,13 @@ class ClaudePublisher:
             raise PublishError(error_message(e, tail="")) from e
         usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            raise PublishError(tr("Claude 没有处理这次请求"))
+            raise PublishError(tr("LACUNA 没有处理这次请求"))
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_publish_pack":
                 return Draft(dict(block.input), usage, self.name)
         if resp.stop_reason == "max_tokens":
             raise PublishError(tr("回答太长被截断了"))
-        raise PublishError(tr("Claude 没有交回发布资料"))
+        raise PublishError(tr("LACUNA 没有交回发布资料"))
 
 
 class RulePublisher:
@@ -315,9 +315,9 @@ class RulePublisher:
             del sec["_part"]
         title = ep.meta.get("title", ep.id)
         data = {"title": title, "alt_titles": [], "blurb": "",
-                "intro": "（没有 Claude：这是按时间切的草稿，开场白、片名表和小词典要接上 Claude 才会写。）",  # i18n-ignore
+                "intro": "（AI 没接上：这是按时间切的草稿，开场白、片名表和小词典要接上 AI 才会写。）",  # i18n-ignore
                 "sections": sections, "films": [], "shows": [], "things": [], "glossary": [], "names_to_check": []}
-        return Draft(data, {}, self.name, [tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），只生成了按时间切的草稿。")])
+        return Draft(data, {}, self.name, [tr("还没接上 AI（没有 AI 密钥），只生成了按时间切的草稿。")])
 
 
 def make_publisher(kind: str = "auto"):
@@ -440,8 +440,8 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
         L.append("")
     L += ["---", ""]
     if draft["films"]:
-        L += ["## 🎬 本期提到的电影", "", "| 片名 | 导演 / 备注 |", "|---|---|"]  # i18n-ignore
-        L += [f"| {f['name'].replace('|', '/')} | {f['note'].replace('|', '/')} |" for f in draft["films"]]
+        L += ["## 🎬 本期提到的电影", ""]  # i18n-ignore
+        L += [f"- {f['name']}：{f['note']}" if f["note"] else f"- {f['name']}" for f in draft["films"]]
         L.append("")
     if draft["shows"]:
         L += [f"**剧集 / 纪录片 / 游戏**：{' · '.join(draft['shows'])}", ""]  # i18n-ignore
@@ -453,6 +453,35 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
         L.append("")
     L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", "", FOOTER, ""]  # i18n-ignore
     return "\n".join(L)
+
+
+_TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$")
+_TABLE_RULE = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
+
+
+def untable(md: str) -> str:
+    """喜马拉雅 has no tables (item 26): every Markdown table becomes one list line per row,
+    "- first：rest · rest"; the header row is only labels, so it goes."""
+    lines = md.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        if _TABLE_ROW.match(lines[i]) and i + 1 < len(lines) and _TABLE_RULE.match(lines[i + 1]):
+            i += 2
+            while i < len(lines) and _TABLE_ROW.match(lines[i]):
+                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                cells = [c for c in cells if c]
+                if cells:
+                    out.append(f"- {cells[0]}" + (f"：{' · '.join(cells[1:])}" if len(cells) > 1 else ""))
+                i += 1
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+
+def has_table(md: str) -> bool:
+    return untable(md) != md
 
 
 _BOLD_TIME = re.compile(r"\*\*(\d{1,2}:\d{2}(?::\d{2})?)\*\*")
@@ -503,6 +532,7 @@ class Publisher:
         return d
 
     def save(self, ep: Episode, pack: dict) -> None:
+        pack["markdown"] = untable(pack["markdown"])
         atomic_write_json(self.path(ep), pack, protected=tuple(Path(m.path) for m in ep.media.values()))
         notes = self.notes_path(ep.id)
         notes.parent.mkdir(parents=True, exist_ok=True)
@@ -554,7 +584,7 @@ class Publisher:
             version = ep.version_key()
             duration = music.to_final(ep.timeline_for(ep.enabled).length / ep.sr)
         writer = self.factory()
-        stage(tr("Claude 在写标题和 show notes") if writer.name == "claude" else tr("生成草稿（没有 Claude）"))
+        stage(tr("LACUNA 在写标题和 show notes") if writer.name == "claude" else tr("生成草稿（AI 没接上）"))
         out = writer.write(ep, segs, music, names, duration)
         if out.usage:
             self.on_usage(ep.id, out.usage)
@@ -667,6 +697,10 @@ class Publisher:
     # ---- view
     def view(self, ep: Episode) -> dict:
         pack = self.load(ep)
+        if pack is not None and has_table(pack["markdown"]):      # written before item 26
+            with ep.lock:
+                pack = self.load(ep)
+                self.save(ep, pack)
         job = self.status(ep.id)
         out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
         if pack is None:

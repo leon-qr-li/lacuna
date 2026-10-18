@@ -6,6 +6,8 @@ export const en: Dict = {
   "Windows 系统环境变量": "Windows system environment variable",
   "macOS 钥匙串": "macOS Keychain",
   "本机文件": "local file",
+  "AI 密钥": "AI key",
+  "粘贴 AI 密钥": "Paste the AI key",
   "设置": "Settings",
   " · 有新版本": " · update available",
   "正在更新并重启，页面会自己刷新…": "Updating and restarting; the page will reload by itself…",

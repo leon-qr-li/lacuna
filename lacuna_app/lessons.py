@@ -31,7 +31,7 @@ from .chat_learning import MAX_ASK, ChatAsks, _id as ask_id
 from .editor import ClaudeEditorAdapter, find_api_key, sdk_installed
 from .learning import LEARN_DIR, Learning, decisions
 from .store import Workspace, atomic_write_json, check_id, read_json
-from .i18n import in_reply_language
+from .i18n import AI_NAME_RULE, in_reply_language
 
 LESSONS_DIR = "lessons"
 MAX_TURNS = 300           # most recent chat turns shown to the summariser
@@ -92,7 +92,7 @@ rule covers, what it does not, and any assumption you made where he was vague.
 
 If the input has "current" and "feedback", Leon is correcting your previous version: apply his feedback to \
 it (it may be a new wording he wants verbatim, or a change like "只针对 Pei"), and say in "understood" what \
-changed. Use recent_chat only to resolve what "这个" or "这种" refers to."""  # i18n-ignore
+changed. Use recent_chat only to resolve what "这个" or "这种" refers to.""" + AI_NAME_RULE  # i18n-ignore
 
 LESSONS_SYSTEM = SHOW + """ \
 Leon just finished editing one episode. From the chat log (what he asked LACUNA, its reply, whether he \
@@ -111,7 +111,7 @@ For each lesson return:
 it contradicts an existing rule.
 - related: the id of that existing rule for reinforce / conflict, else "".
 - turns: the chat turn numbers it comes from; edits: the review edit ids it comes from. At least one of them.
-Do not repeat anything in already_reviewed."""  # i18n-ignore
+Do not repeat anything in already_reviewed.""" + AI_NAME_RULE  # i18n-ignore
 
 
 def _now() -> str:

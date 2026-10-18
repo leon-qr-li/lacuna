@@ -45,3 +45,12 @@ input.time { width: 150px; }
 .role-chip.role-bed { background: var(--hover); color: var(--ink-2); }
 .music-pick { flex: 1 1 320px; min-width: 0; max-width: 100%; text-overflow: ellipsis; }
 .music-plan { margin: 2px 0 0; }
+
+/* 首次检测 15-22: one player for the music page, the strip follows it */
+.mstrip { cursor: pointer; }
+.mstrip-head { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); pointer-events: none; transition: left .2s linear; }
+.mix-controls { align-items: center; margin-top: 6px; }
+.role-select.role-interlude, .role-select.role-clip { border-color: var(--warn); background: var(--warn-soft); color: var(--warn); }
+.role-select.role-bed { border-color: var(--line-2); background: var(--hover); color: var(--ink-2); }
+.warn-line { margin: 0; color: var(--warn); }
+input.time.time-wide { width: 230px; }

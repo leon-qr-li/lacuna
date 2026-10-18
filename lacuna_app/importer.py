@@ -319,7 +319,7 @@ class Importer:
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
-            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（没有 Claude）"))
+            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（AI 没接上）"))
             try:
                 res = fc.run(doc, duration, tokens, job["id"],
                              progress=lambda f, s: self._progress(job, "first_cut", f, s),
@@ -348,6 +348,7 @@ class Importer:
                 "ai_report": report_dict(report), "first_cut_engine": engine,
                 "imported_at": now(), "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in HOSTS}}
         create_episode(self.ws, job["id"], meta, project, edits, transcript)
+        self._level(job["id"])          # not cancellable: the episode exists now
         cons = sum(e.consequential for e in edits)
         dur = project.base.length / project.base.sample_rate
         with self._lock:
@@ -373,6 +374,19 @@ class Importer:
                     self._progress(job, "episode", 0.2, tr("把 {name} 的分轨转成 {sr} Hz WAV", name=name, sr=sr))
                     refs[name] = conform(job["tracks"][tag]["path"], d / "media" / f"{name}.wav", sr)
         return refs
+
+    def _level(self, episode_id: str) -> None:
+        """Even out the hosts' loudness from the start (backlog 7, levels.py); a failure only skips it."""
+        from . import levels
+        from .episode import Episode
+        try:
+            ep = Episode(self.ws, episode_id)
+            try:
+                levels.level_new_episode(ep)
+            finally:
+                ep.close()
+        except Exception:      # noqa: BLE001 - the episode is usable without it; 「声音」 can level it later
+            traceback.print_exc()
 
     def _log_usage(self, episode_id: str, usage: dict) -> None:
         line = {"at": now(), "episode": episode_id, "kind": "first_cut", **usage}

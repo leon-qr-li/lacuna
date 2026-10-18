@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 
 def music_answer(ctx: dict) -> dict:
-    """A tiny stand-in for Claude arranging music: understands 晚/早 N 秒, 小/大 3 dB, 去掉, 加间奏."""
+    """A tiny stand-in for LACUNA arranging music: understands 晚/早 N 秒, 小/大 3 dB, 去掉, 加间奏."""
     text = ctx["instruction"]
     by_role = {p["role"]: p for p in ctx["placements"]}
     role = next((r for k, r in (("间奏", "interlude"), ("片头", "intro"), ("片尾", "outro"), ("背景", "bed"))

@@ -41,9 +41,8 @@ test("review speed: buttons and S switch the speed, pitch kept, choice remembere
   await page.reload();
   await expect(page.getByTestId("review-speed")).toHaveText("1.25×");
 
-  // the shortcut card lists S (wait for the review list: its key handler mounts with it)
-  await expect(page.getByTestId("review-list").locator(".ritem").first()).toBeVisible();
-  await page.keyboard.press("?");
+  // the shortcut card lists S (opened with its button: right after a reload the page may not have key focus yet)
+  await page.getByRole("button", { name: "快捷键" }).click();
   await expect(page.getByTestId("review-shortcuts")).toContainText("切换播放速度");
   await page.evaluate(() => localStorage.removeItem("lacuna.reviewRate"));
 });

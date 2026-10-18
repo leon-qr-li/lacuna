@@ -23,7 +23,8 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await expect(notes.getByRole("heading", { name: "合成的一期：两部电影" })).toBeVisible();
   await expect(notes.getByRole("heading", { name: "⏱ 时间轴" })).toBeVisible();
   await expect(notes.getByRole("heading", { name: "暖场" })).toBeVisible();
-  await expect(notes.getByRole("cell", { name: "《一部电影》" })).toBeVisible();
+  await expect(notes.getByRole("listitem").filter({ hasText: "《一部电影》：结尾" })).toBeVisible(); // no tables (item 26)
+  await expect(notes.locator("table")).toHaveCount(0);
   await expect(notes.getByRole("heading", { name: "🎵 本期 BGM" })).toBeVisible();
   await expect(notes.locator("h3 + ul li strong").first()).toHaveText(/^\d\d:\d\d$/);
   await expect(page.getByRole("region", { name: "章节" })).toContainText("暖场");
@@ -39,7 +40,8 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   });
   expect(clip.text.startsWith("# 合成的一期：两部电影")).toBe(true);
   expect(clip.html).toContain("<h1>合成的一期：两部电影</h1>");
-  expect(clip.html).toContain("<table>");
+  expect(clip.html).not.toContain("<table");
+  expect(clip.text).not.toContain("|");
 
   // switch to an alternative title
   await page.getByRole("button", { name: "两部电影一个结尾" }).click();
