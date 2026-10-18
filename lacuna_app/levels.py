@@ -27,7 +27,6 @@ import math
 import re
 import threading
 from collections import OrderedDict
-from datetime import datetime, timezone
 
 import numpy as np
 
@@ -36,7 +35,7 @@ from lacuna_core.master import LoudnessMeter
 
 from .episode import APPLIED, DISCARDED, PROPOSED, ConflictError, Episode, to_tl
 from .i18n import tr
-from .store import atomic_write_json, read_json
+from .store import atomic_write_json, read_json, now_iso as _now
 
 FILE = "levels.json"
 SCHEMA = 1
@@ -54,10 +53,6 @@ _BLOCK_S = 10.0
 
 _lock = threading.Lock()
 _music_cache: OrderedDict[tuple, float | None] = OrderedDict()
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def _db(x: float) -> float | None:

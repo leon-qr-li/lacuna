@@ -4,7 +4,6 @@ import shutil
 import time
 from pathlib import Path
 
-import numpy as np
 import pytest
 import soundfile as sf
 from fastapi.testclient import TestClient

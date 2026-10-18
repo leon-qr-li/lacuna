@@ -378,9 +378,7 @@ class ClaudeEditorAdapter:
 
     def __init__(self, api_key: str | None = None, client: Any = None, effort: str | None = None):
         if api_key is None and client is None:
-            api_key, self.key_source = find_api_key()
-        else:
-            self.key_source = "given"
+            api_key, _ = find_api_key()
         self.api_key = api_key
         self._client = client
         self.effort = effort or os.environ.get("LACUNA_AI_EFFORT", "low")

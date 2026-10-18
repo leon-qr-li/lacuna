@@ -17,7 +17,6 @@ import contextvars
 import json
 import re
 
-Lang = str  # "zh" | "en"
 COOKIE = "lacuna_lang"
 _current: contextvars.ContextVar[str | None] = contextvars.ContextVar("lacuna_lang", default=None)
 _last: str = "zh"
@@ -69,11 +68,6 @@ def N_(zh: str) -> str:
 
 def join_list(items) -> str:
     return (", " if lang() == "en" else "、").join(items)
-
-
-def reply_language() -> str:
-    """For prompts: the language Claude writes meta-text (reasons, chat replies) in."""
-    return "English" if lang() == "en" else "Simplified Chinese"
 
 
 # appended to every system prompt whose output Leon reads: the AI is "LACUNA" to users (brand rule,

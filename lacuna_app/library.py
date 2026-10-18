@@ -25,7 +25,6 @@ import shutil
 import subprocess
 import threading
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +32,7 @@ from lacuna_core import MediaRef, content_hash
 from lacuna_core.master import LoudnessMeter
 from lacuna_core.media import resample_filter
 
-from .store import PathError, Workspace, atomic_write_json, inside, read_json
+from .store import PathError, Workspace, atomic_write_json, inside, read_json, now_iso as _now
 from .i18n import AI_NAME_RULE, N_, lang, tr
 
 SCHEMA = 1
@@ -58,10 +57,6 @@ ANALYSIS_SR = 48000
 
 class LibraryError(ValueError):
     """Bad request against the library (unknown kind, not an audio file ...)."""
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def _ffprobe(path: Path) -> dict:

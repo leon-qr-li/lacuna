@@ -15,7 +15,6 @@ import threading
 import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -29,7 +28,7 @@ from . import learning
 from .ai_cut import TrackTokens, build_episode, report_dict
 from .archive import retired_ids
 from .episode import create_episode
-from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json
+from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json, now_iso as now
 from .i18n import N_, tr
 
 AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", ".aac"}
@@ -51,10 +50,6 @@ class Cancelled(Exception):
 
 class ImportError_(RuntimeError):
     """A problem the user can act on (message is Chinese)."""
-
-
-def now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def check_track(path: str | Path) -> dict:
@@ -411,42 +406,3 @@ class Importer:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
         except OSError:
             pass
-
-
-# ---------------------------------------------------------------------- file browser
-
-def list_dir(path: str | None, default: Path) -> dict:
-    """Folders and audio files in `path` (local machine; the app only ever binds to 127.0.0.1)."""
-    import os
-    import sys
-    p = Path(path).expanduser() if path else default
-    try:
-        p = p.resolve()
-        entries = list(os.scandir(p))
-    except (OSError, RuntimeError):
-        raise ImportError_(tr("打不开文件夹：{p}", p=p))
-    dirs, files = [], []
-    for e in entries:
-        if e.name.startswith((".", "$")):
-            continue
-        try:
-            if e.is_dir():
-                dirs.append({"name": e.name, "path": str(p / e.name)})
-            elif Path(e.name).suffix.lower() in AUDIO_EXT:
-                f = {"name": e.name, "path": str(p / e.name), "size": e.stat().st_size, "duration": None}
-                try:
-                    i = sf.info(e.path)
-                    f["duration"] = round(i.frames / i.samplerate, 1)
-                except Exception:   # noqa: BLE001
-                    pass
-                files.append(f)
-        except OSError:
-            continue
-    roots = [str(default)]
-    if sys.platform == "win32":
-        roots += [f"{c}:\\" for c in "CDEFGH" if Path(f"{c}:\\").exists()]
-    else:
-        roots += [str(Path.home()), "/"]
-    parent = str(p.parent) if p.parent != p else None
-    return {"path": str(p), "parent": parent, "dirs": sorted(dirs, key=lambda d: d["name"].lower()),
-            "files": sorted(files, key=lambda f: f["name"].lower()), "roots": list(dict.fromkeys(roots))}

@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import math
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, Iterator
@@ -66,6 +68,29 @@ def _2d(x: np.ndarray) -> np.ndarray:
     return x[:, None] if x.ndim == 1 else x
 
 
+_TP_BLOCK = 1 << 16          # rows per true-peak block on the thread pool
+_TP_POOL: ThreadPoolExecutor | None = None
+_TP_POOL_LOCK = threading.Lock()
+
+
+def _tp_pool() -> ThreadPoolExecutor:
+    global _TP_POOL
+    with _TP_POOL_LOCK:
+        if _TP_POOL is None:
+            _TP_POOL = ThreadPoolExecutor(max(1, min(8, os.cpu_count() or 1)), thread_name_prefix="truepeak")
+        return _TP_POOL
+
+
+def _peaks(x: np.ndarray) -> np.ndarray:
+    """Per-row true peak of `x` (rows = samples): max of |x| and the TP_OVERSAMPLE interpolated
+    points within +-0.5 sample of it, over channels."""
+    n, up = len(x), TP_OVERSAMPLE
+    y = upfirdn(_TP_FIR, x, up=up, axis=0)
+    o = int(_TP_DELAY + 0.5) - up // 2      # first of the `up` points within +-0.5 sample of t
+    near = np.abs(y[o: o + up * n]).reshape(n, up, -1).max(axis=1)
+    return np.maximum(np.abs(x), near).max(axis=1)
+
+
 class TruePeak:
     """Streaming true-peak (4x oversampled) detector; chunking does not change the result."""
 
@@ -76,14 +101,17 @@ class TruePeak:
         self.peak = 0.0
 
     def per_sample(self, x: np.ndarray) -> np.ndarray:
-        """Max |oversampled signal| in [t, t+1) for every row of a buffer (edges unreliable)."""
-        n, up = len(x), TP_OVERSAMPLE
-        y = upfirdn(_TP_FIR, x, up=up, axis=0)
-        o = int(_TP_DELAY + 0.5) - up // 2      # first of the `up` points within +-0.5 sample of t
-        peak = np.abs(x)
-        for p in range(up):
-            np.maximum(peak, np.abs(y[o + p: o + p + up * n: up]), out=peak)
-        return peak.max(axis=1)
+        """Max |oversampled signal| in [t, t+1) for every row of a buffer (edges unreliable).
+
+        A long buffer is cut into blocks that overlap by CTX rows and measured on a thread pool
+        (scipy's upfirdn releases the GIL); a row's value depends only on its CTX neighbours,
+        so every row inside the buffer edges comes out exactly as one call would give it."""
+        n = len(x)
+        if n <= 2 * _TP_BLOCK:
+            return _peaks(x)
+        starts = range(0, n, _TP_BLOCK)
+        parts = _tp_pool().map(lambda a: _peaks(x[max(a - self.CTX, 0): a + _TP_BLOCK + self.CTX]), starts)
+        return np.concatenate([p[(a - max(a - self.CTX, 0)):][:min(_TP_BLOCK, n - a)] for a, p in zip(starts, parts)])
 
     def _measure(self, b: np.ndarray, upto: int) -> None:
         if upto > self.CTX:

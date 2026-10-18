@@ -22,9 +22,9 @@ import re
 import threading
 import uuid
 from collections import OrderedDict
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
 from functools import cached_property
+from itertools import accumulate
 from pathlib import Path
 
 import numpy as np
@@ -39,7 +39,7 @@ from . import analysis, room_tone
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
-from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
+from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json, now_iso
 from .i18n import N_, tr
 
 STATE_SCHEMA = 1
@@ -199,6 +199,7 @@ class Episode:
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
         self.proposals: dict[str, dict] = st.get("proposals") or {}
         self.transcript = self._load_transcript()
+        self._words_ix: list[tuple] | None = None
         self._chat_log: list[dict] = self._load_chat()   # chat turns, saved to chat.json
         self._timelines: OrderedDict[frozenset, Timeline] = OrderedDict()
         self._versions: OrderedDict[str, frozenset] = OrderedDict()
@@ -495,7 +496,7 @@ class Episode:
     # ------------------------------------------------------------------ chat
     CHAT_RADIUS_S = 45.0       # transcript / pauses the editor sees around the playhead
     CHAT_HISTORY = 6           # earlier turns sent along ("再短一点", "不是这句")
-    CHAT_KEEP = 2000           # turns kept in chat.json (learning reads them after export)
+    CHAT_KEEP = 2000           # turns kept in chat.json (chat history, 「记住」 drafts in lessons.py)
 
     def chat_context(self, text: str, playhead_s: float) -> tuple[ChatContext, dict]:
         """What the editor sees around the playhead, plus what is needed to turn its answer into
@@ -547,7 +548,7 @@ class Episode:
         with self.lock:
             self._chat_log.append({"said": said, "at": round(at, 2), "reply": reply,
                                    "proposal": proposal["id"] if proposal else None, "state": "pending",
-                                   "time": datetime.now(timezone.utc).isoformat(timespec="seconds"), **extra})
+                                   "time": now_iso(), **extra})
             del self._chat_log[:-self.CHAT_KEEP]
             self._save_chat()
 
@@ -736,12 +737,30 @@ class Episode:
         return read_json(p) if p.is_file() else None
 
     def words(self, a_s: float, b_s: float) -> list[tuple[str, float, float, str]]:
+        """(track, start, end, word) of every word overlapping (a_s, b_s), by start time."""
         if not self.transcript:
             return []
         out = []
-        for track, words in self.transcript["tracks"].items():
-            out += [(track, s, e, w) for s, e, w in words if e > a_s and s < b_s]
+        for track, words, starts, reach in self._word_index():
+            lo, hi = 0, len(words)
+            if starts is not None:      # only the slice that can overlap; the test below decides
+                lo, hi = bisect.bisect_right(reach, a_s), bisect.bisect_left(starts, b_s)
+            out += [(track, s, e, w) for s, e, w in words[lo:hi] if e > a_s and s < b_s]
         return sorted(out, key=lambda x: x[1])
+
+    def _word_index(self) -> list[tuple]:
+        """Per track: words, their start times and the running maximum of their end times (for
+        bisecting), or None for both when a track's words are not in start order (full scan)."""
+        if self._words_ix is None:
+            ix = []
+            for track, words in self.transcript["tracks"].items():
+                starts = [w[0] for w in words]
+                if all(x <= y for x, y in zip(starts, starts[1:])):
+                    ix.append((track, words, starts, list(accumulate((w[1] for w in words), max))))
+                else:
+                    ix.append((track, words, None, None))
+            self._words_ix = ix
+        return self._words_ix
 
     def transcript_text(self, base_s: float, radius: float = 15.0) -> str:
         parts, prev = [], None

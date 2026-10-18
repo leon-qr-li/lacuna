@@ -179,14 +179,6 @@ export interface ImportJob {
   result: { episode: string; edits: number; to_review: number; raw_duration: number; engine: string } | null;
 }
 
-export interface FsListing {
-  path: string;
-  parent: string | null;
-  dirs: { name: string; path: string }[];
-  files: { name: string; path: string; size: number; duration: number | null }[];
-  roots: string[];
-}
-
 export async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   // anything the person started (not a GET) moves the thin line under the top bar
   return method === "GET" ? send<T>(method, url, body) : track(send<T>(method, url, body));
@@ -237,7 +229,6 @@ export const api = {
   dictate,
   dictationWarm: () => req<{ ok: boolean }>("POST", "/api/dictation/warm"),
   health: () => req<Health>("GET", "/api/health"),
-  episodes: () => req<{ episodes: EpisodeListItem[]; editor: string }>("GET", "/api/episodes"),
   episode: (id: string) => req<Episode>("GET", ep(id)),
   editAB: (id: string, eid: string) => req<AB>("GET", `${ep(id)}/edits/${eid}/ab`),
   editText: (id: string, eid: string) => req<{ lines: TextLine[] }>("GET", `${ep(id)}/edits/${eid}/text`),
@@ -262,7 +253,6 @@ export const api = {
   resumeImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/resume`),
   cancelImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/cancel`),
   forgetImport: (id: string) => req<{ ok: boolean }>("DELETE", `/api/imports/${encodeURIComponent(id)}`),
-  fs: (path?: string) => req<FsListing>("GET", `/api/fs${path ? `?path=${encodeURIComponent(path)}` : ""}`),
   openExports: (id: string) => req<{ folder: string }>("POST", `${ep(id)}/exports/open`),
 };
 

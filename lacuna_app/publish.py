@@ -26,13 +26,12 @@ import threading
 import time
 import traceback
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
-from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json
+from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
 from .i18n import AI_NAME_RULE, tr
 
 PUBLISH_SCHEMA = 1
@@ -168,7 +167,7 @@ def load_names(ws: Workspace) -> list[dict]:
 
 def add_name(ws: Workspace, wrong: str, right: str) -> None:
     names = [n for n in load_names(ws) if n["wrong"] != wrong]
-    names.append({"wrong": wrong, "right": right, "at": datetime.now(timezone.utc).isoformat(timespec="seconds")})
+    names.append({"wrong": wrong, "right": right, "at": now_iso()})
     atomic_write_json(ws.root / NAMES_FILE, {"schema": NAMES_SCHEMA, "names": names})
 
 
@@ -602,7 +601,7 @@ class Publisher:
         if not draft["sections"]:
             raise PublishError(tr("时间轴是空的（引用的段落都对不上），请再生成一次"))
         pack = {"schema": PUBLISH_SCHEMA, "episode": ep.id,
-                "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "generated_at": now_iso(),
                 "adapter": out.adapter, "usage": out.usage, "notes": out.notes + notes,
                 "draft": draft, "edited": False}
         with ep.lock:
@@ -706,12 +705,12 @@ class Publisher:
 
     # ---- view
     def view(self, ep: Episode) -> dict:
+        job = self.status(ep.id)       # before the pack: a job seen finished has its result in the pack read next
         pack = self.load(ep)
         if pack is not None and has_table(pack["markdown"]):      # written before item 26
             with ep.lock:
                 pack = self.load(ep)
                 self.save(ep, pack)
-        job = self.status(ep.id)
         out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
         if pack is None:
             return out
