@@ -4,6 +4,7 @@ import { fmt, parseTime } from "../../api";
 import { CREDIT_LABEL } from "./LibraryView";
 import { libraryApi } from "./api";
 import { DraftCard, MusicChatBox } from "./MusicAssist";
+import { EpisodeUpload } from "./Scope";
 import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { SpeedButton } from "../review-speed/SpeedButton";
@@ -431,6 +432,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const [m, setM] = useState<Music | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [kindRoles, setKindRoles] = useState<Partial<Record<Kind, Role>>>({});
+  const [kinds, setKinds] = useState<Record<string, string>>({});
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -443,10 +445,12 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const shownMix = useRef<string | null>(null);
 
   const load = useCallback(() => {
-    Promise.all([libraryApi.music(id), libraryApi.library()])
+    // only what this episode may use: shared (公共) assets and its own (本集)
+    Promise.all([libraryApi.music(id), libraryApi.library(id)])
       .then(([mm, lib]) => {
         setM(mm);
         setAssets(lib.assets);
+        setKinds(lib.kinds);
         setKindRoles(lib.kind_roles);
         if (mm.series) setSeries(mm.series);
       })
@@ -639,6 +643,17 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
       {m.placements.length === 0 && <p className="muted">{t("这一集还没有配乐。")}</p>}
       <MusicChatBox onSend={(text) => run(libraryApi.musicChat(id, text))} />
       <AddPlacement assets={assets} kindRoles={kindRoles} onAdd={(body) => run(libraryApi.addPlacement(id, body), t("已放进去，可以点「试听这一处」"))} />
+      <EpisodeUpload
+        id={id}
+        kinds={kinds}
+        onAdded={(text) => {
+          setMsg(text);
+          libraryApi
+            .library(id)
+            .then((lib) => setAssets(lib.assets))
+            .catch((e) => setErr(String(e.message ?? e)));
+        }}
+      />
       {m.placements.some((p) => p.role === "intro" || p.role === "outro") && (
         <div className="row gap8 wrap">
           <input value={series} onChange={(e) => setSeries(e.target.value)} aria-label={t("系列名")} className="time" />

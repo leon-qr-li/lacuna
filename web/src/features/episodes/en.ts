@@ -17,8 +17,9 @@ export const en: Dict = {
   "恢复": "Restore",
   "永久删除": "Delete for good",
   "永久删除「{title}」？": "Delete “{title}” for good?",
-  "会删掉这一集的剪辑、对话记录、发布资料、封面，以及导入时复制进 App 的音频。这一步不能撤销。":
-    "This deletes the episode's edits, chat log, publish pack and cover, and any audio copied into the app at import. It can't be undone.",
-  "学到的习惯和规则都会保留；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。":
-    "Learned habits and rules are kept. Finished exports (the exports folder) and your original recordings stay untouched.",
+  "会删掉这一集的剪辑、对话记录、发布资料、封面、导入时复制进 App 的音频，以及只属于这一集的素材。这一步不能撤销。":
+    "This deletes the episode's edits, chat log, publish pack and cover, any audio copied into the app at import, and the library assets that belong to this episode only. It can't be undone.",
+  "学到的习惯和规则都会保留；公共素材和别的剧集也在用的素材留着；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。":
+    "Learned habits and rules are kept, and so are public assets and assets other episodes use. Finished exports (the exports folder) and your original recordings stay untouched.",
+  "一起删掉了 {n} 个本集素材：{names}": " Also deleted {n} of its own assets: {names}",
 };

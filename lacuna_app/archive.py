@@ -15,6 +15,11 @@ the import (``imported_tracks/``, import_tracks.py). It never touches:
 * ``exports/<id>/`` - finished files Leon may already have published;
 * recordings outside the workspace (his own Riverside downloads): the app only ever read them.
 
+Media library assets that belonged only to this episode (本集, not shared, no other episode; see
+library.py) leave the library the usual way (file moved to ``library/_removed/``); shared assets
+and those another episode has or uses stay, the episode just leaves their list. Archiving touches
+no asset.
+
 Because that evidence is filed by episode id, a deleted episode's id is retired for good
 (`retired_ids`): a new import never takes it, or its review snapshot, lessons and chat would be
 overwritten by (or mixed into) the new episode's.
@@ -103,12 +108,14 @@ class Archive:
     # ---- deleting for good
     def delete(self, episode_id: str, *, release: Callable[[str], None] = lambda _id: None,
                keep_learning: Callable[[str], None] = lambda _id: None,
-               busy: Callable[[str], str | None] = lambda _id: None) -> dict:
+               busy: Callable[[str], str | None] = lambda _id: None,
+               drop_media: Callable[[str], dict] | None = None) -> dict:
         """Remove an archived episode's files (see the module docstring for what stays).
 
         `busy(id)` -> a reason it can't go now (an import or export running), or None;
         `keep_learning(id)` snapshots its learning evidence (must succeed, or nothing is deleted);
-        `release(id)` drops the app's in-memory copy so no file is held open.
+        `release(id)` drops the app's in-memory copy so no file is held open;
+        `drop_media(id)` takes the episode out of the media library (default: Library.drop_episode).
         """
         check_id(episode_id)
         with self.lock:
@@ -156,8 +163,18 @@ class Archive:
                 if import_tracks.remove(self.ws, f):
                     freed += size
                     removed.append(f.name)
+
+        # 4. library assets that were only this episode's (never shared ones, never learning data)
+        assets: list[str] = []
+        try:
+            if drop_media is None:
+                from .library import Library
+                drop_media = Library(self.ws).drop_episode
+            assets = list(drop_media(episode_id).get("names") or [])     # file names, for the notice
+        except (OSError, ValueError, KeyError):
+            pass          # the episode is gone either way; a library hiccup must not undo that
         self.empty_trash()
-        return {"deleted": episode_id, "freed_bytes": freed, "tracks": removed}
+        return {"deleted": episode_id, "freed_bytes": freed, "tracks": removed, "assets": assets}
 
     def _keep_chat(self, episode_id: str, d: Path) -> None:
         src = d / CHAT_FILE

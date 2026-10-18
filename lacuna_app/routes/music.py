@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 from ..audio import parse_range
 from ..music import EpisodeMusic
 from ..music_assist import MusicChat, auto_place, break_candidates
+from ..i18n import tr
+from ..library import available_to
 from .library import asset_or_404, library_of
 
 
@@ -76,7 +78,8 @@ def register(app, ctx) -> None:
         m = music(episode_id)
         if not body.asset_id or not body.role:
             raise HTTPException(422, "asset_id and role are required")
-        asset_or_404(library, body.asset_id)
+        if not available_to(asset_or_404(library, body.asset_id), episode_id):
+            raise HTTPException(422, tr("这个素材属于别的剧集。先在素材库把它设为公共或加到这一集。"))
         f = placement_fields(m, body)
         f.pop("asset_id"), f.pop("role")
         m.add(body.asset_id, body.role, **{k: v for k, v in f.items() if v is not None})
@@ -85,10 +88,11 @@ def register(app, ctx) -> None:
     @app.patch("/api/episodes/{episode_id}/music/{pid}")
     def music_update(episode_id: str, pid: str, body: PlacementBody):
         m = music(episode_id)
-        if body.asset_id:
-            asset_or_404(library, body.asset_id)
-        f = placement_fields(m, body, pid)
         cur = next((p for p in m.placements() if p["id"] == pid), None)
+        if body.asset_id and body.asset_id != (cur or {}).get("asset_id") \
+                and not available_to(asset_or_404(library, body.asset_id), episode_id):
+            raise HTTPException(422, tr("这个素材属于别的剧集。先在素材库把它设为公共或加到这一集。"))
+        f = placement_fields(m, body, pid)
         if cur is None:
             raise HTTPException(404, "no such placement")
         if body.role in ("interlude", "clip") and cur.get("at_base") is None and f.get("at_s") is None:

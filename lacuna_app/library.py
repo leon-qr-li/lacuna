@@ -14,6 +14,12 @@ Credits: Leon may only say "这是《奥德赛》的主题曲". `lookup_credit` 
 for the official title / composer / album; the answer is stored as *suggested* until Leon confirms
 it. Only text (file name, embedded tags, Leon's note, duration) is sent, never audio.
 
+Scopes (decision library-scopes, 2026-10-18): an asset is either *shared* (公共, offered on every
+episode's music page) or belongs to the episodes listed in ``episodes`` (本集). The file is stored
+once; membership is metadata on the asset. Assets indexed before scopes existed are shared.
+Deleting an episode for good (archive.py) removes the assets only that episode had, unless another
+episode's music still uses them.
+
 Other modules read the library only through this module (D42).
 """
 from __future__ import annotations
@@ -141,6 +147,22 @@ def credit_line(asset: dict) -> str:
     return head
 
 
+def _scope_defaults(a: dict) -> dict:
+    """Scope fields of an asset; one indexed before scopes existed is shared (公共)."""
+    eps = a.get("episodes")
+    a["episodes"] = [str(e) for e in eps] if isinstance(eps, list) else []
+    a["shared"] = bool(a.get("shared", True))
+    if not a["shared"] and not a["episodes"]:
+        a["shared"] = True          # belongs nowhere: offered everywhere rather than lost
+    return a
+
+
+def available_to(asset: dict, episode_id: str) -> bool:
+    """Whether the music page of `episode_id` offers this asset: shared, or one of its episodes."""
+    a = _scope_defaults(dict(asset))
+    return a["shared"] or episode_id in a["episodes"]
+
+
 class Library:
     def __init__(self, ws: Workspace):
         self.ws = ws
@@ -160,6 +182,7 @@ class Library:
             for a in doc["assets"]:
                 k = a.get("kind")
                 a["kind"] = k if k in KINDS else LEGACY_KIND.get(k, "other")
+                _scope_defaults(a)
             return doc
 
     def save(self, doc: dict) -> None:
@@ -180,9 +203,11 @@ class Library:
         return inside(self.dir, *Path(asset["file"]).parts)
 
     # ------------------------------------------------------------------ adding
-    def add_file(self, src: str | Path, kind: str = "other", note: str = "") -> dict:
+    def add_file(self, src: str | Path, kind: str = "other", note: str = "", episode: str | None = None) -> dict:
         """Copy an audio file into the library (unless it already lives there) and analyse it.
-        The same content added again returns the existing asset (note updated if given)."""
+        `episode` None adds it to 公共 (shared), otherwise it belongs to that episode.
+        The same content added again returns the existing asset (note updated if given; it is
+        also made available where it was added: shared, or one more episode)."""
         if kind not in KINDS:
             raise LibraryError(f"unknown kind {kind!r}")
         src = Path(src).expanduser()
@@ -196,8 +221,15 @@ class Library:
             doc = self.load()
             old = next((a for a in doc["assets"] if a["id"] == aid), None)
             if old:
+                changed = bool(note)
                 if note:
                     old["note"] = note
+                if episode is None and not old["shared"]:
+                    old["shared"], old["episodes"], changed = True, [], True
+                elif episode is not None and not old["shared"] and episode not in old["episodes"]:
+                    old["episodes"].append(episode)
+                    changed = True
+                if changed:
                     self.save(doc)
                 return old
         dst_dir = self.dir / FOLDERS[kind]
@@ -215,6 +247,7 @@ class Library:
             shutil.copyfile(src, tmp)
             os.replace(tmp, dst)
         asset = self._analyse(aid, sha, dst, kind, note)
+        asset.update(shared=episode is None, episodes=[episode] if episode is not None else [])
         with self.lock:
             doc = self.load()
             if not any(a["id"] == aid for a in doc["assets"]):
@@ -281,13 +314,13 @@ class Library:
                 continue
         raise LibraryError(tr("同名文件太多：{base}", base=base))
 
-    def add_upload(self, part: Path, kind: str, note: str = "") -> tuple[dict, bool]:
+    def add_upload(self, part: Path, kind: str, note: str = "", episode: str | None = None) -> tuple[dict, bool]:
         """Finish an upload written to `upload_target`'s path. Returns (asset, duplicate): music
         already in the library under another name is not kept twice."""
         dst = part.with_name(part.name[: -len(".part")])
         os.replace(part, dst)
         try:
-            asset = self.add_file(dst, kind, note)
+            asset = self.add_file(dst, kind, note, episode)
         except Exception:
             dst.unlink(missing_ok=True)
             raise
@@ -365,6 +398,89 @@ class Library:
             doc["assets"] = [x for x in doc["assets"] if x["id"] != asset_id]
             self.save(doc)
 
+    # ------------------------------------------------------------------ scopes (公共 / 本集)
+    def for_episode(self, episode_id: str) -> list[dict]:
+        """Assets the music page of `episode_id` offers: shared ones and this episode's own."""
+        return [a for a in self.assets() if available_to(a, episode_id)]
+
+    def _change_scope(self, asset_id: str, change) -> dict:
+        with self.lock:
+            doc = self.load()
+            a = next((x for x in doc["assets"] if x["id"] == asset_id), None)
+            if a is None:
+                raise KeyError(asset_id)
+            change(a)
+            _scope_defaults(a)
+            self.save(doc)
+            return a
+
+    def move_to(self, asset_id: str, episode_id: str) -> dict:
+        """「挪到某一集」: the asset belongs to that episode (no longer shared). Episodes whose music
+        already uses it keep it too, so their music page still offers what they play (and a
+        permanent delete of `episode_id` can't take it from them). Credits travel with the asset."""
+        users = sorted(self._used_by_music(episode_id).get(asset_id, set()))
+        return self._change_scope(asset_id, lambda a: a.update(shared=False, episodes=[episode_id, *users]))
+
+    def make_shared(self, asset_id: str) -> dict:
+        """「设为公共」: offered on every episode's music page."""
+        return self._change_scope(asset_id, lambda a: a.update(shared=True, episodes=[]))
+
+    def add_to_episode(self, asset_id: str, episode_id: str) -> dict:
+        """「也加到另一集」: one more episode may use it (a shared asset already is everywhere)."""
+        def change(a):
+            if not a.get("shared", True) and episode_id not in a.get("episodes", []):
+                a["episodes"] = list(a.get("episodes") or []) + [episode_id]
+        return self._change_scope(asset_id, change)
+
+    def _used_by_music(self, skip: str) -> dict[str, set[str]]:
+        """asset id -> the other episodes whose music (placements or a draft) uses it."""
+        used: dict[str, set[str]] = {}
+        for eid in self.ws.episode_ids():
+            if eid == skip:
+                continue
+            try:
+                doc = read_json(self.ws.episode_dir(eid) / "music.json")
+            except (OSError, ValueError, PathError):
+                continue
+            ps = list(doc.get("placements") or []) + list((doc.get("draft") or {}).get("placements") or [])
+            for p in ps:
+                if isinstance(p, dict) and p.get("asset_id"):
+                    used.setdefault(p["asset_id"], set()).add(eid)
+        return used
+
+    def drop_episode(self, episode_id: str) -> dict:
+        """An episode was deleted for good: it leaves every asset's list, and the assets that were
+        only its own are removed the usual way (file to _removed/). An asset another episode's music
+        still uses stays and belongs to those episodes; one in a series rule becomes shared.
+        Returns {"removed": [ids], "kept": [ids], "names": [file names of the removed]}."""
+        removed, kept = [], []
+        with self.lock:
+            doc = self.load()
+            mine = [a for a in doc["assets"] if episode_id in a["episodes"]]
+            if not mine:
+                return {"removed": [], "kept": [], "names": []}
+            used = self._used_by_music(episode_id)
+            in_series = {(s.get(k) or {}).get("asset_id") for s in doc["series"] for k in ("intro", "outro")}
+            gone = []
+            for a in mine:
+                a["episodes"] = [e for e in a["episodes"] if e != episode_id]
+                if a["shared"] or a["episodes"]:
+                    continue
+                if a["id"] in used:
+                    a["episodes"] = sorted(used[a["id"]])
+                    kept.append(a["id"])
+                elif a["id"] in in_series:
+                    a["shared"] = True
+                    kept.append(a["id"])
+                else:
+                    gone.append(a["id"])
+            self.save(doc)
+            names = {a["id"]: a["name"] for a in mine}
+            for aid in gone:
+                self.remove(aid)
+                removed.append(aid)
+        return {"removed": removed, "kept": kept, "names": [names[i] for i in removed]}
+
     # ------------------------------------------------------------------ decoded copies for rendering
     def decoded_path(self, asset_id: str, sample_rate: int, layout: str) -> Path:
         return self.dir / ".cache" / f"{asset_id}_{sample_rate}_{layout}.wav"
@@ -411,8 +527,9 @@ class Library:
     def asset_view(a: dict) -> dict:
         return a | {"kind_label": tr(KINDS.get(a["kind"], a["kind"])), "credit_line": credit_line(a)}
 
-    def view(self) -> dict:
-        assets = [self.asset_view(a) for a in self.assets()]
+    def view(self, episode: str | None = None) -> dict:
+        """The library page (all assets), or with `episode` what that episode's music page offers."""
+        assets = [self.asset_view(a) for a in (self.for_episode(episode) if episode else self.assets())]
         return {"assets": sorted(assets, key=lambda a: a["added_at"], reverse=True), "series": self.series(),
                 "folder": str(self.dir), "kinds": {k: tr(v) for k, v in KINDS.items()}, "kind_roles": ROLE_FOR_KIND}
 
