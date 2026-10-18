@@ -440,8 +440,8 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
         L.append("")
     L += ["---", ""]
     if draft["films"]:
-        L += ["## 🎬 本期提到的电影", "", "| 片名 | 导演 / 备注 |", "|---|---|"]  # i18n-ignore
-        L += [f"| {f['name'].replace('|', '/')} | {f['note'].replace('|', '/')} |" for f in draft["films"]]
+        L += ["## 🎬 本期提到的电影", ""]  # i18n-ignore
+        L += [f"- {f['name']}：{f['note']}" if f["note"] else f"- {f['name']}" for f in draft["films"]]
         L.append("")
     if draft["shows"]:
         L += [f"**剧集 / 纪录片 / 游戏**：{' · '.join(draft['shows'])}", ""]  # i18n-ignore
@@ -453,6 +453,35 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
         L.append("")
     L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", "", FOOTER, ""]  # i18n-ignore
     return "\n".join(L)
+
+
+_TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$")
+_TABLE_RULE = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
+
+
+def untable(md: str) -> str:
+    """喜马拉雅 has no tables (item 26): every Markdown table becomes one list line per row,
+    "- first：rest · rest"; the header row is only labels, so it goes."""
+    lines = md.split("\n")
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        if _TABLE_ROW.match(lines[i]) and i + 1 < len(lines) and _TABLE_RULE.match(lines[i + 1]):
+            i += 2
+            while i < len(lines) and _TABLE_ROW.match(lines[i]):
+                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                cells = [c for c in cells if c]
+                if cells:
+                    out.append(f"- {cells[0]}" + (f"：{' · '.join(cells[1:])}" if len(cells) > 1 else ""))
+                i += 1
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+
+def has_table(md: str) -> bool:
+    return untable(md) != md
 
 
 _BOLD_TIME = re.compile(r"\*\*(\d{1,2}:\d{2}(?::\d{2})?)\*\*")
@@ -503,6 +532,7 @@ class Publisher:
         return d
 
     def save(self, ep: Episode, pack: dict) -> None:
+        pack["markdown"] = untable(pack["markdown"])
         atomic_write_json(self.path(ep), pack, protected=tuple(Path(m.path) for m in ep.media.values()))
         notes = self.notes_path(ep.id)
         notes.parent.mkdir(parents=True, exist_ok=True)
@@ -667,6 +697,10 @@ class Publisher:
     # ---- view
     def view(self, ep: Episode) -> dict:
         pack = self.load(ep)
+        if pack is not None and has_table(pack["markdown"]):      # written before item 26
+            with ep.lock:
+                pack = self.load(ep)
+                self.save(ep, pack)
         job = self.status(ep.id)
         out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
         if pack is None:

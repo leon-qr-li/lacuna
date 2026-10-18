@@ -7,7 +7,7 @@ like the demo episode, so everything downstream (review, restore, undo, render) 
 Mapping (every op only removes or moves source ranges; nothing here can create audio):
 
 * ``cut`` track ``both``          -> ripple ``cut`` on all tracks.
-* ``cut`` on one track            -> ``lift`` on that track (the other host stays continuous and
+* ``cut`` on one track            -> ``erase`` on that track, filled with its room tone (the other host stays continuous and
   in sync). If the other track has no words anywhere near the range (and it is not a
   noise op), the range is silence there too, so it becomes a ripple ``cut`` that actually
   shortens the episode.
@@ -244,8 +244,9 @@ class Converter:
             else:
                 tags = [track]
                 x, y = self.snap_range([TRACK_NAMES[track]], a, b, TOKEN_SNAP_MS)
-                ops = [{"op": "lift", "track": TRACK_NAMES[track], "start": x, "end": y}]
-                self.report.converted["单轨 cut→lift"] += 1  # i18n-ignore
+                # erased and filled with the track's room tone (picked from the audio in create_episode)
+                ops = [{"op": "erase", "track": TRACK_NAMES[track], "start": x, "end": y}]
+                self.report.converted["单轨 cut→erase"] += 1  # i18n-ignore
             if (y - x) < MIN_CUT_S * self.sr:
                 raise _OpError("range vanished after snapping")
             sp = self.speech(tags, a, b)

@@ -256,7 +256,7 @@ class ClaudeFirstCut:
         lock = threading.Lock()
 
         def report():
-            progress(len(results) / n, tr("AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟）", p0=len(results), n=n))
+            progress(len(results) / n, tr("AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟录音）", p0=len(results), n=n))
 
         def one(k: int):
             if cancelled():

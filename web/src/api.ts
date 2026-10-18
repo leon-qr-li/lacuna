@@ -16,6 +16,7 @@ export interface EditInfo {
   t: number; // timeline seconds of the edit point
   len: number; // seconds removed / affected
   tracks: string[] | null;
+  room_tone?: boolean; // one host's sound erased and filled with their own room tone
   raw: [number, number] | null; // raw recording seconds
   op_id?: string | null; // AI editor op this edit came from
   ai_category?: string | null;

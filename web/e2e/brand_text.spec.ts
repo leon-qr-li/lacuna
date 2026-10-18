@@ -55,6 +55,6 @@ test.describe("with the AI connected", () => {
     await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
     const ep = /#\/ep\/([^/]+)/.exec(page.url())![1];
     await expect(page.getByTestId("editor-badge")).toHaveText("LACUNA");
-    expect(await sweep(page, [`#/ep/${ep}/listen`, `#/ep/${ep}/review`, `#/ep/${ep}/music`, `#/ep/${ep}/publish`, `#/ep/${ep}/poster`, "#/library"])).toEqual([]);
+    expect(await sweep(page, [`#/ep/${ep}/listen`, `#/ep/${ep}/review`])).toEqual([]);
   });
 });

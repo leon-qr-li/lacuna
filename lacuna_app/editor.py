@@ -298,8 +298,9 @@ Answer by calling propose_edit exactly once. Actions:
 To remove only part of an utterance, give start_text (the first words removed, copied exactly \
 from that utterance's text) and/or end_text (the last words removed, copied exactly from \
 to_utterance's text).
-- cut_one_track: same selection, but only that speaker's track goes silent and nothing moves; \
-use it for one host's interjection or noise over the other host's speech.
+- cut_one_track: same selection, but only that speaker's sound is erased (filled with their own \
+room tone, so no hole is heard) and nothing moves; use it for one host's interjection, 嗯 / 对 \
+backchannel or noise over the other host's speech ("抹掉 Pei 那几个嗯"): one action per utterance.
 - shorten_pause: shorten pause `pause` to target_s seconds (default 0.4).
 - restore: undo nearby edit `edit` so the original audio comes back.
 Use an empty actions list when nothing should change. The host previews every proposal before \

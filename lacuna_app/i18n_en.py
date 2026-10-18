@@ -191,7 +191,13 @@ EN: dict[str, str | tuple[str, str]] = {
     "规则第一刀（AI 没接上）：收紧停顿": "Rule-based first cut (AI not connected): tightening pauses",
     "规则第一刀完成": "Rule-based first cut done",
     "第 {p0} 段的回答太长被截断": "The answer for window {p0} was too long and got cut off",
-    "AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟）": "AI first cut: {p0}/{n} windows done (about 10 minutes each)",
+    "AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟录音）": "AI first cut: {p0}/{n} windows done (each about 10 minutes of recording)",
+    # ---- archived episodes (archive.py, routes/archive.py)
+    "有文件正在被使用，删不掉。关掉这一集的其他页面后再试。": "Some files are in use, so it can't be deleted. Close this episode's other pages and try again.",
+    "这一集没有归档": "This episode isn't archived",
+    "这一集正在导入，等它做完或取消后再删": "This episode is importing; delete it once that is done or cancelled",
+    "这一集正在导出，等它做完再删": "This episode is exporting; delete it once that is done",
+    "先归档，才能永久删除": "Archive it first; only archived episodes can be deleted for good",
     "AI 没接上：只按学到的停顿目标收紧了停顿。": "AI not connected: only pauses were tightened, to the learned targets.",
     "AI 没接上：只收紧了停顿。": "AI not connected: only pauses were tightened.",
     "{p0}–{p1} 分：{note}": "{p0}–{p1} min: {note}",
@@ -262,7 +268,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "片尾": "outro",
     "铺底": "bed",
     "台词": "dialogue clip",
-    "间奏、铺底、台词需要一个位置": "An interlude, bed or dialogue clip needs a position",
+    "间奏、台词需要一个位置": "An interlude or dialogue clip needs a position",
     "还没有这个系列的片头规则": "This series has no intro rule yet",
     "这一集还没有片头或片尾": "This episode has no intro or outro yet",
     "这条建议之后配乐又改过了，建议已经过期，请重新让 LACUNA 看一次": "The music changed after this suggestion, so it's out of date; ask LACUNA again",
@@ -347,6 +353,9 @@ EN: dict[str, str | tuple[str, str]] = {
     "生成期间剪辑有变化，时间已按最新剪辑重新对过。": "The cut changed while generating; times were re-aligned to the latest cut.",
     "这一集没有在导入": "This episode isn't importing",
     "还没有生成发布资料": "No publish pack yet",
+    # ---- 喜马拉雅版 (routes/ximalaya.py)
+    "设计图没画出来，「图文」这一版先用纯文字。": "The designed images couldn't be drawn, so the “Cards” layout uses text only for now.",
+    "这张图还没有生成": "This image hasn't been made yet",
     # chat learning
     "你用「记住」说的": "You said it with “remember”",
     "导出后从对话里总结出的": "Summarised from the chat after export",
