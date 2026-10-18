@@ -106,6 +106,15 @@ export interface Dictated {
   text: string;
   audio_s: number;
   seconds: number;
+  raw?: string; // what the local recogniser heard, before the context pass
+  corrected?: boolean;
+}
+
+/** What the context pass may use to fix names and homophones (text only, never audio). */
+export interface DictationContext {
+  episode?: string;
+  at?: number; // playhead seconds
+  where?: "chat" | "poster";
 }
 
 export interface TextLine {
@@ -204,8 +213,13 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
 
 export const ep = (id: string) => `/api/episodes/${encodeURIComponent(id)}`;
 
-async function dictate(audio: Blob): Promise<Dictated> {
-  const res = await fetch("/api/dictation", {
+async function dictate(audio: Blob, ctx: DictationContext = {}): Promise<Dictated> {
+  const q = new URLSearchParams();
+  if (ctx.episode) q.set("episode", ctx.episode);
+  if (ctx.at !== undefined && Number.isFinite(ctx.at)) q.set("at", ctx.at.toFixed(2));
+  if (ctx.where) q.set("where", ctx.where);
+  const qs = q.toString();
+  const res = await fetch(`/api/dictation${qs ? `?${qs}` : ""}`, {
     method: "POST",
     headers: { "Content-Type": audio.type || "application/octet-stream" },
     body: audio,

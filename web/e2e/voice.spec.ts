@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 // voice input in the chat: Chromium's fake mic (a beep, see playwright.config.ts) records a real
 // MediaRecorder clip, the server really decodes it with ffmpeg, and a fake recogniser "hears"
-// 这句删掉 (tests/app/serve_e2e.py --ai); the text then goes through the normal Claude chat
+// 陪说这句删掉, and a fake context pass fixes 陪 → Pei only when the page sent the episode
+// (tests/app/e2e/dictation.py); the text then goes through the normal chat
 test.use({ baseURL: "http://127.0.0.1:8798", permissions: ["microphone"] });
 
 test("voice input: talk, stop, text lands in the box, send as usual", async ({ page }) => {
@@ -21,7 +22,7 @@ test("voice input: talk, stop, text lands in the box, send as usual", async ({ p
   await expect(mic).toContainText("● 0:0");
   await page.waitForTimeout(1500);
   await mic.click();
-  await expect(box).toHaveValue("嗯 这句删掉"); // appended to what was typed, not sent yet
+  await expect(box).toHaveValue("嗯 Pei说这句删掉"); // name fixed from context, appended, not sent yet
   await expect(mic).toHaveAttribute("aria-pressed", "false");
   await expect(page.getByTestId("proposal")).toHaveCount(0);
 

@@ -13,7 +13,7 @@ from lacuna_app.editor import MockEditorAdapter
 from lacuna_app.poster import ClaudeDesigner, Posters
 from lacuna_app.publish import ClaudePublisher, Publisher
 from lacuna_app.store import Workspace
-from lacuna_app.upload import UPLOAD_PAGE, cover_path, latest_wav
+from lacuna_app.upload import UPLOAD_PAGE, cover_path, latest_wav, save_cover
 
 from .fake_claude import FakePosterAnthropic, FakePublishAnthropic
 from .synth import EPISODE, make_workspace
@@ -61,6 +61,19 @@ def test_cover_path_stays_in_the_publish_folder(tmp_path):
         raise AssertionError(doc)
 
 
+def test_save_cover_copies_next_to_the_audio(tmp_path):
+    src = tmp_path / "publish" / "cover.jpg"
+    src.parent.mkdir()
+    src.write_bytes(b"\xff\xd8\xffjpeg")
+    exports = tmp_path / "exports" / "EP9"  # not there yet: an episode never exported
+    out = save_cover(src, exports, "EP9")
+    assert out == exports / "EP9_cover.jpg" and out.read_bytes() == src.read_bytes()
+    src.write_bytes(b"\xff\xd8\xffnewer")
+    assert save_cover(src, exports, "EP9").read_bytes() == b"\xff\xd8\xffnewer"
+    assert sorted(p.name for p in exports.iterdir()) == ["EP9_cover.jpg"]  # no .tmp left behind
+    assert src.is_file()
+
+
 def test_upload_checklist_api(tmp_path):
     ws = Workspace(make_workspace(tmp_path / "ws"))
     pub = Publisher(ws, lambda: ClaudePublisher(client=FakePublishAnthropic()))
@@ -72,6 +85,7 @@ def test_upload_checklist_api(tmp_path):
     d = client.get(f"{EP}/upload").json()
     assert d == {"upload_page": UPLOAD_PAGE, "audio": None, "pack": None, "cover": None, "ready": False}
     assert client.get(f"{EP}/upload/cover.jpg").status_code == 404
+    assert client.post(f"{EP}/upload/save-cover").status_code == 404
 
     # export the WAV, write the publish pack, choose a cover
     assert client.post(f"{EP}/export", json={"formats": ["wav"]}).status_code == 200
@@ -96,6 +110,19 @@ def test_upload_checklist_api(tmp_path):
     assert r.status_code == 200 and r.headers["content-type"] == "image/jpeg"
     assert r.content[:3] == b"\xff\xd8\xff"
     assert quote(f"{EPISODE}_cover.jpg") in r.headers["content-disposition"]
+
+    # 「下载封面」 also puts the cover next to the WAV in exports/<ep>/ (the publish/ copy stays)
+    r = client.post(f"{EP}/upload/save-cover")
+    assert r.status_code == 200
+    out = Path(r.json()["path"])
+    assert out == ws.root / "exports" / EPISODE / f"{EPISODE}_cover.jpg"
+    assert r.json()["folder"] == str(out.parent) and r.json()["name"] == out.name
+    assert out.read_bytes() == client.get(f"{EP}/upload/cover.jpg").content
+    assert Path(client.get(f"{EP}/poster").json()["cover"]["jpg"]).is_file()
+    # the WAV is still the newest audio, and saving again just replaces the copy
+    assert client.get(f"{EP}/upload").json()["audio"]["name"].endswith(".wav")
+    assert client.post(f"{EP}/upload/save-cover").status_code == 200
+    assert sorted(p.name for p in out.parent.glob("*.jpg")) == [out.name]
 
     # a later edit makes the WAV and the show notes out of date
     client.post(f"{EP}/edits/e003/review", json={"action": "restore"})

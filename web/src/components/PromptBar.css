@@ -1,0 +1,32 @@
+/* ---- PromptBar: one framed input bar (text + mic + send), 夜航 tokens, works in light and dark */
+.prompt-bar {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 6px 6px 6px 4px;
+  border: 1px solid var(--line-2); border-radius: 16px;
+  background: var(--solid);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.prompt-bar:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.prompt-bar.is-disabled { opacity: 0.6; }
+.prompt-bar .prompt-input {
+  min-height: 40px; padding: 8px 10px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--ink); font-size: 14.5px; line-height: 1.5;
+  outline: none; box-shadow: none;
+}
+.prompt-bar .prompt-input:focus { border: 0; box-shadow: none; }
+.prompt-bar .prompt-input::placeholder { color: var(--ink-3); }
+.prompt-foot { display: flex; align-items: center; gap: 6px; padding-left: 8px; }
+.prompt-hint { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.prompt-bar .mic {
+  min-width: 34px; min-height: 34px; padding: 0 8px; border-radius: 999px;
+  border-color: transparent; background: transparent; color: var(--ink-2); font-size: 12.5px;
+}
+.prompt-bar .mic:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
+.prompt-bar .mic.mic-on { background: var(--danger); border-color: var(--danger); color: #fff; }
+.prompt-bar .mic.mic-on:hover:not(:disabled) { background: var(--danger); color: #fff; }
+.prompt-send {
+  min-height: 34px; padding: 0 14px 0 11px; gap: 5px; border-radius: 999px;
+  background: var(--primary); border-color: var(--primary); color: var(--on-primary);
+  font-size: 13px; font-weight: 600;
+}
+.prompt-send:hover:not(:disabled) { background: var(--primary); opacity: 0.88; }

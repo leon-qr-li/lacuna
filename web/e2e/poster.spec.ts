@@ -27,6 +27,28 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   for (const label of ["一个意象", "并置", "色块与几何", "自由发挥"]) {
     await expect(cards.filter({ hasText: label })).toHaveCount(1);
   }
+  // 2×2: two per row, the third starts a second row; one per row on a narrow window
+  const boxes = async () => Promise.all([0, 1, 2, 3].map(async (i) => (await cards.nth(i).boundingBox())!));
+  let [a, b, c, d4] = await boxes();
+  expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+  expect(b.x).toBeGreaterThan(a.x + a.width - 1);
+  expect(c.y).toBeGreaterThan(a.y + a.height - 1);
+  expect(Math.abs(c.x - a.x)).toBeLessThan(2);
+  expect(Math.abs(d4.y - c.y)).toBeLessThan(2);
+  expect(a.width).toBeGreaterThan(400);
+  // the 一句话改 box takes (nearly) the card's whole width, with mic and 改 inside the same bar
+  const bar = cards.first().getByTestId("poster-revise");
+  const box = (await bar.getByRole("textbox").boundingBox())!;
+  expect(box.width).toBeGreaterThan(a.width * 0.8);
+  await expect(bar.getByTestId("mic")).toBeVisible();
+  await expect(bar.getByRole("button", { name: "改", exact: true })).toBeDisabled();
+  await expect(bar).toContainText("Shift+Enter");
+  await page.setViewportSize({ width: 700, height: 900 });
+  [a, b] = await boxes();
+  expect(Math.abs(a.x - b.x)).toBeLessThan(2);
+  expect(b.y).toBeGreaterThan(a.y + a.height - 1);
+  await page.setViewportSize({ width: 1440, height: 960 });
+
   // previews are real PNGs rendered on this machine
   const img = cards.first().locator("img");
   await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(1000);
@@ -40,10 +62,12 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   // one sentence → a new version on top, linked to the one it came from
   const emblem = cards.filter({ hasText: "一个意象" });
   await emblem.getByRole("textbox").fill("换成暖色");
-  await emblem.getByRole("button", { name: "改", exact: true }).click();
+  await expect(emblem.getByRole("button", { name: "改", exact: true })).toBeEnabled();
+  await emblem.getByRole("textbox").press("Enter"); // Enter sends (same as clicking 改)
   await expect(cards).toHaveCount(5, { timeout: 15_000 });
   await expect(cards.first()).toContainText("按你的话改");
   await expect(cards.first()).toContainText("「换成暖色」");
+  await expect(emblem.getByRole("textbox")).toHaveValue(""); // sent text clears the box
 
   // choose it: 3000×3000 cover files in the publish folder
   await cards.first().getByRole("button", { name: "用这张" }).click();
