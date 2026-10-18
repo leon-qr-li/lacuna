@@ -199,6 +199,13 @@ function PlacementRow({ p, taken, onSave, onRemove, onPreview, previewing }: {
           </button>
         </div>
       )}
+      {!p.missing && p.level_db != null && (
+        <p className="small muted" data-testid="placement-level">
+          {t("已自动调平 {db} dB，和人声相称；「音量（dB）」是在这之上的微调。", {
+            db: `${p.level_db > 0 ? "+" : p.level_db < 0 ? "−" : "±"}${Math.abs(p.level_db).toFixed(1)}`,
+          })}
+        </p>
+      )}
       {p.role === "bed" && !p.missing && (
         <div className="row gap12 wrap small" data-testid="bed-options">
           <label className="check">
