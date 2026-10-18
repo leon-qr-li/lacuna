@@ -5,6 +5,7 @@ import { fmt } from "../../api";
 import { libraryApi } from "./api";
 import { t } from "../../i18n";
 import { BusyLabel, PageLoading } from "../loading/Loading";
+import { confirmDialog } from "../dialog/Dialog";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: t("已确认"),
@@ -185,9 +186,14 @@ function AssetRow({ a, kinds, onChange, onRemoved, claude }: { a: Asset; kinds: 
           type="button"
           className="btn btn-small btn-outline"
           disabled={!!busy}
-          onClick={() => {
-            if (window.confirm(t("把「{name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。", { name: a.name })))
-              void libraryApi.removeAsset(a.id).then(onRemoved);
+          onClick={async () => {
+            const ok = await confirmDialog({
+              title: t("移出素材库"),
+              message: t("把「{name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。", { name: a.name }),
+              confirmLabel: t("移出"),
+              danger: true,
+            });
+            if (ok) void libraryApi.removeAsset(a.id).then(onRemoved);
           }}
         >
           {t("移出素材库")}
@@ -260,7 +266,9 @@ export function LibraryView() {
 
   if (err) return <p className="error pad">{err}</p>;
   if (!lib) return <PageLoading label={t("正在打开素材库…")} shape="list" />;
-  const replace = (a: Asset) => setLib({ ...lib, assets: lib.assets.map((x) => (x.id === a.id ? { ...x, ...a } : x)) });
+  // functional update: lookups finish at different times, and each result lands on the latest list
+  // (a result applied to the list as it was when its button was clicked wiped out the others, item 14)
+  const replace = (a: Asset) => setLib((l) => l && { ...l, assets: l.assets.map((x) => (x.id === a.id ? { ...x, ...a } : x)) });
   const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
   return (
     <main
@@ -290,7 +298,7 @@ export function LibraryView() {
           className="btn btn-outline"
           onClick={() =>
             void libraryApi.scanLibrary().then((r) => {
-              setLib({ ...r, lookup: lib.lookup });
+              setLib((l) => ({ ...r, lookup: l?.lookup ?? lib.lookup }));
               setNote(r.added.length ? t("新加入 {length} 个文件", { length: r.added.length }) : t("文件夹里没有新文件"));
             })
           }

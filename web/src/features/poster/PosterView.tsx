@@ -6,6 +6,7 @@ import { PromptBar } from "../../components/PromptBar";
 import { posterApi } from "./api";
 import { joinList, lang, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
+import { confirmDialog } from "../dialog/Dialog";
 
 /** 海报: the AI (LACUNA to Leon) draws several square covers (SVG) from the publish pack, rendered on this machine;
  *  Leon picks one (rendered at 3000×3000 into the publish folder) or changes one with a sentence. */
@@ -59,8 +60,8 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   const job = view.job;
   const n = view.directions.length;
   const chosen = view.variants.find((v) => v.id === view.chosen) ?? null;
-  const generate = () => {
-    if (view.variants.length && !window.confirm(t("再画 {n} 版？之前的版本都会留着。（会再花一次 AI 的钱）", { n }))) return;
+  const generate = async () => {
+    if (view.variants.length && !(await confirmDialog({ message: t("再画 {n} 版？之前的版本都会留着。（会再花一次 AI 的钱）", { n }), confirmLabel: t("再画") }))) return;
     void act(posterApi.generatePoster(id));
   };
 
