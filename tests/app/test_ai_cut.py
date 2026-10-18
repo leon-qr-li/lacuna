@@ -69,10 +69,11 @@ def test_window_offsets_and_outside_ops(tokens):
     assert rep.skipped == {"不在所选时间窗内": 1}
 
 
-def test_single_track_cut_under_other_host_is_a_lift(tokens):
-    # Pei's 嗯 at 7.0-7.3 sits under Leon's speech -> silence it on Pei's track only
+def test_single_track_cut_under_other_host_is_an_erase(tokens):
+    # Pei's 嗯 at 7.0-7.3 sits under Leon's speech -> erase it on Pei's track only (room tone is
+    # picked from the audio when the episode is created)
     edits, rep = conv(tokens, op(op="cut", track="P", frm="P000002", to="P000002", category="crosstalk"))
-    assert edits[0].ops == [{"op": "lift", "track": "Pei", "start": 7000, "end": 7300}]
+    assert edits[0].ops == [{"op": "erase", "track": "Pei", "start": 7000, "end": 7300}]
     assert edits[0].tracks == ["Pei"] and edits[0].category == "crosstalk"
 
 
@@ -80,9 +81,9 @@ def test_single_track_cut_with_other_track_silent_ripples(tokens):
     edits, rep = conv(tokens, op(op="cut", track="L", frm="L000002", to="L000003", category="repetition"))
     assert edits[0].ops == [{"op": "cut", "start": 1000, "end": 2000, "tracks": None}]
     assert edits[0].category == "filler" and edits[0].ai_category == "repetition"
-    # noise on one track always stays a lift (never moves anything)
+    # noise on one track always stays on that track (never moves anything)
     edits, _ = conv(tokens, op(op="cut", track="L", frm=2.2, to=2.6, category="single_track_noise"))
-    assert edits[0].ops[0]["op"] == "lift" and edits[0].category == "single_track"
+    assert edits[0].ops[0]["op"] == "erase" and edits[0].category == "single_track"
 
 
 def test_tighten_pause_cuts_excess_from_the_middle(tokens):
