@@ -19,7 +19,7 @@ Depends on: 3 (first cut runs through the API at runtime) · Parallel with: 5
 
 ## 首检 follow-ups (2026-10-18, items 2–5)
 - #2 Signing in (or creating the account) always lands on 剧集 (`features/auth/AuthGate.tsx`); it used to stay on 设置 where the sign-out happened.
-- #3 Archive (decision `archive-delete-keeps-learning`): 归档 on each tile with an 撤销 toast; 「已归档 · n」 under the list opens `#/archive` with 恢复 / 永久删除. Code: `lacuna_app/archive.py`, `routes/archive.py`, `web/src/features/episodes/` (Home moved out of App.tsx into `Home.tsx`; `ConfirmDialog.tsx` is a local in-app dialog until the shared one from the 全局弹窗 thread lands). Tests: `tests/app/test_archive.py`, `web/e2e/archive.spec.ts`, last test of `web/e2e/import.spec.ts`.
+- #3 Archive (decision `archive-delete-keeps-learning`): 归档 on each tile with an 撤销 toast; 「已归档 · n」 under the list opens `#/archive` with 恢复 / 永久删除. Code: `lacuna_app/archive.py`, `routes/archive.py`, `web/src/features/episodes/` (Home moved out of App.tsx into `Home.tsx`); 永久删除 asks through the shared `features/dialog` confirmDialog. Tests: `tests/app/test_archive.py`, `web/e2e/archive.spec.ts`, last test of `web/e2e/import.spec.ts`.
 - #4 Drag & drop import (decision `import-drop-and-eta`): `web/src/features/import/` (ImportPanel moved there), `lacuna_app/import_tracks.py`, `POST /api/imports/tracks`, `POST /api/imports/tracks/remove`. Tests: `tests/app/test_import_tracks.py`, `web/e2e/import.spec.ts`.
 - #5 Time left: `lacuna_app/import_eta.py`, `eta_s` in the running job; `JobProgress` takes the server's `left`. Tests: `tests/app/test_import_eta.py`.
 

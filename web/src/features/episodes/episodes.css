@@ -17,11 +17,3 @@
 .btn-danger-outline { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); background: transparent; }
 .btn-danger-outline:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
 
-/* in-app confirmation (until the shared one from 全局弹窗 lands) */
-.ep-dialog-backdrop { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, #000 45%, transparent); }
-.ep-dialog { background: var(--solid); width: min(480px, 100%); padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-pop); }
-.ep-dialog h2 { margin: 0; font-size: 18px; }
-.ep-dialog-body p { margin: 0 0 8px; }
-.ep-dialog-actions { justify-content: flex-end; }
-.ep-dialog .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
-[data-theme="dark"] .ep-dialog .btn-danger { color: #1d0408; }   /* white on the brighter dark-mode red is under 4.5:1 */
