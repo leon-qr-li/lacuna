@@ -111,7 +111,7 @@ def test_episode_music_and_mix_stream(client, tmp_path):
     assert [c["role"] for c in m["credits"]] == ["intro", "interlude"]
     m = client.patch(f"{EP}/music/{mid['id']}", json={"gain_db": -3}).json()
     assert next(p for p in m["placements"] if p["id"] == mid["id"])["gain_db"] == -3
-    assert client.post(f"{EP}/music", json={"asset_id": jingle, "role": "bed"}).status_code == 409
+    assert client.post(f"{EP}/music", json={"asset_id": jingle, "role": "clip"}).status_code == 409   # needs a position
     pv = client.get(f"{EP}/music/{mid['id']}/preview")
     assert pv.status_code == 200 and pv.content[:4] == b"RIFF"
     r = client.get(m["mix_url"], headers={"Range": "bytes=0-99"})

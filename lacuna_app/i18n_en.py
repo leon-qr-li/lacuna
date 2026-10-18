@@ -268,7 +268,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "片尾": "outro",
     "铺底": "bed",
     "台词": "dialogue clip",
-    "间奏、铺底、台词需要一个位置": "An interlude, bed or dialogue clip needs a position",
+    "间奏、台词需要一个位置": "An interlude or dialogue clip needs a position",
     "还没有这个系列的片头规则": "This series has no intro rule yet",
     "这一集还没有片头或片尾": "This episode has no intro or outro yet",
     "这条建议之后配乐又改过了，建议已经过期，请重新让 Claude 看一次": "The music changed after this suggestion, so it's out of date; ask Claude again",

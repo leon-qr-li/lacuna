@@ -62,6 +62,8 @@ export interface Placement {
   bye_s?: number | null; // outro: second of the song where the voice ends
   fade_out_s?: number | null; // null = automatic
   lead_s?: number | null;
+  auto?: boolean | null; // bed: the App puts it into the free stretches
+  loop?: boolean | null; // bed: repeats to fill its stretch
   asset_name: string | null;
   asset_duration_s?: number;
   credit_line: string;
@@ -72,6 +74,8 @@ export interface Placement {
   at_s?: number | null; // where it sits on the final mix (interlude / bed / clip)
   until_at_s?: number | null; // a bed's end point on the final mix
   inserted_s?: number;
+  listen_s?: number; // where on the final mix to start listening to it (just before its transition)
+  no_room?: boolean; // an automatic bed with no free stretch left
   missing: boolean;
 }
 
@@ -128,6 +132,8 @@ export type PlacementPatch = Partial<{
   bye_s: number;
   fade_out_s: number;
   lead_s: number;
+  auto: boolean;
+  loop: boolean;
 }>;
 
 async function uploadAsset(file: File, kind: string, note = ""): Promise<{ asset: Asset; duplicate: boolean }> {
