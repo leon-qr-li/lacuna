@@ -81,7 +81,7 @@ export function LessonsView({ id, pauseMain }: { id: string; pauseMain: () => vo
       {v?.state === "demo" && <p className="card muted">{t("这是演示剧集，不从它学习。")}</p>}
       {v?.state === "no_key" && (
         <div className="card row gap8 wrap lessons-note">
-          <span className="grow">{t("现在没接上 AI（没找到 API key），没法总结。在「设置」里填好后再点重试。")}</span>
+          <span className="grow">{t("现在没接上 AI（没找到 AI 密钥），没法总结。在「设置」里填好后再点重试。")}</span>
           <button type="button" className="btn btn-outline" onClick={rerun}>
             {t("重试")}
           </button>

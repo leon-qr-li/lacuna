@@ -18,8 +18,8 @@ export const en: Dict = {
   "LACUNA 正在回顾这一集的对话和你的审阅决定…": "LACUNA is going over this episode's chat and your review decisions…",
   "通常半分钟左右": "usually about half a minute",
   "这是演示剧集，不从它学习。": "This is a demo episode; nothing is learned from it.",
-  "现在没接上 AI（没找到 API key），没法总结。在「设置」里填好后再点重试。":
-    "The AI isn't connected (no API key found), so there is no summary. Add the key in Settings, then retry.",
+  "现在没接上 AI（没找到 AI 密钥），没法总结。在「设置」里填好后再点重试。":
+    "The AI isn't connected (no AI key found), so there is no summary. Add the key in Settings, then retry.",
   "总结没成功：{message}": "The summary failed: {message}",
   "{n} 条等你看": { one: "{n} rule to go through", other: "{n} rules to go through" },
   "都看完了": "All done",
