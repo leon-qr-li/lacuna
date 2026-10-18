@@ -48,7 +48,7 @@ def pick(x: np.ndarray, sr: int, x0: int, start: int, end: int, length: int,
     pos = (np.arange(len(loud)) * w + length / 2) / sr
     score = np.where(blocked, np.inf, loud + DIST_DB_PER_10S * np.abs(pos - centre) / 10.0)
     i = int(np.argmin(score))
-    return None if not np.isfinite(score[i]) else i * w
+    return None if not np.isfinite(score[i]) else x0 + i * w
 
 
 def resolve(op: dict, base: Timeline, pool: SourcePool, words: list[tuple[float, float]] = ()) -> dict:

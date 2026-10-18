@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
 from .. import import_tracks
+from ..archive import retired_ids
 from ..importer import ImportBusy, ImportError_, Importer, check_track, list_dir
 from ..server import next_episode_id
 from ..store import META_FILE, PathError, read_json
@@ -83,7 +84,8 @@ def register(app, ctx) -> None:
 
     @app.get("/api/imports")
     def imports():
-        return {"jobs": importer.status(), "next_id": next_episode_id(ws.episode_ids() + [j["id"] for j in importer.status()])}
+        return {"jobs": importer.status(), "next_id": next_episode_id(ws.episode_ids() + [j["id"] for j in importer.status()]
+                                                                  + sorted(retired_ids(ws)))}
 
     @app.post("/api/imports")
     def start_import(body: ImportBody):

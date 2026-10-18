@@ -756,23 +756,36 @@ class EpisodeMusic:
             return HEADER_BYTES + tl.length * SAMPLE_BYTES
 
     def iter_wav(self, enabled, first: int, last: int, chunk_s: float = 4.0):
+        """Bytes [first, last] of this mix version. Always exactly that many: if the music changes
+        while this stream is still being read, the rest of it is silence (the page has already
+        switched to the new version's URL) instead of a short body the server would abort."""
         with self.lock:
+            key = self.mix_key(enabled)
             tl, _ = self._player(enabled)
         n, sr = tl.length, self.ep.sr
+        want, sent = last - first + 1, 0
         head = wav_header(n, sr, 1)
         if first < HEADER_BYTES:
-            yield head[first:min(last + 1, HEADER_BYTES)]
+            chunk = head[first:min(last + 1, HEADER_BYTES)]
+            sent += len(chunk)
+            yield chunk
         d0, d1 = max(first - HEADER_BYTES, 0), last - HEADER_BYTES + 1
-        if d1 <= d0:
-            return
         s0, s1 = d0 // SAMPLE_BYTES, min(-(-d1 // SAMPLE_BYTES), n)
         step = int(chunk_s * sr)
-        for s in range(s0, s1, step):
+        for s in range(s0, s1 if d1 > d0 else s0, step):
             e = min(s + step, s1)
-            data = pcm16(self.render(enabled, s, e)[:, 0])
+            with self.lock:
+                if self.mix_key(enabled) == key:
+                    data = pcm16(self.render(enabled, s, e)[:, 0])
+                else:
+                    data = bytes((e - s) * SAMPLE_BYTES)
             lo = max(d0 - s * SAMPLE_BYTES, 0)
             hi = min(d1 - s * SAMPLE_BYTES, len(data))
-            yield data[lo:hi]
+            chunk = data[lo:hi][:want - sent]
+            sent += len(chunk)
+            yield chunk
+        if sent < want:
+            yield bytes(want - sent)
 
     def preview(self, pid: str, ctx_s: float = 8.0, max_s: float = 75.0,
                 placements: list[dict] | None = None) -> tuple[bytes, float]:

@@ -14,6 +14,10 @@ the import (``imported_tracks/``, import_tracks.py). It never touches:
   so asks not summarized yet are not lost;
 * ``exports/<id>/`` - finished files Leon may already have published;
 * recordings outside the workspace (his own Riverside downloads): the app only ever read them.
+
+Because that evidence is filed by episode id, a deleted episode's id is retired for good
+(`retired_ids`): a new import never takes it, or its review snapshot, lessons and chat would be
+overwritten by (or mixed into) the new episode's.
 """
 from __future__ import annotations
 
@@ -32,6 +36,19 @@ from .i18n import tr
 
 ARCHIVE_FILE = "archive.json"
 TRASH_DIR = ".trash"          # inside episodes/: a dot name is never an episode id
+
+
+LEARNING_EVIDENCE = ("decisions", "chats", "lessons", "asks")     # learning/<kind>/<episode id>.json
+
+
+def retired_ids(ws: Workspace) -> set[str]:
+    """Ids of deleted episodes: their learning evidence is still on file, the episode is not."""
+    seen = set()
+    for kind in LEARNING_EVIDENCE:
+        d = ws.root / "learning" / kind
+        if d.is_dir():
+            seen |= {p.stem for p in d.glob("*.json")}
+    return seen - set(ws.episode_ids())
 
 
 class ArchiveError(RuntimeError):
@@ -122,6 +139,7 @@ class Archive:
             os.replace(d, gone)
         except OSError:
             raise ArchiveError(tr("有文件正在被使用，删不掉。关掉这一集的其他页面后再试。"))
+        release(episode_id)   # again: a request from another tab may have loaded it meanwhile
         with self.lock:
             eps = self._read()
             eps.pop(episode_id, None)
