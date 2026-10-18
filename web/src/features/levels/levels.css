@@ -1,0 +1,28 @@
+/* 声音 step (backlog 7) */
+.levels-step { width: 100%; max-width: 900px; margin: 0 auto; padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 16px; }
+.levels-card { padding: 20px 22px; border-radius: 20px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
+.levels-card h2 { font-size: 20px; font-weight: 700; margin: 0; }
+.levels-head { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; justify-content: space-between; }
+.levels-head > div { flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px; }
+.levels-head p { margin: 0; }
+.levels-tracks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.levels-track { display: grid; grid-template-columns: 12px minmax(130px, 1fr) minmax(260px, 2fr); grid-template-areas: "dot name ctl" ". extra extra"; gap: 4px 14px; align-items: center; padding: 14px 16px; border-radius: 16px; background: var(--hover); }
+.levels-dot { grid-area: dot; width: 12px; height: 12px; border-radius: 50%; background: var(--leon); }
+.levels-track-1 .levels-dot { background: var(--pei); }
+.levels-name { grid-area: name; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.levels-ctl { grid-area: ctl; display: flex; align-items: center; gap: 8px; }
+.levels-slider { flex: 1 1 auto; display: flex; min-width: 120px; }
+.levels-slider input { width: 100%; accent-color: var(--primary); }
+.levels-val { min-width: 76px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.levels-extra { grid-area: extra; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.levels-extra:empty { display: none; }
+.levels-note { margin: 0; }
+.levels-clips { border-color: var(--warn); background: var(--warn-soft); }
+.levels-clips p { margin: 0; }
+.levels-cliprow { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.levels-times { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.levels-listen { display: flex; flex-direction: column; gap: 8px; }
+.levels-listen p { margin: 0 4px; }
+@media (max-width: 640px) {
+  .levels-track { grid-template-columns: 12px 1fr; grid-template-areas: "dot name" "ctl ctl" "extra extra"; }
+}

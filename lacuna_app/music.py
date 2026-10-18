@@ -23,8 +23,8 @@ Model
 * The final mix = voice tracks with the inserted gaps + one music track per placement (mono for
   preview; L/R tracks panned hard for stereo export), with fades, and `Duck`s for the background
   stretches.
-* Music level is set by measurement: full level sits about 1 LU under the voice; ``gain_db`` is
-  Leon's offset on top.
+* Music level is set by measurement: full level sits about 1 LU under the voice, measured on the
+  part of the song that plays (levels.music_lufs); ``gain_db`` is Leon's offset on top.
 
 Public functions used by other modules (D42): `bgm_credits`, `final_time`, `final_duration`,
 `EpisodeMusic.mix` (export).
@@ -696,7 +696,7 @@ class EpisodeMusic:
             fi = int(0.5 * sr) if p["src_in_s"] > 0.05 else 0
         if fi + fo > n:
             fi, fo = n // 2, n - n // 2
-        gain = (voice_lufs + LEVEL_LU - a["lufs"] if a.get("lufs") is not None else 0.0) + p["gain_db"]
+        gain = self.level_db(p, a, voice_lufs) + p["gain_db"]
         ducks = []
         if r == "bed":                       # the whole bed is background: simply lower
             gain -= _f(p, "bg_db", BG_DB)
@@ -828,7 +828,15 @@ class EpisodeMusic:
             a = self._asset_or_none(p["asset_id"]) or {}
             out.append({**p, "role_label": tr(ROLES.get(p["role"], p["role"])), "missing": not a,
                         "asset_name": a.get("name"), "credit_line": credit_line(a) if a else "", "start_s": None, "end_s": None})
+        vl = self.voice_lufs(self.ep.enabled) if lay.items else None
+        for d, it in zip(out, lay.items):        # the automatic part of the level; gain_db is Leon's offset on top
+            d["level_db"] = self.level_db(it.p, it.asset, vl)
         return out
+
+    def level_db(self, p: dict, asset: dict, voice_lufs: float) -> float:
+        """Automatic gain of a placement: the part of the song that plays sits LEVEL_LU from the voice (levels.py)."""
+        from . import levels
+        return levels.music_level_db(self.lib, asset, p, voice_lufs, LEVEL_LU)
 
     def summary(self) -> dict:
         ep = self.ep

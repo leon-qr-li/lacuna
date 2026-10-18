@@ -158,8 +158,8 @@ def decisions(ep, accepted_as_is: bool = False) -> list[Decision]:
         first = _first_status(ep.history)
         out: list[Decision] = []
         for e in ep.edits.values():
-            if e.status not in (APPLIED, RESTORED):
-                continue                               # chat proposals never approved
+            if e.status not in (APPLIED, RESTORED) or e.source == "level":
+                continue                               # chat proposals never approved; volume is not an edit verdict
             label = last.get(e.id, "")
             how = "none" if not label else ("batch" if label.startswith("全部") else "single")  # i18n-ignore
             if e.source == "first_cut":

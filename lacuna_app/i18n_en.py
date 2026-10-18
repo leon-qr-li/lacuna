@@ -18,6 +18,20 @@ EN: dict[str, str | tuple[str, str]] = {
     "内容删除": "Content cut",
     "插话处理": "Interjections",
     "响度匹配": "Loudness match",
+    # ---- voice levels (levels.py, routes/levels.py)
+    "{track} 音量 {gain} dB": "{track} volume {gain} dB",
+    "导入时自动统一两人音量": "Both hosts evened out at import",
+    "统一两人音量": "Even out both hosts",
+    "好，两人音量已经统一：{parts}。不满意可以点「撤销」，或者到「声音」页细调。":
+        "Done, both hosts are now even: {parts}. Not right? Click Undo, or fine-tune on the Volume page.",
+    "两人音量已经是一致的，不用再调。到「声音」页可以单独细调。":
+        "Both hosts are already even. You can fine-tune each one on the Volume page.",
+    "{who} 的音量已经到头了（{lo} ~ +{hi} dB），没法再调。": "{who} is already at the limit ({lo} to +{hi} dB).",
+    "好，{who} 的音量调高了 {amt} dB（现在 {now}）。可以点「撤销」退回，或者到「声音」页细调。":
+        "Done, {who} is {amt} dB louder (now {now}). Click Undo to go back, or fine-tune on the Volume page.",
+    "好，{who} 的音量调低了 {amt} dB（现在 {now}）。可以点「撤销」退回，或者到「声音」页细调。":
+        "Done, {who} is {amt} dB quieter (now {now}). Click Undo to go back, or fine-tune on the Volume page.",
+    "没有这条音轨：{track}": "No such track: {track}",
     "聊天修改": "Chat edit",
     "口误与重复": "Stumbles and repeats",
     "{who}{label} · {dur} 秒{quote}": "{who}{label} · {dur} s{quote}",
