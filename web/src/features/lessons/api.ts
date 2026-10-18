@@ -13,6 +13,7 @@ export interface RememberDraft {
   same_as: string;
   same_as_title: string;
   fallback: boolean; // no AI: his own words, for him to confirm or change
+  error?: string; // why the AI didn't rewrite them (empty: no AI key)
   state: "pending" | "confirmed" | "dropped";
   rule?: string;
 }
@@ -51,6 +52,7 @@ export interface Lesson {
   edited: boolean;
   reply: string; // LACUNA's answer to his last correction
   fallback?: boolean;
+  error?: string; // why LACUNA couldn't apply his correction
   rule?: string;
   rule_state?: string | null;
 }

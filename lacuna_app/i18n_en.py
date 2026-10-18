@@ -381,4 +381,6 @@ EN: dict[str, str | tuple[str, str]] = {
         "{how}, from the {episodes} chat ({n} lines). Once adopted, the AI first cut follows it from the next episode."),
     "记下了：「{ask}」。它在「学到的规则」里等你确认，采用后从下一期的 AI 初剪开始照做。":
         "Noted: “{ask}”. It waits for you in Learned rules; once adopted, the AI first cut follows it from the next episode.",
+    "LACUNA 这次没有给出结果": "LACUNA gave no result this time",
+    "AI 服务出了点问题": "Something went wrong with the AI service",
 }

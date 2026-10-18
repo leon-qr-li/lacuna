@@ -48,6 +48,10 @@ export const en: Dict = {
   "现在没接上 AI，按你写的原样用作这条规则的说法。": "The AI isn't connected, so your wording is used as is.",
   "现在没接上 AI，没法帮你改写。下面先放你的原话，可以点「改一下」写成你想要的说法。":
     "The AI isn't connected, so it can't rewrite this. Below are your own words; click Change it to word the rule the way you want.",
+  "这次没能改写（{message}），按你写的原样用作这条规则的说法。": "Couldn't rewrite it this time ({message}), so your wording is used as is.",
+  "这次没能改写（{message}）。下面先放你的原话，可以点「改一下」写成你想要的说法，或者稍后再试。":
+    "Couldn't rewrite it this time ({message}). Below are your own words; click Change it to word the rule the way you want, or try again later.",
+  "这次没能改写（{message}），先按你说的原样用作这条的说法。": "Couldn't rewrite it this time ({message}), so your wording is used for now.",
   "改过的规则": "Revised rule",
   "我理解的规则": "The rule as I understood it",
   "和已有的规则「{title}」是一回事，记住后会更新那一条。": "Same as the existing rule “{title}”; remembering it updates that one.",

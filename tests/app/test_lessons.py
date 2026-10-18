@@ -121,7 +121,7 @@ def test_rule_writer_request_and_answer():
 
     def create(**kw):
         seen.append(kw)
-        name = kw["tool_choice"]["name"]
+        name = kw["tools"][0]["name"]
         out = ({"title": "t", "understood": "u", "instruction": "i", "same_as": ""} if name == "submit_rule"
                else {"lessons": [{"title": "l", "instruction": "i", "why": "w", "relation": "new", "related": "",
                                   "turns": [1], "edits": []}]})
@@ -134,7 +134,10 @@ def test_rule_writer_request_and_answer():
     assert out["title"] == "t" and usage["cost_usd"] < 0.02
     lessons, _ = w.summarize({"chat": [], "review": [], "existing_rules": []})
     assert lessons[0]["title"] == "l"
-    assert [k["tool_choice"]["name"] for k in seen] == ["submit_rule", "submit_lessons"]
+    assert [k["tools"][0]["name"] for k in seen] == ["submit_rule", "submit_lessons"]
+    # forced tool_choice is refused (400) by the current models: auto + the prompt names the tool (V6)
+    assert all(k["tool_choice"] == {"type": "auto"} for k in seen)
+    assert "calling the submit_rule tool" in seen[0]["system"]
     assert all("sonnet" in k["model"] and k["tools"][0]["strict"] for k in seen)
     assert "Never store his words as they are" in seen[0]["system"]
     assert json.loads(seen[0]["messages"][0]["content"])["said"] == "Pei 的嗯别删"
@@ -258,7 +261,7 @@ def test_lessons_without_key_errors_and_demo(ai_ws, tmp_path):
     assert run(c)["state"] == "no_key"
     c = client(ai_ws, FakeRuleWriter(boom=True), MockEditorAdapter())
     v = run(c)
-    assert v["state"] == "error" and "network" in v["error"]
+    assert v["state"] == "error" and v["error"] == "AI 服务出了点问题"    # never the raw error
     w = FakeRuleWriter()
     c = client(ai_ws, w, MockEditorAdapter())
     v = run(c)                                                     # nothing happened yet: an empty answer
@@ -278,3 +281,72 @@ def test_lessons_outlive_the_episode_folder(ai_ws):
     c.post(f"{EP}/remember/{d['id']}", json={"action": "confirm"})
     assert (ai_ws / "learning" / "lessons" / f"{AI_EPISODE}.json").is_file()
     assert not list((ai_ws / "episodes" / AI_EPISODE).glob("lessons*"))
+
+
+# ================================================================ V6: no forced tool, readable errors
+
+def _api_error(status: int, message: str):
+    import anthropic
+    import httpx
+    resp = httpx.Response(status, request=httpx.Request("POST", "https://api.example/v1/messages"))
+    return anthropic.APIStatusError(message, response=resp, body=None) if status != 400 else \
+        anthropic.BadRequestError(message, response=resp, body=None)
+
+
+def test_rule_writer_asks_again_when_the_answer_is_plain_text():
+    calls = []
+
+    def create(**kw):
+        calls.append(kw)
+        if len(calls) == 1:
+            content = [SimpleNamespace(type="text", text="好的，我来想想")]
+        else:
+            content = [SimpleNamespace(type="tool_use", name="submit_rule",
+                                       input={"title": "t", "understood": "u", "instruction": "i", "same_as": ""})]
+        return SimpleNamespace(model=kw["model"], content=content, stop_reason="end_turn",
+                               usage=SimpleNamespace(input_tokens=900, output_tokens=80))
+
+    w = ClaudeRuleWriter(client=SimpleNamespace(messages=SimpleNamespace(create=create)))
+    out, _ = w.rewrite({"said": "x", "recent_chat": [], "existing_rules": []})
+    assert out["title"] == "t" and len(calls) == 2
+
+
+def test_failed_rewrite_and_summary_explain_in_words(ai_ws):
+    def create(**kw):
+        raise _api_error(400, "tool_choice: forced tool use is not supported with this model")
+
+    writer = ClaudeRuleWriter(client=SimpleNamespace(messages=SimpleNamespace(create=create)))
+    c = client(ai_ws, writer, MockEditorAdapter())
+    d = c.post(f"{EP}/remember", json={"text": "开头别剪", "playhead": 1.0}).json()["remember"]
+    assert d["fallback"] and d["title"] == "开头别剪"
+    assert d["error"] == "AI 服务返回错误（400）" and "tool_choice" not in json.dumps(d)
+    v = run(c)
+    assert v["state"] == "error" and v["error"] == "AI 服务返回错误（400）"
+    # in English too, and never naming the AI vendor
+    c.cookies.set("lacuna_lang", "en")
+    d = c.post(f"{EP}/remember", json={"text": "keep the intro", "playhead": 1.0}).json()["remember"]
+    assert d["error"].startswith("The AI service") and "Claude" not in d["error"]
+    c.cookies.set("lacuna_lang", "zh")
+    c.get(f"{EP}/lessons")
+
+    # no key at all -> his words without an error
+    c2 = client(ai_ws, SimpleNamespace(available=False))
+    assert c2.post(f"{EP}/remember", json={"text": "片尾别剪", "playhead": 1.0}).json()["remember"]["error"] == ""
+
+
+def test_an_old_raw_summary_error_is_not_shown(ai_ws):
+    p = ai_ws / "learning" / "lessons" / f"{AI_EPISODE}.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"schema": 1, "episode": AI_EPISODE, "drafts": [], "lessons": [],
+                             "summary": {"state": "error", "error": "Error code: 400 - {'type': 'error'}"}}))
+    v = client(ai_ws).get(f"{EP}/lessons").json()
+    assert v["state"] == "error" and v["error"] == "AI 服务出了点问题"
+
+
+def test_no_module_forces_a_tool():
+    """Forced tool_choice ({"type": "tool"} / "any") makes the current models answer 400 (V6)."""
+    import re
+    root = Path(__file__).resolve().parents[2] / "lacuna_app"
+    bad = [f"{p.name}:{i}" for p in root.rglob("*.py") for i, line in enumerate(p.read_text("utf-8").splitlines(), 1)
+           if re.search(r"tool_choice\s*[=:]\s*\{\s*[\"']type[\"']\s*:\s*[\"'](tool|any)[\"']", line)]
+    assert bad == []
