@@ -207,6 +207,9 @@ class Episode:
         self._pool: SourcePool | None = None
         self._previewer: Previewer | None = None
         self.timeline_for(self.enabled)   # validates
+        if any(room_tone.misplaced(o, self.base) for e in self.edits.values() for o in e.ops):
+            self.fill_room_tone()         # room tone picked by the pre-.3 bug: pick it again, once
+            self.save()
 
     # ------------------------------------------------------------------ derivation
     @property
@@ -467,12 +470,16 @@ class Episode:
 
     def with_room_tone(self, ops: list[dict]) -> list[dict]:
         """`erase` ops with their room tone picked from the same track's own source near the edit."""
-        if not any(o["op"] == "erase" and not o.get("tone_media_id") for o in ops):
+        def needs(o: dict) -> bool:
+            return o["op"] == "erase" and (not o.get("tone_media_id") or room_tone.misplaced(o, self.base))
+
+        if not any(needs(o) for o in ops):
             return ops
         self.previewer                        # opens the source pool
         out = []
         for o in ops:
-            if o["op"] == "erase":
+            if needs(o):
+                o = {k: v for k, v in o.items() if k not in room_tone.TONE_KEYS}
                 pad = room_tone.SEARCH_S + 1
                 words = [(s, e) for trk, s, e, _ in self.words(o["start"] / self.sr - pad, o["end"] / self.sr + pad)
                          if trk == o["track"]]
