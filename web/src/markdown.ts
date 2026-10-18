@@ -1,5 +1,5 @@
 // Minimal Markdown → HTML for the show notes (the subset the publish pack uses: headings,
-// quote, rule, bullet list, table, paragraphs, **bold**, *italic*). Everything is escaped first,
+// quote, rule, bullet list, paragraphs; a table is laid out as list lines, **bold**, *italic*). Everything is escaped first,
 // so text Leon types can never inject markup. The same HTML goes to the clipboard as rich text.
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -10,13 +10,16 @@ function inline(s: string): string {
     .replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, "$1<em>$2</em>");
 }
 
+// a table row: cells split on unescaped pipes ("\|" is a pipe inside a cell), outer pipes optional
+const PIPE = /(?<!\\)\|/;
+const RULE = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
 const cells = (row: string) =>
   row
     .trim()
     .replace(/^\|/, "")
-    .replace(/\|$/, "")
-    .split("|")
-    .map((c) => c.trim());
+    .replace(/(?<!\\)\|$/, "")
+    .split(PIPE)
+    .map((c) => c.trim().replace(/\\\|/g, "|"));
 
 export function markdownToHtml(md: string): string {
   const lines = md.replace(/\r\n?/g, "\n").split("\n");
@@ -49,18 +52,17 @@ export function markdownToHtml(md: string): string {
       while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) items.push(lines[i++].replace(/^\s*[-*]\s+/, ""));
       i--;
       out.push(`<ul>${items.map((x) => `<li>${inline(x)}</li>`).join("")}</ul>`);
-    } else if (/^\s*\|/.test(ln) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
+    } else if (PIPE.test(ln) && i + 1 < lines.length && lines[i + 1].includes("|") && RULE.test(lines[i + 1])) {
+      // 喜马拉雅 has no tables (backlog 26): a table pasted by hand becomes one line per row
       flush();
-      const head = cells(ln);
       i += 2;
-      const body: string[][] = [];
-      while (i < lines.length && /^\s*\|/.test(lines[i])) body.push(cells(lines[i++]));
+      const body: string[] = [];
+      while (i < lines.length && PIPE.test(lines[i])) {
+        const c = cells(lines[i++]).filter(Boolean);
+        if (c.length) body.push(inline(c[0]) + (c.length > 1 ? "：" + c.slice(1).map(inline).join(" · ") : ""));
+      }
       i--;
-      out.push(
-        `<table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>` +
-          body.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join("")}</tr>`).join("") +
-          "</tbody></table>",
-      );
+      out.push(`<ul>${body.map((x) => `<li>${x}</li>`).join("")}</ul>`);
     } else {
       para.push(ln);
     }

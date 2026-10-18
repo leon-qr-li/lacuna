@@ -10,7 +10,7 @@ import soundfile as sf
 from lacuna_core import SetTrackGain, add_source_clip, new_timeline
 from lacuna_core import export as export_mod
 from lacuna_core.export import export, measure_file, timeline_source
-from lacuna_core.master import (LoudnessMeter, MasterSettings, TruePeak, k_weighting, master,
+from lacuna_core.master import (MasterSettings, TruePeak, k_weighting, master,
                                 measure)
 
 FFMPEG = shutil.which("ffmpeg")

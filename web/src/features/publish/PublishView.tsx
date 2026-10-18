@@ -4,6 +4,7 @@ import { copyRich, copyText, markdownToHtml } from "../../markdown";
 import { publishApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
+import { confirmDialog } from "../dialog/Dialog";
 
 /** 发布资料: title, one-line blurb, show notes (Markdown, approved D40 format), chapters and the
  *  names to check, all for the version of the cut that will be published. */
@@ -14,20 +15,30 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const timer = useRef<number | null>(null);
+  const shown = useRef<string | null>(id); // the episode on screen; null once the page is gone
 
+  // one polling chain at most, and none after the page is left or another episode is opened
+  // (an answer still on its way then must not show or poll again)
+  const poll = (v: View) => {
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = v.job?.state === "running" ? window.setTimeout(load, 800) : null;
+  };
   const load = () =>
     publishApi
       .publish(id)
       .then((v) => {
+        if (shown.current !== id) return;
         setView(v);
-        if (v.job?.state === "running") timer.current = window.setTimeout(load, 800);
+        poll(v);
       })
-      .catch((e) => setErr(String(e.message ?? e)));
+      .catch((e) => shown.current === id && setErr(String(e.message ?? e)));
 
   // reload when the cut changes, so "stale" shows up right after an edit
   useEffect(() => {
+    shown.current = id;
     void load();
     return () => {
+      shown.current = null;
       if (timer.current) window.clearTimeout(timer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,8 +50,9 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
     setBusy(true);
     try {
       const v = await p;
+      if (shown.current !== id) return true;
       setView(v);
-      if (v.job?.state === "running") timer.current = window.setTimeout(load, 800);
+      poll(v);
       if (msg) flash(msg);
       return true;
     } catch (e) {
@@ -66,8 +78,10 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   if (err) return <p className="error pad">{t("发布资料打不开：")}{err}</p>;
   if (!view) return <PageLoading label={t("正在打开发布资料…")} />;
 
-  const generate = () => {
-    if (pack && !window.confirm(pack.edited ? t("重新生成会覆盖你手改过的 show notes，确定吗？") : t("重新生成一版？（会再花一次 Claude 的钱）"))) return;
+  const generate = async () => {
+    if (pack && !(await confirmDialog(pack.edited
+      ? { message: t("重新生成会覆盖你手改过的 show notes，确定吗？"), confirmLabel: t("重新生成"), danger: true }
+      : { message: t("重新生成一版？（会再花一次 AI 的钱）"), confirmLabel: t("重新生成") }))) return;
     setEditing(false);
     void act(publishApi.generatePublish(id));
   };
@@ -92,8 +106,8 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
       {!pack && !running && (
         <p className="card">
           {claude
-            ? t("Claude 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。")
-            : t("没有接上 Claude（{p0}），只能生成按时间切的草稿。", { p0: view.editor_note || t("没找到 API key") })}
+            ? t("LACUNA 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。")
+            : t("还没接上 AI（{p0}），只能生成按时间切的草稿。", { p0: view.editor_note || t("没找到 AI 密钥") })}
         </p>
       )}
       {running && (
@@ -179,7 +193,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
                       {t("编辑")}
                     </button>
                     {pack.edited && (
-                      <button type="button" className="linkish small" disabled={busy} onClick={() => window.confirm(t("丢掉你手改的内容，恢复成生成的版本？")) && act(publishApi.editPublish(id, { markdown: null }), t("已恢复成生成的版本"))}>
+                      <button type="button" className="linkish small" disabled={busy} onClick={async () => (await confirmDialog({ message: t("丢掉你手改的内容，恢复成生成的版本？"), confirmLabel: t("恢复"), danger: true })) && act(publishApi.editPublish(id, { markdown: null }), t("已恢复成生成的版本"))}>
                         {t("恢复成生成的版本")}
                       </button>
                     )}
@@ -261,7 +275,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
           )}
 
           <p className="muted small">
-            {pack.adapter === "claude" ? t("Claude 写的") : t("规则草稿（没有 Claude）")}
+            {pack.adapter === "claude" ? t("LACUNA 写的") : t("规则草稿（AI 没接上）")}
             {pack.usage?.cost_usd ? t(" · 约 ${p0}", { p0: pack.usage.cost_usd.toFixed(2) }) : ""} {t("· 生成于 {time}", { time: fmtDateTime(pack.generated_at) })}
           </p>
         </>

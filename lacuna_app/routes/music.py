@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from ..audio import parse_range
 from ..music import EpisodeMusic
-from ..music_assist import MusicChat, auto_place
+from ..music_assist import MusicChat, auto_place, break_candidates
 from .library import asset_or_404, library_of
 
 
@@ -18,9 +18,17 @@ class PlacementBody(BaseModel):
     until_s: float | None = Field(None, ge=0, description="bed: end on the final mix (seconds)")
     src_in_s: float | None = Field(None, ge=0)
     src_out_s: float | None = Field(None, ge=0)
-    overlap_s: float | None = Field(None, ge=0, le=30)
     gain_db: float | None = Field(None, ge=-30, le=12)
+    solo_s: float | None = Field(None, ge=0, le=600, description="intro: music alone; interlude: full level in the gap")
+    ramp_s: float | None = Field(None, ge=0, le=10, description="rise / fall between full level and background")
+    ramp_out_s: float | None = Field(None, ge=0, le=10, description="interlude: fall back to background")
+    bg_db: float | None = Field(None, ge=0, le=40, description="background: this much under full level")
+    pre_s: float | None = Field(None, ge=0, le=600, description="interlude: plays under the talk before the gap")
+    bye_s: float | None = Field(None, ge=0, description="outro: second of the file where the voice ends")
+    fade_out_s: float | None = Field(None, ge=0, le=30)
     lead_s: float | None = Field(None, ge=0, le=5)
+    auto: bool | None = Field(None, description="bed: the App puts it into the free stretches")
+    loop: bool | None = Field(None, description="bed: repeat the song to fill its stretch")
     status: str | None = Field(None, pattern="^(applied|proposed)$")
 
 
@@ -79,8 +87,15 @@ def register(app, ctx) -> None:
         m = music(episode_id)
         if body.asset_id:
             asset_or_404(library, body.asset_id)
+        f = placement_fields(m, body, pid)
+        cur = next((p for p in m.placements() if p["id"] == pid), None)
+        if cur is None:
+            raise HTTPException(404, "no such placement")
+        if body.role in ("interlude", "clip") and cur.get("at_base") is None and f.get("at_s") is None:
+            # a new interlude / clip with no position yet: a pause between topics (voice seconds)
+            f["at_s"] = (break_candidates(m) or [m.layout().voice_len / m.ep.sr / 2])[0]
         try:
-            m.update(pid, **placement_fields(m, body, pid))
+            m.update(pid, **f)
         except KeyError:
             raise HTTPException(404, "no such placement")
         return m.summary()

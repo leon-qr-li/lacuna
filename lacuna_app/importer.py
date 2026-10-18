@@ -14,7 +14,7 @@ import json
 import threading
 import time
 import traceback
-from datetime import datetime, timezone
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 
@@ -23,10 +23,12 @@ import soundfile as sf
 from lacuna_core.media import MediaRef, conform
 
 from . import asr as asr_mod
+from . import import_eta
 from . import learning
 from .ai_cut import TrackTokens, build_episode, report_dict
+from .archive import retired_ids
 from .episode import create_episode
-from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json
+from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json, now_iso as now
 from .i18n import N_, tr
 
 AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", ".aac"}
@@ -48,10 +50,6 @@ class Cancelled(Exception):
 
 class ImportError_(RuntimeError):
     """A problem the user can act on (message is Chinese)."""
-
-
-def now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def check_track(path: str | Path) -> dict:
@@ -84,6 +82,7 @@ class Importer:
         self._running: str | None = None
         self._cancel: set[str] = set()
         self.jobs: dict[str, dict] = {}
+        self._history: dict | None = None      # past imports' step times (import_eta.py), read lazily
         self._load()
 
     # ------------------------------------------------------------------ persistence
@@ -116,8 +115,21 @@ class Importer:
         with self._lock:
             if episode_id is not None:
                 j = self.jobs.get(episode_id)
-                return dict(j) if j else None
-            return sorted((dict(j) for j in self.jobs.values()), key=lambda j: j.get("created", ""), reverse=True)
+                return self._view(j) if j else None
+            return sorted((self._view(j) for j in self.jobs.values()), key=lambda j: j.get("created", ""), reverse=True)
+
+    def _view(self, job: dict) -> dict:
+        out = dict(job)
+        if job.get("state") == "running":
+            if self._history is None:
+                self._history = import_eta.history(self.root)
+            out["eta_s"] = import_eta.estimate(job, self._history)
+        return out
+
+    def track_paths(self) -> list[str]:
+        """Every raw track a listed import refers to (imported_tracks.py keeps those copies)."""
+        with self._lock:
+            return [t["path"] for j in self.jobs.values() for t in j.get("tracks", {}).values()]
 
     # ------------------------------------------------------------------ control
     def start(self, episode_id: str, title: str, leon: str, pei: str, wait: bool = False) -> dict:
@@ -127,6 +139,9 @@ class Importer:
             raise ImportError_(tr("剧集编号不能含 \\ / : * ? \" < > | 等字符"))
         if episode_id in self.ws.episode_ids():
             raise ImportError_(tr("已经有一集叫 {episode_id}，换个编号", episode_id=episode_id))
+        if episode_id in retired_ids(self.ws):
+            raise ImportError_(tr("{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号",
+                                  episode_id=episode_id))
         tracks = {"L": check_track(leon), "P": check_track(pei)}
         if tracks["L"]["path"] == tracks["P"]["path"]:
             raise ImportError_(tr("Leon 和 Pei 选了同一个文件"))
@@ -167,6 +182,12 @@ class Importer:
             self._save(j)
             del self.jobs[episode_id]
 
+    def drop(self, episode_id: str) -> None:
+        """Forget a job whose cache is being deleted with its episode (archive.py)."""
+        with self._lock:
+            if self.jobs.get(episode_id, {}).get("state") not in ("queued", "running"):
+                self.jobs.pop(episode_id, None)
+
     def _launch(self, job: dict, wait: bool) -> dict:
         with self._lock:
             if self._running:
@@ -188,6 +209,10 @@ class Importer:
         before = sum(w for s, w in STEPS[:[s for s, _ in STEPS].index(step)])
         weight = dict(STEPS)[step]
         with self._lock:
+            if job.get("step") != step:          # when each step started, for the time-left estimate
+                job.update(step_at=time.time(), step_first=None)
+            elif frac > 0 and not job.get("step_first"):
+                job["step_first"] = [round(time.time() - job["step_at"], 1), round(frac, 4)]
             job["step"] = step
             job["stage"] = stage
             job["progress"] = round(min(before + weight * min(max(frac, 0.0), 1.0), 0.999), 4)
@@ -195,6 +220,8 @@ class Importer:
     def _done_step(self, job: dict, step: str, info: dict | None = None) -> None:
         with self._lock:
             job["steps"][step] = {"done": now(), **(info or {})}
+            if job.get("step") == step and job.get("step_at"):
+                job["steps"][step].setdefault("seconds", round(time.time() - job["step_at"], 1))
         self._save(job)
 
     def _run(self, job: dict) -> None:
@@ -223,6 +250,7 @@ class Importer:
                 job["elapsed_s"] = round(job.get("elapsed_s", 0) + time.monotonic() - t0, 1)
                 self._running = None
                 self._cancel.discard(job["id"])
+                self._history = None             # this run's step times count from now on
             self._save(job)
 
     def _steps(self, job: dict, d: Path) -> None:
@@ -239,28 +267,39 @@ class Importer:
         rec = None
         audio16: dict[str, Any] = {}
         asr: dict[str, dict] = {}
-        for tag, name in HOSTS:
-            step = f"asr_{tag}"
-            out = d / f"asr_{tag}.json"
-            if out.is_file():
-                asr[tag] = read_json(out)
-                continue
-            self._progress(job, step, 0.0, tr("解码 {name} 的分轨", name=name))
-            t = time.monotonic()
-            x = asr_mod.decode_16k(job["tracks"][tag]["path"])
-            audio16[tag] = x
-            if backend is None:
-                if rec is None:
-                    self._progress(job, step, 0.01, tr("加载识别模型"))
-                    rec = asr_mod.load_recognizers(self.models_dir)
-                res = asr_mod.transcribe(x, rec, lambda f, s, step=step, name=name:
-                                         self._progress(job, step, f, f"{name}：{s}"))
-            else:
-                res = backend(tag, x, lambda f, s, step=step, name=name: self._progress(job, step, f, f"{name}：{s}"))
-            atomic_write_json(out, res)
-            asr[tag] = res
-            self._done_step(job, step, {"seconds": round(time.monotonic() - t, 1),
-                                        "segments": len(res["segments"]), "audio_s": res["audio_s"]})
+        todo = [tag for tag, _ in HOSTS if not (d / f"asr_{tag}.json").is_file()]
+        # the next track is decoded (ffmpeg, ~10 s an hour) while this one is being recognised
+        prefetch = ThreadPoolExecutor(1, thread_name_prefix="decode16k")
+        decoded = {tag: prefetch.submit(asr_mod.decode_16k, job["tracks"][tag]["path"]) for tag in todo[:1]}
+        try:
+            for tag, name in HOSTS:
+                step = f"asr_{tag}"
+                out = d / f"asr_{tag}.json"
+                if out.is_file():
+                    asr[tag] = read_json(out)
+                    continue
+                self._progress(job, step, 0.0, tr("解码 {name} 的分轨", name=name))
+                t = time.monotonic()
+                x = decoded.pop(tag).result()
+                audio16[tag] = x
+                for nxt in todo[todo.index(tag) + 1:][:1]:
+                    decoded[nxt] = prefetch.submit(asr_mod.decode_16k, job["tracks"][nxt]["path"])
+                if backend is None:
+                    if rec is None:
+                        self._progress(job, step, 0.01, tr("加载识别模型"))
+                        rec = asr_mod.load_recognizers(self.models_dir)
+                    res = asr_mod.transcribe(x, rec, lambda f, s, step=step, name=name:
+                                             self._progress(job, step, f, f"{name}：{s}"))
+                else:
+                    res = backend(tag, x, lambda f, s, step=step, name=name: self._progress(job, step, f, f"{name}：{s}"))
+                atomic_write_json(out, res)
+                asr[tag] = res
+                self._done_step(job, step, {"seconds": round(time.monotonic() - t, 1),
+                                            "segments": len(res["segments"]), "audio_s": res["audio_s"]})
+        finally:
+            for f in decoded.values():
+                f.cancel()
+            prefetch.shutdown(wait=False)     # a cancelled import does not wait for a decode it no longer needs
         rec = None
 
         # 3. features + editor document (cached)
@@ -291,7 +330,7 @@ class Importer:
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
-            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（没有 Claude）"))
+            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（AI 没接上）"))
             try:
                 res = fc.run(doc, duration, tokens, job["id"],
                              progress=lambda f, s: self._progress(job, "first_cut", f, s),
@@ -320,6 +359,7 @@ class Importer:
                 "ai_report": report_dict(report), "first_cut_engine": engine,
                 "imported_at": now(), "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in HOSTS}}
         create_episode(self.ws, job["id"], meta, project, edits, transcript)
+        self._level(job["id"])          # not cancellable: the episode exists now
         cons = sum(e.consequential for e in edits)
         dur = project.base.length / project.base.sample_rate
         with self._lock:
@@ -346,6 +386,19 @@ class Importer:
                     refs[name] = conform(job["tracks"][tag]["path"], d / "media" / f"{name}.wav", sr)
         return refs
 
+    def _level(self, episode_id: str) -> None:
+        """Even out the hosts' loudness from the start (backlog 7, levels.py); a failure only skips it."""
+        from . import levels
+        from .episode import Episode
+        try:
+            ep = Episode(self.ws, episode_id)
+            try:
+                levels.level_new_episode(ep)
+            finally:
+                ep.close()
+        except Exception:      # noqa: BLE001 - the episode is usable without it; 「声音」 can level it later
+            traceback.print_exc()
+
     def _log_usage(self, episode_id: str, usage: dict) -> None:
         line = {"at": now(), "episode": episode_id, "kind": "first_cut", **usage}
         try:
@@ -353,42 +406,3 @@ class Importer:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
         except OSError:
             pass
-
-
-# ---------------------------------------------------------------------- file browser
-
-def list_dir(path: str | None, default: Path) -> dict:
-    """Folders and audio files in `path` (local machine; the app only ever binds to 127.0.0.1)."""
-    import os
-    import sys
-    p = Path(path).expanduser() if path else default
-    try:
-        p = p.resolve()
-        entries = list(os.scandir(p))
-    except (OSError, RuntimeError):
-        raise ImportError_(tr("打不开文件夹：{p}", p=p))
-    dirs, files = [], []
-    for e in entries:
-        if e.name.startswith((".", "$")):
-            continue
-        try:
-            if e.is_dir():
-                dirs.append({"name": e.name, "path": str(p / e.name)})
-            elif Path(e.name).suffix.lower() in AUDIO_EXT:
-                f = {"name": e.name, "path": str(p / e.name), "size": e.stat().st_size, "duration": None}
-                try:
-                    i = sf.info(e.path)
-                    f["duration"] = round(i.frames / i.samplerate, 1)
-                except Exception:   # noqa: BLE001
-                    pass
-                files.append(f)
-        except OSError:
-            continue
-    roots = [str(default)]
-    if sys.platform == "win32":
-        roots += [f"{c}:\\" for c in "CDEFGH" if Path(f"{c}:\\").exists()]
-    else:
-        roots += [str(Path.home()), "/"]
-    parent = str(p.parent) if p.parent != p else None
-    return {"path": str(p), "parent": parent, "dirs": sorted(dirs, key=lambda d: d["name"].lower()),
-            "files": sorted(files, key=lambda f: f["name"].lower()), "roots": list(dict.fromkeys(roots))}

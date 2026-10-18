@@ -1,36 +1,42 @@
-"""Music on an episode: series intro/outro, interludes, beds and film clips, with ducking (D45).
+"""Music on an episode: series intro/outro, interludes, beds and film clips (D45, full-play rule).
 
 Model
 -----
 * The voice edit (`Episode`) is untouched. Music is a layer on top of the *voice timeline* (the
-  current cut): ``<episode>/music.json`` (schema 1) lists placements.
-* A placement plays ``[src_in_s, src_out_s)`` of one library asset in a role:
-  - intro: from 0; the voice starts ``overlap_s`` before the music ends (music ducked, fading out).
+  current cut): ``<episode>/music.json`` (schema 2) lists placements.
+* Everything Leon puts in plays whole, from ``src_in_s`` to ``src_out_s`` (default: the whole
+  file); it is never cut short unless he trims it. Under talk it keeps playing as background,
+  ``bg_db`` lower than its full level, at a constant level (docs/decisions/2026-10-18-music-full-play.md):
+  - intro: from 0, full level for ``solo_s``, then down to background over ``ramp_s``; the voice
+    starts there and the song plays on under it to its end.
   - interlude: at a point between two sentences (anchored in *base* samples, like edits, so it
-    moves with later voice edits). Time is inserted for it; ``overlap_s`` of it sits under the
-    speech before and after, ducked.
-  - outro: starts ``overlap_s`` before the voice ends, ducked until the voice stops.
-  - bed: under speech from a point (to an end point or the end of the segment), low and ducked.
+    moves with later voice edits). The talk stops: the song rises over ``ramp_s`` (optionally it
+    already played ``pre_s`` under the talk before), plays at full level for ``solo_s``, goes back
+    down over ``ramp_out_s`` and the talk resumes while the song plays on as background.
+  - outro: background under the last words, placed so the voice ends at ``bye_s`` of the file;
+    then it rises over ``ramp_s`` and plays to ``src_out_s``, fading out over ``fade_out_s``.
+  - bed: from a point (to an end point or the end of the song), constantly ``bg_db`` lower. With
+    ``auto`` the App picks the point: the bed goes into the free stretches, where no other music
+    plays (docs/decisions/2026-10-18-bed-auto-loop.md). With ``loop`` it repeats (crossfaded) to
+    fill its stretch instead of stopping at the end of the song.
   - clip: a film line; time is inserted with ``lead_s`` of silence before and after.
 * The final mix = voice tracks with the inserted gaps + one music track per placement (mono for
-  preview; L/R tracks panned hard for stereo export), with fades and `Duck`s computed from where
-  the voice actually speaks (rendered energy), so the voice always stays on top.
-* Music level is set by measurement: normal roles sit about 1 LU under the voice, beds 14 LU
-  under; ``gain_db`` is Leon's offset on top.
+  preview; L/R tracks panned hard for stereo export), with fades, and `Duck`s for the background
+  stretches.
+* Music level is set by measurement: full level sits about 1 LU under the voice, measured on the
+  part of the song that plays (levels.music_lufs); ``gain_db`` is Leon's offset on top.
 
 Public functions used by other modules (D42): `bgm_credits`, `final_time`, `final_duration`,
 `EpisodeMusic.mix` (export).
 """
 from __future__ import annotations
 
-import bisect
 import hashlib
 import json
 import math
 import threading
 import uuid
 from dataclasses import dataclass, field, replace
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -42,26 +48,36 @@ from lacuna_core.master import LoudnessMeter
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .episode import ConflictError, Episode, to_base, to_tl
 from .library import Library, credit_line
-from .store import Workspace, atomic_write_json, read_json
+from .store import Workspace, atomic_write_json, read_json, now_iso as _now
 from .i18n import N_, tr
 
-SCHEMA = 1
+SCHEMA = 2
 FILE = "music.json"
 APPLIED, PROPOSED = "applied", "proposed"
 ROLES = {"intro": N_("片头"), "interlude": N_("间奏"), "outro": N_("片尾"), "bed": N_("铺底"), "clip": N_("台词")}
 GAP_ROLES = ("interlude", "clip")            # roles that insert time into the conversation
 ANCHORED = ("interlude", "clip", "bed")      # roles placed at a point of the conversation
-MAX_LEN = {"intro": 30.0, "interlude": 20.0, "outro": 60.0, "bed": 120.0, "clip": 60.0}   # default length cap (s)
-OVERLAP = {"intro": 4.0, "interlude": 2.0, "outro": 4.0, "bed": 0.0, "clip": 0.0}
+SOLO_S = {"intro": 10.0, "interlude": 15.0}  # intro: music alone before the voice; interlude: full level in the gap
+RAMP_S = 2.0                                 # rise / fall between full level and background
+BG_DB = 22.0                                 # background = this much under full level (new placements)
+BG_DB_V1 = 20.0                              # what a schema-1 placement was heard with
+OUTRO_TAIL_S = 30.0                          # default: the voice ends this long before the outro ends
+FADE_OUT_S = {"outro": 10.0}                 # fade at a trimmed end (others: 3 s)
 LEAD_S = 0.5                                 # silence around a clip
-LEVEL_LU = {"intro": -1.0, "interlude": -1.0, "outro": -1.0, "bed": -14.0, "clip": 0.0}   # vs voice loudness
-DUCK_DB = {"intro": 15.0, "interlude": 15.0, "outro": 15.0, "bed": 8.0, "clip": 12.0}
+LISTEN_CTX_S = 5.0                           # listening to one placement starts this long before its transition
+FREE_MIN_S = 8.0                             # an automatic bed skips free stretches shorter than this
+LOOP_XFADE_S = 2.0                           # crossfade where a looping bed starts over
+LEVEL_LU = -1.0                              # full level vs voice loudness
+CLIP_DUCK_DB = 12.0
 DUCK_RAMP_S = 0.25
 STEREO_HALF_DB = -3.01                       # each hard-panned half of a stereo file vs a centred mono track
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+TUNING = ("src_in_s", "src_out_s", "gain_db", "solo_s", "ramp_s", "ramp_out_s", "bg_db", "pre_s", "bye_s", "fade_out_s",
+          "lead_s")
+FLAGS = ("auto", "loop")                     # bed: placed by the App / repeats to fill its stretch
+ROLE_TUNING = ("solo_s", "ramp_s", "ramp_out_s", "pre_s", "bye_s", "fade_out_s", "lead_s")   # mean something else per role
+# schema 1 (before the full-play rule) cut music at these lengths and overlapped it with the voice
+_V1_MAX = {"intro": 30.0, "interlude": 20.0, "outro": 60.0, "bed": 120.0, "clip": 60.0}
+_V1_OVERLAP = {"intro": 4.0, "interlude": 2.0, "outro": 4.0}
 
 
 @dataclass
@@ -74,6 +90,10 @@ class Placed:
     gap_at: int | None = None   # voice-timeline sample where time was inserted
     gap: int = 0
     anchor: int | None = None   # final-mix sample of the placement's position (anchored roles)
+    bg: list[tuple[int, int]] = field(default_factory=list)   # final-mix stretches played as background
+    ramp: int = 0               # samples to rise / fall between full level and background
+    ramp_out: int | None = None # interlude: samples to fall back to background after the gap (None: `ramp`)
+    period: int = 0             # looping bed: samples of one pass of the song (0: plays once)
 
     @property
     def end(self) -> int:
@@ -87,6 +107,7 @@ class Layout:
     inserts: list[tuple[int, int, int]] = field(default_factory=list)   # (voice sample, order, length)
     items: list[Placed] = field(default_factory=list)
     skipped: list[dict] = field(default_factory=list)                  # placements whose asset is gone
+    unplaced: list[dict] = field(default_factory=list)                 # automatic beds with no free stretch left
 
     def final(self, t: int) -> int:
         """Voice-timeline sample -> final-mix sample (material at an insert point comes after the gap)."""
@@ -109,11 +130,17 @@ class Layout:
         return max([self.final(self.voice_len)] + [it.end for it in self.items])
 
 
+def _f(p: dict, k: str, default: float) -> float:
+    v = p.get(k)
+    return float(default if v is None or v == "" else v)
+
+
 def layout(placements: list[dict], assets: dict[str, dict], sr: int, voice_len: int,
            to_voice) -> Layout:
     """Pure placement arithmetic. `to_voice(base_sample) -> voice sample`."""
     lay = Layout(sr, voice_len)
     live = []
+    S = lambda v: int(round(v * sr))      # noqa: E731 - seconds -> samples
     for i, p in enumerate(placements):
         if p.get("status", APPLIED) != APPLIED:
             continue
@@ -123,51 +150,118 @@ def layout(placements: list[dict], assets: dict[str, dict], sr: int, voice_len: 
             continue
         src_in = max(0.0, float(p.get("src_in_s") or 0.0))
         src_out = min(float(p.get("src_out_s") or a["duration_s"]), a["duration_s"])
-        n = int(round((src_out - src_in) * sr))
-        if n <= int(0.05 * sr):
+        n = S(src_out - src_in)
+        if n <= S(0.05):
             lay.skipped.append(p)
             continue
-        ov = min(int(round(float(p.get("overlap_s") or 0.0) * sr)), n // 2 if p["role"] == "interlude" else n)
+        r = p["role"]
+        ramp = S(max(_f(p, "ramp_s", RAMP_S), 0.0))
+        solo = min(S(max(_f(p, "solo_s", SOLO_S.get(r, 0.0)), 0.0)), n)
+        g = 0                           # time inserted into the conversation
+        if r == "intro":
+            g = solo
+        elif r == "interlude":
+            pre = min(S(max(_f(p, "pre_s", 0.0), 0.0)), n)
+            g = min(ramp + S(max(_f(p, "ramp_out_s", _f(p, "ramp_s", RAMP_S)), 0.0)) + solo, n - pre)
+        elif r == "clip":
+            g = 2 * S(_f(p, "lead_s", LEAD_S)) + n
         T = None
-        if p["role"] in ANCHORED:
+        if r in ANCHORED and not (r == "bed" and p.get("auto")):
             T = min(max(to_voice(int(p["at_base"])), 0), voice_len)
-        live.append((i, p, a, n, ov, T))
-    # 1) time inserted into the conversation
-    for i, p, a, n, ov, T in live:
-        if p["role"] == "intro":
-            lay.inserts.append((0, -1, max(n - ov, 0)))
-        elif p["role"] == "interlude":
-            lay.inserts.append((T, i, max(n - 2 * ov, 0)))
-        elif p["role"] == "clip":
-            lead = int(round(float(p.get("lead_s", LEAD_S)) * sr))
-            lay.inserts.append((T, i, lead + n + lead))
+        live.append((i, p, a, n, ramp, solo, g, T))
+        if r == "intro":
+            lay.inserts.append((0, -1, g))
+        elif r in GAP_ROLES:
+            lay.inserts.append((T, i, g))
     lay.inserts.sort()
 
     def gap_start(T: int, order: int) -> int:
         return T + sum(m for T2, o2, m in lay.inserts if (T2, o2) < (T, order))
 
-    # 2) where each piece of music plays
-    for i, p, a, n, ov, T in live:
+    # where each piece of music plays, and which stretches of it are background; beds that fill
+    # free stretches (looping, automatic) wait until everything else is placed
+    later = []
+    for i, p, a, n, ramp, solo, g, T in live:
         r = p["role"]
+        if r == "bed" and (p.get("auto") or p.get("loop")):
+            later.append((p, a, n, T))
+            continue
         if r == "intro":
-            it = Placed(p, a, 0, n, 0, max(n - ov, 0))
+            it = Placed(p, a, 0, n, 0, g, bg=[(solo, n)] if solo < n else [], ramp=ramp)
         elif r == "interlude":
-            gap = max(n - 2 * ov, 0)
-            it = Placed(p, a, max(gap_start(T, i) - ov, 0), n, T, gap, gap_start(T, i))
+            gs = gap_start(T, i)
+            start = max(gs - min(S(max(_f(p, "pre_s", 0.0), 0.0)), n), 0)
+            bg = ([(start, gs)] if gs > start else []) + ([(gs + g, start + n)] if start + n > gs + g else [])
+            ramp_out = S(max(_f(p, "ramp_out_s", _f(p, "ramp_s", RAMP_S)), 0.0))
+            it = Placed(p, a, start, n, T, g, gs, bg=bg, ramp=min(ramp, g // 2), ramp_out=min(ramp_out, g // 2))
         elif r == "clip":
-            lead = int(round(float(p.get("lead_s", LEAD_S)) * sr))
-            it = Placed(p, a, gap_start(T, i) + lead, n, T, lead + n + lead, gap_start(T, i))
+            lead = S(_f(p, "lead_s", LEAD_S))
+            it = Placed(p, a, gap_start(T, i) + lead, n, T, g, gap_start(T, i))
         elif r == "bed":
             s = lay.final(T)
             if p.get("until_base") is not None:
                 e = lay.final(min(max(to_voice(int(p["until_base"])), T), voice_len))
-                n = max(min(n, e - s), int(0.05 * sr))
+                n = max(min(n, e - s), S(0.05))
             it = Placed(p, a, s, n, anchor=s)
-        else:   # outro
-            it = Placed(p, a, max(lay.final(voice_len) - ov, 0), n)
+        else:   # outro: the voice ends at `bye_s` of the file
+            v_end = lay.final(voice_len)
+            src_in = max(0.0, float(p.get("src_in_s") or 0.0))
+            src_out = src_in + n / sr
+            bye = min(max(S(_f(p, "bye_s", max(src_out - OUTRO_TAIL_S, src_in)) - src_in), 0), n)
+            start = max(v_end - bye, 0)
+            it = Placed(p, a, start, n, bg=[(start, v_end)] if v_end > start else [], ramp=ramp)
         lay.items.append(it)
+    _fill_beds(lay, later, S, to_voice)
     lay.items.sort(key=lambda it: it.start)
     return lay
+
+
+def _occupied(items: list[Placed]) -> list[tuple[int, int]]:
+    """Merged final-mix stretches where some music (or a clip's silence) plays."""
+    spans = sorted((min(it.start, it.anchor if it.p["role"] == "clip" and it.anchor is not None else it.start),
+                    max(it.end, (it.anchor or 0) + it.gap if it.p["role"] == "clip" else it.end)) for it in items)
+    out: list[list[int]] = []
+    for a, b in spans:
+        if out and a <= out[-1][1]:
+            out[-1][1] = max(out[-1][1], b)
+        else:
+            out.append([a, b])
+    return [(a, b) for a, b in out]
+
+
+def _free(occupied: list[tuple[int, int]], end: int) -> list[tuple[int, int]]:
+    out, t = [], 0
+    for a, b in occupied:
+        if a > t:
+            out.append((t, min(a, end)))
+        t = max(t, b)
+    if t < end:
+        out.append((t, end))
+    return [(a, b) for a, b in out if b > a]
+
+
+def _fill_beds(lay: Layout, beds: list[tuple[dict, dict, int, int | None]], S, to_voice) -> None:
+    """Looping beds at a point, then automatic beds into what is still free (in their order).
+    A looping bed fills to its end point, else to where the next music starts (or the talk ends)."""
+    end = lay.final(lay.voice_len)
+    for p, a, n, T in [b for b in beds if not b[0].get("auto")]:
+        s = lay.final(T)
+        if p.get("until_base") is not None:
+            e = lay.final(min(max(to_voice(int(p["until_base"])), T), lay.voice_len))
+        else:
+            e = min([x for x, _ in _occupied(lay.items) if x > s] + [max(end, s + n)])
+        lay.items.append(Placed(p, a, s, max(e - s, S(0.05)), anchor=s, period=n))
+    cursor = 0
+    for p, a, n, _ in [b for b in beds if b[0].get("auto")]:
+        spot = next(((max(x, cursor), y) for x, y in _free(_occupied(lay.items), end)
+                     if y - max(x, cursor) >= S(FREE_MIN_S)), None)
+        if spot is None:
+            lay.unplaced.append(p)
+            continue
+        s, e = spot
+        length = e - s if p.get("loop") else min(n, e - s)
+        lay.items.append(Placed(p, a, s, length, anchor=s, period=n if p.get("loop") else 0))
+        cursor = s + length
 
 
 def speech_regions(x: np.ndarray, sr: int, threshold_db: float, start: int) -> list[tuple[int, int]]:
@@ -196,6 +290,32 @@ def speech_regions(x: np.ndarray, sr: int, threshold_db: float, start: int) -> l
     return [(start + a * hop, start + b * hop) for a, b in regions if b - a >= 6]
 
 
+def upgrade_v1(p: dict, asset: dict | None) -> dict:
+    """A schema-1 placement (cut at a default length, overlapping the voice) -> the full-play
+    rule: a length that was only the automatic cap becomes the whole file; the voice still comes
+    in (intro), resumes (interlude) and ends (outro) where it did before."""
+    if "bg_db" in p or asset is None:
+        return p
+    r, dur = p["role"], asset["duration_s"]
+    src_in = float(p.get("src_in_s") or 0.0)
+    cap = min(dur, src_in + _V1_MAX.get(r, 60.0))
+    old_out = float(p["src_out_s"]) if p.get("src_out_s") not in (None, "") else cap
+    n = max(old_out - src_in, 0.0)
+    ov = float(_V1_OVERLAP.get(r, 0.0) if p.get("overlap_s") is None else p["overlap_s"])
+    ov = min(ov, n / 2 if r == "interlude" else n)
+    if r == "intro":
+        p["solo_s"] = round(n - ov, 3)
+    elif r == "interlude":
+        p["solo_s"] = round(max(n - 2 * ov - 2 * RAMP_S, 1.0), 3)
+    elif r == "outro":
+        p["bye_s"] = round(src_in + ov, 3)
+    if abs(old_out - cap) < 0.01:
+        p["src_out_s"] = dur
+    p.pop("overlap_s", None)
+    p["bg_db"] = BG_DB_V1 if r != "clip" else None
+    return p
+
+
 class EpisodeMusic:
     """Music placements of one episode, and the final mix built from them."""
 
@@ -214,6 +334,11 @@ class EpisodeMusic:
         if not self.path.exists() and not self.path.with_name(FILE + ".bak").exists():
             return {"schema": SCHEMA, "placements": [], "series": None, "series_dismissed": False, "draft": None}
         doc = read_json(self.path)
+        if doc.get("schema") == 1:
+            assets = {a["id"]: a for a in self.lib.assets()}
+            for p in doc["placements"] + ((doc.get("draft") or {}).get("placements") or []):
+                upgrade_v1(p, assets.get(p["asset_id"]))
+            doc["schema"] = SCHEMA
         if doc.get("schema") != SCHEMA:
             raise ValueError(f"unsupported music schema {doc.get('schema')}")
         return doc
@@ -235,7 +360,7 @@ class EpisodeMusic:
         ps = [p for p in self.placements() if p.get("status", APPLIED) == APPLIED]
         used = {p["asset_id"] for p in ps}
         assets = {a["id"]: (a.get("lufs"), a["duration_s"]) for a in self.lib.assets() if a["id"] in used}
-        keep = ("asset_id", "role", "at_base", "until_base", "src_in_s", "src_out_s", "overlap_s", "gain_db", "lead_s")
+        keep = ("asset_id", "role", "at_base", "until_base", *TUNING, *FLAGS)
         return hashlib.sha1(json.dumps([[{k: p.get(k) for k in keep} for p in ps], assets],
                                        sort_keys=True).encode()).hexdigest()[:12]
 
@@ -260,34 +385,56 @@ class EpisodeMusic:
         if r not in ROLES:
             raise ConflictError(f"unknown role {r}")
         dur = asset["duration_s"]
-        src_in = min(max(float(p.get("src_in_s") or 0.0), 0.0), max(dur - 0.1, 0.0))
-        src_out = p.get("src_out_s")
-        src_out = min(dur, src_in + MAX_LEN[r]) if src_out in (None, "") else min(max(float(src_out), src_in + 0.1), dur)
-        p.update(src_in_s=round(src_in, 3), src_out_s=round(src_out, 3),
-                 overlap_s=round(min(max(float(OVERLAP[r] if p.get("overlap_s") is None else p["overlap_s"]), 0.0),
-                                     (src_out - src_in) / (2 if r == "interlude" else 1)), 3),
-                 gain_db=round(min(max(float(p.get("gain_db") or 0.0), -30.0), 12.0), 2))
+        clamp = lambda k, default, lo, hi: round(min(max(_f(p, k, default), lo), hi), 3)   # noqa: E731
+        src_in = clamp("src_in_s", 0.0, 0.0, max(dur - 0.1, 0.0))
+        src_out = clamp("src_out_s", dur, src_in + 0.1, dur)      # default: the whole file
+        p.update(src_in_s=src_in, src_out_s=src_out, gain_db=round(clamp("gain_db", 0.0, -30.0, 12.0), 2))
+        p.pop("overlap_s", None)
+        if r in ("intro", "interlude", "outro"):
+            p["ramp_s"] = clamp("ramp_s", RAMP_S, 0.0, 10.0)
+        if r != "clip":
+            p["bg_db"] = clamp("bg_db", BG_DB, 0.0, 40.0)
+            v = p.get("fade_out_s")
+            p["fade_out_s"] = None if v in (None, "") else clamp("fade_out_s", 0.0, 0.0, 30.0)   # None: automatic
+        if r in SOLO_S:
+            p["solo_s"] = clamp("solo_s", SOLO_S[r], 0.0, 600.0)
+        if r == "interlude":
+            p["pre_s"] = clamp("pre_s", 0.0, 0.0, src_out - src_in)
+            p["ramp_out_s"] = clamp("ramp_out_s", p["ramp_s"], 0.0, 10.0)
+        if r == "outro":
+            p["bye_s"] = clamp("bye_s", max(src_out - OUTRO_TAIL_S, src_in), src_in, src_out)
         if r == "clip":
-            p["lead_s"] = round(min(max(float(LEAD_S if p.get("lead_s") is None else p["lead_s"]), 0.0), 5.0), 3)
-        if r in ANCHORED and p.get("at_base") is None:
-            raise ConflictError(tr("间奏、铺底、台词需要一个位置"))
+            p["lead_s"] = clamp("lead_s", LEAD_S, 0.0, 5.0)
+        relevant = {"solo_s": r in SOLO_S, "pre_s": r == "interlude", "ramp_out_s": r == "interlude", "bye_s": r == "outro", "lead_s": r == "clip",
+                    "ramp_s": r in ("intro", "interlude", "outro"), "bg_db": r != "clip", "fade_out_s": r != "clip"}
+        for k, keep in relevant.items():
+            if not keep:
+                p[k] = None
+        for k in FLAGS:
+            p[k] = bool(p.get(k)) if r == "bed" else None
+        if r in ANCHORED and p.get("at_base") is None and not p.get("auto"):
+            raise ConflictError(tr("间奏、台词需要一个位置"))
         if r not in ANCHORED:
             p["at_base"] = None
-        if r != "bed":
+        if r != "bed" or p.get("auto"):
             p["until_base"] = None
         return p
 
     def add(self, asset_id: str, role: str, at_s: float | None = None, until_s: float | None = None,
-            src_in_s: float | None = None, src_out_s: float | None = None, overlap_s: float | None = None,
-            gain_db: float = 0.0, lead_s: float | None = None, status: str = APPLIED, source: str = "manual") -> dict:
-        """Place an asset. `at_s` / `until_s` are seconds on the current voice timeline."""
+            status: str = APPLIED, source: str = "manual", auto: bool | None = None, loop: bool = False,
+            **tuning) -> dict:
+        """Place an asset. `at_s` / `until_s` are seconds on the current voice timeline; `tuning`:
+        any of TUNING (unset ones get the role's defaults). A bed without `at_s` is automatic: the
+        App puts it into the free stretches."""
         asset = self.lib.asset(asset_id)
+        if auto is None:
+            auto = role == "bed" and at_s is None
         with self.lock:
             p = {"id": "mu_" + uuid.uuid4().hex[:8], "asset_id": asset_id, "role": role,
-                 "at_base": self._voice_to_base(at_s) if at_s is not None else None,
+                 "at_base": self._voice_to_base(at_s) if at_s is not None and not auto else None,
                  "until_base": self._voice_to_base(until_s) if until_s is not None else None,
-                 "src_in_s": src_in_s, "src_out_s": src_out_s, "overlap_s": overlap_s, "gain_db": gain_db,
-                 "lead_s": lead_s, "status": status, "source": source, "created_at": _now()}
+                 **{k: tuning.get(k) for k in TUNING}, "auto": auto, "loop": loop,
+                 "status": status, "source": source, "created_at": _now()}
             p = self._clean(p, asset)
             doc = self.load()
             if role in ("intro", "outro"):        # one intro, one outro
@@ -297,21 +444,38 @@ class EpisodeMusic:
             return p
 
     def update(self, pid: str, **fields) -> dict:
+        """Change a placement. A new `role` keeps the song, its trim, volume and background level
+        and starts the new role's own numbers from their defaults; an automatic bed given a
+        position becomes a bed at that position."""
         with self.lock:
             doc = self.load()
             p = next((x for x in doc["placements"] if x["id"] == pid), None)
             if p is None:
                 raise KeyError(pid)
+            role = fields.get("role")
+            if role is not None and role != p["role"]:
+                for k in ROLE_TUNING:
+                    p[k] = None
+                if role == "bed" and p["role"] not in ANCHORED:
+                    p["auto"] = True          # no position yet: the App finds one
+                p["role"] = role
             if "at_s" in fields:
                 v = fields.pop("at_s")
                 if v is not None:
                     p["at_base"] = self._voice_to_base(v)
+                    p["auto"] = False
             if "until_s" in fields:
                 v = fields.pop("until_s")
                 p["until_base"] = self._voice_to_base(v) if v is not None else None
-            for k in ("asset_id", "role", "src_in_s", "src_out_s", "overlap_s", "gain_db", "lead_s", "status"):
+                if v is not None:
+                    p["auto"] = False
+            for k in ("asset_id", "status", *TUNING, *FLAGS):
                 if k in fields and fields[k] is not None:
                     p[k] = fields[k]
+            if p["role"] in ANCHORED and p.get("at_base") is None and not p.get("auto"):
+                if p["role"] != "bed":
+                    raise ConflictError(tr("间奏、台词需要一个位置"))
+                p["auto"] = True
             if p["status"] not in (APPLIED, PROPOSED):
                 raise ConflictError(f"unknown status {p['status']}")
             self._clean(p, self.lib.asset(p["asset_id"]))
@@ -355,7 +519,7 @@ class EpisodeMusic:
             if not d or d["id"] != draft_id:
                 raise KeyError(draft_id)
             if d["base"] != self.digest(doc["placements"]):
-                raise ConflictError(tr("这条建议之后配乐又改过了，建议已经过期，请重新让 Claude 看一次"))
+                raise ConflictError(tr("这条建议之后配乐又改过了，建议已经过期，请重新让 LACUNA 看一次"))
             doc["placements"] = [dict(p, status=APPLIED) for p in d["placements"]]
             doc["draft"] = None
             self.save(doc)
@@ -408,8 +572,8 @@ class EpisodeMusic:
         for role in ("intro", "outro"):
             t = rule.get(role)
             if t and self._asset_or_none(t["asset_id"]):
-                added.append(self.add(t["asset_id"], role, src_in_s=t.get("src_in_s"), src_out_s=t.get("src_out_s"),
-                                      overlap_s=t.get("overlap_s"), gain_db=t.get("gain_db") or 0.0, source="series"))
+                t = upgrade_v1(dict(t, role=role), self._asset_or_none(t["asset_id"]))
+                added.append(self.add(t["asset_id"], role, source="series", **{k: t.get(k) for k in TUNING}))
         with self.lock:
             doc = self.load()
             doc["series"] = rule["name"]
@@ -482,7 +646,6 @@ class EpisodeMusic:
             lay = self.layout(enabled, placements)
             with ep.lock:
                 voice = ep.timeline_for(enabled)
-            sr = ep.sr
             tl = voice
             for T, _, n in sorted(lay.inserts, reverse=True):      # latest first keeps earlier points valid
                 tl = InsertGap(T, n).apply(tl)
@@ -507,46 +670,54 @@ class EpisodeMusic:
 
     def _music_tracks(self, it: Placed, voice_tl: Timeline, vr: Renderer, voice_lufs: float, channels: int,
                       media: dict[str, MediaRef]) -> list[Track]:
+        from lacuna_core.edl import Duck
         sr = self.ep.sr
         p, a, r = it.p, it.asset, it.p["role"]
         src_in = int(round(p["src_in_s"] * sr))
         n = it.length
-        ov = min(int(round(p["overlap_s"] * sr)), n)
-        truncated = p["src_out_s"] < a["duration_s"] - 0.05
-        fi = fo = 0
-        if r in ("interlude", "outro") and ov:
-            fi = ov
-        elif r == "bed" or p["src_in_s"] > 0.05:
-            fi = int(0.5 * sr) if r != "bed" else int(1.5 * sr)
-        if r in ("intro", "interlude") and ov:
-            fo = ov
-        elif truncated or r == "bed":
-            fo = int((3.0 if r == "outro" else 1.5) * sr)
+        one_pass = int(round((p["src_out_s"] - p["src_in_s"]) * sr))
+        trimmed = p["src_out_s"] < a["duration_s"] - 0.05 or (r == "bed" and abs(n - one_pass) > 1)
+        fo = _f(p, "fade_out_s", FADE_OUT_S.get(r, 3.0) if trimmed else 0.0)
+        fo = int(round(fo * sr))
         if r == "clip":
             fi = fo = int(0.01 * sr)
+        elif r == "interlude" and it.start == it.anchor:     # starts in the gap: rises from silence
+            fi = it.ramp or int(0.5 * sr)
+        elif it.bg and it.bg[0][0] == it.start:              # starts under the talk
+            fi = int(1.5 * sr)
+        else:
+            fi = int(0.5 * sr) if p["src_in_s"] > 0.05 else 0
         if fi + fo > n:
             fi, fo = n // 2, n - n // 2
-        gain = (voice_lufs + LEVEL_LU[r] - a["lufs"] if a.get("lufs") is not None else 0.0) + p["gain_db"]
-        # ducking under the voice inside the music span
-        lo, hi = it.start, min(it.end, voice_tl.length)
+        gain = self.level_db(p, a, voice_lufs) + p["gain_db"]
         ducks = []
-        if hi > lo and DUCK_DB[r]:
-            x = vr.render(voice_tl, lo, hi)[:, 0]
-            ramp = int(DUCK_RAMP_S * sr)
-            from lacuna_core.edl import Duck
-            ducks = [Duck(s, e, DUCK_DB[r], ramp) for s, e in speech_regions(x, sr, voice_lufs - 22.0, lo)]
+        if r == "bed":                       # the whole bed is background: simply lower
+            gain -= _f(p, "bg_db", BG_DB)
+        elif r == "clip":                    # a film line never plays under speech, but just in case
+            lo, hi = it.start, min(it.end, voice_tl.length)
+            if hi > lo:
+                x = vr.render(voice_tl, lo, hi)[:, 0]
+                ramp = int(DUCK_RAMP_S * sr)
+                ducks = [Duck(s, e, CLIP_DUCK_DB, ramp) for s, e in speech_regions(x, sr, voice_lufs - 22.0, lo)]
+        else:
+            depth = _f(p, "bg_db", BG_DB)
+            after_gap = (it.anchor or 0) + it.gap if r == "interlude" else None
+            ducks = [Duck(s, e, depth, it.ramp_out if s == after_gap and it.ramp_out is not None else it.ramp)
+                     for s, e in it.bg if e > s and depth > 0]
         layouts = [("m", 0.0, 0.0)] if channels == 1 else [("L", -1.0, STEREO_HALF_DB), ("R", 1.0, STEREO_HALF_DB)]
         out = []
         for lay_, pan, extra in layouts:
             m = self.lib.media(a, sr, lay_)
             media[m.media_id] = m
-            src_out = min(src_in + n, m.frames)
-            if src_out - src_in <= 0:
-                continue
-            ln = src_out - src_in
-            c = Clip(f"{p['id']}_{lay_}", m.media_id, src_in, src_out, it.start, round(gain + extra, 3),
-                     min(fi, ln), min(fo, max(ln - min(fi, ln), 0)))
-            out.append(Track(f"♪{p['id']}{'' if lay_ == 'm' else ' ' + lay_}", (c,), pan=pan, ducks=tuple(ducks)))
+            passes = loop_passes(it.start, n, src_in, min(it.period, m.frames - src_in) if it.period else 0,
+                                 fi, fo, int(LOOP_XFADE_S * sr), m.frames)
+            for k in (0, 1):      # a looping bed alternates two tracks so the passes can overlap
+                clips = tuple(Clip(f"{p['id']}_{lay_}" + (f"_{j}" if j else ""), m.media_id, a_, b_, st,
+                                   round(gain + extra, 3), f_in, f_out)
+                              for j, (a_, b_, st, f_in, f_out) in enumerate(passes) if j % 2 == k)
+                if clips:
+                    name = f"♪{p['id']}{'' if lay_ == 'm' else ' ' + lay_}{'' if k == 0 else ' ~'}"
+                    out.append(Track(name, clips, pan=pan, ducks=tuple(ducks)))
         return out
 
     # ------------------------------------------------------------------ listening
@@ -578,23 +749,36 @@ class EpisodeMusic:
             return HEADER_BYTES + tl.length * SAMPLE_BYTES
 
     def iter_wav(self, enabled, first: int, last: int, chunk_s: float = 4.0):
+        """Bytes [first, last] of this mix version. Always exactly that many: if the music changes
+        while this stream is still being read, the rest of it is silence (the page has already
+        switched to the new version's URL) instead of a short body the server would abort."""
         with self.lock:
+            key = self.mix_key(enabled)
             tl, _ = self._player(enabled)
         n, sr = tl.length, self.ep.sr
+        want, sent = last - first + 1, 0
         head = wav_header(n, sr, 1)
         if first < HEADER_BYTES:
-            yield head[first:min(last + 1, HEADER_BYTES)]
+            chunk = head[first:min(last + 1, HEADER_BYTES)]
+            sent += len(chunk)
+            yield chunk
         d0, d1 = max(first - HEADER_BYTES, 0), last - HEADER_BYTES + 1
-        if d1 <= d0:
-            return
         s0, s1 = d0 // SAMPLE_BYTES, min(-(-d1 // SAMPLE_BYTES), n)
         step = int(chunk_s * sr)
-        for s in range(s0, s1, step):
+        for s in range(s0, s1 if d1 > d0 else s0, step):
             e = min(s + step, s1)
-            data = pcm16(self.render(enabled, s, e)[:, 0])
+            with self.lock:
+                if self.mix_key(enabled) == key:
+                    data = pcm16(self.render(enabled, s, e)[:, 0])
+                else:
+                    data = bytes((e - s) * SAMPLE_BYTES)
             lo = max(d0 - s * SAMPLE_BYTES, 0)
             hi = min(d1 - s * SAMPLE_BYTES, len(data))
-            yield data[lo:hi]
+            chunk = data[lo:hi][:want - sent]
+            sent += len(chunk)
+            yield chunk
+        if sent < want:
+            yield bytes(want - sent)
 
     def preview(self, pid: str, ctx_s: float = 8.0, max_s: float = 75.0,
                 placements: list[dict] | None = None) -> tuple[bytes, float]:
@@ -606,28 +790,42 @@ class EpisodeMusic:
         if it is None:
             raise KeyError(pid)
         sr = self.ep.sr
-        c = int(ctx_s * sr)
-        a, b = max(it.start - c, 0), min(it.end + c, tl.length)
-        if b - a > int(max_s * sr):           # long music: hear the way in and the way out
-            if it.p["role"] == "outro":
-                a = max(b - int(max_s * sr), 0)
+        r = it.p["role"]
+        a, b = transitions(it, int(ctx_s * sr), tl.length)
+        if b - a > int(max_s * sr):           # long music: the way in, or for an outro the ending
+            if r == "outro":
+                a = b - int(max_s * sr)
             else:
                 b = a + int(max_s * sr)
         return wav_bytes(self.render(enabled, a, b, placements), sr), a / sr
 
     # ------------------------------------------------------------------ views
     def items_json(self, lay: Layout, include_proposed: bool = True) -> list[dict]:
+        """Placements for the page; `listen_s`: where on the final mix to start listening to one
+        (just before its first transition)."""
         sr = self.ep.sr
         out = []
+        with self.ep.lock:
+            cuts = self.ep.cuts_for(self.ep.enabled)
         for it in lay.items:
             p, a = it.p, it.asset
+            until = None
+            if p.get("until_base") is not None:      # a bed's end point, on the final mix
+                until = round(lay.final(min(max(to_tl(int(p["until_base"]), cuts), 0), lay.voice_len)) / sr, 3)
             out.append({**p, "role_label": tr(ROLES[p["role"]]), "asset_name": a.get("name"), "asset_note": a.get("note"),
                         "asset_duration_s": a["duration_s"], "credit_line": credit_line(a),
                         "credit_status": (a.get("credit") or {}).get("status", "unknown"),
                         "start_s": round(it.start / sr, 3), "end_s": round(it.end / sr, 3),
                         "voice_at_s": round(it.gap_at / sr, 3) if it.gap_at is not None else None,
                         "at_s": round(it.anchor / sr, 3) if it.anchor is not None else None,
-                        "inserted_s": round(it.gap / sr, 3), "missing": False})
+                        "inserted_s": round(it.gap / sr, 3), "until_at_s": until, "missing": False,
+                        "listen_s": round(transitions(it, int(LISTEN_CTX_S * sr), lay.length)[0] / sr, 3)})
+        for p in lay.unplaced:
+            a = self._asset_or_none(p["asset_id"]) or {}
+            out.append({**p, "role_label": tr(ROLES[p["role"]]), "missing": False, "no_room": True,
+                        "asset_name": a.get("name"), "asset_note": a.get("note"), "asset_duration_s": a.get("duration_s"),
+                        "credit_line": credit_line(a) if a else "", "credit_status": (a.get("credit") or {}).get("status", "unknown"),
+                        "start_s": None, "end_s": None})
         for p in lay.skipped:
             out.append({**p, "role_label": tr(ROLES.get(p["role"], p["role"])), "missing": True,
                         "asset_name": None, "credit_line": tr("素材已不在库里"), "start_s": None, "end_s": None})
@@ -636,7 +834,15 @@ class EpisodeMusic:
             a = self._asset_or_none(p["asset_id"]) or {}
             out.append({**p, "role_label": tr(ROLES.get(p["role"], p["role"])), "missing": not a,
                         "asset_name": a.get("name"), "credit_line": credit_line(a) if a else "", "start_s": None, "end_s": None})
+        vl = self.voice_lufs(self.ep.enabled) if lay.items else None
+        for d, it in zip(out, lay.items):        # the automatic part of the level; gain_db is Leon's offset on top
+            d["level_db"] = self.level_db(it.p, it.asset, vl)
         return out
+
+    def level_db(self, p: dict, asset: dict, voice_lufs: float) -> float:
+        """Automatic gain of a placement: the part of the song that plays sits LEVEL_LU from the voice (levels.py)."""
+        from . import levels
+        return levels.music_level_db(self.lib, asset, p, voice_lufs, LEVEL_LU)
 
     def summary(self) -> dict:
         ep = self.ep
@@ -656,13 +862,57 @@ class EpisodeMusic:
                 "export_key": self.export_key()}
 
 
+def transitions(it: Placed, c: int, length: int) -> tuple[int, int]:
+    """Final-mix [a, b) around a placement's transitions (where the music turns into background
+    or back, and its end), with `c` samples of context."""
+    r = it.p["role"]
+    if r == "intro":
+        a, b = 0, it.gap + 2 * c
+    elif r == "interlude":
+        a, b = it.start - c, (it.anchor or it.start) + it.gap + 2 * c
+    elif r == "outro":
+        v_end = it.bg[0][1] if it.bg else it.start
+        a, b = v_end - 2 * c, it.end + c
+    else:
+        a, b = it.start - c, it.end + c
+    return max(a, 0), min(b, length)
+
+
+def loop_passes(start: int, n: int, src_in: int, period: int, fi: int, fo: int, xfade: int,
+                frames: int) -> list[tuple[int, int, int, int, int]]:
+    """(src_in, src_out, start, fade_in, fade_out) of each pass of a piece of music `n` samples
+    long. Without a loop (`period` 0, or `n` fits in one pass) one pass; a loop starts the song
+    over `xfade` before each pass ends, crossfading."""
+    if not period or n <= period:
+        b = min(src_in + n, frames)
+        ln = b - src_in
+        if ln <= 0:
+            return []
+        f_in = min(fi, ln)
+        return [(src_in, b, start, f_in, min(fo, max(ln - f_in, 0)))]
+    xfade = min(xfade, period // 4)
+    out, t, end = [], start, start + n
+    while t < end:
+        ln = min(period, end - t)
+        first, last = t == start, t + ln >= end
+        f_in = min(fi if first else xfade, ln)
+        f_out = min(fo if last else xfade, max(ln - f_in, 0))
+        out.append((src_in, src_in + ln, t, f_in, f_out))
+        if last:
+            break
+        t += period - xfade
+    return out
+
+
 def credits(lay: Layout) -> list[dict]:
     sr = lay.sr
     out = []
     for it in lay.items:
         a, c = it.asset, (it.asset.get("credit") or {})
+        # an interlude is heard where the talk stops, even when it already played under the talk before
+        start = it.anchor if it.p["role"] == "interlude" and it.anchor is not None else it.start
         out.append({"role": it.p["role"], "role_label": ROLES[it.p["role"]],
-                    "start_s": round(it.start / sr, 3), "end_s": round(it.end / sr, 3), "asset_id": a["id"],
+                    "start_s": round(start / sr, 3), "end_s": round(it.end / sr, 3), "asset_id": a["id"],
                     "title": c.get("title"), "artist": c.get("artist"), "composer": c.get("composer"),
                     "album": c.get("album"), "film": c.get("film"), "year": c.get("year"),
                     "credit_status": c.get("status", "unknown"), "credit_line": credit_line(a)})

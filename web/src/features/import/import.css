@@ -1,0 +1,13 @@
+/* Import form (首检 #4): the same drop zone as the media library (.lib-drop, library.css) + two track slots */
+.import-drop { border-radius: 16px; padding: 24px 16px; margin-bottom: 12px; }
+.import-slots { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.import-slot { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; border-radius: 14px; border: 1px dashed var(--line-2); background: var(--solid-2); transition: border-color .15s, background .15s; }
+.import-slot-set { border-style: solid; border-color: var(--line); }
+.import-slot-over { border-color: var(--accent); background: var(--accent-soft); }
+.import-slot > strong { white-space: nowrap; }
+.import-slot-file { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-slot-copying { display: flex; flex-direction: column; gap: 4px; }
+.import-slot-bar { display: block; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.import-slot-bar > span { display: block; height: 100%; background: var(--grad, var(--accent)); transition: width .2s; }
+.import-swap { align-self: flex-start; }
+@media (max-width: 600px) { .import-slot { flex-wrap: wrap; } }

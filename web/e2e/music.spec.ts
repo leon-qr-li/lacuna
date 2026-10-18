@@ -1,12 +1,14 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 // written by tests/app/serve_e2e.py when the backend starts
 const INBOX = join(dirname(fileURLToPath(import.meta.url)), ".fixtures", "music_inbox");
 
 const EP = encodeURIComponent("EP_TEST_合成");
+// one placement on the music page by its use (the rows' type pickers list every use's name)
+const row = (page: Page, role: string) => page.locator(`[data-testid="placement"][data-role="${role}"]`);
 
 // one flow: the music tests share the backend's library and the episode's music
 test("media library → credits → music on the episode → series rule", async ({ page }) => {
@@ -21,16 +23,16 @@ test("media library → credits → music on the episode → series rule", async
   const theme = page.getByTestId("asset-row").filter({ hasText: "odyssey_theme.mp3" });
   await expect(theme).toContainText("待确认"); // from the file's own tags
   // Claude can't hear the music: no note, no lookup
-  await expect(theme.getByRole("button", { name: "让 Claude 查正式曲名" })).toBeDisabled();
+  await expect(theme.getByRole("button", { name: "让 LACUNA 查正式曲名" })).toBeDisabled();
   await theme.getByLabel("备注").fill("这是奥德赛的主题曲");
   await theme.getByRole("button", { name: "保存备注" }).click();
   await expect(theme.getByRole("button", { name: "保存备注" })).toBeDisabled();
   await expect(theme.getByTestId("credit-line")).toContainText("Odyssey Main Theme");
 
   // Claude looks up the official title (fake client), Leon confirms it
-  await theme.getByRole("button", { name: "让 Claude 查正式曲名" }).click();
+  await theme.getByRole("button", { name: "让 LACUNA 查正式曲名" }).click();
   await expect(theme.getByTestId("credit-line")).toContainText("《奥德赛》原声 · Ludwig Göransson — “Odysseus”");
-  await expect(theme).toContainText("Claude 查的");
+  await expect(theme).toContainText("LACUNA 查的");
   await expect(theme.getByLabel("曲名")).toHaveValue("Odysseus"); // filled in, ready to correct
   await theme.getByRole("button", { name: "收起" }).click();
   await theme.getByRole("button", { name: "对，就是这首" }).click();
@@ -67,53 +69,62 @@ test("media library → credits → music on the episode → series rule", async
   await expect(page.getByRole("heading", { name: "配乐", exact: true })).toBeVisible();
   await expect(page.getByText("BGM：未设置")).toBeVisible();
   const voice = await page.getByText(/人声剪辑 .* → 成品 /).innerText();
-  await page.getByLabel("选择素材").selectOption({ label: "“洛城二三事 片头” · 片头（播客开始）" });
+  await page.getByLabel("选择素材").selectOption({ label: "洛城片头.wav - “洛城二三事 片头” · 片头（播客开始）" });
   await expect(page.getByLabel("用途")).toHaveValue("intro"); // taken from the asset's use
   await page.getByRole("button", { name: "放进去" }).click();
   await expect(page.getByTestId("placement")).toHaveCount(1);
   await expect(page.getByText(/人声剪辑 .* → 成品 /)).not.toHaveText(voice); // the intro adds time
 
   // an interlude at 0:20 of the final cut
-  await page.getByLabel("选择素材").selectOption({ label: "《奥德赛》原声 · Ludwig Göransson — “Odysseus” · 其他素材" });
+  await page.getByLabel("选择素材").selectOption({ label: "odyssey_theme.mp3 - 《奥德赛》原声 · Ludwig Göransson — “Odysseus” · 其他素材" });
   await page.getByLabel("用途").selectOption("interlude");
   await page.getByRole("button", { name: "放进去" }).click();
   await expect(page.getByText("请写位置")).toBeVisible();
   await page.getByLabel("位置", { exact: true }).fill("0:20");
   await page.getByRole("button", { name: "放进去" }).click();
-  const mid = page.getByTestId("placement").filter({ hasText: "间奏" });
+  const mid = row(page, "interlude");
   await expect(mid).toContainText("odyssey_theme.mp3");
   await expect(mid).toContainText("插入");
   const credits = page.getByTestId("credits");
   await expect(credits).toContainText("片头：“洛城二三事 片头”");
   await expect(credits).toContainText("间奏：《奥德赛》原声 · Ludwig Göransson — “Odysseus”");
 
-  // hear the transition, then the whole mix stream
+  // hear the transition in the page's player, then the whole mix stream
   await mid.getByRole("button", { name: "试听这一处" }).click();
   await expect(mid.getByRole("button", { name: "停止" })).toBeVisible();
-  await expect.poll(() => page.getByTestId("placement-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.2);
+  await expect.poll(() => page.getByTestId("mix-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.2);
   await mid.getByRole("button", { name: "停止" }).click();
   const mixUrl = await page.getByTestId("mix-audio").getAttribute("src");
   expect(mixUrl).toMatch(/\/mix\/[0-9a-f]+\.wav$/);
   const head = await page.request.get(mixUrl!, { headers: { Range: "bytes=0-43" } });
   expect(head.status()).toBe(206);
 
-  // gain change is saved
+  // the whole song plays; Leon's numbers for the gap are saved and read back in plain words
+  await expect(row(page, "intro").getByTestId("placement-plan")).toContainText("只有音乐");
+  await expect(mid.getByTestId("placement-plan")).toContainText("整首");
+  await mid.getByLabel("全音量时长（秒）").fill("3");
+  await mid.getByLabel("背景压低（dB）").fill("16");
+  await mid.getByLabel("裁到").fill("0:09");
   await mid.getByLabel("音量（dB）").fill("-4");
   await mid.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("已保存")).toBeVisible();
+  await expect(mid.getByTestId("placement-plan")).toContainText("歌的 0:00–0:09");
+  await expect(mid.getByTestId("placement-plan")).toContainText("全音量 3 秒");
+  await expect(mid.getByTestId("placement-plan")).toContainText("压低 16 dB");
+  await expect(mid.getByRole("button", { name: "保存" })).toBeDisabled();
 
   // remember the intro as the series rule, then it is offered once the episode has none
   await page.getByRole("button", { name: "记成系列片头片尾" }).click();
   await expect(page.getByText("已记住")).toBeVisible();
-  await page.getByTestId("placement").filter({ hasText: "片头" }).getByRole("button", { name: "去掉" }).click();
+  await row(page, "intro").getByRole("button", { name: "去掉" }).click();
   await expect(page.getByTestId("series-suggestion")).toContainText("洛城二三事");
   await page.getByRole("button", { name: "用系列片头片尾" }).click();
-  await expect(page.getByTestId("placement").filter({ hasText: "片头" })).toHaveCount(1);
+  await expect(row(page, "intro")).toHaveCount(1);
   await expect(page.getByTestId("series-suggestion")).toHaveCount(0);
 
   // leave the shared episode as it was
-  for (const name of ["片头", "间奏"]) {
-    await page.getByTestId("placement").filter({ hasText: name }).getByRole("button", { name: "去掉" }).click();
+  for (const name of ["intro", "interlude"]) {
+    await row(page, name).getByRole("button", { name: "去掉" }).click();
   }
   await page.getByRole("button", { name: "这一集不用" }).click();
   await expect(page.getByTestId("placement")).toHaveCount(0);
@@ -148,7 +159,7 @@ test("place by use → hear the suggestion → accept → nudge → change it by
   await expect(page.getByTestId("credits")).toContainText("间奏：《奥德赛》原声");
 
   // one second later, exactly
-  const mid = page.getByTestId("placement").filter({ hasText: "间奏" });
+  const mid = row(page, "interlude");
   const pos = mid.getByLabel("位置（成品时间）");
   const before = await pos.inputValue();
   const secs = (t: string) => t.split(":").reduce((a, x) => a * 60 + Number(x), 0);
@@ -158,7 +169,7 @@ test("place by use → hear the suggestion → accept → nudge → change it by
   await expect.poll(async () => secs(await pos.inputValue())).toBe(secs(before));
 
   // talk: quieter interlude → a suggestion → accepted
-  const box = page.getByLabel("跟 Claude 说配乐怎么改");
+  const box = page.getByLabel("跟 LACUNA 说配乐怎么改");
   await box.fill("间奏小 3 dB");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByTestId("music-draft")).toContainText("间奏：音量 -3 dB");
@@ -181,8 +192,8 @@ test("place by use → hear the suggestion → accept → nudge → change it by
   await expect.poll(async () => secs(await pos.inputValue())).toBe(secs(before));
 
   // leave the shared episode and library as they were
-  for (const name of ["片头", "间奏"]) {
-    await page.getByTestId("placement").filter({ hasText: name }).getByRole("button", { name: "去掉" }).click();
+  for (const name of ["intro", "interlude"]) {
+    await row(page, name).getByRole("button", { name: "去掉" }).click();
   }
   await expect(page.getByTestId("placement")).toHaveCount(0);
   await page.goto("/#/library");

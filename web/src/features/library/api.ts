@@ -1,6 +1,6 @@
 // API of this feature (moved out of src/api.ts so features don't all edit one file)
 import type { Usage } from "../../api";
-import { ep, req } from "../../api";
+import { ep, failure, req } from "../../api";
 
 export type CreditStatus = "confirmed" | "suggested" | "unknown";
 
@@ -53,9 +53,17 @@ export interface Placement {
   status: "applied" | "proposed";
   src_in_s: number;
   src_out_s: number;
-  overlap_s: number;
   gain_db: number;
-  lead_s?: number;
+  solo_s?: number | null; // intro: music alone before the voice; interlude: full level in the gap
+  ramp_s?: number | null; // rise / fall between full level and background
+  ramp_out_s?: number | null; // interlude: fall back to background after the gap
+  bg_db?: number | null; // background = this much under full level
+  pre_s?: number | null; // interlude: plays under the talk before the gap
+  bye_s?: number | null; // outro: second of the song where the voice ends
+  fade_out_s?: number | null; // null = automatic
+  lead_s?: number | null;
+  auto?: boolean | null; // bed: the App puts it into the free stretches
+  loop?: boolean | null; // bed: repeats to fill its stretch
   asset_name: string | null;
   asset_duration_s?: number;
   credit_line: string;
@@ -64,7 +72,11 @@ export interface Placement {
   end_s: number | null;
   voice_at_s?: number | null;
   at_s?: number | null; // where it sits on the final mix (interlude / bed / clip)
+  until_at_s?: number | null; // a bed's end point on the final mix
   inserted_s?: number;
+  listen_s?: number; // where on the final mix to start listening to it (just before its transition)
+  no_room?: boolean; // an automatic bed with no free stretch left
+  level_db?: number | null; // automatic level (measured on the part that plays); gain_db is Leon's offset on top
   missing: boolean;
 }
 
@@ -112,27 +124,28 @@ export type PlacementPatch = Partial<{
   until_s: number;
   src_in_s: number;
   src_out_s: number;
-  overlap_s: number;
   gain_db: number;
+  solo_s: number;
+  ramp_s: number;
+  ramp_out_s: number;
+  bg_db: number;
+  pre_s: number;
+  bye_s: number;
+  fade_out_s: number;
   lead_s: number;
+  auto: boolean;
+  loop: boolean;
 }>;
 
 async function uploadAsset(file: File, kind: string, note = ""): Promise<{ asset: Asset; duplicate: boolean }> {
   const q = new URLSearchParams({ name: file.name, kind, note });
-  const res = await fetch(`/api/library/upload?${q}`, {
+  const url = `/api/library/upload?${q}`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/octet-stream" },
     body: file,
   });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      msg = (await res.json()).detail ?? msg;
-    } catch {
-      /* not JSON */
-    }
-    throw new Error(String(msg));
-  }
+  if (!res.ok) throw await failure(res, url);
   return res.json() as Promise<{ asset: Asset; duplicate: boolean }>;
 }
 

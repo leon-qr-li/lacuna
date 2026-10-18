@@ -38,7 +38,10 @@ def main() -> None:
         ws = Path(make_workspace(tmp))
         adapter = MockEditorAdapter()
     svc = configure_all(mode, ws, {})
-    uvicorn.run(create_app(ws, adapter, **svc), host="127.0.0.1", port=int(port), log_level="warning")
+    # keep-alive longer than any test: with uvicorn's default 5 s, a test's API call could reuse a
+    # connection the server was just closing and fail with ECONNRESET (seen in a full local run)
+    uvicorn.run(create_app(ws, adapter, **svc), host="127.0.0.1", port=int(port), log_level="warning",
+                timeout_keep_alive=120)
 
 
 if __name__ == "__main__":

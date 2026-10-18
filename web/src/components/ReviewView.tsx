@@ -6,6 +6,10 @@ import { GrowText } from "./GrowText";
 import { Icon } from "./Icon";
 import { t } from "../i18n";
 import { Skel, Waiting } from "../features/loading/Loading";
+import { reviewAction } from "../features/review-keys/keys";
+import { DockProgress, ShortcutsButton } from "../features/review-keys/Shortcuts";
+import { SpeedButton } from "../features/review-speed/SpeedButton";
+import { useReviewRate } from "../features/review-speed/speed";
 
 interface Props {
   ep: Episode;
@@ -37,7 +41,9 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
   const [tweak, setTweak] = useState("");
   const [reply, setReply] = useState<string | null>(null);
   const [tweaking, setTweaking] = useState(false);
+  const [help, setHelp] = useState(false);
   const abRef = useRef<ABHandle>(null);
+  const speed = useReviewRate();
   const listRef = useRef<HTMLUListElement>(null);
 
   // load A/B renders + original words whenever the selected edit (or its state) changes
@@ -81,19 +87,21 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || e.metaKey || e.ctrlKey || e.altKey) return;
-      const k = e.key.toLowerCase();
-      if (k === "j") go(-1);
-      else if (k === "k") go(1);
-      else if (k === " ") {
+      const a = reviewAction(e);
+      if (!a) return;
+      if (a === "prev") go(-1);
+      else if (a === "next") go(1);
+      else if (a === "toggle") {
         e.preventDefault();
         abRef.current?.toggle();
-      } else if (k === "a") abRef.current?.select("before");
-      else if (k === "b") abRef.current?.select("after");
-      else if (k === "y" && cur) void decide(cur.status === "applied" ? "keep" : "restore");
-      else if (k === "r" && cur && cur.status === "applied") void decide("restore");
+      } else if (a === "a") abRef.current?.select("before");
+      else if (a === "b") abRef.current?.select("after");
+      else if (a === "keep" && cur) void decide(cur.status === "applied" ? "keep" : "restore");
+      else if (a === "restore" && cur && cur.status === "applied") void decide("restore");
+      else if (a === "speed") speed.cycle();
+      else if (a === "help") setHelp((h) => !h);
       else return;
+      if (a === "prev" || a === "next") e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -209,6 +217,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                   <span className="chip chip-plain">{cur.category_label}</span>
                   {cur.speech_s ? <span className="chip chip-plain">{t("删掉说话 {s} 秒", { s: cur.speech_s.toFixed(1) })}</span> : null}
                   <span className="chip chip-plain">{statusLabel(cur)}</span>
+                  {cur.room_tone && <span className="chip chip-plain">{t("只抹 {who}，用底噪补上", { who: (cur.tracks ?? []).join(" / ") })}</span>}
                   <span className="chip chip-ok">{t("可随时恢复")}</span>
                 </div>
               </div>
@@ -251,24 +260,27 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 placeholder={t("或者直接说：恢复这处 / 停顿短一点")}
               />
             </form>
-            {tweaking && <Waiting label={t("Claude 正在看这附近的逐字稿…")} />}
+            {tweaking && <Waiting label={t("LACUNA 正在看这附近的逐字稿…")} />}
             {reply && !tweaking && <p className="note">{reply}</p>}
-            <p className="muted small">{t("快捷键：J / K 上一条下一条，空格播放，A / B 切换原始与剪后，Y 通过（保持现状）并跳到下一条，R 恢复原话并跳到下一条。")}</p>
+            <p className="muted small">{t("快捷键：空格播放，← / → 上一处下一处，K 保留，R 恢复原话，A / B 切换原始与剪后，S 倍速，? 看全部。")}</p>
 
             {/* the floating dock: listen, compare, decide; everything for this edit in one place */}
             <section className="dock rv-dock" aria-label={t("试听和决定")}>
-              <button type="button" className="btn btn-ghost btn-round" onClick={() => go(-1)} disabled={idx <= 0} title={t("上一处（J）")} aria-label={t("上一处")}>
+              <button type="button" className="btn btn-ghost btn-round" onClick={() => go(-1)} disabled={idx <= 0} title={t("上一处（←）")} aria-label={t("上一处")}>
                 <Icon name="chevl" size={18} />
               </button>
-              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={[t("A · 原始"), t("B · 剪后")]} onPlay={onPauseMain} compact />
+              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={[t("A · 原始"), t("B · 剪后")]} onPlay={onPauseMain} compact rate={speed.rate} />
+              <SpeedButton rate={speed.rate} onChange={speed.setRate} />
               <span className="grow" />
+              <DockProgress done={done} total={all.length} />
+              <ShortcutsButton open={help} onToggle={() => setHelp((h) => !h)} />
               {cur.status === "applied" ? (
                 <>
                   <button type="button" className="btn btn-outline" onClick={() => void decide("restore")}>
                     {t("恢复原话")} <kbd aria-hidden="true">R</kbd>
                   </button>
                   <button type="button" className="btn btn-primary" onClick={() => void decide("keep")}>
-                    <Icon name="check" /> {cur.approved ? t("已保留") : t("保留这个删除")} <kbd aria-hidden="true">Y</kbd>
+                    <Icon name="check" /> {cur.approved ? t("已保留") : t("保留这个删除")} <kbd aria-hidden="true">K</kbd>
                   </button>
                 </>
               ) : (
@@ -278,7 +290,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                   </button>
                   {!cur.approved && (
                     <button type="button" className="btn btn-primary" onClick={() => void decide("restore")}>
-                      <Icon name="check" /> {t("不删，保持原话")} <kbd aria-hidden="true">Y</kbd>
+                      <Icon name="check" /> {t("不删，保持原话")} <kbd aria-hidden="true">K</kbd>
                     </button>
                   )}
                 </>
@@ -288,7 +300,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 className="btn btn-ghost btn-round"
                 onClick={() => go(1)}
                 disabled={idx >= ranked.length - 1}
-                title={t("下一处（K）")}
+                title={t("下一处（→）")}
                 aria-label={t("下一处")}
               >
                 <Icon name="chev" size={18} />

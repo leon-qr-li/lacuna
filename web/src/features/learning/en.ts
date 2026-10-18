@@ -2,7 +2,7 @@ import type { Dict } from "../../i18n";
 
 export const en: Dict = {
   "记住": "Remember",
-  "把这句当成长期要求记下来（进「学到的规则」等你确认），不改这一期": "Save this as a standing request (it waits in Learned rules for you to adopt); this episode is not changed",
+  "让 LACUNA 把这句整理成一条长期规则，你确认后才记住；不改这一期": "LACUNA turns this into a standing rule and saves it only after you confirm; this episode is not changed",
   "少删": "Cut less",
   "你在 {ep} 的对话里说的（{reason}）": "You said it in the {ep} chat ({reason})",
   "你说过的": "You said",

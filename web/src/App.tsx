@@ -1,9 +1,8 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import type { EditInfo, Episode, EpisodeListItem } from "./api";
-import { api, fmt } from "./api";
+import type { EditInfo, Episode } from "./api";
+import { api } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
 import { Icon } from "./components/Icon";
-import { ImportPanel } from "./components/ImportPanel";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
@@ -13,7 +12,8 @@ import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
 import { t } from "./i18n";
-import { EpisodeListSkeleton, PageLoading } from "./features/loading/Loading";
+import { PageLoading } from "./features/loading/Loading";
+import { Home } from "./features/episodes/Home";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -57,14 +57,10 @@ const writePref = (k: string, v: string) => {
   }
 };
 
-const go = (id: string, mode: Mode = "listen") => {
-  window.location.hash = `#/ep/${encodeURIComponent(id)}/${mode}`;
-};
-
 export default function App() {
   const { id, mode, page } = useRoute();
   if (page) return <PageScreen path={page} />;
-  return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home />;
+  return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home nav={<Nav on="home" />} />;
 }
 
 function Nav({ on, except }: { on: NavLink["on"][number]; except?: string }) {
@@ -95,71 +91,6 @@ function PageScreen({ path }: { path: string }) {
         <Nav on="page" except={path} />
       </header>
       {page.render()}
-    </div>
-  );
-}
-
-function Home() {
-  const [list, setList] = useState<EpisodeListItem[] | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const load = useCallback((first = false) => {
-    Promise.all([api.episodes(), api.imports().catch(() => ({ jobs: [] }))])
-      .then(([r, im]) => {
-        setList(r.episodes);
-        // opening the app with a single episode and nothing importing: go straight to it
-        // (not when Leon came back here on purpose via the LACUNA link)
-        if (first && !window.location.hash && r.episodes.length === 1 && !r.episodes[0].error && !im.jobs.length)
-          go(r.episodes[0].id);
-      })
-      .catch((e) => setErr(String(e)));
-  }, []);
-  useEffect(() => load(true), [load]);
-  const reload = useCallback(() => load(), [load]);
-  const open = useCallback((id: string) => go(id, "review"), []);
-  return (
-    <div className="app">
-      <header className="topbar">
-        <strong className="brand">LACUNA</strong>
-        <span className="grow" />
-        <Nav on="home" />
-      </header>
-      <main className="home">
-        <div className="home-hero">
-          <h1>{t("剧集")}</h1>
-          <p className="muted">{t("导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。")}</p>
-        </div>
-        <ImportPanel onEpisodesChanged={reload} onOpen={open} />
-        {err && <p className="error">{err}</p>}
-        {list?.length === 0 && <p className="muted">{t("工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。")}</p>}
-        {!list && !err && <EpisodeListSkeleton />}
-        <ul className="ep-list">
-          {list?.map((e) => (
-            <li key={e.id}>
-              <a href={`#/ep/${encodeURIComponent(e.id)}/listen`}>
-                <span className="ep-cover" aria-hidden="true">
-                  {e.title.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 1)}
-                </span>
-                <span className="ep-body">
-                  <strong>{e.title}</strong>
-                  {e.error ? (
-                    <span className="error small">{t("无法打开：")}{e.error}</span>
-                  ) : (
-                    <>
-                      <span className="muted small mono">
-                        {fmt(e.raw_duration ?? 0)} → {fmt(e.duration ?? 0)}
-                        {e.demo && t(" · 演示数据")}
-                      </span>
-                      <span className={`chip ${e.pending_review ? "chip-warn" : "chip-ok"}`}>
-                        {e.pending_review ? t("{n} 处待过目", { n: e.pending_review }) : t("都过目了")}
-                      </span>
-                    </>
-                  )}
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </main>
     </div>
   );
 }
@@ -367,7 +298,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           {tabs
             .filter((t) => t.mode === mode)
             .map((t) => (
-              <Fragment key={t.mode}>{t.render({ id, ep, flash, pauseMain: player.pause })}</Fragment>
+              <Fragment key={t.mode}>{t.render({ id, ep, flash, pauseMain: player.pause, onEpisode: setEp })}</Fragment>
             ))}
           {next && (
             <div className="next-step">

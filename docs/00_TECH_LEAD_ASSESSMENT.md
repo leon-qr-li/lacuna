@@ -3,6 +3,7 @@
 - 日期：2026-10-16
 - 作者：Claude（AI Technical Lead / Product Designer / Lead Engineer）
 - 输入：`/mnt/project-files/lacuna/handoff/podcast_studio_handoff/`（README + 01–09，共 10 份，已全文阅读，保持原样作为 immutable baseline）
+- 现状（2026-10-18 注）：这是接手时的评估，保留原文作记录；当前状态看 `PROJECT_STATUS.md` 和 `docs/status/`，后续决策看 `DECISIONS.md` 与 `docs/decisions/`。
 - 状态：**方向已确认（2026-10-16）**：路径 A 与 MVP 收窄已同意；历史 raw 录音已不存在（见 `DECISIONS.md` D26/D27，S4 取消，第 4.9 条与 S5 的评测方式随之改变）；硬件约束见 `HARDWARE_PROFILE.md`。本文档不改变 Handoff 中任何 CONFIRMED 决策，只做审计、补充和提议。
 
 ---

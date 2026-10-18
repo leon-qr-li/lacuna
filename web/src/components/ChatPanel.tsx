@@ -7,6 +7,8 @@ import { MicButton } from "./MicButton";
 import { t } from "../i18n";
 import { Waiting } from "../features/loading/Loading";
 import { RememberButton, type Ask } from "../features/learning/RememberButton";
+import { RememberCard } from "../features/lessons/RememberCard";
+import type { RememberDraft, RememberReply } from "../features/lessons/api";
 
 interface Msg {
   id: number;
@@ -17,6 +19,7 @@ interface Msg {
   at?: number;
   proposal?: Proposal;
   pstate?: "pending" | "approved" | "discarded";
+  remember?: RememberDraft; // 「记住」: LACUNA's reading, confirmed in the card
 }
 
 interface Props {
@@ -93,6 +96,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
         usage: r.usage,
         proposal: r.proposal ?? undefined,
         pstate: r.proposal ? "pending" : undefined,
+        remember: (r as RememberReply).remember,
       });
       onEpisode(await api.episode(ep.id));
     } catch (err) {
@@ -144,9 +148,9 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
           <span
             className={`chip small ${claude ? "chip-ok" : ""}`}
             data-testid="editor-badge"
-            title={claude ? t("接的是 Claude API（只发送逐字稿和数字，不发送音频）") : health.editor_note}
+            title={claude ? t("接的是 LACUNA 云端 AI（只发送逐字稿和数字，不发送音频）") : health.editor_note}
           >
-            {claude ? "Claude" : t("演示规则")}
+            {claude ? "LACUNA" : t("演示规则")}
           </span>
         )}
       </h2>
@@ -162,9 +166,10 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             ))}
             {m.usage && (
               <div className="meta muted small mono" data-testid="usage">
-                Claude · {t("{s} 秒 · ≈${cost}", { s: m.usage.seconds.toFixed(1), cost: m.usage.cost_usd.toFixed(3) })}
+                LACUNA · {t("{s} 秒 · ≈${cost}", { s: m.usage.seconds.toFixed(1), cost: m.usage.cost_usd.toFixed(3) })}
               </div>
             )}
+            {m.remember && <RememberCard epId={ep.id} draft={m.remember} onPauseMain={onPauseMain} />}
             {m.proposal && (
               <ProposalCard
                 p={m.proposal}
@@ -178,7 +183,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
             )}
           </div>
         ))}
-        {busy && <Waiting className="msg msg-ai" label={claude ? t("Claude 正在看这附近的逐字稿…") : t("正在看这附近…")} />}
+        {busy && <Waiting className="msg msg-ai" label={claude ? t("LACUNA 正在看这附近的逐字稿…") : t("正在看这附近…")} />}
       </div>
       <form className="chat-form" onSubmit={send}>
         <label htmlFor="say" className="sr-only">
@@ -207,6 +212,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
               input.current?.focus();
             }}
             onError={(msg) => push({ role: "ai", text: msg })}
+            context={() => ({ episode: ep.id, at: time, where: "chat" })}
           />
           <RememberButton epId={ep.id} disabled={busy || !text.trim()} onSend={run} />
           <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>

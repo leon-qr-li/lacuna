@@ -5,16 +5,16 @@ export const en: Dict = {
   "复制失败：{message}": "Copy failed: {message}",
   "发布资料打不开：": "Can't open the publish pack: ",
   "重新生成会覆盖你手改过的 show notes，确定吗？": "Regenerating replaces the show notes you edited by hand. Continue?",
-  "重新生成一版？（会再花一次 Claude 的钱）": "Generate a new version? (costs another Claude call)",
+  "重新生成一版？（会再花一次 AI 的钱）": "Generate a new version? (costs another AI call)",
   "发布资料": "Publish pack",
   "标题、简介、show notes 和章节，按现在这版剪辑的成品时间。喜马拉雅是唯一发布源，小宇宙会自动同步。":
     "Title, blurb, show notes and chapters, timed to the current cut. Ximalaya is the single place to publish; Xiaoyuzhou syncs from it automatically.",
   "重新生成": "Regenerate",
   "生成发布资料": "Generate publish pack",
-  "Claude 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。":
-    "Claude reads the edited transcript (text only) and writes the title, blurb and show notes. About 1–2 minutes, roughly $0.2–0.3.",
-  "没有接上 Claude（{p0}），只能生成按时间切的草稿。": "Claude isn't connected ({p0}), so only a time-based draft can be generated.",
-  "没找到 API key": "no API key found",
+  "LACUNA 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。":
+    "LACUNA reads the edited transcript (text only) and writes the title, blurb and show notes. About 1–2 minutes, roughly $0.2–0.3.",
+  "还没接上 AI（{p0}），只能生成按时间切的草稿。": "AI isn't connected ({p0}), so only a time-based draft can be generated.",
+  "没找到 AI 密钥": "no AI key found",
   "没生成出来：{error}。可以再点一次「生成发布资料」。": "Generation failed: {error}. You can click “Generate publish pack” again.",
   "剪辑在生成之后又改过，时间戳和配乐可能不准了。更新只在本机重新对时间，不花钱，你改过的文字会保留。":
     "The cut changed after this was generated, so timestamps and music may be off. Updating re-times it on this computer, free, and keeps your text edits.",
@@ -57,8 +57,8 @@ export const en: Dict = {
   "不用改": "Leave it",
   "已改": "Changed",
   "不改": "Left as is",
-  "Claude 写的": "Written by Claude",
-  "规则草稿（没有 Claude）": "Rule-based draft (no Claude)",
+  "LACUNA 写的": "Written by LACUNA",
+  "规则草稿（AI 没接上）": "Rule-based draft (AI not connected)",
   " · 约 ${p0}": " · about ${p0}",
   "· 生成于 {time}": "· generated {time}",
 };

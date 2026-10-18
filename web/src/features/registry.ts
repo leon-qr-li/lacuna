@@ -13,6 +13,8 @@ export interface EpisodeTabProps {
   ep: Episode;
   flash: (msg: string) => void;
   pauseMain: () => void;
+  /** Replace the episode shown everywhere (a tab that changed it, e.g. a volume edit on 声音). */
+  onEpisode?: (ep: Episode) => void;
 }
 
 /** A tab on the episode screen, shown at `#/ep/<id>/<mode>` (after 整集试听 and 改动审阅). */

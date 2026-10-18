@@ -307,6 +307,45 @@ class LiftRange(Op):
 
 
 @dataclass(frozen=True)
+class EraseRange(Op):
+    """Erase [start, end) on one track only (no re-timing) and fill what was there with that
+    track's own room tone: the source range [tone_src_in, tone_src_out) of `tone_media_id`,
+    repeated as needed. The fill only covers where the track had material, so a track never
+    grows. Seams get the renderer's usual crossfade. Without a tone it is a plain lift."""
+    kind: ClassVar[str] = "erase"
+    track: str
+    start: int
+    end: int
+    tone_media_id: str | None = None
+    tone_src_in: int = 0
+    tone_src_out: int = 0
+
+    def apply(self, tl):
+        if self.end <= self.start:
+            raise EDLError("empty erase")
+        tr = tl.track(self.track)
+        tl, kept, removed = _lift(tl, list(tr.clips), self.start, self.end)
+        n = self.tone_src_out - self.tone_src_in
+        if self.tone_media_id is not None:
+            if n <= 0:
+                raise EDLError("empty room tone")
+            spans: list[list[int]] = []
+            for c in sorted(removed, key=lambda c: c.start):
+                if spans and c.start <= spans[-1][1]:
+                    spans[-1][1] = max(spans[-1][1], c.end)
+                else:
+                    spans.append([c.start, c.end])
+            for a, b in spans:
+                t = a
+                while t < b:
+                    k = min(n, b - t)
+                    cid, tl = _new_id(tl)
+                    kept.append(Clip(cid, self.tone_media_id, self.tone_src_in, self.tone_src_in + k, t))
+                    t += k
+        return tl.with_track(replace(tr, clips=_sorted(kept)))
+
+
+@dataclass(frozen=True)
 class SlipRegion(Op):
     """Move the material of one track in [start, end) by `delta` samples on the timeline.
     The vacated span becomes a gap; material already at the destination is overwritten

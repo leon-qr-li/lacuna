@@ -8,6 +8,7 @@ missing or out of date.
 """
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 from .episode import Episode
@@ -70,3 +71,14 @@ def cover_path(poster_doc: dict, cover_dir: Path) -> Path:
     if p.resolve().parent != cover_dir.resolve() or not p.is_file():
         raise FileNotFoundError(str(p))
     return p
+
+
+def save_cover(cover_jpg: Path, exports_dir: Path, episode_id: str) -> Path:
+    """Copy the chosen cover next to the exported WAV / MP3 (``exports/<ep>/<ep>_cover.jpg``), so the
+    folder Leon uploads from has everything; the publish/ copy stays where it is."""
+    exports_dir.mkdir(parents=True, exist_ok=True)
+    out = exports_dir / f"{episode_id}_cover.jpg"
+    tmp = out.with_name(out.name + ".tmp")
+    shutil.copyfile(cover_jpg, tmp)
+    tmp.replace(out)
+    return out

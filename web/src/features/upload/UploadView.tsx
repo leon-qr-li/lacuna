@@ -16,6 +16,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
   const [view, setView] = useState<View | null>(null);
   const [pub, setPub] = useState<PublishView | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([uploadApi.upload(id), publishApi.publish(id)])
@@ -33,6 +34,17 @@ export function UploadView({ id, version, flash }: { id: string; version: string
     } catch (e) {
       flash(t("复制失败：{message}", { message: (e as Error).message }));
     }
+  };
+
+  // the browser download still happens (the link); this also puts the cover next to the WAV / MP3
+  const saveCover = () => {
+    uploadApi.saveCover(id).then(
+      (r) => {
+        setSaved(r.path);
+        flash(t("封面已存到 {path}", { path: r.path }));
+      },
+      (e) => flash(t("封面没存进导出文件夹：{message}", { message: (e as Error).message })),
+    );
   };
 
   if (err) return <p className="error pad">{t("上传页打不开：")}{err}</p>;
@@ -134,6 +146,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
         {pack ? (
           <>
             {pack.blurb && <p data-testid="upload-blurb">{pack.blurb}</p>}
+            <p className="muted small">{t("想排得更好看、时间戳能点：用")} <a href={tab("ximalaya")}>{t("喜马拉雅版")}</a>{t("（三种排版，一键复制）。")}</p>
             {pack.stale && (
               <p className="warn small">
                 {t("剪辑后来又改过，时间戳可能不准。去")} <a href={tab("publish")}>{t("发布资料")}</a> {t("点「更新时间戳」（本机算，不花钱）。")}
@@ -157,9 +170,20 @@ export function UploadView({ id, version, flash }: { id: string; version: string
               <span className="muted small">
                 {view.cover.px}×{view.cover.px} JPG · {mb(view.cover.bytes)}
               </span>
-              <a className="btn btn-primary btn-small" href={uploadApi.coverUrl(id, view.cover.rendered_at)} download={`${id}_cover.jpg`}>
+              <a
+                className="btn btn-primary btn-small"
+                href={uploadApi.coverUrl(id, view.cover.rendered_at)}
+                download={`${id}_cover.jpg`}
+                onClick={saveCover}
+              >
                 {t("下载封面")}
               </a>
+              {saved && (
+                <span className="muted small" data-testid="upload-cover-saved">
+                  {t("也存到了导出文件夹，和音频放在一起：")}
+                  <span className="mono upload-path">{saved}</span>
+                </span>
+              )}
             </div>
           </div>
         ) : (

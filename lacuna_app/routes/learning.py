@@ -1,11 +1,13 @@
-"""Learning from review (phase 5, D27/D39): candidate rules Leon approves, incl. asks from the chat."""
+"""Learning from review (phase 5, D27/D39): candidate rules Leon approves, incl. asks from the chat.
+
+The silent after-export chat summary is gone (2026-10-18): asks become rules only through the confirmed
+steps in routes/lessons.py."""
 from __future__ import annotations
 
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
-from ..chat_learning import MAX_ASK, ChatLearner, remember_text
-from ..exporter import Exporter
+from ..chat_learning import MAX_ASK, remember_text
 from ..learning import Learning
 from .episodes import remember
 
@@ -22,9 +24,6 @@ class RememberBody(BaseModel):
 
 def register(app, ctx) -> None:
     learning = ctx.provide("learning", lambda: Learning(ctx.ws))
-    chat_learner = ctx.provide("chat_learner", lambda: ChatLearner(ctx.ws, log_usage=ctx.log_usage))
-    exporter = ctx.provide("exporter", lambda: Exporter(ctx.ws))
-    exporter.on_done.append(chat_learner.after_export)   # long-term asks are read once an episode is out
 
     @app.get("/api/learning")
     def learning_overview():
@@ -39,7 +38,8 @@ def register(app, ctx) -> None:
 
     @app.post("/api/episodes/{episode_id}/remember")
     def remember_ask(episode_id: str, body: RememberBody):
-        """The 「记住」 button: the whole text is the ask (a typed 「记住：」 prefix is dropped)."""
+        """The 「记住」 button: the whole text is the ask (a typed 「记住：」 prefix is dropped); LACUNA
+        answers with its reading of it as a draft rule for Leon to confirm (routes/lessons.py)."""
         ask = (remember_text(body.text) or body.text).strip()[:MAX_ASK]
         if not ask:
             raise HTTPException(422, "empty")

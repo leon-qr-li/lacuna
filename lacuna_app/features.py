@@ -9,8 +9,9 @@ the AI editor ever sees of the audio. Ground-truth free.
 from __future__ import annotations
 
 import difflib
-import json
+import os
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
@@ -42,19 +43,16 @@ def activity(db, floor, thr_db=12.0):
 
 
 def _fill_runs(mask, val, maxlen):
+    """Flip runs of `val` shorter than `maxlen` frames that touch neither end of the mask."""
     m = mask.copy()
     n = len(m)
-    i = 0
-    while i < n:
-        if m[i] == val:
-            j = i
-            while j < n and m[j] == val:
-                j += 1
-            if j - i < maxlen and i > 0 and j < n:
-                m[i:j] = not val
-            i = j
-        else:
-            i += 1
+    d = np.diff(np.concatenate([[0], (m == val).astype(np.int8), [0]]))
+    s, e = np.flatnonzero(d == 1), np.flatnonzero(d == -1)
+    short = (e - s < maxlen) & (s > 0) & (e < n)
+    delta = np.zeros(n + 1, np.int32)
+    delta[s[short]] += 1
+    delta[e[short]] -= 1
+    m[np.cumsum(delta[:n]) > 0] = not val
     return m
 
 
@@ -66,38 +64,54 @@ def runs(mask):
 
 def pitch_track(x, spans, act):
     """Simple normalized-autocorrelation F0 (60–400 Hz) on 40 ms frames / 10 ms hop, only inside
-    the given (start_s, end_s) spans. Returns float array per 10 ms frame (nan = unvoiced)."""
+    the given (start_s, end_s) spans. Returns float array per 10 ms frame (nan = unvoiced).
+
+    Frames are independent, so blocks of them run on several threads (numpy's FFT releases the
+    GIL); each frame's value is the same whichever block or thread computes it."""
     nfr = len(act)
     f0 = np.full(nfr, np.nan, dtype=np.float32)
-    win, nfft = 640, 2048
-    lmin, lmax = SR // 400, SR // 60
-    w = np.hanning(win).astype(np.float32)
     frames = []
     for a, b in spans:
         frames.extend(range(int(a / HOP), min(nfr, int(b / HOP))))
     frames = np.array(sorted(set(frames)), dtype=np.int64)
     frames = frames[act[frames]]
-    for i in range(0, len(frames), 20000):
-        fi = frames[i:i + 20000]
-        st = fi * 160 + 200 - win // 2
-        st = np.clip(st, 0, len(x) - win)
-        fr = x[st[:, None] + np.arange(win)[None, :]] * w
-        fr = fr - fr.mean(axis=1, keepdims=True)
-        sp = np.fft.rfft(fr, nfft)
-        ac = np.fft.irfft(sp * np.conj(sp), nfft)[:, :lmax + 2]
-        ac = ac / (ac[:, :1] + 1e-9)
-        seg = ac[:, lmin:lmax + 1]
-        k = np.argmax(seg, axis=1)
-        pk = seg[np.arange(len(k)), k]
-        lag = (k + lmin).astype(np.float64)
-        # parabolic interpolation
-        km = np.clip(k + lmin, 1, lmax)
-        y0, y1, y2 = ac[np.arange(len(k)), km - 1], ac[np.arange(len(k)), km], ac[np.arange(len(k)), km + 1]
-        den = (y0 - 2 * y1 + y2)
-        lag = lag + np.where(np.abs(den) > 1e-9, 0.5 * (y0 - y2) / den, 0)
-        voiced = (pk > 0.5) & (lag > SR / 450) & (lag < SR / 55)
-        f0[fi[voiced]] = (SR / lag[voiced]).astype(np.float32)
+    blocks = [frames[i:i + _PITCH_BLOCK] for i in range(0, len(frames), _PITCH_BLOCK)]
+    with ThreadPoolExecutor(min(len(blocks), _workers()) or 1) as pool:
+        for fi, voiced, hz in pool.map(lambda fi: (fi, *_pitch_block(x, fi)), blocks):
+            f0[fi[voiced]] = hz
     return f0
+
+
+_PITCH_BLOCK = 5000
+
+
+def _workers() -> int:
+    return max(1, min(8, os.cpu_count() or 1))
+
+
+def _pitch_block(x, fi):
+    """(voiced mask, F0 Hz of the voiced frames) for the 10 ms frames `fi`."""
+    win, nfft = 640, 2048
+    lmin, lmax = SR // 400, SR // 60
+    w = np.hanning(win).astype(np.float32)
+    st = fi * 160 + 200 - win // 2
+    st = np.clip(st, 0, len(x) - win)
+    fr = x[st[:, None] + np.arange(win)[None, :]] * w
+    fr = fr - fr.mean(axis=1, keepdims=True)
+    sp = np.fft.rfft(fr, nfft)
+    ac = np.fft.irfft(sp * np.conj(sp), nfft)[:, :lmax + 2]
+    ac = ac / (ac[:, :1] + 1e-9)
+    seg = ac[:, lmin:lmax + 1]
+    k = np.argmax(seg, axis=1)
+    pk = seg[np.arange(len(k)), k]
+    lag = (k + lmin).astype(np.float64)
+    # parabolic interpolation
+    km = np.clip(k + lmin, 1, lmax)
+    y0, y1, y2 = ac[np.arange(len(k)), km - 1], ac[np.arange(len(k)), km], ac[np.arange(len(k)), km + 1]
+    den = (y0 - 2 * y1 + y2)
+    lag = lag + np.where(np.abs(den) > 1e-9, 0.5 * (y0 - y2) / den, 0)
+    voiced = (pk > 0.5) & (lag > SR / 450) & (lag < SR / 55)
+    return voiced, (SR / lag[voiced]).astype(np.float32)
 
 
 # --------------------------------------------------------------------------- tokens
@@ -236,7 +250,9 @@ def utt_features(toks, segs, db, f0, speech_ref_db, f0_ref):
         if b == a:
             u.update({"start": s["start"], "end": s["end"], "empty": True})
             fr = slice(int(s["start"] / HOP), int(s["end"] / HOP))
-            u["energy_rel_db"] = round(float(np.percentile(db[fr], 90) - speech_ref_db), 1)
+            e = db[fr]
+            # past the end of a track that stopped early there is no audio: as quiet as the track gets
+            u["energy_rel_db"] = round(float((np.percentile(e, 90) if len(e) else db.min()) - speech_ref_db), 1)
             utts.append(u)
             continue
         T = toks[a:b]
@@ -249,7 +265,8 @@ def utt_features(toks, segs, db, f0, speech_ref_db, f0_ref):
         e = db[fr]
         u.update({"start": st, "end": en, "empty": False, "n": nunits,
                   "rate": round(nunits / spoken, 1),
-                  "energy_rel_db": round(float(10 * np.log10(np.mean(10 ** (e / 10))) - speech_ref_db), 1)})
+                  "energy_rel_db": round(float((10 * np.log10(np.mean(10 ** (e / 10))) if len(e) else db.min())
+                                               - speech_ref_db), 1)})
         p = f0[fr]
         v = ~np.isnan(p)
         if v.sum() >= 5:
@@ -438,7 +455,6 @@ def fmt_utt_line(tag, u, d, ov_ranges):
         head += f" emo:{u['sv_emotion'].lower()}"
     parts = []
     since = 99
-    prev_ascii = False
     i = a
     while i < b:
         t = T[i]
@@ -446,7 +462,6 @@ def fmt_utt_line(tag, u, d, ov_ranges):
         if anchor:
             parts.append(f" @{i} ")
             since = 0
-            prev_ascii = False
         fl = t["flag"]
         if fl and fl["kind"] != "sv_insert_after" and fl["span"][0] == i:
             j1 = min(fl["span"][1], b - 1)

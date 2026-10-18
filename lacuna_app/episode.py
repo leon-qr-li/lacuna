@@ -4,8 +4,8 @@ Model
 -----
 * The lacuna_core `Project` base timeline is the *uncut* recording (both tracks in sync).
 * Every edit (first-cut or chat) holds lacuna_core op dicts expressed in **base** coordinates:
-  `cut` (ripple, all tracks), `lift` (one track, no ripple), `slip` (move one track's range,
-  no ripple) or `track_gain`.
+  `cut` (ripple, all tracks), `lift` (one track, no ripple), `erase` (one track, no ripple, filled
+  with that track's room tone), `slip` (move one track's range, no ripple) or `track_gain`.
 * An edit's status is applied / restored / proposed / discarded. The current timeline is derived
   from the applied set: gains, then slips, then lifts, then cuts from latest to earliest - so base
   coordinates stay valid and any edit can be restored independently of the others.
@@ -22,9 +22,9 @@ import re
 import threading
 import uuid
 from collections import OrderedDict
-from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
 from functools import cached_property
+from itertools import accumulate
 from pathlib import Path
 
 import numpy as np
@@ -35,11 +35,11 @@ from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
 from lacuna_core.refine import snap_cut
 
-from . import analysis
+from . import analysis, room_tone
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
-from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json
+from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json, now_iso
 from .i18n import N_, tr
 
 STATE_SCHEMA = 1
@@ -55,6 +55,8 @@ CATEGORY_LABELS = {
     "loudness": N_("响度匹配"),
     "chat": N_("聊天修改"),
 }
+
+ONE_TRACK = ("lift", "erase")      # ops that remove one host's sound without moving the timeline
 
 # Undo-history labels are stored in Chinese (learning.py reads them) and shown in the interface language.
 _STEP_LABELS = {"保留": N_("保留：{title}"), "恢复": N_("恢复：{title}"), "重新应用": N_("重新应用：{title}"),
@@ -104,7 +106,7 @@ class Edit:
 
     @property
     def tracks(self) -> list[str] | None:
-        ts = {o.get("track") for o in self.ops if o["op"] in ("lift", "slip")}
+        ts = {o.get("track") for o in self.ops if o["op"] in ("lift", "erase", "slip")}
         return sorted(ts) if ts and not self.cuts else None
 
 
@@ -197,6 +199,7 @@ class Episode:
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
         self.proposals: dict[str, dict] = st.get("proposals") or {}
         self.transcript = self._load_transcript()
+        self._words_ix: list[tuple] | None = None
         self._chat_log: list[dict] = self._load_chat()   # chat turns, saved to chat.json
         self._timelines: OrderedDict[frozenset, Timeline] = OrderedDict()
         self._versions: OrderedDict[str, frozenset] = OrderedDict()
@@ -213,9 +216,9 @@ class Episode:
     def ops_for(self, enabled: frozenset[str]) -> list[dict]:
         es = [self.edits[i] for i in sorted(enabled)]
         ops = [o for e in es for o in e.ops]
-        gains = [o for o in ops if o["op"] not in ("cut", "lift", "slip")]
+        gains = [o for o in ops if o["op"] not in ("cut", "lift", "erase", "slip")]
         slips = sorted((o for o in ops if o["op"] == "slip"), key=lambda o: (o["start"], o["track"]))
-        lifts = sorted((o for o in ops if o["op"] == "lift"), key=lambda o: (o["start"], o["track"]))
+        lifts = sorted((o for o in ops if o["op"] in ONE_TRACK), key=lambda o: (o["start"], o["track"]))
         cuts = sorted((o for o in ops if o["op"] == "cut"), key=lambda o: -o["start"])
         return gains + slips + lifts + cuts
 
@@ -300,7 +303,7 @@ class Episode:
             yield data[lo:hi]
 
     def ab(self, before: frozenset[str], after: frozenset[str], span: tuple[int, int] | None,
-           ctx_s: float = 10.0, max_s: float = 80.0) -> dict:
+           ctx_s: float = 5.0, max_s: float = 80.0) -> dict:
         a, b = span or (0, 0)
         out = {}
         for side, enabled in (("before", before), ("after", after)):
@@ -439,9 +442,10 @@ class Episode:
                 Op.from_dict(o)    # shape check
             except (KeyError, TypeError) as e:
                 raise ValueError(f"malformed op {o!r}") from e
-            if o["op"] not in ("cut", "lift", "slip", "track_gain"):
+            if o["op"] not in ("cut", "lift", "erase", "slip", "track_gain"):
                 raise ConflictError(f"op {o['op']} is not supported in this slice")
         with self.lock:
+            ops = self.with_room_tone(ops)
             eid = f"{'x' if source == 'chat' else 'm'}{len(self.edits) + 1:04d}"
             while eid in self.edits:
                 eid += "_"
@@ -461,10 +465,38 @@ class Episode:
             raise
         return e
 
+    def with_room_tone(self, ops: list[dict]) -> list[dict]:
+        """`erase` ops with their room tone picked from the same track's own source near the edit."""
+        if not any(o["op"] == "erase" and not o.get("tone_media_id") for o in ops):
+            return ops
+        self.previewer                        # opens the source pool
+        out = []
+        for o in ops:
+            if o["op"] == "erase":
+                pad = room_tone.SEARCH_S + 1
+                words = [(s, e) for trk, s, e, _ in self.words(o["start"] / self.sr - pad, o["end"] / self.sr + pad)
+                         if trk == o["track"]]
+                o = room_tone.resolve(o, self.base, self._pool, words)
+            out.append(o)
+        return out
+
+    def fill_room_tone(self) -> int:
+        """Pick room tone for every erase still without one (first-cut edits built without audio).
+        Returns how many ops were filled."""
+        n = 0
+        with self.lock:
+            for e in self.edits.values():
+                new = self.with_room_tone(e.ops)
+                n += sum(1 for a, b in zip(e.ops, new) if a is not b)
+                e.ops = new
+            if n:
+                self._timelines.clear()
+        return n
+
     # ------------------------------------------------------------------ chat
     CHAT_RADIUS_S = 45.0       # transcript / pauses the editor sees around the playhead
     CHAT_HISTORY = 6           # earlier turns sent along ("再短一点", "不是这句")
-    CHAT_KEEP = 2000           # turns kept in chat.json (learning reads them after export)
+    CHAT_KEEP = 2000           # turns kept in chat.json (chat history, 「记住」 drafts in lessons.py)
 
     def chat_context(self, text: str, playhead_s: float) -> tuple[ChatContext, dict]:
         """What the editor sees around the playhead, plus what is needed to turn its answer into
@@ -516,7 +548,7 @@ class Episode:
         with self.lock:
             self._chat_log.append({"said": said, "at": round(at, 2), "reply": reply,
                                    "proposal": proposal["id"] if proposal else None, "state": "pending",
-                                   "time": datetime.now(timezone.utc).isoformat(timespec="seconds"), **extra})
+                                   "time": now_iso(), **extra})
             del self._chat_log[:-self.CHAT_KEEP]
             self._save_chat()
 
@@ -557,7 +589,7 @@ class Episode:
         slips: dict[str, list[tuple[int, int, int]]] = {}
         for i in enabled:
             for o in self.edits[i].ops:
-                if o["op"] == "lift":
+                if o["op"] in ONE_TRACK:
                     lifts.setdefault(o["track"], []).append((o["start"], o["end"]))
                 elif o["op"] == "slip":
                     slips.setdefault(o["track"], []).append((o["start"], o["end"], o["delta"]))
@@ -630,7 +662,7 @@ class Episode:
                 if c["track"] not in {tr.name for tr in self.base.tracks}:
                     continue
                 a, b = int(c["start"] * sr), int(c["end"] * sr)
-                ops += [{"op": "lift", "track": c["track"], "start": x, "end": y}
+                ops += [{"op": "erase", "track": c["track"], "start": x, "end": y}
                         for x, y in subtract(to_base(a, cuts, right=True), to_base(b, cuts, right=False), cuts)
                         if y - x >= int(0.03 * sr)]
         if not ops and not restores:
@@ -705,12 +737,30 @@ class Episode:
         return read_json(p) if p.is_file() else None
 
     def words(self, a_s: float, b_s: float) -> list[tuple[str, float, float, str]]:
+        """(track, start, end, word) of every word overlapping (a_s, b_s), by start time."""
         if not self.transcript:
             return []
         out = []
-        for track, words in self.transcript["tracks"].items():
-            out += [(track, s, e, w) for s, e, w in words if e > a_s and s < b_s]
+        for track, words, starts, reach in self._word_index():
+            lo, hi = 0, len(words)
+            if starts is not None:      # only the slice that can overlap; the test below decides
+                lo, hi = bisect.bisect_right(reach, a_s), bisect.bisect_left(starts, b_s)
+            out += [(track, s, e, w) for s, e, w in words[lo:hi] if e > a_s and s < b_s]
         return sorted(out, key=lambda x: x[1])
+
+    def _word_index(self) -> list[tuple]:
+        """Per track: words, their start times and the running maximum of their end times (for
+        bisecting), or None for both when a track's words are not in start order (full scan)."""
+        if self._words_ix is None:
+            ix = []
+            for track, words in self.transcript["tracks"].items():
+                starts = [w[0] for w in words]
+                if all(x <= y for x, y in zip(starts, starts[1:])):
+                    ix.append((track, words, starts, list(accumulate((w[1] for w in words), max))))
+                else:
+                    ix.append((track, words, None, None))
+            self._words_ix = ix
+        return self._words_ix
 
     def transcript_text(self, base_s: float, radius: float = 15.0) -> str:
         parts, prev = [], None
@@ -728,7 +778,7 @@ class Episode:
             return []
         a, b = (x / self.sr for x in e.span)
         removed = [(o["start"] / self.sr, o["end"] / self.sr, o.get("track")) for o in e.ops
-                   if o["op"] in ("cut", "lift")]
+                   if o["op"] in ("cut", *ONE_TRACK)]
         lines: list[dict] = []
         for track, s, en, w in self.words(a - ctx_s, b + ctx_s):
             mid = (s + en) / 2
@@ -745,14 +795,15 @@ class Episode:
     def edit_json(self, e: Edit, cuts) -> dict:
         sp = e.span
         t = to_tl(sp[0], cuts) / self.sr if sp else 0.0
-        removed = sum(b - a for a, b in e.cuts) or (sum(o["end"] - o["start"] for o in e.ops if o["op"] == "lift"))
+        removed = sum(b - a for a, b in e.cuts) or (sum(o["end"] - o["start"] for o in e.ops if o["op"] in ONE_TRACK))
         off = float(self.meta.get("raw_offset_s", 0.0))
         return {
             "id": e.id, "category": e.category, "category_label": tr(CATEGORY_LABELS.get(e.category, e.category)),
             "title": e.title, "reason": e.reason, "confidence": e.confidence,
             "consequential": e.consequential, "status": e.status, "approved": e.approved,
             "source": e.source, "t": round(t, 3), "len": round(removed / self.sr, 3),
-            "tracks": e.tracks, "op_id": e.op_id, "ai_category": e.ai_category, "speech_s": e.speech_s,
+            "tracks": e.tracks, "room_tone": any(o["op"] == "erase" and o.get("tone_media_id") for o in e.ops),
+            "op_id": e.op_id, "ai_category": e.ai_category, "speech_s": e.speech_s,
             "raw": [round(sp[0] / self.sr + off, 2), round(sp[1] / self.sr + off, 2)] if sp else None,
         }
 
@@ -822,6 +873,7 @@ def create_episode(ws: Workspace, episode_id: str, meta: dict, project: Project,
                                        "edits": [asdict(e) for e in edits],
                                        "history": {"undo": [], "redo": []}, "proposals": {}})
     ep = Episode(ws, episode_id)   # validate + rewrite with the derived log
+    ep.fill_room_tone()            # single-track erases get their room tone from the audio
     ep.save()
     ep.close()
     return d

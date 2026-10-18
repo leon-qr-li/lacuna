@@ -18,3 +18,5 @@
 - Each anchored placement shows its final-mix position, editable, with 「早 1 秒 / 晚 1 秒」 (exact, no snapping).
 - Exports record `music_version` (applied placements + their assets' levels); the export popover and the
   上传喜马拉雅 page say the export is stale when the music changed after it.
+
+Changed by: `2026-10-18-ai-called-lacuna` — the chat box reads 「跟 LACUNA 说配乐怎么改」 (code and model unchanged).

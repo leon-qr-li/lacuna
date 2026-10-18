@@ -1,0 +1,19 @@
+/* ---- 喜马拉雅版 (backlog item 26) */
+.xmly { flex: 1; width: 100%; max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding: 24px; }
+.xmly h1 { margin: 0 0 6px; font-size: 28px; }
+.xmly-styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.xmly-style { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.xmly-style:hover { border-color: var(--accent); }
+.xmly-style.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.xmly-style strong { font-size: 16px; }
+.xmly-images { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; align-items: start; }
+.xmly-images figure { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.xmly-images img { width: 100%; border-radius: 8px; border: 1px solid var(--line-soft); }
+.xmly-images figcaption { align-items: center; }
+.xmly-preview { max-width: 640px; margin: 0 auto; font-size: 15px; line-height: 1.8; overflow-wrap: anywhere; }
+.xmly-preview h2 { font-size: 18px; margin: 12px 0 6px; }
+.xmly-preview p { margin: 0 0 6px; }
+.xmly-preview blockquote { margin: 6px 0; padding: 4px 14px; border-left: 3px solid var(--accent-mid); color: var(--muted); }
+.xmly-preview blockquote p { margin: 0; }
+.xmly-preview hr { border: 0; border-top: 1px solid var(--line-soft); margin: 18px 0; }
+.xmly-preview .xmly-img img { display: block; width: 100%; border-radius: 6px; }

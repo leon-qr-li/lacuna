@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Protocol
 
 from .analysis import Span
-from .i18n import in_reply_language, tr
+from .i18n import AI_NAME_RULE, in_reply_language, tr
 
 TARGET_PAUSE_S = 0.4
 MAX_SENTENCE_S = 25.0
@@ -120,7 +120,7 @@ class MockEditorAdapter:
         for kind, rx in self.RULES:
             if rx.search(text):
                 return getattr(self, f"_{kind}")(ctx)
-        return Proposal(tr("我（演示用规则引擎）目前只听得懂：「停顿短一点」「恢复这处」「删掉这句」。接上 Claude 之后可以说更自由的话。"))
+        return Proposal(tr("我（演示用规则引擎）目前只听得懂：「停顿短一点」「恢复这处」「删掉这句」。接上 AI 之后可以说更自由的话。"))
 
     def _restore(self, ctx: ChatContext) -> Proposal:
         cands = [e for e in ctx.nearby_edits if e["status"] == "applied" and e["category"] != "loudness"]
@@ -220,7 +220,7 @@ def save_api_key(key: str) -> str:
     """Store the key where `find_api_key` looks for it on this OS; returns where. Never logs it."""
     key = key.strip().strip('"')
     if len(key) < 20 or any(c.isspace() for c in key):
-        raise ValueError(tr("这不像一个 API key（应该是 sk-ant- 开头的一长串）"))
+        raise ValueError(tr("这不像一个 AI 密钥（应该是 sk- 开头的一长串）"))
     if sys.platform == "win32":
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, "Environment", 0, winreg.KEY_SET_VALUE) as k:
@@ -298,13 +298,14 @@ Answer by calling propose_edit exactly once. Actions:
 To remove only part of an utterance, give start_text (the first words removed, copied exactly \
 from that utterance's text) and/or end_text (the last words removed, copied exactly from \
 to_utterance's text).
-- cut_one_track: same selection, but only that speaker's track goes silent and nothing moves; \
-use it for one host's interjection or noise over the other host's speech.
+- cut_one_track: same selection, but only that speaker's sound is erased (filled with their own \
+room tone, so no hole is heard) and nothing moves; use it for one host's interjection, 嗯 / 对 \
+backchannel or noise over the other host's speech ("抹掉 Pei 那几个嗯"): one action per utterance.
 - shorten_pause: shorten pause `pause` to target_s seconds (default 0.4).
 - restore: undo nearby edit `edit` so the original audio comes back.
 Use an empty actions list when nothing should change. The host previews every proposal before \
 it is applied. `message` says in one or two short sentences what will change and where (m:ss); \
-`title` is a short label of the change; confidence is how sure you are this is what the host wants."""  # i18n-ignore
+`title` is a short label of the change; confidence is how sure you are this is what the host wants.""" + AI_NAME_RULE  # i18n-ignore
 
 _ID = {"type": ["string", "null"]}
 TOOL = {
@@ -377,9 +378,7 @@ class ClaudeEditorAdapter:
 
     def __init__(self, api_key: str | None = None, client: Any = None, effort: str | None = None):
         if api_key is None and client is None:
-            api_key, self.key_source = find_api_key()
-        else:
-            self.key_source = "given"
+            api_key, _ = find_api_key()
         self.api_key = api_key
         self._client = client
         self.effort = effort or os.environ.get("LACUNA_AI_EFFORT", "low")
@@ -403,7 +402,7 @@ class ClaudeEditorAdapter:
 
     def propose(self, ctx: ChatContext) -> Proposal:
         if not self.available:
-            return Proposal(tr("没有找到 ANTHROPIC_API_KEY（或没装 anthropic 包），AI 制作人暂时不可用。"))
+            return Proposal(tr("还没接上 AI（没有 AI 密钥），AI 制作人暂时不可用。"))
         t0 = time.monotonic()
         try:
             resp = self._call(ctx)
@@ -411,7 +410,7 @@ class ClaudeEditorAdapter:
             return Proposal(error_message(e))
         usage = self._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            p = Proposal(tr("Claude 没有处理这条指令，这次没有改动。"))
+            p = Proposal(tr("LACUNA 没有处理这条指令，这次没有改动。"))
         else:
             p = None
             for block in resp.content:
@@ -421,7 +420,7 @@ class ClaudeEditorAdapter:
             if p is None:
                 text = "".join(b.text for b in resp.content if b.type == "text").strip()
                 p = Proposal(text or (tr("回答被截断了，这次没有改动。") if resp.stop_reason == "max_tokens"
-                                      else tr("Claude 没有给出改动建议。")))
+                                      else tr("LACUNA 没有给出改动建议。")))
         p.usage = usage
         return p
 
@@ -453,11 +452,11 @@ def error_message(e: Exception, tail: str | None = None) -> str:
         anthropic = None
     tail = tr("，这次没有改动。") if tail is None else tail
     if anthropic is None:
-        return tr("调用 Claude 失败（{name}）", name=type(e).__name__) + tail
+        return tr("调用 AI 服务失败（{name}）", name=type(e).__name__) + tail
     if isinstance(e, anthropic.APITimeoutError):
-        return tr("Claude 太久没有回应（超时）") + tail
+        return tr("AI 服务太久没有回应（超时）") + tail
     if isinstance(e, anthropic.APIConnectionError):
-        return tr("连不上 Claude（网络问题）") + tail
+        return tr("连不上 AI 服务（网络问题）") + tail
     if isinstance(e, anthropic.AuthenticationError):
         return tr("API key 无效或已被撤销（401），请在 Console 检查 key") + tail
     if isinstance(e, anthropic.PermissionDeniedError):
@@ -469,9 +468,9 @@ def error_message(e: Exception, tail: str | None = None) -> str:
         if "credit" in msg or "billing" in msg or "balance" in msg:
             return tr("API 额度用完了（或账单未开通），请在 Console 的 Billing 查看") + tail
         if e.status_code in (500, 502, 503, 504, 529):
-            return tr("Claude 暂时繁忙（{status_code}），稍后再试", status_code=e.status_code) + tail
-        return tr("Claude 返回错误（{status_code}）", status_code=e.status_code) + tail
-    return tr("调用 Claude 失败（{name}）", name=type(e).__name__) + tail
+            return tr("AI 服务暂时繁忙（{status_code}），稍后再试", status_code=e.status_code) + tail
+        return tr("AI 服务返回错误（{status_code}）", status_code=e.status_code) + tail
+    return tr("调用 AI 服务失败（{name}）", name=type(e).__name__) + tail
 
 
 # ---------------------------------------------------------------------------- resolving ids
@@ -625,9 +624,9 @@ def editor_status(adapter: EditorAdapter) -> dict:
         return {"editor": "claude", "editor_note": ""}
     key, _ = find_api_key()
     if key and not sdk_installed():
-        note = tr("找到了 API key，但没装 anthropic 包（pip install -e \".[claude]\"）")
+        note = tr("找到了 AI 密钥，但 AI 组件没装好（请重新安装 LACUNA）")
     elif not key:
-        note = tr("没找到 ANTHROPIC_API_KEY")
+        note = tr("没找到 AI 密钥")
     else:
         note = tr("以演示规则启动（--editor mock）")
     return {"editor": adapter.name, "editor_note": note}

@@ -21,7 +21,7 @@ With [uv](https://docs.astral.sh/uv/) (recommended):
 
 ```bash
 uv venv
-uv pip install -e ".[test]"          # add ",claude" to enable the Claude producer
+uv pip install -e ".[test,claude,asr]"   # claude = AI producer (Claude API), asr = import (sherpa-onnx)
 ```
 
 With pip:
@@ -29,7 +29,7 @@ With pip:
 ```bash
 python -m venv .venv
 # Windows:  .venv\Scripts\activate      macOS:  source .venv/bin/activate
-pip install -e ".[test]"
+pip install -e ".[test,claude,asr]"
 ```
 
 ### 2. Build the UI (once, and again after UI changes)
@@ -83,20 +83,23 @@ The cut positions come from Leon's hand edit of EP001. Categories, reasons and c
 
 ### Using it
 
-- **整集试听 (Full Listen)**
-  - Player controls: play/pause (space), ±5 s (←/→), 1× or 1.5× with pitch preserved, and an optional 5 s rewind on pause.
-  - Lane view of both tracks around the playhead, plus a "这附近改了什么" list of nearby edits.
-  - Chat anchored to the playhead. Try 「停顿短一点」, 「恢复这处」 or 「删掉这句」. Each suggestion lets you preview it A/B, then choose 批准 to approve or 再改 to revise.
-- **改动审阅 (Edit Review)**
-  - Edits that need your judgement are listed content trims first, then by duration removed. Routine cleanup is summarised by category.
-  - For each edit: A/B compare, keep or restore, and the original words.
-  - Keyboard: J/K previous/next, space play, A/B switch, R restore.
-- **Undo / redo**: the header buttons or Ctrl/Cmd+Z (Shift for redo).
+Sign in (local account), then 剧集 lists the episodes (archive / restore / delete; deleting never removes learned habits). 导入新一集 takes the two per-host tracks (drag & drop or pick files) and runs ASR, analysis, volume leveling and the AI first cut in the background, with progress and time left.
+
+Each episode is one flow: **审阅改动 → 整集试听 → 声音 → 本集学到的规则 → 配乐 → 导出 → 发布** (发布资料 / 喜马拉雅版 / 海报 / 上传喜马拉雅).
+
+- **审阅改动 (Edit Review)**: edits that need your judgement, in time order. Each preview plays the cut with 5 s either side; A/B original vs. cut, keep or restore, 剩下全部通过 (one undoable step), 只看没过目的, 带配乐听. Keys: Space play, ←/→ previous/next, K keep, R restore, A/B, S speed (1× → 1.25× → 1.5× → 2×), ? help.
+- **整集试听 (Full Listen)**: play/pause (Space), ±5 s (←/→), 1× / 1.5× with pitch preserved, optional 5 s rewind on pause; lane view of both tracks, "这附近改了什么"; the AI producer chat (called LACUNA) anchored to the playhead, e.g. 「停顿短一点」「删掉这句」「Pei 声音大一点」. Each suggestion can be previewed, then 批准 or 再改; 「记住」 turns a long-term ask into a rule after you confirm LACUNA's rewording. Voice input transcribes locally.
+- **声音**: both hosts are evened out at import (each host's speech at -20 LUFS); per-track ±1 dB, 重新统一, clipping report.
+- **本集学到的规则**: what this episode taught (kept / restored edits, chat asks) as candidate rules; nothing is stored until you confirm. All rules live on 学到的规则 (top bar).
+- **配乐**: place library music as 片头 / 间奏 / 片尾 / 铺底 / 台词; background defaults to 22 dB under full level, beds fill gaps automatically and loop, one player synced with the strip. Music files live in 素材库.
+- **导出**: WAV + MP3 mastered to -16 LUFS / -1 dBTP into `<workspace>/exports/<episode>/`.
+- **发布**: title candidates, summary and show notes (no tables), a 喜马拉雅版 tab with three layouts, 2×2 poster versions with 一句话改, and an upload page that follows 喜马拉雅's form order (Leon uploads by hand).
+- **Undo / redo**: the header buttons or Ctrl/Cmd+Z (Shift for redo). Confirmations use the in-app dialog.
 
 ### Tests
 
 ```bash
-python -m pytest -q tests                      # engine + API (synthetic audio, no network)
+python -m pytest -q -n auto tests              # engine + API (synthetic audio, no network; -n auto = all CPUs)
 cd web && npx playwright test                  # E2E in Chromium; starts its own backend
 ```
 

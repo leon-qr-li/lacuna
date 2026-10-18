@@ -26,3 +26,5 @@ paused until this redesign lands), so layouts must not break with longer English
 ## Rejected
 A "Studio" (sidebar + 7 numbered steps), B "Cinema" (dark/gold, serif), D (A layout + B style). Mockups kept in
 `/mnt/project-files/lacuna/screenshots/phase8-ui/round1/`.
+
+Changed by: `2026-10-18-loudness-leveling` and `2026-10-18-confirmed-learning` — the flow is now 审阅改动 → 整集试听 → 声音 → 本集学到的规则 → 配乐 → 导出 → 发布 (发布 sub-tabs 发布资料 / 喜马拉雅版 / 海报 / 上传喜马拉雅, see `2026-10-18-ximalaya-show-notes`).

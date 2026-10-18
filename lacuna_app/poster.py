@@ -27,14 +27,13 @@ import traceback
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode
 from .publish import Publisher, episode_label
-from .store import POSTER_FILE, Workspace, atomic_write_json, inside, read_json
+from .store import POSTER_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
 from .i18n import N_, tr
 
 POSTER_SCHEMA = 1
@@ -166,7 +165,7 @@ def sanitize(svg: str) -> tuple[str, list[str]]:
 
     clean(root)
     if dropped_cjk:
-        notes.append(tr("Claude 在海报上写了中文，已经去掉（只用英文）。"))
+        notes.append(tr("LACUNA 在海报上写了中文，已经去掉（只用英文）。"))
     return ET.tostring(root, encoding="unicode"), notes
 
 
@@ -279,14 +278,14 @@ class ClaudeDesigner:
             raise PosterError(error_message(e, tail="")) from e
         usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
         if resp.stop_reason == "refusal":
-            raise PosterError(tr("Claude 没有处理这次请求"))
+            raise PosterError(tr("LACUNA 没有处理这次请求"))
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_poster":
                 d = dict(block.input)
                 return Design(str(d.get("name", ""))[:60], str(d.get("concept", ""))[:600], str(d.get("svg", "")), usage)
         if resp.stop_reason == "max_tokens":
             raise PosterError(tr("海报太复杂，回答被截断了"))
-        raise PosterError(tr("Claude 没有交回海报"))
+        raise PosterError(tr("LACUNA 没有交回海报"))
 
     def design(self, context: str, direction: str) -> Design:
         brief = dict((k, b) for k, _, b in DIRECTIONS)[direction]
@@ -396,7 +395,7 @@ class Posters:
     def _designer(self):
         d = self.factory()
         if not getattr(d, "available", True):
-            raise PosterError(tr("没有接上 Claude（没找到 API key 或没装 anthropic 包），画不了海报"))
+            raise PosterError(tr("还没接上 AI（没有 AI 密钥），画不了海报"))
         return d
 
     def _add(self, ep: Episode, design: Design, direction: str, parent: str | None = None,
@@ -409,7 +408,7 @@ class Posters:
             n = max((int(v["id"][1:]) for v in doc["variants"]), default=0) + 1
             v = {"id": f"v{n}", "direction": direction, "name": design.name, "concept": design.concept,
                  "svg": svg, "parent": parent, "instruction": instruction, "notes": notes,
-                 "usage": design.usage, "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+                 "usage": design.usage, "created_at": now_iso()}
             _write_bytes(self.preview_path(ep, v["id"]), png)
             doc["variants"].append(v)
             self.save(ep, doc)
@@ -422,7 +421,7 @@ class Posters:
 
         def work(stage: Callable[[str], None]) -> None:
             done, errors = [], []
-            stage(tr("Claude 在画 {p0} 版海报", p0=len(keys)))
+            stage(tr("LACUNA 在画 {p0} 版海报", p0=len(keys)))
 
             def one(k: str) -> None:
                 try:
@@ -431,7 +430,7 @@ class Posters:
                         self.on_usage(ep.id, d.usage)
                     self._add(ep, d, k)
                     done.append(k)
-                    stage(tr("Claude 在画 {p0} 版海报（已完成 {p1}）", p0=len(keys), p1=len(done)))
+                    stage(tr("LACUNA 在画 {p0} 版海报（已完成 {p1}）", p0=len(keys), p1=len(done)))
                 except Exception as e:  # noqa: BLE001 - one bad version must not lose the others
                     if not isinstance(e, PosterError):
                         traceback.print_exc()
@@ -458,7 +457,7 @@ class Posters:
         designer = self._designer()
 
         def work(stage: Callable[[str], None]) -> None:
-            stage(tr("Claude 在按你的话改「{name}」", name=base['name']))
+            stage(tr("LACUNA 在按你的话改「{name}」", name=base['name']))
             d = designer.revise(context, base["svg"], instruction)
             if d.usage:
                 self.on_usage(ep.id, d.usage)
@@ -484,7 +483,7 @@ class Posters:
                 doc["cover"] = {"variant": vid, "px": COVER_PX, "folder": str(out),
                                 "jpg": str(out / "cover.jpg"), "png": str(out / "cover.png"),
                                 "jpg_bytes": len(jpg), "png_bytes": len(png),
-                                "rendered_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+                                "rendered_at": now_iso()}
                 self.save(ep, doc)
 
         return self._run(ep, "choose", tr("准备"), work, wait)
@@ -498,6 +497,7 @@ class Posters:
 
     # ---- view
     def view(self, ep: Episode) -> dict:
+        job = self.status(ep.id)       # before the doc: a job seen finished has its result in the doc read next
         doc = self.load(ep)
         has_pack = self.publisher.load(ep) is not None
         variants = []
@@ -511,5 +511,5 @@ class Posters:
         except Exception:      # noqa: BLE001
             available = False
         return {"variants": variants, "chosen": doc.get("chosen"), "cover": doc.get("cover"), "available": available,
-                "errors": doc.get("last_errors", []), "job": self.status(ep.id), "has_pack": has_pack,
+                "errors": doc.get("last_errors", []), "job": job, "has_pack": has_pack,
                 "directions": [{"key": k, "label": tr(label)} for k, label, _ in DIRECTIONS]}

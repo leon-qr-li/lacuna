@@ -73,21 +73,19 @@
 
 ## 🎬 本期提到的电影
 
-| 片名 | 导演 / 备注 |
-|---|---|
-| 《Obsession》 | Curry Barker |
-| 《Backrooms》 | Kane Parsons · A24 |
-| 《奥德赛》The Odyssey | 克里斯托弗·诺兰 |
-| 《蜘蛛侠：英雄重启》Spider-Man: Brand New Day | 配乐 Michael Giacchino |
-| 《蜘蛛侠：英雄无归》No Way Home | 三代同框 |
-| 《蜘蛛侠》Spider-Man (2002) | Tobey Maguire 版 |
-| 《奥本海默》《信条》《星际穿越》《盗梦空间》 | 诺兰 |
-| 《沙丘 3》Dune: Part Three | 年底上映 |
-| 《绝美之城》La Grande Bellezza | 保罗·索伦蒂诺 |
-| 《Smile》 | 营销教科书 |
-| 《The Dog Stars》 | 雷德利·斯科特 |
-| 《生化危机》Resident Evil | Zach Cregger |
-| 《Weapons》 | Zach Cregger |
+- 《Obsession》：Curry Barker
+- 《Backrooms》：Kane Parsons · A24
+- 《奥德赛》The Odyssey：克里斯托弗·诺兰
+- 《蜘蛛侠：英雄重启》Spider-Man: Brand New Day：配乐 Michael Giacchino
+- 《蜘蛛侠：英雄无归》No Way Home：三代同框
+- 《蜘蛛侠》Spider-Man (2002)：Tobey Maguire 版
+- 《奥本海默》《信条》《星际穿越》《盗梦空间》：诺兰
+- 《沙丘 3》Dune: Part Three：年底上映
+- 《绝美之城》La Grande Bellezza：保罗·索伦蒂诺
+- 《Smile》：营销教科书
+- 《The Dog Stars》：雷德利·斯科特
+- 《生化危机》Resident Evil：Zach Cregger
+- 《Weapons》：Zach Cregger
 
 **剧集 / 纪录片**：《Stranger Things》 · *Stanley Tucci: Searching for Italy*
 

@@ -61,7 +61,10 @@ class MediaRef:
 @cache
 def ffmpeg_has_soxr() -> bool:
     """Some ffmpeg builds (e.g. common static macOS builds) ship without libsoxr."""
-    out = subprocess.run(["ffmpeg", "-hide_banner", "-buildconf"], capture_output=True, text=True)
+    try:
+        out = subprocess.run(["ffmpeg", "-hide_banner", "-buildconf"], capture_output=True, text=True)
+    except FileNotFoundError:      # no ffmpeg at all: the decode that follows says so in words
+        return False
     return "--enable-libsoxr" in out.stdout + out.stderr
 
 

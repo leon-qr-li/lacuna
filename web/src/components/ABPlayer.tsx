@@ -28,9 +28,10 @@ interface Props {
   onPlay?: () => void;
   dark?: boolean;
   compact?: boolean; // a segmented A | B pill for the review dock, hint as a tooltip
+  rate?: number; // playback speed, pitch kept (review speed picker)
 }
 
-export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labels, loading, onPlay, dark, compact }, ref) {
+export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labels, loading, onPlay, dark, compact, rate = 1 }, ref) {
   const audio = useRef<HTMLAudioElement>(null);
   const [side, setSide] = useState<Side | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -39,6 +40,15 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
     audio.current?.pause();
     setSide(null);
   }, [ab]);
+
+  // a new speed applies at once, without moving the position
+  useEffect(() => {
+    const a = audio.current;
+    if (!a) return;
+    a.preservesPitch = true;
+    a.defaultPlaybackRate = rate;
+    a.playbackRate = rate;
+  }, [rate]);
 
   const start = useCallback(
     (s: Side) => {
@@ -49,7 +59,9 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
       if (side && side !== s && !a.paused) at = mapOffset(a.currentTime, ab[side], target);
       a.src = target.url;
       a.preservesPitch = true;
+      a.defaultPlaybackRate = rate;
       const go = () => {
+        a.playbackRate = rate; // load() resets the rate to defaultPlaybackRate; set both anyway
         a.currentTime = at;
         void a.play().catch(() => undefined);
       };
@@ -58,7 +70,7 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
       setSide(s);
       onPlay?.();
     },
-    [ab, side, onPlay],
+    [ab, side, onPlay, rate],
   );
 
   const toggle = useCallback(() => {
@@ -89,11 +101,11 @@ export const ABPlayer = forwardRef<ABHandle, Props>(function ABPlayer({ ab, labe
       className={compact ? "ab ab-seg" : "ab"}
       role="group"
       aria-label={t("前后对比试听")}
-      title={compact ? (loading ? t("正在渲染…") : t("前后各约 10 秒，切换时位置同步")) : undefined}
+      title={compact ? (loading ? t("正在渲染…") : t("前后各约 5 秒，切换时位置同步")) : undefined}
     >
       {btn("before", labels[0], "A")}
       {btn("after", labels[1], "B")}
-      {!compact && <span className="muted small">{loading ? <BusyLabel busy label={t("正在渲染…")} /> : t("前后各约 10 秒，切换时位置同步")}</span>}
+      {!compact && <span className="muted small">{loading ? <BusyLabel busy label={t("正在渲染…")} /> : t("前后各约 5 秒，切换时位置同步")}</span>}
       <audio
         ref={audio}
         data-testid="ab-audio"

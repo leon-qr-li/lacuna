@@ -13,7 +13,7 @@ from lacuna_app import create_app
 from lacuna_app.editor import MockEditorAdapter
 from lacuna_core.master import measure
 
-from .synth import EPISODE, SR, make_workspace, write_music
+from .synth import EPISODE, make_workspace, write_music
 from .fake_claude import FakeCreditAnthropic as FakeAnthropic
 
 pytestmark = pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not installed")
@@ -94,17 +94,24 @@ def test_episode_music_and_mix_stream(client, tmp_path):
     base = client.get(EP).json()["duration"]
     m = client.get(f"{EP}/music").json()
     assert m["placements"] == [] and m["duration"] == pytest.approx(base, abs=0.01) and m["credits"] == []
-    m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "intro", "overlap_s": 2}).json()
+    m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "intro", "solo_s": 4}).json()
     assert m["duration"] == pytest.approx(base + 4.0, abs=0.01)
     assert m["inserts"] == [[0.0, pytest.approx(4.0, abs=0.01)]]      # for 「带配乐听」 in the review player
     # interlude at 20 s *of the final mix* = 16 s of the voice cut (intro adds 4 s)
-    m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "interlude", "at_s": 20.0, "overlap_s": 1}).json()
+    m = client.post(f"{EP}/music", json={"asset_id": jingle, "role": "interlude", "at_s": 20.0, "solo_s": 1,
+                                          "ramp_s": 1}).json()
     mid = next(p for p in m["placements"] if p["role"] == "interlude")
-    assert mid["voice_at_s"] == pytest.approx(16.0, abs=0.01) and mid["start_s"] == pytest.approx(19.0, abs=0.01)
+    assert mid["voice_at_s"] == pytest.approx(16.0, abs=0.01) and mid["start_s"] == pytest.approx(20.0, abs=0.01)
+    assert mid["inserted_s"] == pytest.approx(3.0, abs=0.01) and mid["end_s"] == pytest.approx(26.0, abs=0.01)
+    # Leon's numbers: background level, rise/fall, trim
+    m = client.patch(f"{EP}/music/{mid['id']}", json={"bg_db": 12, "ramp_s": 0.5, "ramp_out_s": 1.5, "src_out_s": 5}).json()
+    mid = next(p for p in m["placements"] if p["id"] == mid["id"])
+    assert (mid["bg_db"], mid["ramp_s"], mid["ramp_out_s"], mid["src_out_s"], mid["inserted_s"]) == (12, 0.5, 1.5, 5, 3.0)
+    assert client.patch(f"{EP}/music/{mid['id']}", json={"bg_db": 99}).status_code == 422
     assert [c["role"] for c in m["credits"]] == ["intro", "interlude"]
     m = client.patch(f"{EP}/music/{mid['id']}", json={"gain_db": -3}).json()
     assert next(p for p in m["placements"] if p["id"] == mid["id"])["gain_db"] == -3
-    assert client.post(f"{EP}/music", json={"asset_id": jingle, "role": "bed"}).status_code == 409
+    assert client.post(f"{EP}/music", json={"asset_id": jingle, "role": "clip"}).status_code == 409   # needs a position
     pv = client.get(f"{EP}/music/{mid['id']}/preview")
     assert pv.status_code == 200 and pv.content[:4] == b"RIFF"
     r = client.get(m["mix_url"], headers={"Range": "bytes=0-99"})
@@ -125,7 +132,7 @@ def test_episode_music_and_mix_stream(client, tmp_path):
 
 def test_export_includes_music_and_credits(client, ws, tmp_path):
     song = upload(client, write_music(tmp_path / "in" / "s.wav", 8.0)).json()["asset"]["id"]
-    client.post(f"{EP}/music", json={"asset_id": song, "role": "intro", "overlap_s": 2})
+    client.post(f"{EP}/music", json={"asset_id": song, "role": "intro", "solo_s": 6})
     final = client.get(f"{EP}/music").json()["duration"]
     r = client.post(f"{EP}/export", json={"formats": ["wav"], "channels": 2})
     assert r.status_code == 200, r.text

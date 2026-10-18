@@ -23,12 +23,11 @@ import hashlib
 import json
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
 from .review import REVIEW_CONFIDENCE, ReviewPolicy
-from .store import Workspace, atomic_write_json, check_id, read_json
+from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
 from .i18n import N_, lang, tr
 
 LEARN_DIR = "learning"
@@ -68,10 +67,6 @@ MAX_EXAMPLES = 6
 TASTE_EXAMPLES = 8        # per side, longest first
 MISSED_SPEECH_S = 3.0     # speech he cut himself (AI untouched) worth showing as a missed example
 CONF_BUCKETS = (0.4, 0.5, 0.6, 0.7)
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 # ============================================================================ decisions
@@ -118,12 +113,12 @@ def _host(ep, e) -> tuple[str, float, float]:
     """(host, Leon speech s, Pei speech s) removed by edit `e` (lifts: their track)."""
     per: dict[str, float] = defaultdict(float)
     sr = ep.sr
-    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
+    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift", "erase")]
     for a, b, track in ranges:
         for trk, s, en, _w in ep.words(a, b):
             if track is None or trk == track:
                 per[trk] += max(0.0, min(b, en) - max(a, s))
-    lift_tracks = {o["track"] for o in e.ops if o["op"] in ("lift", "slip")}
+    lift_tracks = {o["track"] for o in e.ops if o["op"] in ("lift", "erase", "slip")}
     if lift_tracks and not e.cuts:
         return (lift_tracks.pop() if len(lift_tracks) == 1 else "both"), per["Leon"], per["Pei"]
     top = max(per.values(), default=0.0)
@@ -136,7 +131,7 @@ def _host(ep, e) -> tuple[str, float, float]:
 def _text(ep, e, host: str, limit: int = 40) -> str:
     """The words edit `e` removes, per track (no interleaving of the two hosts)."""
     sr = ep.sr
-    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
+    ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift", "erase")]
     per: dict[str, list[str]] = defaultdict(list)
     for a, b, track in ranges:
         for trk, s, en, w in ep.words(a, b):
@@ -158,8 +153,8 @@ def decisions(ep, accepted_as_is: bool = False) -> list[Decision]:
         first = _first_status(ep.history)
         out: list[Decision] = []
         for e in ep.edits.values():
-            if e.status not in (APPLIED, RESTORED):
-                continue                               # chat proposals never approved
+            if e.status not in (APPLIED, RESTORED) or e.source == "level":
+                continue                               # chat proposals never approved; volume is not an edit verdict
             label = last.get(e.id, "")
             how = "none" if not label else ("batch" if label.startswith("全部") else "single")  # i18n-ignore
             if e.source == "first_cut":
@@ -437,7 +432,7 @@ def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list]
     for e in ep.edits.values():
         if e.source != "first_cut" or not e.span:
             continue
-        ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift")]
+        ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift", "erase")]
         if not ranges or e.category == "pause":
             for a, b, track in ranges:
                 for trk in ([track] if track else list(rem)):
@@ -582,6 +577,14 @@ class Learning:
                                     "approved": {"at": _now(), "digest": Rule(**core).digest(), "rule": core}}
         self._save(st)
         return self.overview()
+
+    def undelete(self, rule_id: str) -> None:
+        """Leon confirms again, by hand, a rule he once deleted: it may come back (re-learning never
+        brings it back on its own)."""
+        st = self._state()
+        if st["rules"].get(rule_id, {}).get("state") == "deleted":
+            st["rules"].pop(rule_id)
+            self._save(st)
 
     def accept_as_is(self, episode_id: str, on: bool = True) -> None:
         """Count this episode's first cut as accepted as delivered; its review clicks were tests."""

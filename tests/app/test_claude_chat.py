@@ -371,5 +371,5 @@ def test_editor_status(monkeypatch):
     assert ClaudeEditorAdapter().available            # SDK is installed in the test env
     monkeypatch.setattr(editor_mod, "sdk_installed", lambda: False)
     assert not ClaudeEditorAdapter().available
-    assert "anthropic" in editor_status(MockEditorAdapter())["editor_note"]
+    assert "AI 组件" in editor_status(MockEditorAdapter())["editor_note"]
     assert editor_status(ClaudeEditorAdapter(client=object())) == {"editor": "claude", "editor_note": ""}

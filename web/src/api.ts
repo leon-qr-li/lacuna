@@ -16,6 +16,7 @@ export interface EditInfo {
   t: number; // timeline seconds of the edit point
   len: number; // seconds removed / affected
   tracks: string[] | null;
+  room_tone?: boolean; // one host's sound erased and filled with their own room tone
   raw: [number, number] | null; // raw recording seconds
   op_id?: string | null; // AI editor op this edit came from
   ai_category?: string | null;
@@ -106,6 +107,15 @@ export interface Dictated {
   text: string;
   audio_s: number;
   seconds: number;
+  raw?: string; // what the local recogniser heard, before the context pass
+  corrected?: boolean;
+}
+
+/** What the context pass may use to fix names and homophones (text only, never audio). */
+export interface DictationContext {
+  episode?: string;
+  at?: number; // playhead seconds
+  where?: "chat" | "poster";
 }
 
 export interface TextLine {
@@ -169,14 +179,6 @@ export interface ImportJob {
   result: { episode: string; edits: number; to_review: number; raw_duration: number; engine: string } | null;
 }
 
-export interface FsListing {
-  path: string;
-  parent: string | null;
-  dirs: { name: string; path: string }[];
-  files: { name: string; path: string; size: number; duration: number | null }[];
-  roots: string[];
-}
-
 export async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
   // anything the person started (not a GET) moves the thin line under the top bar
   return method === "GET" ? send<T>(method, url, body) : track(send<T>(method, url, body));
@@ -188,37 +190,38 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  if (!res.ok) {
-    // signed out or session expired: the sign-in screen comes back (features/auth/AuthGate)
-    if (res.status === 401 && !url.startsWith("/api/auth/")) window.dispatchEvent(new Event("lacuna:auth"));
-    let msg = res.statusText;
-    try {
-      msg = (await res.json()).detail ?? msg;
-    } catch {
-      /* not JSON */
-    }
-    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
-  }
+  if (!res.ok) throw await failure(res, url);
   return res.json() as Promise<T>;
+}
+
+/** The error for a failed request (the server's `detail`); a 401 also brings the sign-in screen
+ *  back (features/auth/AuthGate). Every raw fetch of the app goes through this. */
+export async function failure(res: Response, url: string): Promise<Error> {
+  if (res.status === 401 && !url.startsWith("/api/auth/")) window.dispatchEvent(new Event("lacuna:auth"));
+  let msg = res.statusText;
+  try {
+    msg = (await res.json()).detail ?? msg;
+  } catch {
+    /* not JSON */
+  }
+  return new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
 }
 
 export const ep = (id: string) => `/api/episodes/${encodeURIComponent(id)}`;
 
-async function dictate(audio: Blob): Promise<Dictated> {
-  const res = await fetch("/api/dictation", {
+async function dictate(audio: Blob, ctx: DictationContext = {}): Promise<Dictated> {
+  const q = new URLSearchParams();
+  if (ctx.episode) q.set("episode", ctx.episode);
+  if (ctx.at !== undefined && Number.isFinite(ctx.at)) q.set("at", ctx.at.toFixed(2));
+  if (ctx.where) q.set("where", ctx.where);
+  const qs = q.toString();
+  const url = `/api/dictation${qs ? `?${qs}` : ""}`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": audio.type || "application/octet-stream" },
     body: audio,
   });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      msg = (await res.json()).detail ?? msg;
-    } catch {
-      /* not JSON */
-    }
-    throw new Error(String(msg));
-  }
+  if (!res.ok) throw await failure(res, url);
   return res.json() as Promise<Dictated>;
 }
 
@@ -226,7 +229,6 @@ export const api = {
   dictate,
   dictationWarm: () => req<{ ok: boolean }>("POST", "/api/dictation/warm"),
   health: () => req<Health>("GET", "/api/health"),
-  episodes: () => req<{ episodes: EpisodeListItem[]; editor: string }>("GET", "/api/episodes"),
   episode: (id: string) => req<Episode>("GET", ep(id)),
   editAB: (id: string, eid: string) => req<AB>("GET", `${ep(id)}/edits/${eid}/ab`),
   editText: (id: string, eid: string) => req<{ lines: TextLine[] }>("GET", `${ep(id)}/edits/${eid}/text`),
@@ -251,7 +253,6 @@ export const api = {
   resumeImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/resume`),
   cancelImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/cancel`),
   forgetImport: (id: string) => req<{ ok: boolean }>("DELETE", `/api/imports/${encodeURIComponent(id)}`),
-  fs: (path?: string) => req<FsListing>("GET", `/api/fs${path ? `?path=${encodeURIComponent(path)}` : ""}`),
   openExports: (id: string) => req<{ folder: string }>("POST", `${ep(id)}/exports/open`),
 };
 

@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 
 def music_answer(ctx: dict) -> dict:
-    """A tiny stand-in for Claude arranging music: understands 晚/早 N 秒, 小/大 3 dB, 去掉, 加间奏."""
+    """A tiny stand-in for LACUNA arranging music: understands 晚/早 N 秒, 小/大 3 dB, 去掉, 加间奏."""
     text = ctx["instruction"]
     by_role = {p["role"]: p for p in ctx["placements"]}
     role = next((r for k, r in (("间奏", "interlude"), ("片头", "intro"), ("片尾", "outro"), ("背景", "bed"))
@@ -16,7 +16,8 @@ def music_answer(ctx: dict) -> dict:
 
     def act(type_, **kw):
         base = {k: None for k in ("placement_id", "asset_id", "role", "at_s", "until_s", "shift_s", "gain_db",
-                                  "gain_change_db", "src_in_s", "src_out_s", "overlap_s")}
+                                  "gain_change_db", "src_in_s", "src_out_s", "solo_s", "ramp_s", "ramp_out_s", "bg_db",
+                                  "pre_s", "bye_s", "fade_out_s")}
         return {"type": type_, **base, **kw}
 
     if "加" in text and role == "interlude" and p is None:
