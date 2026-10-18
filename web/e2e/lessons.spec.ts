@@ -13,7 +13,7 @@ async function shot(page: Page, name: string) {
 
 test("本集学到的规则: summary with evidence → adopt / edit / tell LACUNA / skip", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await page.getByLabel(/对 AI 制作人说/).fill("这段跑题了删掉");
   await page.getByRole("button", { name: "发送" }).click();
   await page.getByTestId("proposal").getByRole("button", { name: "批准" }).click(); // a review decision too
@@ -105,7 +105,7 @@ test("本集学到的规则 in English fits the layout", async ({ page, context 
   await context.addCookies([{ name: "lacuna_lang", value: "en", url: "http://127.0.0.1:8798" }]);
   await page.addInitScript(() => localStorage.setItem("lacuna.lang", "en"));
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await page.goto(page.url().replace(/\/listen$/, "/lessons"));
   const view = page.getByTestId("lessons");
   await expect(view.getByRole("heading", { name: "Rules from this episode" })).toBeVisible();

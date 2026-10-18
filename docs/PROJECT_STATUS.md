@@ -19,6 +19,7 @@ Phases 1–11 (except 6b, cancelled) are done. Since 2026-10-18 the work comes f
 | 首次检测 backlog (index of items 1–28) | `docs/status/ui-backlog.md` |
 | 2026-10-18 night full scan: test pass + fixes, code and performance pass, CI speed | `docs/status/full-scan.md`, `perf.md`, `ci.md` |
 | Backlog areas: review + editing, volume, music page, show notes 喜马拉雅版, dialog + brand text | `docs/status/review-edit.md`, `levels.md`, `music-page.md`, `show-notes-ximalaya.md`, `dialog-brand.md` |
+| Leon's 2026-10-18 validation (V1–V10): fixes, library scopes, AI tool calls, clipping repair, second full scan | `docs/status/validation-2026-10-18.md`, `library-scopes.md`, `v6-ai-tool-choice.md`, `declip.md`, `sweep-2.md` |
 
 - Decisions: `docs/decisions/` (one file each, from 2026-10-17); D23–D51 in `docs/DECISIONS.md` (frozen); D01–D22 in `docs/handoff/07_DECISION_LOG.md`.
 - How parallel threads avoid merge conflicts: `docs/PARALLEL_WORK.md`.

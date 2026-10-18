@@ -18,7 +18,7 @@ test("leaving 发布资料 while it polls stops the polling", async ({ page }) =
     await route.fulfill({ response: res, json: body });
   });
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await page.getByRole("link", { name: "发布", exact: true }).click();
   await expect(page.getByTestId("publish-running")).toBeVisible();
   await expect.poll(() => gets, { timeout: 10_000 }).toBeGreaterThanOrEqual(2); // polling

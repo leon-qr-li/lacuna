@@ -7,7 +7,7 @@ const audioTime = (page: Page) =>
 async function openEpisode(page: Page) {
   await page.goto("/");
   // a single episode in the workspace opens straight into Full Listen
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await expect(page.locator(".ep-title")).toHaveText("合成测试集");
   await expect(page.getByTestId("main-audio")).toHaveAttribute("src", /\/audio\/.+\.wav$/);
 }

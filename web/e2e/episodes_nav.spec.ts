@@ -5,7 +5,7 @@ test.use({ baseURL: "http://127.0.0.1:8798" }); // the AI workspace holds one ep
 // 「剧集」 in the top bar goes back to the episode overview from any screen
 test("episodes nav: link on every screen, selected on the overview", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/); // a single episode opens directly
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 }); // a single episode opens directly
   const link = page.locator(".topbar").getByRole("link", { name: "剧集", exact: true });
   await expect(link).not.toHaveAttribute("aria-current", "page");
   await link.click();

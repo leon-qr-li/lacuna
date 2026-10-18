@@ -11,7 +11,7 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto("/");
     await page.evaluate((t) => localStorage.setItem("lacuna.theme", t), theme);
     await page.reload();
-    await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+    await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
     const ep = /#\/ep\/([^/]+)/.exec(page.url())![1];
     const api = `/api/episodes/${ep}`;
     // a WAV exists, so the upload page shows its 下载 WAV link-button

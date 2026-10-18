@@ -20,6 +20,7 @@ import bisect
 import hashlib
 import re
 import threading
+import traceback
 import uuid
 from collections import OrderedDict
 from dataclasses import asdict, dataclass
@@ -209,8 +210,12 @@ class Episode:
         self._previewer: Previewer | None = None
         self.timeline_for(self.enabled)   # validates
         if any(room_tone.misplaced(o, self.base) for e in self.edits.values() for o in e.ops):
-            self.fill_room_tone()         # room tone picked by the pre-.3 bug: pick it again, once
-            self.save()
+            try:
+                self.fill_room_tone()     # room tone picked by the pre-.3 bug: pick it again, once
+                self.save()
+            except (OSError, ValueError, RuntimeError):
+                traceback.print_exc()     # the episode still opens; the repair is tried on the next open
+                self._timelines.clear()
 
     # ------------------------------------------------------------------ derivation
     @property

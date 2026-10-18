@@ -134,7 +134,11 @@ export function EpisodeUpload({ id, kinds, onAdded }: { id: string; kinds: Recor
       try {
         const r = await libraryApi.uploadAsset(f, kind, "", id);
         last = r.asset;
-        done.push(t("已加到这一集：{name}", { name: r.asset.name }));
+        done.push(
+          r.duplicate && r.asset.shared
+            ? t("素材库里已经有这首（公共），这一集直接能用：{name}", { name: r.asset.name })
+            : t("已加到这一集：{name}", { name: r.asset.name }),
+        );
       } catch (e) {
         done.push(t("没加进去：{name}", { name: f.name }) + `（${(e as Error).message}）`);
       }

@@ -283,9 +283,11 @@ function PlacementRow({ p, taken, onSave, onRemove, onPreview, previewing }: {
   );
 }
 
-function AddPlacement({ assets, kindRoles, onAdd }: {
+function AddPlacement({ assets, kindRoles, pick, onAdd }: {
   assets: Asset[];
   kindRoles: Partial<Record<Kind, Role>>;
+  /** a file just added on this page: picked, ready to 放进去 */
+  pick?: string;
   onAdd: (body: PlacementPatch & { asset_id: string; role: Role }) => Promise<boolean>;
 }) {
   const roleOf = (aid: string): Role => kindRoles[assets.find((a) => a.id === aid)?.kind ?? "other"] ?? "interlude";
@@ -301,10 +303,17 @@ function AddPlacement({ assets, kindRoles, onAdd }: {
       setRole(roleOf(assets[0]?.id ?? ""));
     }
   }, [assets, assetId]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (pick && assets.find((a) => a.id === pick)) {
+      setAssetId(pick);
+      setRole(roleOf(pick));
+    }
+  }, [pick, assets]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!assets.length)
     return (
-      <p className="muted">
-        {t("素材库里还没有音乐。先去")} <a href="#/library">{t("素材库")}</a> {t("添加片头、配乐或台词。")}
+      <p className="muted" data-testid="music-no-assets">
+        {t("这一集还没有能用的素材。可以在下面「从电脑添加」，或者去")} <a href="#/library">{t("素材库")}</a>{" "}
+        {t("把素材设为公共、或加到这一集。")}
       </p>
     );
   const add = () => {
@@ -433,6 +442,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const [assets, setAssets] = useState<Asset[]>([]);
   const [kindRoles, setKindRoles] = useState<Partial<Record<Kind, Role>>>({});
   const [kinds, setKinds] = useState<Record<string, string>>({});
+  const [picked, setPicked] = useState<string | undefined>(); // the file just added on this page
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -642,15 +652,18 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
       </ul>
       {m.placements.length === 0 && <p className="muted">{t("这一集还没有配乐。")}</p>}
       <MusicChatBox onSend={(text) => run(libraryApi.musicChat(id, text))} />
-      <AddPlacement assets={assets} kindRoles={kindRoles} onAdd={(body) => run(libraryApi.addPlacement(id, body), t("已放进去，可以点「试听这一处」"))} />
+      <AddPlacement assets={assets} kindRoles={kindRoles} pick={picked} onAdd={(body) => run(libraryApi.addPlacement(id, body), t("已放进去，可以点「试听这一处」"))} />
       <EpisodeUpload
         id={id}
         kinds={kinds}
-        onAdded={(text) => {
+        onAdded={(text, asset) => {
           setMsg(text);
           libraryApi
             .library(id)
-            .then((lib) => setAssets(lib.assets))
+            .then((lib) => {
+              setAssets(lib.assets);
+              if (asset) setPicked(asset.id);
+            })
             .catch((e) => setErr(String(e.message ?? e)));
         }}
       />

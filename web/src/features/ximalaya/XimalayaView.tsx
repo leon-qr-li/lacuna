@@ -5,7 +5,9 @@ import { PageLoading } from "../loading/Loading";
 import type { XimalayaStyleId, XimalayaView as View } from "./api";
 import { ximalayaApi } from "./api";
 
-const KEY = "lacuna.ximalaya.style";
+// ".v2": a choice remembered while 杂志 was the default is dropped once, so everyone starts on 片场
+// (Leon, 2026-10-18); a style picked from now on is remembered again
+const KEY = "lacuna.ximalaya.style.v2";
 const IDS: XimalayaStyleId[] = ["magazine", "cinema", "cards"];
 
 /** 片场 is the default style (Leon, 2026-10-18); a style picked before is remembered. */

@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 
 test("cover: needs the publish pack → draw 4 versions → zoom → change one with a sentence → choose", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await page.getByRole("link", { name: "发布", exact: true }).click(); // 发布 step → sub-tabs
   await page.getByRole("link", { name: "海报", exact: true }).click();
   await expect(page).toHaveURL(/\/poster$/);

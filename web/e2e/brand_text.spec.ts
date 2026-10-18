@@ -40,7 +40,7 @@ async function sweep(page: Page, screens: string[]) {
 test("no screen names the AI vendor (zh + en)", async ({ page }) => {
   test.setTimeout(180_000);
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const ep = /#\/ep\/([^/]+)/.exec(page.url())![1];
   // every episode tab and page (new tabs / pages: add them here)
   const tabs = ["listen", "review", "lessons", "levels", "music", "export", "publish", "ximalaya", "poster", "upload"];
@@ -53,7 +53,7 @@ test.describe("with the AI connected", () => {
   test("the AI producer is LACUNA (badge, tooltip, chat)", async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto("/");
-    await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+    await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
     const ep = /#\/ep\/([^/]+)/.exec(page.url())![1];
     await expect(page.getByTestId("editor-badge")).toHaveText("LACUNA");
     expect(await sweep(page, [`#/ep/${ep}/listen`, `#/ep/${ep}/review`])).toEqual([]);

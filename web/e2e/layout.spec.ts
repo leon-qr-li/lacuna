@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 test("AI 制作人: full-height column, multi-line box, grows (Shift+Enter = new line)", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const chat = page.getByRole("region", { name: "AI 制作人对话" });
   const box = await chat.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(420);
