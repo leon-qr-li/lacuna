@@ -18,7 +18,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -88,6 +90,18 @@ class Workspace:
                       if (p / META_FILE).is_file() and (p / STATE_FILE).is_file())
 
 
+def _retry_windows(fn, attempts: int = 20, delay: float = 0.025):
+    """On Windows a file that another thread is replacing (or still has open) briefly raises
+    PermissionError; give it a moment instead of failing the request."""
+    for i in range(attempts):
+        try:
+            return fn()
+        except PermissionError:
+            if sys.platform != "win32" or i == attempts - 1:
+                raise
+            time.sleep(delay)
+
+
 def atomic_write_json(path: Path, data, *, protected: tuple[Path, ...] = ()) -> None:
     """Write JSON so that a crash leaves either the old or the new file, never a torn one.
 
@@ -111,7 +125,7 @@ def atomic_write_json(path: Path, data, *, protected: tuple[Path, ...] = ()) -> 
                 os.replace(path, bak)
             except OSError:
                 pass
-        os.replace(tmp, path)
+        _retry_windows(lambda: os.replace(tmp, path))
     except BaseException:
         if os.path.exists(tmp):
             os.unlink(tmp)
@@ -122,7 +136,7 @@ def read_json(path: Path):
     """Read JSON, falling back to the .bak copy if the main file is missing or corrupt."""
     path = Path(path)
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(_retry_windows(lambda: path.read_text(encoding="utf-8")))
     except (OSError, ValueError):
         bak = path.with_name(path.name + ".bak")
         if bak.exists():
