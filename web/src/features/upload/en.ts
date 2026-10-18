@@ -44,4 +44,7 @@ export const en: Dict = {
   "海报": "Cover art",
   "画一版，点「用这张」。": "to make one and click “Use this”.",
   "最后在喜马拉雅上选专辑「洛城二三事」，确认后发布。": "Finally, pick the album 《洛城二三事》 on Ximalaya, confirm and publish.",
+  "也存到了导出文件夹，和音频放在一起：": "Also saved to the export folder, next to the audio: ",
+  "封面已存到 {path}": "Cover saved to {path}",
+  "封面没存进导出文件夹：{message}": "Couldn't save the cover to the export folder: {message}",
 };
