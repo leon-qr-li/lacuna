@@ -34,7 +34,7 @@ export interface Page {
   render: () => ReactNode;
 }
 
-/** A link in the top bar; `on` says on which screens (pages never show their own link). */
+/** A link in the top bar; `on` says on which screens. On its own page the link stays, selected. */
 export interface NavLink {
   order: number;
   path: string;
@@ -58,3 +58,6 @@ const byOrder = <T extends { order: number }>(xs: T[]) => [...xs].sort((a, b) =>
 export const tabs: EpisodeTab[] = byOrder(features.flatMap((f) => f.tabs ?? []));
 export const pages: Page[] = features.flatMap((f) => f.pages ?? []);
 export const navLinks: NavLink[] = byOrder(features.flatMap((f) => f.nav ?? []));
+
+/** `aria-current` for a top-bar link to `#/<path>`: "page" while that page is open (styled in episodes.css). */
+export const navCurrent = (path: string) => (window.location.hash === `#/${path}` ? ("page" as const) : undefined);

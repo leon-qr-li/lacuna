@@ -534,6 +534,7 @@ class Learning:
         ds = self.all_decisions()
         st = self._state()
         rules = []
+        refreshed = False
         from .chat_learning import ChatAsks      # it builds on Rule, so imported here
         for r in learn(ds) + ChatAsks(self.ws).rules():
             s = st["rules"].get(r.id, {})
@@ -541,9 +542,15 @@ class Learning:
             if state == "deleted":
                 continue                     # Leon deleted it: never shown again, even if re-learned
             approved = s.get("approved")
-            changed = state == "approved" and approved and approved.get("digest") != r.digest()
-            rules.append(asdict(r) | {"state": state, "updated": bool(changed),
+            if state == "approved" and approved and approved.get("digest") != r.digest():
+                # same rule, new examples or wording: it stays in force as re-learned, no second
+                # approval (Leon 2026-10-18; only a brand-new rule waits for him)
+                approved.update(digest=r.digest(), rule=asdict(r))
+                refreshed = True
+            rules.append(asdict(r) | {"state": state, "updated": False,
                                       "approved_at": approved.get("at") if approved else None})
+        if refreshed:
+            self._save(st)
         live = {r["id"] for r in rules}
         # approved rules whose evidence no longer produces them stay in force until Leon drops them
         for rid, s in st["rules"].items():

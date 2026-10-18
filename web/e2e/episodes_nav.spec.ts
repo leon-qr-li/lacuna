@@ -13,9 +13,15 @@ test("episodes nav: link on every screen, selected on the overview", async ({ pa
   await expect(page.getByRole("heading", { name: "剧集", level: 1 })).toBeVisible();
   await expect(link).toHaveAttribute("aria-current", "page");
 
-  await page.locator(".topbar").getByRole("link", { name: "素材库" }).click();
-  await expect(page).toHaveURL(/#\/library/);
-  await expect(link).not.toHaveAttribute("aria-current", "page");
+  // every top-bar page keeps its own link, selected, like 剧集 (验收 V1)
+  for (const [name, url] of [["素材库", /#\/library/], ["学到的规则", /#\/learning/], ["设置", /#\/settings/]] as const) {
+    await page.locator(".topbar").getByRole("link", { name }).click();
+    await expect(page).toHaveURL(url);
+    const own = page.locator(".topbar").getByRole("link", { name });
+    await expect(own).toBeVisible();
+    await expect(own).toHaveAttribute("aria-current", "page");
+    await expect(link).not.toHaveAttribute("aria-current", "page");
+  }
   await link.click();
   await expect(page.getByRole("heading", { name: "剧集", level: 1 })).toBeVisible();
 });

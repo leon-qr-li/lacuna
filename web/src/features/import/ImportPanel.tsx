@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ImportJob } from "../../api";
+import type { EpisodeListItem, ImportJob } from "../../api";
 import { api, fmt } from "../../api";
 import { t } from "../../i18n";
 import { JobProgress } from "../loading/Loading";
@@ -288,7 +288,7 @@ function NewImport({
   );
 }
 
-function JobRow({ j, onChange }: { j: ImportJobView; onChange: () => void }) {
+function JobRow({ j, toReview, onChange }: { j: ImportJobView; toReview: number; onChange: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const act = (p: Promise<unknown>) => p.then(onChange).catch((e) => setErr((e as Error).message));
   const running = RUNNING.has(j.state);
@@ -318,8 +318,8 @@ function JobRow({ j, onChange }: { j: ImportJobView; onChange: () => void }) {
       {j.state === "done" && j.result && (
         <p className="small">
           {j.result.engine === "rules"
-            ? t("AI 第一刀（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: j.result.to_review })
-            : t("AI 第一刀：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: j.result.to_review })}
+            ? t("AI 第一刀（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: toReview })
+            : t("AI 第一刀：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: toReview })}
         </p>
       )}
       {j.error && j.state !== "done" && <p className="error small">{j.error}</p>}
@@ -354,7 +354,16 @@ function JobRow({ j, onChange }: { j: ImportJobView; onChange: () => void }) {
  * Import form + task panel. Polls while a job runs; a job finishing here opens its review.
  * Audio files dragged anywhere onto the 剧集 page open the form with them (like the media library).
  */
-export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: () => void; onOpen: (id: string) => void }) {
+export function ImportPanel({
+  episodes,
+  onEpisodesChanged,
+  onOpen,
+}: {
+  /** the 剧集 list, for each finished import's review progress */
+  episodes: EpisodeListItem[] | null;
+  onEpisodesChanged: () => void;
+  onOpen: (id: string) => void;
+}) {
   const [jobs, setJobs] = useState<ImportJobView[] | null>(null);
   const [nextId, setNextId] = useState("EP001");
   const [form, setForm] = useState(false);
@@ -380,6 +389,10 @@ export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: 
   }, [onEpisodesChanged, onOpen]);
 
   const active = jobs?.some((j) => RUNNING.has(j.state)) ?? false;
+  // a finished import follows its episode's review: the count left to look at, and once all of it is
+  // looked at the episode card says so and the task card goes (验收 V3)
+  const pending = (j: ImportJobView) => episodes?.find((e) => e.id === j.id)?.pending_review ?? j.result?.to_review ?? 0;
+  const shown = jobs?.filter((j) => !(j.state === "done" && episodes?.find((e) => e.id === j.id)?.pending_review === 0)) ?? [];
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -435,12 +448,12 @@ export function ImportPanel({ onEpisodesChanged, onOpen }: { onEpisodesChanged: 
           }}
         />
       )}
-      {!!jobs?.length && (
+      {!!shown.length && (
         <section aria-label={t("导入任务")}>
           <h2 className="sub">{t("导入任务")}</h2>
           <ul className="jobs">
-            {jobs.map((j) => (
-              <JobRow key={j.id} j={j} onChange={() => void refresh()} />
+            {shown.map((j) => (
+              <JobRow key={j.id} j={j} toReview={pending(j)} onChange={() => void refresh()} />
             ))}
           </ul>
         </section>

@@ -1,4 +1,4 @@
-import type { Feature } from "../registry";
+import { navCurrent, type Feature } from "../registry";
 import { LibraryView } from "./LibraryView";
 import { MusicView } from "./MusicView";
 import "./library.css";
@@ -19,7 +19,7 @@ export const feature: Feature = {
       order: 10,
       path: "library",
       render: () => (
-        <a className="btn btn-outline row" href="#/library">
+        <a className="btn btn-outline row" href="#/library" aria-current={navCurrent("library")}>
           {t("素材库")}
         </a>
       ),
