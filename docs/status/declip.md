@@ -1,6 +1,6 @@
 # Automatic clipping repair (验收 V7) - 2026-10-18
 
-State: PR open, waiting for CI; then 「已 merge，等统一更新」 (batched release).
+State: merged (PR #115), waiting for the batched release; covered by the second full scan (`docs/status/sweep-2.md`).
 
 - Decision: docs/decisions/2026-10-18-auto-declip.md (detection, repair, safety limits, where it applies).
 - Core: `lacuna_core/declip.py` (`scan` → `Patches` + `Report`), `MediaRef.patches` + `SourcePool(repaired=)`

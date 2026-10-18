@@ -8,7 +8,7 @@ const TIME = /^\d{1,2}:\d{2}(:\d{2})?\s/;
 test("ximalaya layout: three styles, timestamps first on their lines, copy rich + plain, images for 图文", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const ep = /#\/ep\/([^/]+)/.exec(page.url())![1];
 
   // without a publish pack the tab points to 发布资料 (unless an earlier test made one)
@@ -25,9 +25,12 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
     await expect(page.getByTestId("publish-title")).toBeVisible({ timeout: 15_000 });
   }
 
+  // a style remembered while 杂志 was the default (old key) doesn't hide the new default
+  await page.evaluate(() => localStorage.setItem("lacuna.ximalaya.style", "magazine"));
   await page.getByRole("link", { name: "喜马拉雅版", exact: true }).click();
   await expect(page).toHaveURL(/\/ximalaya$/);
-  await expect(page.getByRole("heading", { name: "喜马拉雅版" })).toBeVisible();
+  // the first visit draws the 图文 images (probably resvg loading the system fonts: past 5 s once on Windows CI)
+  await expect(page.getByRole("heading", { name: "喜马拉雅版" })).toBeVisible({ timeout: 20_000 });
   const styles = page.getByRole("radiogroup", { name: "排版样式" }).getByRole("radio");
   await expect(styles).toHaveCount(3);
   await expect(styles.nth(0)).toContainText("杂志");

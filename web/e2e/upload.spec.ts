@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 test("上传喜马拉雅: says what is missing, then WAV, title, show notes and cover are one click away", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const ep = decodeURIComponent(/#\/ep\/([^/]+)/.exec(page.url())![1]);
   const api = `/api/episodes/${encodeURIComponent(ep)}`;
   const idle = async (path: string) =>

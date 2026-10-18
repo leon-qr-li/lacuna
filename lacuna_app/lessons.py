@@ -121,7 +121,7 @@ class NoAnswer(RuntimeError):
 def ai_failure(e: Exception) -> str:
     """What went wrong, for Leon, in the interface language (never the raw API error)."""
     if isinstance(e, NoAnswer):
-        return tr("LACUNA 这次没有给出结果")
+        return tr("LACUNA 没有给出结果")
     if type(e).__module__.startswith("anthropic"):
         return error_message(e, tail="")
     return tr("AI 服务出了点问题")

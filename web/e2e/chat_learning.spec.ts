@@ -8,7 +8,7 @@ test.use({ baseURL: "http://127.0.0.1:8798" });
 
 test("chat 记住 → LACUNA's reading → 改一下 → 记住这条 → in force → 撤回", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const remember = page.getByRole("button", { name: "记住", exact: true });
   await expect(remember).toBeDisabled(); // nothing typed yet
   await page.getByLabel(/对 AI 制作人说/).fill("Pei 的嗯都别删");

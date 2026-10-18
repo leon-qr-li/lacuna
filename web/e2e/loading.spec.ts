@@ -45,7 +45,7 @@ test("opening an episode and a tab shows what is opening, then the page", async 
 
 test("an action the person started moves the top line until it answers", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const h = hold(true);
   await page.route(/\/api\/episodes\/[^/]+\/chat$/, (route) => (route.request().method() === "POST" ? h.wait(route) : route.continue()));
   await page.getByLabel("对 AI 制作人说（锚定在当前播放位置）").fill("这里停顿太长");

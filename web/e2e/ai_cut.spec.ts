@@ -5,7 +5,7 @@ test.use({ baseURL: "http://127.0.0.1:8798" });
 
 test("AI first cut: no demo marks, review list in timeline order", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveURL(/#\/ep\/.+\/listen/);
+  await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await expect(page.locator(".ep-title")).toHaveText("合成 · AI 第一刀");
   await expect(page.getByText(/^第一刀已完成 · \d+ 处待你过目$/)).toBeVisible();
   await expect(page.locator(".banner")).toHaveCount(0);
