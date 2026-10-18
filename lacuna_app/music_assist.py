@@ -21,7 +21,7 @@ from typing import Any
 
 from .episode import ConflictError, to_tl
 from .library import KINDS, ROLE_FOR_KIND, credit_line
-from .music import ANCHORED, APPLIED, ROLES, EpisodeMusic
+from .music import ANCHORED, APPLIED, ROLES, TUNING, EpisodeMusic, upgrade_v1
 from .i18n import N_, in_reply_language, join_list, lang, tr
 
 MIN_BREAK_S = 0.6          # a pause this long between utterances can take an interlude
@@ -109,8 +109,7 @@ def break_candidates(m: EpisodeMusic, n: int = 4) -> list[float]:
 
 def _new(asset_id: str, role: str, source: str) -> dict:
     return {"id": "mu_" + uuid.uuid4().hex[:8], "asset_id": asset_id, "role": role, "at_base": None,
-            "until_base": None, "src_in_s": None, "src_out_s": None, "overlap_s": None, "gain_db": 0.0,
-            "lead_s": None, "status": APPLIED, "source": source}
+            "until_base": None, **{k: None for k in TUNING}, "gain_db": 0.0, "status": APPLIED, "source": source}
 
 
 def auto_place(m: EpisodeMusic) -> dict:
@@ -137,8 +136,8 @@ def auto_place(m: EpisodeMusic) -> dict:
         t = (rule or {}).get(role) or {}
         t = t if t.get("asset_id") == a["id"] else None
         if t:
-            p.update(src_in_s=t.get("src_in_s"), src_out_s=t.get("src_out_s"), overlap_s=t.get("overlap_s"),
-                     gain_db=t.get("gain_db") or 0.0)
+            t = upgrade_v1(dict(t, role=role), a)
+            p.update({k: t.get(k) for k in TUNING}, gain_db=t.get("gain_db") or 0.0)
         ps.append(p)
         changes.append({"pid": p["id"], "kind": "add", "text": tr("{role}：{credit}", role=tr(ROLES[role]), credit=credit_line(a))})
     a = pick("interlude")
@@ -176,16 +175,22 @@ placements, the music library (names, the use Leon gave each file, his notes, cr
 chapter headings and the transcript near each placement and near pauses. All times are seconds on \
 the final mix (what the host hears, m:ss given as well).
 
-Roles: intro (starts at 0, the voice comes in over its end), interlude (inserted between two \
-sentences; time is added), outro (comes in under the last words), bed (low under the talk from a \
-point, optionally to an end), clip (a film line or trailer inserted with a little silence).
+Every piece of music plays whole (src_in_s to src_out_s, by default the whole file); under talk it \
+keeps playing as background, bg_db lower than full level, at a constant level. Roles: intro (starts \
+at 0, full level alone for solo_s, then down to background over ramp_s while the voice starts), \
+interlude (at a point between two sentences the talk stops; it rises over ramp_s, plays at full \
+level for solo_s, goes back down over ramp_s and the talk resumes over it; pre_s = how long it \
+already plays under the talk before the point), outro (background under the last words, placed so \
+the voice ends at second bye_s of the file, then full level to src_out_s, fading out over \
+fade_out_s), bed (background under the talk from a point, optionally to an end), clip (a film line \
+or trailer inserted with a little silence).
 
 Answer by calling arrange_music once. Actions:
 - add: put library asset `asset_id` in `role`; interlude / bed / clip need at_s (and bed may have until_s).
 - move: move placement `placement_id`: either to at_s, or by shift_s (positive = later).
 - set: change placement `placement_id`: gain_db (absolute, 0 = default level) or gain_change_db \
-(relative, "小一点" ≈ -3, "大一点" ≈ +3), src_in_s / src_out_s (which part of the file plays), \
-overlap_s (how long it overlaps the voice).
+(relative, "小一点" ≈ -3, "大一点" ≈ +3), src_in_s / src_out_s (which part of the file plays; \
+"裁到 2:30" = src_out_s 150), solo_s, ramp_s, bg_db ("背景再小一点" ≈ +3), pre_s, bye_s, fade_out_s.
 - remove: take placement `placement_id` out.
 Leave unused fields null. Use an empty list when nothing should change, and when it is unclear \
 which music or where, ask one short question in `message` instead of guessing. Positions are \
@@ -194,6 +199,10 @@ sentences) says what will change and where (m:ss). The host hears your suggestio
 applied."""  # i18n-ignore
 
 _N = {"type": ["number", "null"]}
+SET_FIELDS = ("src_in_s", "src_out_s", "solo_s", "ramp_s", "bg_db", "pre_s", "bye_s", "fade_out_s")
+SET_TEXT = {"src_in_s": N_("从文件第 {s} 秒"), "src_out_s": N_("到文件第 {s} 秒"), "solo_s": N_("全音量 {s} 秒"),
+            "ramp_s": N_("升降 {s} 秒"), "bg_db": N_("背景压低 {s} dB"), "pre_s": N_("间隙前垫 {s} 秒"),
+            "bye_s": N_("拜拜落在歌的第 {s} 秒"), "fade_out_s": N_("淡出 {s} 秒")}
 _S = {"type": ["string", "null"]}
 TOOL = {
     "name": "arrange_music",
@@ -206,13 +215,13 @@ TOOL = {
             "actions": {"type": "array", "items": {
                 "type": "object", "additionalProperties": False,
                 "required": ["type", "placement_id", "asset_id", "role", "at_s", "until_s", "shift_s", "gain_db",
-                             "gain_change_db", "src_in_s", "src_out_s", "overlap_s"],
+                             "gain_change_db", *SET_FIELDS],
                 "properties": {
                     "type": {"type": "string", "enum": ["add", "move", "set", "remove"]},
                     "placement_id": _S, "asset_id": _S,
                     "role": {"type": ["string", "null"], "enum": [*ROLES, None]},
                     "at_s": _N, "until_s": _N, "shift_s": _N, "gain_db": _N, "gain_change_db": _N,
-                    "src_in_s": _N, "src_out_s": _N, "overlap_s": _N,
+                    **{k: _N for k in SET_FIELDS},
                 }}},
         },
     },
@@ -238,7 +247,7 @@ def context(m: EpisodeMusic, instruction: str) -> dict:
         placements.append({"id": p["id"], "role": p["role"], "role_label": p["role_label"], "asset_id": p["asset_id"],
                            "music": p["credit_line"], "file": p["asset_name"], "position_s": at,
                            "position": _mmss(at), "plays_s": [p["start_s"], p["end_s"]], "gain_db": p["gain_db"],
-                           "overlap_s": p["overlap_s"], "src_in_s": p["src_in_s"], "src_out_s": p["src_out_s"],
+                           **{k: p.get(k) for k in SET_FIELDS},
                            "file_duration_s": p["asset_duration_s"], "talk_nearby": near(at)})
     library = [{"asset_id": a["id"], "file": a["name"], "use": KINDS.get(a.get("kind"), ""), "note": a.get("note") or "",
                 "music": credit_line(a), "duration_s": a["duration_s"]} for a in m.lib.assets()]
@@ -288,7 +297,7 @@ def apply_actions(m: EpisodeMusic, actions: list[dict]) -> tuple[list[dict], lis
                     p["until_base"] = m._voice_to_base(voice_at(a["until_s"], None))
             if role in ("intro", "outro"):
                 ps = [x for x in ps if x["role"] != role]
-            for k in ("src_in_s", "src_out_s", "overlap_s", "gain_db"):
+            for k in ("gain_db", *SET_FIELDS):
                 if a.get(k) is not None:
                     p[k] = a[k]
             ps.append(p)
@@ -305,7 +314,7 @@ def apply_actions(m: EpisodeMusic, actions: list[dict]) -> tuple[list[dict], lis
             changes.append({"pid": p["id"], "kind": "remove", "text": tr("去掉{label}", label=label)})
         elif t == "move":
             if p["role"] not in ANCHORED:
-                raise ValueError(tr("{label}的位置是固定的（开头 / 结尾），可以改重叠时间", label=label))
+                raise ValueError(tr("{label}的位置是固定的（开头 / 结尾），可以改全音量秒数或拜拜的位置", label=label))
             old = (anchors.get(p["id"]) or 0) / sr
             to = a["at_s"] if a.get("at_s") is not None else old + float(a.get("shift_s") or 0.0)
             p["at_base"] = m._voice_to_base(voice_at(max(to, 0.0), p["id"]))
@@ -316,8 +325,7 @@ def apply_actions(m: EpisodeMusic, actions: list[dict]) -> tuple[list[dict], lis
                 g = a["gain_db"] if a.get("gain_db") is not None else float(p.get("gain_db") or 0) + a["gain_change_db"]
                 p["gain_db"] = round(min(max(g, -30.0), 12.0), 1)
                 bits.append(tr("音量 {gain_db} dB", gain_db=f"{p['gain_db']:+.0f}"))
-            for k, what in (("src_in_s", N_("从文件第 {s} 秒")), ("src_out_s", N_("到文件第 {s} 秒")),
-                             ("overlap_s", N_("和人声重叠 {s} 秒"))):
+            for k, what in SET_TEXT.items():
                 if a.get(k) is not None:
                     p[k] = a[k]
                     bits.append(tr(what, s=f"{a[k]:.1f}"))

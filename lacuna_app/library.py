@@ -387,11 +387,12 @@ class Library:
 
     def save_series(self, name: str, intro: dict | None, outro: dict | None, default: bool = True) -> dict:
         """Remember an intro/outro as a series rule ("这个片头是 90 年代系列的"); `intro`/`outro`
-        are placement templates (asset_id, src_in_s, src_out_s, overlap_s, gain_db)."""
+        are placement templates (asset_id and the placement's tuning, music.TUNING)."""
         name = name.strip()
         if not name:
             raise LibraryError(tr("系列名不能为空"))
-        keep = ("asset_id", "src_in_s", "src_out_s", "overlap_s", "gain_db")
+        keep = ("asset_id", "src_in_s", "src_out_s", "gain_db", "solo_s", "ramp_s", "bg_db", "pre_s", "bye_s", "fade_out_s",
+                "overlap_s")    # overlap_s: only in rules saved before the full-play rule
         rule = {"name": name, "intro": {k: intro.get(k) for k in keep} if intro else None,
                 "outro": {k: outro.get(k) for k in keep} if outro else None, "default": default, "updated_at": _now()}
         with self.lock:
