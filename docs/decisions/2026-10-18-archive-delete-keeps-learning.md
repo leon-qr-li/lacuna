@@ -14,3 +14,5 @@ copied to `learning/chats/<id>.json`, so asks not yet summarized survive), `expo
 files Leon may have published) and any recording outside the workspace (Leon's own downloads; the app
 only ever read them). The folder is first renamed into `episodes/.trash/` in one step: if Windows has a
 file open the rename fails and nothing is deleted.
+
+Changed by: deleted-episode-ids-retired — a deleted episode's id is never proposed or accepted again, so its kept learning evidence cannot be mixed into a new episode.

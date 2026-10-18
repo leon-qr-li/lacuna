@@ -2,7 +2,7 @@
 
 - Date: 2026-10-18
 - Status: Claude 技术决策
-- Supersedes / changes: phase 4's folder browser (`GET /api/fs` stays, unused by the UI)
+- Supersedes / changes: phase 4's folder browser (`GET /api/fs` stayed, unused by the UI, until #106 removed it)
 
 首检 #4: the import form now works like the media library: drop zone + 「选择文件」 (the system file
 dialog), plus a drop target per track and a swap button. A browser never reveals a dropped file's path,
