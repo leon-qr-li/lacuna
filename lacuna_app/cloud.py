@@ -11,7 +11,7 @@ Off unless ``LACUNA_CLOUD=1``; the desktop app never sees any of this. When on:
   come from the server's environment), opening folders on the server.
 * Before sign-in, ``/api/app`` and ``/api/health`` answer only the version.
 
-Settings (environment, set by deploy/host): ``CF_ACCESS_TEAM_DOMAIN`` (``<team>.cloudflareaccess.com``),
+Settings (environment, set by deploy/provision.py): ``LACUNA_OWNER_EMAIL`` (see ``owner_email``), ``CF_ACCESS_TEAM_DOMAIN`` (``<team>.cloudflareaccess.com``),
 ``CF_ACCESS_AUD`` (the Access application's audience tag). Missing settings stop the server from
 starting: cloud mode fails closed.
 
@@ -120,10 +120,13 @@ class CloudGate:
         headers = dict(scope.get("headers") or [])
         if client not in LOOPBACK:
             token = headers.get(ACCESS_HEADER, b"").decode("latin-1")
-            if not token or self.verifier.verify(token) is None:
+            claims = self.verifier.verify(token) if token else None
+            if claims is None:
                 if scope["type"] == "websocket":
                     return await send({"type": "websocket.close", "code": 1008})
                 return await PlainTextResponse("Forbidden", status_code=403)(scope, receive, send)
+            # the email Cloudflare Access verified (one-time code sent to it); request.state.access_email
+            scope.setdefault("state", {})["access_email"] = str(claims.get("email") or "").strip().lower() or None
         if scope["type"] == "http":
             method, path = scope["method"], scope["path"]
             if blocked(method, path):
@@ -132,6 +135,19 @@ class CloudGate:
                     and not self.signed_in(headers.get(b"cookie", b"").decode("latin-1")):
                 return await JSONResponse({"ok": True, "version": self.version(), "cloud": True})(scope, receive, send)
         return await self.app(scope, receive, send)
+
+
+def access_email(request) -> str | None:
+    """The email Cloudflare Access verified for this request (cloud only; None on loopback / desktop)."""
+    return getattr(request.state, "access_email", None) if enabled() else None
+
+
+def owner_email() -> str | None:
+    """The site owner's email (``LACUNA_OWNER_EMAIL``, the first ACCESS_EMAILS entry), cloud only. A first
+    account registered by a request whose Access email is this one needs no setup code: there is no
+    shell on the server to read a code from, and Access already proved the email."""
+    e = os.environ.get("LACUNA_OWNER_EMAIL", "").strip().lower()
+    return e if enabled() and e else None
 
 
 # ---------------------------------------------------------------- Access invite list (for invites)

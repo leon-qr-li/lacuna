@@ -7,6 +7,7 @@ import time
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
+from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
 from lacuna_app import cloud, create_app
@@ -148,3 +149,20 @@ def test_host_flag_needs_cloud_mode(monkeypatch, tmp_path):
     monkeypatch.delenv("LACUNA_CLOUD", raising=False)
     with pytest.raises(SystemExit):
         main(["--workspace", str(tmp_path), "--host", "0.0.0.0", "--no-browser"])
+
+
+def test_access_email_reaches_the_app(verifier, keys, monkeypatch):
+    monkeypatch.setenv("LACUNA_CLOUD", "1")
+    app = FastAPI()
+
+    @app.get("/probe")
+    def probe(request: Request):
+        return {"email": cloud.access_email(request)}
+
+    cloud.install(app, signed_in=lambda c: False, version=lambda: "v", verifier=verifier)
+    r = TestClient(app).get("/probe", headers=hdr(token(keys[0], email="Leon@Example.com")))
+    assert r.json() == {"email": "leon@example.com"}
+    monkeypatch.setenv("LACUNA_OWNER_EMAIL", " Leon@example.com ")
+    assert cloud.owner_email() == "leon@example.com"
+    monkeypatch.delenv("LACUNA_CLOUD")
+    assert cloud.owner_email() is None

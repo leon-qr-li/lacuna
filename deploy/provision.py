@@ -481,7 +481,7 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
 
     app_env = {"LACUNA_CLOUD": "1", "CF_ACCESS_TEAM_DOMAIN": team, "CF_ACCESS_AUD": aud,
                "CF_ACCOUNT_ID": cf.account, "CF_ACCESS_GROUP_ID": group, "CF_ACCESS_API_TOKEN": cf.invites_token(),
-               "LACUNA_PUBLIC_URL": f"https://{DOMAIN}", "ANTHROPIC_API_KEY": need("ANTHROPIC_API_KEY"),
+               "LACUNA_PUBLIC_URL": f"https://{DOMAIN}", "LACUNA_OWNER_EMAIL": emails[0], "ANTHROPIC_API_KEY": need("ANTHROPIC_API_KEY"),
                "RESEND_API_KEY": need("RESEND_API_KEY")}
     backup_env = cf.backup_credentials() | {"RESTIC_PASSWORD": need("BACKUP_PASSWORD")}
     files = {

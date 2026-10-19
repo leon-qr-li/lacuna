@@ -189,6 +189,7 @@ def test_apply_builds_everything_once(api, capsys):
     env = files["/etc/lacuna/lacuna.env"]
     assert "LACUNA_CLOUD=1" in env and "CF_ACCESS_AUD=aud-xyz" in env and "ANTHROPIC_API_KEY=sk-ant-secret" in env
     assert "CF_ACCESS_TEAM_DOMAIN=lacunastudio.cloudflareaccess.com" in env
+    assert "LACUNA_OWNER_EMAIL=leon@example.com" in env
     assert "TUNNEL_TOKEN=tunnel-token-secret" in files["/etc/lacuna/tunnel.env"]
     assert "RESTIC_PASSWORD=restic-pw-123456" in files["/etc/lacuna/backup.env"]
     assert "registry.digitalocean.com" in files["/etc/lacuna/image"]
