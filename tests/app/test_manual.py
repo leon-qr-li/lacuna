@@ -109,16 +109,23 @@ def test_wave_tiles(client):
     assert client.get(f"{EP}/manual/wave", params={"tile": 0, "v": "nope"}).status_code == 404
 
 
-def test_words_follow_the_timeline(client):
+def test_transcript_marks_cut_words_with_their_edit(client):
     s = summary(client)
-    u = client.get(f"{EP}/manual/words", params={"t0": 0, "t1": 12, "v": s["version"]}).json()["utterances"]
-    assert [x["speaker"] for x in u][:2] == ["Leon", "Pei"]
-    first = u[0]["words"][0]
-    assert first[1] == pytest.approx(0.5) and isinstance(first[0], str)
-    # after a manual cut the same words come back shifted
+    lines = client.get(f"{EP}/manual/transcript", params={"t0": 0, "t1": 12, "v": s["version"]}).json()["lines"]
+    assert [ln["speaker"] for ln in lines][:2] == ["Leon", "Pei"]
+    w0 = lines[0]["words"][0]
+    assert w0[1] == pytest.approx(0.5) and isinstance(w0[0], str) and w0[3] is None
+    # e002 lifted Pei's 11.0-11.4 (base): those words are there, marked, at their timeline place
+    lifted = [w for ln in lines for w in ln["words"] if w[3] == "e002"]
+    assert lifted and all(9.8 <= w[1] <= 10.4 for w in lifted)
+    # a manual cut: its words stay listed, struck, at the cut point; the rest moves up
     s = client.post(f"{EP}/manual/cut", json={"start": 0.4, "end": 2.0}).json()
-    u2 = client.get(f"{EP}/manual/words", params={"t0": 0, "t1": 12, "v": s["version"]}).json()["utterances"]
-    assert u2[0]["words"][0][1] < 0.6 and len(u2[0]["words"]) < len(u[0]["words"])
+    lines = client.get(f"{EP}/manual/transcript", params={"t0": 0, "t1": 12, "v": s["version"]}).json()["lines"]
+    cut = [w for w in lines[0]["words"] if w[3] == s["edit_id"]]
+    assert len(cut) >= 4 and len({w[1] for w in cut}) == 1
+    kept = [w for w in lines[0]["words"] if w[3] is None]
+    assert kept[0][1] < 0.6
+    assert client.get(f"{EP}/manual/transcript", params={"t0": 5, "t1": 1}).status_code == 422
 
 
 def test_manual_cuts_are_learning_evidence_as_added_by_hand(client, ws):

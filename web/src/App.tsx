@@ -8,6 +8,8 @@ import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
 import { Overview } from "./components/Timeline";
 import { EditLanes } from "./features/manual/EditLanes";
+import { TranscriptEdit } from "./features/manual/TranscriptEdit";
+import { useManual } from "./features/manual/useManual";
 import { navLinks, pages, tabs } from "./features/registry";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
@@ -147,6 +149,8 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const approveAll = () =>
     run(api.reviewAll(id, "approve", player.time), (n) => t("已全部通过 {changed} 处，可撤销", { changed: (n as Episode & { changed: number }).changed }));
 
+  const manual = useManual(ep, player, run); // the selection of 手动剪辑 (timeline + transcript)
+
   // global keys: space play/pause and arrows (listen mode), ctrl/cmd+z undo
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -277,9 +281,10 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} />
             <main className="center">
               <Overview ep={ep} time={player.time} onSeek={player.seek} />
-              <EditLanes ep={ep} time={player.time} player={player} highlight={pending} run={run} />
+              <EditLanes ep={ep} time={player.time} player={player} highlight={pending} m={manual} />
               <PlayerBar player={player} duration={ep.duration} />
               <MusicListenToggle listen={listen} />
+              <TranscriptEdit ep={ep} time={player.time} player={player} m={manual} run={run} />
               <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
             </main>
           </div>

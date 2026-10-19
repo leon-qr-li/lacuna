@@ -1,4 +1,4 @@
-"""Manual editing (decision `manual-editing`): waveform tiles, the transcript of a stretch, cut a selection."""
+"""Manual editing (decision `manual-editing`): waveform tiles, the transcript of a stretch (cut words marked), cut a selection."""
 from __future__ import annotations
 
 from fastapi import HTTPException
@@ -27,12 +27,12 @@ def register(app, ctx) -> None:
         except KeyError:
             raise HTTPException(404, "no such version")
 
-    @app.get("/api/episodes/{episode_id}/manual/words")
-    def words(episode_id: str, t0: float, t1: float, v: str | None = None):
+    @app.get("/api/episodes/{episode_id}/manual/transcript")
+    def transcript(episode_id: str, t0: float, t1: float, v: str | None = None):
         if t1 < t0 or t1 - t0 > 600:
             raise HTTPException(422, "bad range")
         try:
-            return {"utterances": manual.words(get(episode_id), v, t0, t1)}
+            return {"lines": manual.transcript(get(episode_id), v, t0, t1)}
         except KeyError:
             raise HTTPException(404, "no such version")
 

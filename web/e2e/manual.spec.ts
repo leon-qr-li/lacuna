@@ -75,9 +75,9 @@ test.describe.serial("manual editing", () => {
     await expect(page.locator('[data-testid="nearby"] li[data-source="manual"]')).toHaveCount(0);
   });
 
-  test("select by dragging across transcript words", async ({ page }) => {
+  test("select by dragging across transcript words, cut, then restore the struck words", async ({ page }) => {
     await open(page);
-    const words = page.getByTestId("ml-words").locator(".ml-w");
+    const words = page.getByTestId("ml-tx").locator(".ml-w");
     await expect(words.nth(5)).toBeVisible();
     const a = (await words.nth(1).boundingBox())!;
     const b = (await words.nth(4).boundingBox())!;
@@ -85,9 +85,28 @@ test.describe.serial("manual editing", () => {
     await page.mouse.down();
     await page.mouse.move(b.x + 3, b.y + b.height / 2, { steps: 6 });
     await page.mouse.up();
-    await expect(page.getByTestId("ml-bar")).toBeVisible();
-    await expect(page.getByTestId("ml-words").locator(".ml-w.is-sel")).toHaveCount(4);
-    await page.getByRole("button", { name: /取消/ }).click();
-    await expect(page.getByTestId("ml-bar")).toBeHidden();
+    const bar = page.getByTestId("transcript-edit").getByTestId("ml-bar");
+    await expect(bar).toContainText("已选 Leon");
+    await expect(page.getByTestId("ml-tx").locator(".ml-w.is-sel")).toHaveCount(4);
+    await expect(page.getByTestId("ml-sel")).toHaveCount(2); // the same stretch on the timeline
+    await expect(bar.getByTestId("ml-mute-Pei")).toHaveCount(0); // only the host whose words are selected
+    await bar.getByTestId("ml-cut").click();
+    await expect(page.locator(".toast")).toContainText("已删掉");
+    await expect(page.getByTestId("ml-tx").locator("s.ml-gone")).not.toHaveCount(0);
+    const manualId = await page.getByTestId("ml-tx").locator("s.ml-gone").evaluateAll(
+      (els) => els.map((e) => e.getAttribute("data-edit")).find((x) => x?.startsWith("m")) ?? "",
+    );
+    expect(manualId).not.toBe("");
+    await page.getByTestId("ml-tx").locator(`s.ml-gone[data-edit="${manualId}"]`).click();
+    await expect(page.locator(".toast")).toContainText("已恢复原话");
+    await expect(page.getByTestId("ml-tx").locator(`s.ml-gone[data-edit="${manualId}"]`)).toHaveCount(0);
+  });
+
+  test("a click on a word jumps there", async ({ page }) => {
+    await open(page);
+    const w = page.getByTestId("ml-tx").locator(".ml-w").nth(20);
+    await w.click();
+    await expect(page.getByTestId("ml-bar")).toHaveCount(0);
+    await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
   });
 });

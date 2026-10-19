@@ -10,7 +10,8 @@ rule until he confirms it). Nothing here touches the AI first cut, review or cha
   (``erase``), the timeline does not move. Boundaries are nudged to the quietest nearby sample.
 * ``wave(ep, version, tile)``    - per-track peak levels of one tile of a timeline version (what the
   lanes draw), rendered on demand and cached.
-* ``words(ep, version, t0, t1)`` - the transcript still audible on that version, as utterances.
+* ``transcript(ep, version, t0, t1)`` - the transcript of a stretch of that version, words already cut
+  included and marked with the edit that removed them (shown struck through; a click restores the edit).
 """
 from __future__ import annotations
 
@@ -19,7 +20,7 @@ from collections import OrderedDict
 import numpy as np
 from lacuna_core.refine import snap_cut
 
-from .episode import APPLIED, ONE_TRACK, ConflictError, Episode, subtract, to_base
+from .episode import APPLIED, ONE_TRACK, ConflictError, Episode, subtract, to_base, to_tl
 from .i18n import tr
 
 CATEGORY = "manual"
@@ -76,12 +77,46 @@ def wave(ep: Episode, version: str | None, tile: int) -> dict:
         return out
 
 
-def words(ep: Episode, version: str | None, t0: float, t1: float) -> list[dict]:
-    """Utterances still audible on that version between t0 and t1 (timeline seconds)."""
+def transcript(ep: Episode, version: str | None, t0: float, t1: float) -> list[dict]:
+    """The transcript between timeline t0 and t1 of that version, cut words included: each line is one
+    host's run of words, ``words`` = [text, start, end, edit id that removed it or None, base start]
+    (timeline seconds; a removed word sits at the point it was cut from)."""
     with ep.lock:
         en = _enabled(ep, version)
-        us = ep.utterances(max(t0, 0.0), t1, en, ep.cuts_for(en))
-        return [{"speaker": u.speaker, "words": [[w.text, w.start, w.end] for w in u.words]} for u in us]
+        cuts = ep.cuts_for(en)
+        sr = ep.sr
+        if not ep.transcript:
+            return []
+        a_s, b_s = to_base(int(max(t0, 0.0) * sr), cuts) / sr, to_base(int(t1 * sr), cuts, right=False) / sr
+        ripple: list[tuple[int, int, str]] = []
+        lost: dict[str, list[tuple[int, int, str]]] = {}
+        slips: dict[str, list[tuple[int, int, int]]] = {}
+        for i in en:
+            for o in ep.edits[i].ops:
+                if o["op"] == "cut":
+                    ripple.append((o["start"], o["end"], i))
+                elif o["op"] in ONE_TRACK:
+                    lost.setdefault(o["track"], []).append((o["start"], o["end"], i))
+                elif o["op"] == "slip":
+                    slips.setdefault(o["track"], []).append((o["start"], o["end"], o["delta"]))
+        runs: dict[str, list[list]] = {}
+        for track, s, e, w in ep.words(a_s, b_s):
+            mid = int((s + e) / 2 * sr)
+            gone = next((i for x, y, i in ripple if x <= mid < y), None) or \
+                next((i for x, y, i in lost.get(track, ()) if x <= mid < y), None)
+            d = 0 if gone else next((dl for x, y, dl in slips.get(track, ()) if x <= mid < y), 0)
+            ts, te = to_tl(int(s * sr) + d, cuts) / sr, to_tl(int(e * sr) + d, cuts) / sr
+            if not t0 <= ts < t1:
+                continue
+            word = [w, round(ts, 3), round(max(te, ts + (0 if gone else 0.01)), 3), gone, round(s, 3)]
+            rs = runs.setdefault(track, [])
+            if rs and s - rs[-1][-1][5] <= 0.6:
+                rs[-1].append(word + [e])
+            else:
+                rs.append([word + [e]])
+        lines = [{"speaker": track, "start": r[0][1], "words": [x[:5] for x in r]}
+                 for track, rs in runs.items() for r in rs]
+        return sorted(lines, key=lambda ln: (ln["start"], ln["words"][0][4]))
 
 
 def _snap(ep: Episode, en: frozenset[str], t: int, track: str | None, length: int) -> int:
