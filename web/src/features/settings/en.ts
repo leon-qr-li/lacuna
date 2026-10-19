@@ -15,6 +15,8 @@ export const en: Dict = {
   "已保存。重启 LACUNA 后生效。": "Saved. Takes effect after LACUNA restarts.",
   "版本": "Version",
   "开发版": "development build",
+  "新版本测试通过后会自动上线，不用手动更新。": "New versions go live automatically once their tests pass; there is nothing to update by hand.",
+  "AI 密钥由服务器统一管理，只保存在服务器上，不会显示出来。": "The AI key is managed by the server, kept only there and never shown.",
   "这是从源码直接运行的开发版，不在 App 里更新。": "This is a development build run from source; it doesn't update from the app.",
   "上次更新（{at}）：{message}": "Last update ({at}): {message}",
   "有新版本": "New version",

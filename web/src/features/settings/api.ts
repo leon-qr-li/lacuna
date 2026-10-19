@@ -11,6 +11,8 @@ export interface AppInfo {
   ffprobe: string | null;
   models: boolean;
   busy: string[];
+  /** the shared server (lacunastudio.app): updates ship themselves, keys are the server's */
+  cloud?: boolean;
   key: { present: boolean; source: string | null; editor: string; sdk: boolean };
   update: {
     installed: boolean;

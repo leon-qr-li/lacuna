@@ -82,7 +82,7 @@ def test_before_sign_in_app_info_is_version_only(client, keys):
     r = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW}, headers=h)
     assert r.status_code == 200
     signed_in = client.get("/api/app", headers=h).json()
-    assert "workspace" in signed_in and "busy" in signed_in
+    assert "workspace" in signed_in and "busy" in signed_in and signed_in["cloud"] is True
     stranger = TestClient(client.app)
     for path in ("/api/app", "/api/health"):
         info = stranger.get(path, headers=h).json()
@@ -108,7 +108,8 @@ def test_desktop_mode_is_untouched(tmp_path, monkeypatch):
     monkeypatch.delenv("LACUNA_CLOUD", raising=False)
     c = TestClient(create_app(tmp_path / "ws", MockEditorAdapter(), web_dist=tmp_path / "none"))
     assert c.get("/api/health").status_code == 200
-    assert "workspace" in c.get("/api/app").json()
+    info = c.get("/api/app").json()
+    assert "workspace" in info and info["cloud"] is False
 
 
 class FakeCF:
