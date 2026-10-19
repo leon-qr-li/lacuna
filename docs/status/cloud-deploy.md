@@ -36,7 +36,14 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
   `staging` + workflow **Staging**. Needs one Provision `recreate` to reach the server (host scripts and
   env files only arrive with cloud-init). Tests: `tests/test_provision.py`, `tests/test_deploy_host.py`,
   `tests/app/test_staging.py`, `web/e2e/staging.spec.ts`.
-- Next: Leon runs the move, then retire the desktop app; invite others only when Leon asks.
+- Staging live 2026-10-19 06:57Z (Provision apply + recreate; Deploy run 11 passed wait-live on the new
+  server). Release flow (Leon 06:55Z): thread deploys its PR to staging, Leon says 通过 in chat, the thread
+  merges = production. Leon presses no buttons.
+- Migration: Leon uploads once via 设置 →「从电脑搬过来」 (07:03Z; he chose this over a temporary upload
+  credential for his PC, which the security check would only allow with his explicit consent). Workspace
+  5.1 GB / 144 files (PULSE-013 生化危机 ≈ 590 MB incl. exports). After it is done: remove the migration
+  feature (Leon: everything cloud-only from then on), then retire the desktop app.
+- Never ask Leon before moving real data to the cloud (Leon 06:58Z).
 - Gotcha: Deploy and Provision share the concurrency group `deploy`; a Deploy waiting for a server that
   doesn't exist yet blocks Provision until it is cancelled.
 
