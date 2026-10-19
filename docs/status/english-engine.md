@@ -31,5 +31,6 @@ measurement report `/mnt/project-files/lacuna/docs/英文剪辑实测_2026-10-19
   ~15 s per 15 min track (4 vCPU, batches of 16 clips).
 
 ## Next
+- Before the beta invitations: full English accuracy + depth test (Leon 2026-10-19), tracked as the last item of `docs/status/beta-launch-todo.md`.
 - Calibrate on a human-edited English episode (cut rate, filler residue) when one is available.
 - English show notes / poster copy.
