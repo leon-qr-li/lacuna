@@ -16,4 +16,5 @@ export const en: Dict = {
     "The original recordings are read-only. Transcription and analysis run on this computer; only text and numbers go to LACUNA's AI for the first cut. Long recordings take a while: you can close this page without losing progress.",
   "AI 第一刀（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。":
     "First cut (AI not connected, pauses tightened only): {edits} edits, {review} for you to review.",
+  这一集说的语言: "Language of this episode",
 };

@@ -23,6 +23,7 @@ class PublishBody(BaseModel):
 class ShowBody(BaseModel):
     show_name: str = Field("", max_length=160)
     about: str = Field("", max_length=400)
+    language: str = Field("zh", max_length=8)
     footer: str = Field("", max_length=1200)
     hosts: list[HostBody] = Field(default_factory=list, max_length=20)
     publish: PublishBody = Field(default_factory=PublishBody)

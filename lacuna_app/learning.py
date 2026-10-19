@@ -26,6 +26,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Iterable
 
+from .words import join_words
 from . import show
 from .review import REVIEW_CONFIDENCE, ReviewPolicy
 from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
@@ -139,7 +140,7 @@ def _text(ep, e, host: str, limit: int = 40) -> str:
             if (track is None or trk == track) and a <= (s + en) / 2 < b:
                 per[trk].append(w)
     order = [host] if host in per else sorted(per, key=lambda t: -len(per[t]))
-    txt = " / ".join("".join(per[t]) for t in order if per[t])
+    txt = " / ".join(join_words(per[t]) for t in order if per[t])
     return txt[:limit] + ("…" if len(txt) > limit else "")
 
 
@@ -484,7 +485,7 @@ def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list]
             out.append(Decision(
                 episode=f"{ep.id}.hand_edit", edit_id=f"h{trk[0]}{int(a * 10):06d}", source="hand_edit",
                 kind="content", category="content", host=trk, verdict=ADDED, how="hand_edit", confidence=1.0,
-                length_s=round(b - a, 2), speech_s=round(sp, 2), text="".join(w for _, _, w in ws)[:40],
+                length_s=round(b - a, 2), speech_s=round(sp, 2), text=join_words(w for _, _, w in ws)[:40],
                 reason="", raw=[round(a + off, 2), round(b + off, 2)], consequential=True))
     return out
 

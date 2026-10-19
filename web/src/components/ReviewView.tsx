@@ -10,6 +10,7 @@ import { reviewAction } from "../features/review-keys/keys";
 import { DockProgress, ShortcutsButton } from "../features/review-keys/Shortcuts";
 import { SpeedButton } from "../features/review-speed/SpeedButton";
 import { useReviewRate } from "../features/review-speed/speed";
+import { needsSpace } from "../words";
 
 interface Props {
   ep: Episode;
@@ -19,8 +20,6 @@ interface Props {
   onApproveAll: () => Promise<boolean>;
   onPauseMain: () => void;
 }
-
-const LATIN = /^[A-Za-z0-9']+$/;
 
 const pending = (e: EditInfo) => !e.approved;
 
@@ -240,7 +239,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                     <span className={`spk spk-${ep.tracks.findIndex((t) => t.name === l.speaker)}`}>{l.speaker}</span>
                     {l.words.map((w, j) => (
                       <span key={j} className={w.removed ? "struck" : undefined}>
-                        {j > 0 && LATIN.test(w.t) && LATIN.test(l.words[j - 1].t) ? " " : ""}
+                        {j > 0 && needsSpace(l.words[j - 1].t, w.t) ? " " : ""}
                         {w.t}
                       </span>
                     ))}

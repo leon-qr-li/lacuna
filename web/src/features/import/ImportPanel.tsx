@@ -5,7 +5,7 @@ import { t } from "../../i18n";
 import { JobProgress } from "../loading/Loading";
 import type { JobStep } from "../loading/Loading";
 import { importApi, uploadTrack, type ImportJobView, type PickedTrack } from "./api";
-import { hostList, useShow, type Host, type Show } from "../show/api";
+import { hostList, LANGUAGE_LABELS, LANGUAGES, useShow, type Host, type Language, type Show } from "../show/api";
 import "./import.css";
 
 const RUNNING = new Set(["queued", "running"]);
@@ -92,18 +92,21 @@ export function assign(files: File[], free: Who[], hosts: Host[]): [Who, File][]
 function NewImport({
   nextId,
   hosts,
+  showLanguage,
   dropped,
   onStarted,
   onCancel,
 }: {
   nextId: string;
   hosts: Host[];
+  showLanguage: Language;
   dropped: File[] | null;
   onStarted: () => void;
   onCancel: () => void;
 }) {
   const [id, setId] = useState(nextId);
   const [title, setTitle] = useState("");
+  const [language, setLanguage] = useState<Language>(showLanguage);
   const [slots, setSlots] = useState<Record<Who, Slot | null>>(() => Object.fromEntries(hosts.map((h) => [h.tag, null])));
   const [over, setOver] = useState<Who | "all" | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -162,7 +165,7 @@ function NewImport({
     setBusy(true);
     setErr(null);
     try {
-      await api.startImport({ id: id.trim(), title: title.trim(), tracks: paths });
+      await api.startImport({ id: id.trim(), title: title.trim(), tracks: paths, language });
       started.current = true;
       onStarted();
     } catch (e) {
@@ -230,6 +233,16 @@ function NewImport({
         <label>
           {t("标题（可不填）")}
           <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`${id} · …`} data-testid="import-title" />
+        </label>
+        <label>
+          {t("这一集说的语言")}
+          <select value={language} onChange={(e) => setLanguage(e.target.value as Language)} data-testid="import-language">
+            {LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {LANGUAGE_LABELS[l]}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
       <div className={`lib-drop import-drop${over === "all" ? " lib-drop-active" : ""}`} data-testid="import-drop">
@@ -399,7 +412,8 @@ export function ImportPanel({
   const [form, setForm] = useState(false);
   const [dropped, setDropped] = useState<File[] | null>(null);
   const prev = useRef<Map<string, string>>(new Map());
-  const hosts = useShow()?.hosts ?? [];
+  const show = useShow();
+  const hosts = show?.hosts ?? [];
 
   const refresh = useCallback(async () => {
     try {
@@ -468,6 +482,7 @@ export function ImportPanel({
         <NewImport
           nextId={nextId}
           hosts={hosts}
+          showLanguage={show?.language ?? "zh"}
           dropped={dropped}
           onCancel={() => {
             setForm(false);

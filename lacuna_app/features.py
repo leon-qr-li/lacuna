@@ -18,6 +18,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
+from .words import is_latin, join_words
+
 SR = 16000
 HOP = 0.01                     # feature frame hop (s)
 TRACKS = {"L": "Leon", "P": "Pei"}       # Leon's show: the default when no names are given
@@ -144,18 +146,27 @@ def merge_bpe(tokens):
 
 
 def is_ascii(s):
-    return bool(re.match(r"^[A-Za-z0-9'.\-]+$", s))
+    """A Latin word (English ASR keeps punctuation on it: "experience,")."""
+    return is_latin(s)
+
+
+def unit(s):
+    """What is compared between the two engines: a Latin word lower-cased without its punctuation
+    (Parakeet writes "Experience," where SenseVoice hears "experience"), a CJK character as is."""
+    if not is_ascii(s):
+        return s
+    return re.sub(r"[^a-z0-9']", "", s.lower()) or s
 
 
 def sv_units(tokens):
-    """SenseVoice tokens -> units comparable to Paraformer tokens (CJK char or ASCII word)."""
+    """SenseVoice tokens -> units comparable to the main engine's tokens (CJK char or Latin word)."""
     out = []
     for t in tokens:
         s = t["t"].strip()
         if not s:
             continue
         if is_ascii(s):
-            out.append(s.lower())
+            out.append(unit(s))
         else:
             out.extend(list(s))
     return out
@@ -174,7 +185,7 @@ def build_tokens(asr, db, act, tag):
             toks.append({"id": None, "t": t["t"], "start": t["start"], "asr_start": t["start"],
                          "seg": si, "flag": None})
         # disagreement flags (Paraformer vs SenseVoice, unit-level diff inside the same VAD segment)
-        pu = [t["t"].lower() if is_ascii(t["t"]) else t["t"] for t in pt]
+        pu = [unit(t["t"]) for t in pt]
         su = sv_units(ss["tokens"])
         sm = difflib.SequenceMatcher(a=pu, b=su, autojunk=False)
         for op, a0, a1, b0, b1 in sm.get_opcodes():
@@ -295,9 +306,9 @@ def utt_features(toks, segs, db, f0, speech_ref_db, f0_ref):
 
 
 def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str] | None = None,
-          show_name: str = "洛城二三事") -> tuple[dict, dict, str]:
+          show_name: str = "洛城二三事", lang: str = "zh") -> tuple[dict, dict, str]:
     """(tokens doc, features doc, editor document) from per-track ASR + 16 kHz mono audio.
-    `names`: track tag -> host name, in host order."""
+    `names`: track tag -> host name, in host order. `lang`: the episode's language (asr.LANGUAGES)."""
     names = dict(names or TRACKS)
     data = {}
     for tag, name in names.items():
@@ -354,7 +365,7 @@ def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str]
         o = {"start": round(st, 2), "end": round(en, 2), "dur": round(en - st, 2), "first": first}
         for tag in tags:
             tt = toks_in(data[tag])
-            o[tag] = [tt[0]["id"], tt[-1]["id"], "".join(t["t"] for t in tt)] if tt else None
+            o[tag] = [tt[0]["id"], tt[-1]["id"], join_words(t["t"] for t in tt)] if tt else None
         overlaps.append(o)
 
     # long silences: no track has sound (energy activity) for >= 1.5 s
@@ -414,7 +425,8 @@ def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str]
     feat_out = {"episode": episode, "stats": stats, "overlaps": overlaps, "long_silences": silences,
                 "floor_gaps": gaps, "sounds": sounds,
                 "utterances": {tag: [{k: v for k, v in u.items()} for u in d["utts"]] for tag, d in data.items()}}
-    return tok_out, feat_out, write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names, show_name)
+    return tok_out, feat_out, write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names, show_name,
+                                          lang)
 
 
 # --------------------------------------------------------------------------- document
@@ -438,15 +450,43 @@ FORMAT_HELP = """\
 """
 
 
-def _all(n: int) -> str:
+FORMAT_HELP_EN = """\
+## Format
+
+The episode is in **English**. All times are **raw track seconds** ({all} start in sync at 0). {legend}.
+Lines are interleaved by start time, so they read as the conversation itself.
+
+One line per utterance (= one VAD segment):
+`{a} 123.45-129.80 r2.9 e+2 ↗ pb0.62 pa1.20 ov | @812 So I think the (0.45) @816 {the the|the} movie is …`
+
+- Head: track · start-end seconds · `r` speaking rate (words/s, pauses ≥0.3 s inside the line removed) · `e` loudness relative to this track's normal speech (dB) · pitch at the end of the line `↗` rising `↘` falling `→` flat (missing = not measurable) · `pb`/`pa` gap to the previous/next line on the same track (s) · `ov` = overlaps another track (see the overlap table).
+- `@812` = anchor: the next word's token id is `{a}000812` (on a {b} line `{b}000812`). Every following word takes the next id: `@812 So I think` → So={a}000812, I={a}000813, think={a}000814. Punctuation belongs to its word. Anchors appear at the start of a line, after every pause and every 10 tokens.
+- `(0.45)` = a pause ≥0.30 s after the previous token (same track).
+- `{the the|the}` = the two recognisers disagree: left is the main recogniser (Parakeet, with ids), right is SenseVoice's reading (no ids). `{|um}` = only SenseVoice heard it (attached after the previous token); `{so|}` = only the main recogniser heard it. Disagreements are mostly fillers, repeats, names or mumbling: trust the text less there and edit more conservatively.
+- Both recognisers tend to DROP fillers (um, uh, er). A filler they dropped still sits in the audio, usually inside a pause or a `~snd` sound.
+- `~snd 0.45s e-3` = sound without any recognised word (a dropped um/uh, laughter, breath, cough, mic bump; energy only, uncertain).
+- `{a} ... (no text) e-12` = VAD heard sound but neither recogniser produced a word.
+- `--- 12:00 ---` = a time mark every minute (raw).
+- `== floor gap 2.31s (raw 300.12-302.43) ==` = {all} silent (no speech) for ≥1.0 s: a pause that may be tightened.
+"""
+
+
+def _all(n: int, lang: str = "zh") -> str:
     """How the document says "every track": 这一轨 / 两轨 / 各轨."""
+    if lang == "en":
+        return "the track" if n == 1 else "both tracks" if n == 2 else "all tracks"
     return "这一轨" if n == 1 else "两轨" if n == 2 else "各轨"
 
 
-def format_help(names: dict[str, str]) -> str:
+def format_help(names: dict[str, str], lang: str = "zh") -> str:
     tags = list(names)
-    legend = ", ".join(f"{t} = {n} 轨" for t, n in names.items())
-    return (FORMAT_HELP.replace("{all}", _all(len(tags))).replace("{legend}", legend)
+    if lang == "en":
+        legend = ", ".join(f"{t} = {n}'s track" for t, n in names.items())
+        text = FORMAT_HELP_EN
+    else:
+        legend = ", ".join(f"{t} = {n} 轨" for t, n in names.items())
+        text = FORMAT_HELP
+    return (text.replace("{all}", _all(len(tags), lang)).replace("{legend}", legend)
             .replace("{a}", tags[0]).replace("{b}", tags[-1]))
 
 
@@ -506,13 +546,11 @@ def fmt_utt_line(tag, u, d, ov_ranges):
 
 
 def _join(ts):
-    out = ""
-    for t in ts:
-        out += (" " + t["t"] + " ") if is_ascii(t["t"]) else t["t"]
-    return re.sub(r" +", " ", out).strip()
+    return join_words(t["t"] for t in ts)
 
 
-def write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names=None, show_name="洛城二三事"):
+def write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names=None, show_name="洛城二三事",
+              lang="zh"):
     names = dict(names or TRACKS)
     tags = list(data)
     every = _all(len(tags))
@@ -521,7 +559,7 @@ def write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names=None
     lines = [f"# {episode} 剪辑输入 (editor input)" + (f" — 《{show_name}》" if show_name else ""), "",
              f"只含文字与数值特征 (无音频)。原始{'单轨' if len(tags) == 1 else '双轨' if len(tags) == 2 else f'{len(tags)} 轨'}"
              f"是分轨录音: {mics}" + ("。" if len(tags) == 1 else f", {every}时间轴一致。"), "",
-             format_help(names), "## 概览 (overview)", "",
+             format_help(names, lang), "## 概览 (overview)", "",
              "- 原始时长: " + ", ".join(f"{t} {stats[t]['duration_s']:.1f}s" for t in tags) + f" ({dur0/60:.1f} min)",
              "| 轨 | token 数 | 句数 | 说话秒数 | 语速中位 (字/s) | F0 中位 | ASR 不一致 token | 同轨 token 间停顿≥0.3s | ≥1.0s |",
              "|---|---|---|---|---|---|---|---|---|"]
@@ -556,7 +594,8 @@ def write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names=None
         else:
             pass  # sv / 哈哈 flags are already on the utterance line
     for g in gaps:
-        events.append((g["start"], 2, f"== 地板间隙 {g['dur']:.2f}s (raw {g['start']:.2f}-{g['end']:.2f}) =="))
+        gap_name = "floor gap" if lang == "en" else "地板间隙"  # i18n-ignore
+        events.append((g["start"], 2, f"== {gap_name} {g['dur']:.2f}s (raw {g['start']:.2f}-{g['end']:.2f}) =="))
     dur = max(d["x_dur"] for d in data.values())
     for m in range(1, int(dur // 60) + 1):
         events.append((m * 60.0, -1, f"--- {m:02d}:00 ---"))

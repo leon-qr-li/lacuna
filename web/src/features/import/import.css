@@ -11,3 +11,7 @@
 .import-slot-bar > span { display: block; height: 100%; background: var(--grad, var(--accent)); transition: width .2s; }
 .import-swap { align-self: flex-start; }
 @media (max-width: 600px) { .import-slot { flex-wrap: wrap; } }
+
+/* id · title · language on one row */
+.import-grid { grid-template-columns: 1fr 2fr minmax(8rem, auto); }
+@media (max-width: 600px) { .import-grid { grid-template-columns: 1fr; } }

@@ -84,12 +84,15 @@ def tool_for(tags: list[str], legacy: bool = True) -> dict:
 Progress = Callable[[float, str], None]
 
 
-def system_prompt(extra_rules: str = "", profile: dict | None = None) -> str:
+def system_prompt(extra_rules: str = "", profile: dict | None = None, language: str = "zh") -> str:
     """Brief + learned EP001 rules (+ rules learned from Leon's later reviews, if any).
 
     Another show (`profile` from show.py, not Leon's): the same brief with its own name, tracks and
     per-host strictness, LACUNA's default rules instead of Leon's EP001 calibration, then its own
-    learned rules."""
+    learned rules. An English episode (any show) gets the English brief and defaults: Leon's EP001
+    calibration is about Chinese speech."""
+    if language == "en":
+        return generic_prompt(extra_rules, profile or show.LEGACY, "en")
     if not show.is_legacy(profile):
         return generic_prompt(extra_rules, profile)
     parts = [(PROMPTS / "first_cut_brief.txt").read_text(encoding="utf-8"),
@@ -100,16 +103,17 @@ def system_prompt(extra_rules: str = "", profile: dict | None = None) -> str:
     return "\n\n".join(parts)
 
 
-def generic_prompt(extra_rules: str, profile: dict) -> str:
+def generic_prompt(extra_rules: str, profile: dict, language: str = "zh") -> str:
     tags = [h["tag"] for h in profile["hosts"]]
-    brief = (PROMPTS / "first_cut_brief_generic.txt").read_text(encoding="utf-8")
+    suffix = "_en" if language == "en" else ""
+    brief = (PROMPTS / ("first_cut_brief_en.txt" if suffix else "first_cut_brief_generic.txt")).read_text(encoding="utf-8")
     for k, v in {"<<SHOW>>": show.describe_en(profile).rsplit(" (", 1)[0],
                  "<<TRACKS>>": ", ".join(f"{h['name']} = track {h['tag']}" for h in profile["hosts"]),
                  "<<TOKEN_EXAMPLES>>": " / ".join(f'"{t}000812"' for t in tags[:2]),
                  "<<T1>>": tags[0], "<<TRACK_LIST>>": ", ".join(tags),
                  "<<STYLES>>": show.style_lines(profile)}.items():
         brief = brief.replace(k, v)
-    parts = [brief, (PROMPTS / "first_cut_defaults.txt").read_text(encoding="utf-8")]
+    parts = [brief, (PROMPTS / f"first_cut_defaults{suffix}.txt").read_text(encoding="utf-8")]
     if extra_rules.strip():
         parts.append("RULES LEARNED FROM THE EDITOR'S REVIEWS OF THIS SHOW (they win where they conflict "
                      "with the defaults)\n" + extra_rules.strip())
@@ -222,6 +226,7 @@ class ClaudeFirstCut:
         self.on_usage: Callable[[dict], None] = lambda u: None
         self.names: dict[str, str] = {"L": "Leon", "P": "Pei"}   # track tag -> host (set by the importer)
         self.show: dict | None = None                            # the workspace's show (prompt), None = Leon's
+        self.language = "zh"                                     # the episode's (set by the importer)
 
     @property
     def available(self) -> bool:
@@ -238,7 +243,7 @@ class ClaudeFirstCut:
         return dict(model=model or self.model, max_tokens=64000,
                     system=[{"type": "text", "text": system + AI_NAME_RULE},
                             {"type": "text", "text": doc, "cache_control": {"type": "ephemeral"}}],
-                    output_config={"effort": self.effort}, tools=[in_reply_language(tool_for(list(self.names), show.is_legacy(self.show)))],
+                    output_config={"effort": self.effort}, tools=[in_reply_language(tool_for(list(self.names), show.is_legacy(self.show) and self.language != "en"))],
                     tool_choice={"type": "auto"}, messages=[{"role": "user", "content": user}])
 
     def _call(self, req: dict):
@@ -253,7 +258,7 @@ class ClaudeFirstCut:
         while True:
             t0 = time.monotonic()
             try:
-                resp = self._call(self.request(system, doc, window_request(a, b, k, n, "Leon" if show.is_legacy(self.show) else "The editor"), model))
+                resp = self._call(self.request(system, doc, window_request(a, b, k, n, "Leon" if show.is_legacy(self.show) and self.language != "en" else "The editor"), model))
             except Exception as e:      # noqa: BLE001
                 raise FirstCutError(error_message(e, tail="")) from e
             usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
@@ -276,7 +281,7 @@ class ClaudeFirstCut:
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
             cancelled: Callable[[], bool] = lambda: False, extra_rules: str = "") -> FirstCutResult:
         """All windows; finished windows are cached in `cache_dir` so a retry resumes."""
-        system = system_prompt(extra_rules, self.show)
+        system = system_prompt(extra_rules, self.show, self.language)
         wins = windows(duration)
         n = len(wins)
         results: dict[int, tuple[list[dict], str, dict]] = {}

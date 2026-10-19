@@ -7,6 +7,8 @@ episode references them by absolute path like every other episode (D29, read-onl
 
 The hosts (one track each, in the order of 节目设置) come from the workspace's show (show.py) when the
 import starts and are kept in the job, so a later rename doesn't change a running or resumed import.
+So is the episode's language (the show's, unless the import form picked another): it decides the
+speech recognisers (asr.ENGINES), the editor document's format notes and the AI editing brief.
 Steps and their share of the progress bar: models 4 % (first import only), ASR 68 % split evenly over
 the tracks, features 4 %, AI first cut 20 %, building the episode 4 %.
 """
@@ -156,8 +158,10 @@ class Importer:
             return [t["path"] for j in self.jobs.values() for t in j.get("tracks", {}).values()]
 
     # ------------------------------------------------------------------ control
-    def start(self, episode_id: str, title: str, paths: list[str], wait: bool = False) -> dict:
-        """`paths`: one raw track per host of the workspace's show, in the order of 节目设置."""
+    def start(self, episode_id: str, title: str, paths: list[str], wait: bool = False,
+              language: str | None = None) -> dict:
+        """`paths`: one raw track per host of the workspace's show, in the order of 节目设置.
+        `language`: what the hosts speak (asr.LANGUAGES); None = the show's language."""
         try:
             check_id(episode_id)
         except PathError:
@@ -167,7 +171,11 @@ class Importer:
         if episode_id in retired_ids(self.ws):
             raise ImportError_(tr("{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号",
                                   episode_id=episode_id))
-        hosts = show_mod.tracks(show_mod.load(self.ws.root))
+        profile = show_mod.load(self.ws.root)
+        hosts = show_mod.tracks(profile)
+        if language is not None and language not in asr_mod.LANGUAGES:
+            raise ImportError_(tr("不支持这种语言：{language}", language=language))
+        language = language or profile.get("language") or "zh"
         if not hosts:
             raise ImportError_(tr("先在「节目」里填好主持人"))
         if len(paths) != len(hosts):
@@ -184,7 +192,7 @@ class Importer:
             if old and old["state"] in ("queued", "running"):
                 raise ImportBusy(tr("这一集已经在导入"))
         job = {"id": episode_id, "title": title.strip() or episode_id, "tracks": tracks,
-               "hosts": [list(h) for h in hosts],
+               "hosts": [list(h) for h in hosts], "language": language,
                "state": "queued", "progress": 0.0, "step": None, "stage": tr("排队"), "steps": {},
                "created": now(), "started": None, "finished": None, "error": None, "result": None}
         return self._launch(job, wait)
@@ -291,12 +299,13 @@ class Importer:
 
     def _steps(self, job: dict, d: Path) -> None:
         backend = self.asr_backend
+        lang = asr_mod.language(job.get("language"))
         # 1. models (real ASR only)
         if backend is None:
             if not asr_mod.sherpa_installed():
                 raise ImportError_(tr("没装语音识别组件 sherpa-onnx（pip install -e \".[asr]\"）"))
-            if not asr_mod.models_present(self.models_dir):
-                asr_mod.ensure_models(self.models_dir, lambda f, s: self._progress(job, "models", f, s))
+            if not asr_mod.models_present(self.models_dir, lang):
+                asr_mod.ensure_models(self.models_dir, lambda f, s: self._progress(job, "models", f, s), lang=lang)
         self._done_step(job, "models")
 
         # 2. ASR per track (cached)
@@ -324,7 +333,7 @@ class Importer:
                 if backend is None:
                     if rec is None:
                         self._progress(job, step, 0.01, tr("加载识别模型"))
-                        rec = asr_mod.load_recognizers(self.models_dir)
+                        rec = asr_mod.load_recognizers(self.models_dir, lang=lang)
                     res = asr_mod.transcribe(x, rec, lambda f, s, step=step, name=name:
                                              self._progress(job, step, f, f"{name}：{s}"))
                 else:
@@ -349,7 +358,7 @@ class Importer:
                     audio16[tag] = asr_mod.decode_16k(job["tracks"][tag]["path"])
             profile = show_mod.load(self.ws.root)
             tokens_doc, feats, doc = features.build(asr, audio16, job["id"], log=lambda *_: None, names=dict(hosts),
-                                                    show_name=profile["show_name"])
+                                                    show_name=profile["show_name"], lang=lang)
             atomic_write_json(feat_p, feats)
             atomic_write_json(tok_p, tokens_doc)
             doc_p.write_text(doc, encoding="utf-8")
@@ -369,6 +378,8 @@ class Importer:
                 fc.names = dict(hosts)
             if hasattr(fc, "show"):
                 fc.show = show_mod.load(self.ws.root)
+            if hasattr(fc, "language"):
+                fc.language = lang
             if hasattr(fc, "on_usage"):
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
             duration = max(a["audio_s"] for a in asr.values())
@@ -400,7 +411,7 @@ class Importer:
         meta = {"title": job["title"], "demo": False, "raw_offset_s": 0.0, "source": "import",
                 "ai_model": ops_doc.get("model", ""), "ai_notes": ops_doc.get("notes", ""),
                 "ai_report": report_dict(report), "first_cut_engine": engine,
-                "imported_at": now(), "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in hosts}}
+                "imported_at": now(), "language": lang, "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in hosts}}
         create_episode(self.ws, job["id"], meta, project, edits, transcript)
         self._level(job["id"])          # not cancellable: the episode exists now
         cons = sum(e.consequential for e in edits)
