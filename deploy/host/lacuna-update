@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Deploy the newest LACUNA image (systemd timer, every minute). Pull-based: the server needs no inbound port.
+#   - never swaps while an import / export / publish job runs (the app's /api/app "busy" list)
+#   - health-checks the new container; if it doesn't come up, goes back to the previous image and
+#     remembers the bad one so it isn't retried until a newer image arrives
+# Status: /var/lib/lacuna/deploy.json. Tested with a fake docker in tests/test_deploy_host.py.
+set -uo pipefail
+STATE=${LACUNA_STATE_DIR:-/var/lib/lacuna}
+mkdir -p "$STATE"
+exec 9>"$STATE/update.lock"
+flock -n 9 || exit 0
+IMAGE=$(cat "${LACUNA_IMAGE_FILE:-/etc/lacuna/image}")
+NAME=lacuna
+HEALTH_WAIT=${HEALTH_WAIT:-180}
+
+status() {  # status <state> <image> <message>
+  jq -n --arg s "$1" --arg i "$2" --arg m "$3" --arg t "$(date -u +%FT%TZ)" \
+    '{state:$s, image:$i, message:$m, at:$t}' > "$STATE/deploy.json.tmp" && mv "$STATE/deploy.json.tmp" "$STATE/deploy.json"
+  echo "$1: $3"
+}
+
+in_app() {  # run python inside the app container against its own loopback (exempt from the Access check)
+  docker exec "$NAME" python -c "$1" 2>/dev/null
+}
+
+healthy() {
+  in_app "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8765/api/health', timeout=4).status == 200 else 1)"
+}
+
+busy() {
+  in_app "import urllib.request,json; print(len(json.load(urllib.request.urlopen('http://127.0.0.1:8765/api/app', timeout=10)).get('busy') or []))"
+}
+
+start() {  # start <image id>
+  docker rm -f "$NAME" >/dev/null 2>&1
+  docker run -d --name "$NAME" --network lacuna --restart unless-stopped \
+    --env-file /etc/lacuna/lacuna.env -e TMPDIR=/data/tmp -v /data:/data \
+    --memory 7g --pids-limit 512 --security-opt no-new-privileges --cap-drop ALL \
+    --stop-timeout 30 "$1" >/dev/null
+}
+
+wait_healthy() {
+  for _ in $(seq 1 "$HEALTH_WAIT"); do
+    healthy && return 0
+    [ "$(docker inspect -f '{{.State.Running}}' "$NAME" 2>/dev/null)" = true ] || return 1
+    sleep "${HEALTH_POLL:-1}"
+  done
+  return 1
+}
+
+docker pull -q "$IMAGE" >/dev/null 2>&1 || { status pull-failed "" "could not pull $IMAGE"; exit 0; }
+new=$(docker image inspect -f '{{.Id}}' "$IMAGE")
+cur=$(docker inspect -f '{{.Image}}' "$NAME" 2>/dev/null || true)
+running=$(docker inspect -f '{{.State.Running}}' "$NAME" 2>/dev/null || echo false)
+
+if [ "$new" = "$cur" ] && [ "$running" = true ]; then
+  exit 0
+fi
+if [ "$new" = "$(cat "$STATE/bad-image" 2>/dev/null)" ]; then
+  if [ "$running" != true ] && [ -n "$cur" ]; then start "$cur"; fi
+  exit 0
+fi
+if [ "$running" = true ] && [ -n "$cur" ]; then
+  n=$(busy)
+  if [ "${n:-0}" != 0 ]; then
+    status waiting "$new" "$n job(s) running; deploying when they finish"
+    exit 0
+  fi
+fi
+
+status deploying "$new" "starting the new version"
+start "$new"
+if wait_healthy; then
+  echo "$cur" > "$STATE/previous-image"
+  # keep the previous version on disk under a name, so the next rollback still has it after the prune
+  if [ -n "$cur" ] && [ "$cur" != "$new" ]; then docker tag "$cur" lacuna:previous >/dev/null 2>&1; fi
+  rm -f "$STATE/bad-image"
+  status deployed "$new" "$(docker exec "$NAME" cat /app/VERSION 2>/dev/null)"
+  docker image prune -f >/dev/null 2>&1
+  exit 0
+fi
+
+docker logs --tail 80 "$NAME" > "$STATE/failed-start.log" 2>&1
+echo "$new" > "$STATE/bad-image"
+if [ -n "$cur" ]; then
+  start "$cur"
+  if wait_healthy; then
+    status rolled-back "$cur" "new version did not start; back on the previous one"
+  else
+    status down "$cur" "new version did not start and the previous one did not come back"
+  fi
+else
+  status down "$new" "first version did not start"
+fi
+exit 1

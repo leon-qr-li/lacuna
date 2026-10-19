@@ -1,0 +1,58 @@
+name: Backup check
+
+# The server backs itself up every night to Cloudflare R2 (deploy/host/lacuna-backup). This checks it
+# from outside: the newest backup is under 36 h old and a sample of it restores and decrypts.
+# Weekly it also snapshots the data volume at DigitalOcean (newest 4 kept). A failure emails the repo owner.
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      RESTIC_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+    steps:
+      - name: Cloud set up?
+        id: ready
+        run: |
+          if [ -z "$DIGITALOCEAN_TOKEN" ] || [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$RESTIC_PASSWORD" ]; then
+            echo "::notice::cloud secrets not set yet"; echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'true'
+      - name: Install restic
+        if: steps.ready.outputs.go == 'true'
+        run: sudo apt-get install -y -q restic
+      - name: Backup credentials
+        if: steps.ready.outputs.go == 'true'
+        run: python3 deploy/ci.py r2-env
+      - name: Newest backup is recent
+        if: steps.ready.outputs.go == 'true'
+        run: |
+          last=$(restic snapshots --host lacuna --latest 1 --json -q | jq -r '.[-1].time // empty')
+          [ -n "$last" ] || { echo "::error::no backup found"; exit 1; }
+          age=$(( $(date +%s) - $(date -d "$last" +%s) ))
+          echo "newest backup is $(( age / 3600 )) h old"
+          [ "$age" -lt $(( 36 * 3600 )) ] || { echo "::error::newest backup is older than 36 h"; exit 1; }
+      - name: Restore drill (the backup's canary file; no user data leaves the backup)
+        if: steps.ready.outputs.go == 'true'
+        run: |
+          d=$(mktemp -d)
+          restic restore latest --host lacuna --target "$d" --include /data/backup-canary.json -q
+          python3 -c "import json,sys; print('restored canary from', json.load(open(sys.argv[1]))['at'])" \
+            "$d/data/backup-canary.json"
+          rm -rf "$d"
+      - name: Weekly volume snapshot
+        if: steps.ready.outputs.go == 'true'
+        run: |
+          if [ "$(date +%u)" = 7 ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then python3 deploy/ci.py snapshot; fi

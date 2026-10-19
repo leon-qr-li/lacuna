@@ -404,4 +404,5 @@ EN: dict[str, str | tuple[str, str]] = {
         "Noted: “{ask}”. It waits for you in Learned rules; once adopted, the AI first cut follows it from the next episode.",
     "LACUNA 没有给出结果": "LACUNA gave no result",
     "AI 服务出了点问题": "Something went wrong with the AI service",
+    "请先上传音轨": "Upload the tracks first",
 }

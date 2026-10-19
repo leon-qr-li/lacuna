@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Nightly encrypted backup of /data to Cloudflare R2 (restic; another company than the server's).
+# Keeps 30 daily + 12 monthly snapshots. ASR models are left out (re-downloaded on demand).
+# The restic password is only here and in GitHub secrets / Leon's password manager.
+set -euo pipefail
+set -a; . /etc/lacuna/backup.env; set +a
+export RESTIC_CACHE_DIR=/var/cache/restic
+restic cat config >/dev/null 2>&1 || restic init
+# a tiny file the outside restore drill (.github/workflows/backup.yml) restores instead of user data
+printf '{"at": "%s"}\n' "$(date -u +%FT%TZ)" > /data/backup-canary.json
+restic backup /data --one-file-system --exclude /data/workspace/models --exclude /data/tmp \
+  --exclude '*.part' --tag nightly --host lacuna
+restic forget --host lacuna --keep-daily 30 --keep-monthly 12 --prune
+# check a slice of the stored data every night (all of it over a month)
+restic check --read-data-subset "$(( $(date +%-d) % 30 + 1 ))/30"

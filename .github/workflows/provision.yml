@@ -1,0 +1,36 @@
+name: Provision
+
+# Creates / updates the cloud setup (deploy/provision.py). Run by hand: plan first, then apply.
+# recreate = replace the server itself (data volume kept), e.g. after changing deploy/host/ or a secret.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: plan | apply | recreate
+        required: true
+        default: plan
+        type: choice
+        options: [plan, apply, recreate]
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Provision
+        env:
+          DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCESS_EMAILS: ${{ secrets.ACCESS_EMAILS }}
+          BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: python3 deploy/provision.py "${{ inputs.mode }}"

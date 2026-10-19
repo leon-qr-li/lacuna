@@ -1,0 +1,9 @@
+[Unit]
+Description=Nightly LACUNA backup to Cloudflare R2
+After=network-online.target
+
+[Service]
+Type=oneshot
+Nice=10
+IOSchedulingClass=idle
+ExecStart=/usr/local/bin/lacuna-backup
