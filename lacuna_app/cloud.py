@@ -1,13 +1,13 @@
 """Cloud mode: LACUNA on the DigitalOcean server behind Cloudflare Tunnel + Access (decision cloud-deploy).
 
-Off unless ``LACUNA_CLOUD=1``; the desktop app never sees any of this. When on:
+Off unless ``LACUNA_CLOUD=1``; a local development checkout never sees any of this. When on:
 
 * Every request must carry a valid Cloudflare Access token (``Cf-Access-Jwt-Assertion``, RS256, signed
   by the team's keys, our application's audience). Cloudflare Access is the first door (invite list +
   email code); checking its token here means a request that somehow reaches the container without
   passing Access is refused. Only the container's own loopback (the host's deploy health check, run
   with ``docker exec``) is exempt.
-* Desktop-only actions answer 404: in-app update / restart, saving API keys from the browser (keys
+* Local-only actions answer 404: saving API keys from the browser (keys
   come from the server's environment), opening folders on the server.
 * Before sign-in, ``/api/app`` and ``/api/health`` answer only the version.
 
@@ -32,9 +32,8 @@ ACCESS_HEADER = b"cf-access-jwt-assertion"
 LOOPBACK = {"127.0.0.1", "::1"}
 CF_API = "https://api.cloudflare.com/client/v4"
 
-# desktop-only actions: no meaning (or a risk) on a shared server
+# local-only actions (a development checkout): no meaning (or a risk) on a shared server
 BLOCKED = [
-    ("POST", re.compile(r"^/api/app/update/(check|prepare|apply)$")),
     ("POST", re.compile(r"^/api/app/api-key$")),
     ("POST", re.compile(r"^/api/auth/resend-key$")),
     ("POST", re.compile(r"^/api/episodes/[^/]+/exports/open$")),
@@ -111,7 +110,7 @@ def _fetch_json(url: str, timeout: float = 10) -> dict:
 
 
 class CloudGate:
-    """ASGI middleware, outermost: Access token check, desktop-only actions, minimal pre-sign-in info."""
+    """ASGI middleware, outermost: Access token check, local-only actions, minimal pre-sign-in info."""
 
     def __init__(self, app, verifier: AccessVerifier, signed_in: Callable[[str], bool], version: Callable[[], str]):
         self.app, self.verifier, self.signed_in, self.version = app, verifier, signed_in, version
@@ -143,7 +142,7 @@ class CloudGate:
 
 
 def access_email(request) -> str | None:
-    """The email Cloudflare Access verified for this request (cloud only; None on loopback / desktop)."""
+    """The email Cloudflare Access verified for this request (cloud only; None on loopback / locally)."""
     return getattr(request.state, "access_email", None) if enabled() else None
 
 

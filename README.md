@@ -2,14 +2,11 @@
 
 Local-first AI podcast producer for 《洛城二三事》. The audio engine is in `lacuna_core/`. The local web app (FastAPI backend plus a React UI) is in `lacuna_app/` and `web/`. Product and engineering docs are in `docs/`. Start with `CLAUDE.md`.
 
-## Install LACUNA Studio (Windows / macOS, no command line needed)
+## Use LACUNA Studio
 
-See **[docs/INSTALL.md](docs/INSTALL.md)**: one installer brings Python, the packages and ffmpeg, adds a
-desktop shortcut / `LACUNA.app`, and the app updates itself from GitHub Releases (设置 → 更新并重启),
-falling back to the previous version if a new one does not start.
-
-- macOS: `curl -fsSL https://github.com/leon-qr-li/lacuna/releases/latest/download/install.sh | bash`
-- Windows: `irm https://github.com/leon-qr-li/lacuna/releases/latest/download/install.ps1 | iex` (or double-click `LACUNA-Setup.cmd`)
+LACUNA Studio runs in the cloud at **https://lacunastudio.app** (invite only). The desktop app, its installer
+and in-app updates were retired on 2026-10-19 (`docs/decisions/2026-10-19-desktop-retired.md`); new versions
+go live by themselves after PR → staging → merge (`deploy/README.md`).
 
 ## Run from a source checkout (development)
 

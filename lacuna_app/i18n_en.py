@@ -69,15 +69,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "没有可以撤销的操作": "Nothing to undo",
     "没有可以重做的操作": "Nothing to redo",
 
-    # ---- in-app update (appinfo)
-    "开发版不能在 App 里更新": "A development build can't update from the app",
-    "已经是最新版本": "Already on the latest version",
-    "文件校验不对，可能没下完整，再试一次": "The checksum doesn't match; the download may be incomplete. Try again",
-    "新版本还没下载好": "The new version isn't downloaded yet",
-    "{tasks}还没做完，做完再更新": "{tasks} still running; update once it's done",
-    "检查更新失败：{e}": "Checking for updates failed: {e}",
-    "下载新版本失败：{e}": "Downloading the new version failed: {e}",
-    "更新包的版本号和说明对不上": "The update package doesn't match its release notes",
+    # ---- work in progress (appinfo busy list)
     "导入（{_running}）": "Import ({_running})",
     "导出（{_running}）": "Export ({_running})",
     "生成发布资料": "Publish pack",
@@ -437,4 +429,12 @@ EN: dict[str, str | tuple[str, str]] = {
     # English engine (asr.py, importer.py)
     "不支持这种语言：{language}": "This language is not supported: {language}",
     "找识别漏掉的 um / uh": "Finding the um / uh the transcript missed",
+    # missing recordings (sources.py)
+    "这一集的原始音轨不在服务器上，现在放不了声音。请在这一集页面顶上重新上传原始音轨。":
+        "This episode's original tracks are not on the server, so nothing can play yet. Upload them again at the top of the episode page.",
+    "读不了这一集的原始音轨。请在这一集页面顶上重新上传原始音轨。":
+        "This episode's original tracks can't be read. Upload them again at the top of the episode page.",
+    "这一集的原始音轨都在，不用再上传。": "All of this episode's original tracks are here; nothing to upload.",
+    "{name} 不是这一集缺的原始音轨（内容对不上）。请选当初导入这一集用的那个文件。":
+        "{name} is not one of this episode's missing tracks (the content differs). Pick the file this episode was imported from.",
 }

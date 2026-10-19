@@ -1,7 +1,7 @@
 # Brand / logo
 
 **State (2026-10-17):** done: PR #70, shipped in 2026.10.17.7, **validated by Leon 20:24Z**. Logo V3「光晕」chosen by Leon (decision `docs/decisions/2026-10-17-logo.md`).
-In the app: favicon, top-bar mark, sign-in brand panel, Windows shortcut icon, macOS LACUNA.app icon.
+In the app: favicon, top-bar mark, sign-in brand panel. (The desktop icons, `installer/LACUNA.ico|icns` and their generator `design/logo/`, were removed with the desktop app on 2026-10-19, decision `desktop-retired`; history below.)
 
 - Files: `web/src/features/brand/logo.svg` (+ README), `installer/LACUNA.ico|icns`, generator `design/logo/`.
 - Tests: `web/e2e/brand.spec.ts` (favicon + top bar served from the bundled svg),

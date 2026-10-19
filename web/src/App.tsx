@@ -11,6 +11,7 @@ import { EditLanes } from "./features/manual/EditLanes";
 import { TranscriptEdit } from "./features/manual/TranscriptEdit";
 import { useManual } from "./features/manual/useManual";
 import { navLinks, pages, tabs } from "./features/registry";
+import { MissingSources } from "./features/sources/MissingSources";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
@@ -265,6 +266,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         )}
       </div>
       {ep?.demo && <p className="banner">{ep.demo_note || t("演示数据")}</p>}
+      {ep && <MissingSources ep={ep} />}
       {toast && (
         <div className="toast" role="status">
           {toast}

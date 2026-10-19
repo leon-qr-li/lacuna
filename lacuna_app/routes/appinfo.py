@@ -1,4 +1,4 @@
-"""App version, in-app update and settings (phase 7, D51): /api/app*."""
+"""App version and settings (phase 7, D51): /api/app*."""
 from __future__ import annotations
 
 from .. import appinfo
@@ -17,7 +17,7 @@ def register(app, ctx) -> None:
     publisher = publisher_of(ctx)
 
     def busy() -> list[str]:
-        """Work an update restart would cut off."""
+        """Work a restart would cut off: the cloud host's updater (deploy/host/lacuna-update) waits for it."""
         out = []
         if importer._running:
             out.append(tr("导入（{_running}）", _running=importer._running))
@@ -32,6 +32,5 @@ def register(app, ctx) -> None:
         return {"present": bool(key), "source": where if key else None, "editor": ctx.adapter.name,
                 "sdk": sdk_installed()}
 
-    app.state.restart = ctx.option("restart") or (lambda code: None)
-    appinfo.register(app, ctx.option("updater") or appinfo.Updater(), ws.root, busy, key_status,
+    appinfo.register(app, ws.root, busy, key_status,
                      lambda: models_present(ctx.models_dir))

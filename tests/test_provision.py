@@ -255,13 +255,45 @@ def test_registry_gc_keeps_the_site_and_staging_images(monkeypatch):
         if "/tags/" in p:
             deleted.append(p.rsplit("/", 1)[1])
             return 204, {}
-        if p.endswith("/garbage-collection"):
-            return 201, {}
-        raise AssertionError(path)
+        raise AssertionError(path)     # no garbage collection here: it makes the registry read-only
 
     monkeypatch.setattr(ci, "do", lambda: provision.DigitalOcean(FakeHttp(doh)))
     ci.registry_gc()
     assert deleted == ["s2", "s1"]          # main, preview and the three newest builds stay
+
+
+def test_pushes_wait_for_a_running_garbage_collection(monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "deploy"))
+    import ci
+    sys.path.pop(0)
+    states = ["scanning manifests", "deleting unreferenced blobs", None]
+    calls = []
+
+    def doh(method, path, body=None):
+        p = path.split("?")[0]
+        if p == "/v2/registry":
+            return 200, {"registry": {"name": "reg"}}
+        if p == "/v2/registry/subscription":
+            return 200, {"subscription": {"tier": {"slug": "basic"}}}
+        if p.endswith("/garbage-collection") and method == "GET":
+            s = states.pop(0)
+            return (200, {"garbage_collection": {"status": s}}) if s else (404, {})
+        if p.endswith("/garbage-collection") and method == "POST":
+            calls.append("collect")
+            return 201, {}
+        raise AssertionError(path)
+
+    monkeypatch.setattr(ci.time, "sleep", lambda s: None)
+    d = provision.DigitalOcean(FakeHttp(doh))
+    ci.wait_gc(d, "reg")
+    assert states == []                   # asked until none was running
+    states[:] = ["requested"]
+    with pytest.raises(provision.ProvisionError):
+        ci.wait_gc(d, "reg", timeout=-1)
+    monkeypatch.setattr(ci, "do", lambda: d)
+    states[:] = [None]
+    ci.registry_collect()
+    assert calls == ["collect"]
 
 
 def test_apply_keeps_people_invited_in_the_app(api):

@@ -1,4 +1,4 @@
-"""Cloud mode wiring (lacuna_app/cloud.py): the Cloudflare Access gate, outermost. Off on the desktop."""
+"""Cloud mode wiring (lacuna_app/cloud.py): the Cloudflare Access gate, outermost. Off locally."""
 from __future__ import annotations
 
 from .. import cloud
