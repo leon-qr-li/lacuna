@@ -89,7 +89,17 @@ jobs:
           cache-dependency-glob: pyproject.toml
 
       - name: Install ffmpeg
+        if: runner.os != 'macOS'
         uses: AnimMouse/setup-ffmpeg@v1
+
+      # setup-ffmpeg finds the macOS ARM build by scraping osxexperts.net, which broke on 2026-10-19
+      # ("[: =: unary operator expected"); Homebrew's bottle is the stable source there
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: brew install ffmpeg && ffmpeg -version | head -1
 
       - name: Install Python package
         run: uv pip install --system -e ".[test,claude]"
@@ -136,7 +146,17 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Install ffmpeg
+        if: runner.os != 'macOS'
         uses: AnimMouse/setup-ffmpeg@v1
+
+      # setup-ffmpeg finds the macOS ARM build by scraping osxexperts.net, which broke on 2026-10-19
+      # ("[: =: unary operator expected"); Homebrew's bottle is the stable source there
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
+        run: brew install ffmpeg && ffmpeg -version | head -1
 
       - name: Install Python package
         run: uv pip install --system -e ".[test,claude]"
