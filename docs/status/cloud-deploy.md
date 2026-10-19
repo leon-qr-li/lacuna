@@ -24,13 +24,8 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
 - Big files in pieces: `lacuna_app/upload_parts.py` + `routes/upload_parts.py`; the browser sends files over
   48 MB as 32 MB pieces (`web/src/features/upload-parts/pieces.ts`), then the import-track / library upload
   endpoint takes `part=<id>`. Tests: `tests/app/test_upload_parts.py`.
-- Moving the desktop workspace: 设置 →「从电脑搬过来」 (cloud, owner, main workspace only;
-  `lacuna_app/migrate.py`, `routes/migrate.py`, `web/src/features/migrate/`). The browser picks the
-  LACUNA_Workspace folder (webkitdirectory), skips `auth/ spaces/ models/ tmp/`, sends each file (pieces above
-  48 MB, 4 at a time) into `tmp/migrate/files/`; files already there with the same size are not resent.
-  Finish checks file count + bytes, rewrites the desktop's absolute paths in JSON (`C:\Projects\LACUNA_Workspace\…`)
-  to the server root, moves everything in, restarts (exit 76). Tests: `tests/app/test_migrate.py`,
-  `web/e2e/migrate.spec.ts`.
+- Moving the desktop workspace (PR #127): 设置 →「从电脑搬过来」, a one-time browser upload of
+  LACUNA_Workspace that rewrote the desktop's absolute paths. Removed after use (see below); it's in git history.
 - Staging (decision `docs/decisions/2026-10-19-staging-site.md`): preview.lacunastudio.app, second container
   on the same server, data `/data/preview` re-copied from the real workspace for each new version; PR label
   `staging` + workflow **Staging**. Needs one Provision `recreate` to reach the server (host scripts and
@@ -39,10 +34,11 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
 - Staging live 2026-10-19 06:57Z (Provision apply + recreate; Deploy run 11 passed wait-live on the new
   server). Release flow (Leon 06:55Z): thread deploys its PR to staging, Leon says 通过 in chat, the thread
   merges = production. Leon presses no buttons.
-- Migration: Leon uploads once via 设置 →「从电脑搬过来」 (07:03Z; he chose this over a temporary upload
-  credential for his PC, which the security check would only allow with his explicit consent). Workspace
-  5.1 GB / 144 files (PULSE-013 生化危机 ≈ 590 MB incl. exports). After it is done: remove the migration
-  feature (Leon: everything cloud-only from then on), then retire the desktop app.
+- Migration DONE 2026-10-19 07:18Z: Leon uploaded his workspace (≈5.4 GB) via 设置 →「从电脑搬过来」 and
+  checked the data on the site. One stall at 45% (a piece request hung without error; stop, reload, start
+  again resumed). Then the feature was removed (Leon: cloud-only from now on). Next: retire the desktop app.
+- Staging workflow (PR #130): deploy tooling comes from main, only the image is built from the PR commit
+  (a PR branched before #128 ran an old `deploy/ci.py`).
 - Never ask Leon before moving real data to the cloud (Leon 06:58Z).
 - Gotcha: Deploy and Provision share the concurrency group `deploy`; a Deploy waiting for a server that
   doesn't exist yet blocks Provision until it is cancelled.

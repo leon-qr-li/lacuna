@@ -1,4 +1,0 @@
-.migrate-steps { margin: 8px 0 12px; padding-left: 20px; display: grid; gap: 4px; }
-.migrate-row { flex-wrap: wrap; align-items: center; }
-.migrate-input { display: none; }
-.migrate-warn { color: var(--warn); }
