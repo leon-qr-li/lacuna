@@ -11,6 +11,11 @@ export const en: Dict = {
   正常: "Normal",
   "狠剪：啰嗦和跑题多删": "Firm: cut rambling and tangents",
   节目名: "Show name",
+  中文: "Chinese",
+  英文: "English",
+  节目语言: "Language",
+  "主持人说的语言。决定用哪个语音识别和剪辑方式；导入时每集还能单独改。":
+    "The language the hosts speak. It picks the speech recognition and editing style; each import can change it for that episode.",
   "比如：周末电影院": "e.g. Weekend Cinema",
   一句话介绍: "One-line description",
   "比如：两个朋友的电影闲聊": "e.g. Two friends chatting about films",

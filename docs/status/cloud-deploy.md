@@ -46,3 +46,8 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
 ## Agreed with 「账号与权限」
 They own auth.py / routes/auth.py, invites, 2FA, roles, per-user data. They set `secure=True` on the session
 cookie in cloud mode and call `cloud.access_allow(email)` / `access_revoke(email)` when invites change.
+- 2026-10-19 15:22Z Deploy run 16 failed: the DigitalOcean registry answered 401 to credentials issued
+  seconds earlier (also Deploy run 13 at 07:22Z); a re-run passes. Deploy and Staging now log in again and
+  push once more when the first push fails, and a failed Staging deploy comments on its PR (wakes the thread
+  watching it). An hourly scheduled check in the 「上云部署」 thread looks at Deploy / Staging / Backup check
+  runs and fixes failures without waiting for Leon.

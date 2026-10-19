@@ -36,6 +36,7 @@ from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
 from lacuna_core.refine import snap_cut
 
+from .words import join_words
 from . import analysis, declip, room_tone, show
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
@@ -640,7 +641,7 @@ class Episode:
         return [Utterance(f"u{i + 1}", tr, ws) for i, (tr, ws) in enumerate(groups)]
 
     def removed_text(self, eid: str, limit: int = 60) -> str:
-        words = "".join(w["t"] for ln in self.edit_text(eid, ctx_s=0.0) for w in ln["words"] if w["removed"])
+        words = join_words(w["t"] for ln in self.edit_text(eid, ctx_s=0.0) for w in ln["words"] if w["removed"])
         return words[:limit] + ("…" if len(words) > limit else "")
 
     def _near(self, t: float, radius: float, cuts) -> list[str]:
@@ -785,7 +786,7 @@ class Episode:
                 parts.append(f"\n{track}: ")
                 prev = track
             parts.append(w)
-        return "".join(parts).strip()
+        return join_words(parts).strip()
 
     def edit_text(self, eid: str, ctx_s: float = 6.0) -> list[dict]:
         """Original words around an edit, each marked removed or kept (read-only)."""

@@ -140,7 +140,7 @@ EN: dict[str, str | tuple[str, str]] = {
     # ---- speech recognition, dictation
     "模型文件不完整：{probe}": "Model file incomplete: {probe}",
     "逐字识别 {p0}/{p1} 分钟": "Transcribing {p0}/{p1} min",
-    "下载识别模型（一次性，约 400 MB）{p0} MB": "Downloading speech models (once, about 400 MB) {p0} MB",
+    "下载识别模型（一次性，约 {p1} MB）{p0} MB": "Downloading speech models (once, about {p1} MB) {p0} MB",
     "找说话段落": "Finding speech",
     "没装识别引擎（pip install -e \".[asr]\"）": "Speech engine not installed (pip install -e \".[asr]\")",
     "识别模型还没下载：导入一次新一集会自动下载": "Speech models not downloaded yet: importing an episode downloads them",
@@ -434,4 +434,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "给节目起个名字": "Give the show a name",
     "至少要有一位主持人": "The show needs at least one host",
     "最多 {n} 位主持人": "At most {n} hosts",
+    # English engine (asr.py, importer.py)
+    "不支持这种语言：{language}": "This language is not supported: {language}",
+    "找识别漏掉的 um / uh": "Finding the um / uh the transcript missed",
 }

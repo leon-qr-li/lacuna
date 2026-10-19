@@ -51,7 +51,25 @@ jobs:
       - uses: docker/setup-buildx-action@v3
         if: steps.ready.outputs.go == 'true'
       - name: Build and push
+        id: push
         if: steps.ready.outputs.go == 'true'
+        continue-on-error: true    # the registry now and then refuses fresh credentials (401); retried below
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          provenance: false     # attestations take registry space and nothing reads them
+          build-args: VERSION=${{ env.SHA }}
+          tags: |
+            registry.digitalocean.com/${{ steps.registry.outputs.name }}/lacuna:main
+            registry.digitalocean.com/${{ steps.registry.outputs.name }}/lacuna:${{ env.SHA }}
+          cache-from: type=gha,scope=lacuna
+          cache-to: type=gha,scope=lacuna,mode=max
+      - name: Registry login again
+        if: steps.push.outcome == 'failure'
+        run: sleep 20 && python3 deploy/ci.py registry
+      - name: Build and push (again)
+        if: steps.push.outcome == 'failure'
         uses: docker/build-push-action@v6
         with:
           context: .

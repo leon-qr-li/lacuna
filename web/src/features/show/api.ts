@@ -5,6 +5,13 @@ import { joinList, t } from "../../i18n";
 
 export type HostColor = "blue" | "purple" | "teal" | "amber" | "green" | "pink";
 export type CutLevel = "gentle" | "normal" | "firm";
+/** what the hosts speak: picks the speech recognisers and LACUNA's editing brief (lacuna_app/asr.py) */
+export type Language = "zh" | "en";
+export const LANGUAGES: Language[] = ["zh", "en"];
+export const LANGUAGE_LABELS: Record<Language, string> = {
+  zh: t("中文"),
+  en: t("英文"),
+};
 
 export interface Host {
   /** one letter, given by the server; never changes (empty for a host not saved yet) */
@@ -18,6 +25,7 @@ export interface Host {
 export interface Show {
   show_name: string;
   about: string;
+  language: Language;
   footer: string;
   hosts: Host[];
   publish: { ximalaya: boolean; album: string };
@@ -28,7 +36,7 @@ export interface Show {
   max_hosts: number;
 }
 
-export type ShowInput = Pick<Show, "show_name" | "about" | "footer" | "hosts" | "publish">;
+export type ShowInput = Pick<Show, "show_name" | "about" | "language" | "footer" | "hosts" | "publish">;
 
 export const showApi = {
   get: () => req<Show>("GET", "/api/show"),
