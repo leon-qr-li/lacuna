@@ -39,7 +39,7 @@ def moved(tmp_path):
         name = Path(m["path"]).name
         originals[name] = pc / name
         pc.mkdir(exist_ok=True)
-        shutil.move(m["path"], pc / name)
+        shutil.copy(m["path"], pc / name)    # the original stays, unreferenced (still open on Windows)
         m["path"] = f"C:\\Users\\liqin\\Downloads\\{name}"
     st_path.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
     return root, originals, expected
