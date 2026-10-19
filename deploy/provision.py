@@ -14,6 +14,9 @@ What it sets up
 - Cloudflare: a remotely managed tunnel to the app, the DNS record, an Access application with an email
   allow-list group (one-time email codes), an R2 bucket for backups, and two narrow API tokens for the
   server (backup bucket only; Access groups only, for in-app invites).
+- Staging (decision staging-site): preview.<domain>, a second container on the same server with its own data
+  folder (/data/preview, a fresh copy of the real workspace each time a new preview version arrives), its
+  own DNS record and Access application with the same invite list. Costs nothing extra.
 
 The repo is public and so are workflow logs: nothing secret or identifying (IP, emails, tokens) is printed.
 """
@@ -32,6 +35,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DOMAIN = os.environ.get("LACUNA_DOMAIN", "lacunastudio.app")
+PREVIEW_DOMAIN = f"preview.{DOMAIN}"
 REGION = os.environ.get("LACUNA_REGION", "sfo3")
 SIZE = os.environ.get("LACUNA_SIZE", "s-4vcpu-8gb")
 # same price class (4 vCPU / 8 GB): DigitalOcean sometimes stops offering one of these in a region
@@ -48,6 +52,8 @@ REGISTRY_TIER = "basic"
 BUCKET = "lacuna-backup"
 ACCESS_GROUP = "LACUNA invited"
 ACCESS_APP = "LACUNA"
+PREVIEW_APP = "LACUNA preview"
+PREVIEW_NAME = "lacuna-preview"     # the staging container (deploy/host/lacuna-update-preview.service)
 ACCESS_POLICY = "LACUNA invited people"
 DEPLOY_POLICY = "LACUNA deploy checks"
 APP_PORT = 8765
@@ -104,6 +110,7 @@ class Http:
 class Cloudflare:
     def __init__(self, http: Http, domain: str = DOMAIN):
         self.http, self.domain = http, domain
+        self.preview = f"preview.{domain}"
         self._account = self._zone = None
 
     def r(self, method: str, path: str, body: dict | None = None):
@@ -150,23 +157,25 @@ class Cloudflare:
         if apply:
             self.r("PUT", f"/accounts/{a}/cfd_tunnel/{tid}/configurations", {"config": {"ingress": [
                 {"hostname": self.domain, "service": f"http://lacuna:{APP_PORT}", "originRequest": {}},
+                {"hostname": self.preview, "service": f"http://{PREVIEW_NAME}:{APP_PORT}", "originRequest": {}},
                 {"service": "http_status:404"}]}})
         token = self.r("GET", f"/accounts/{a}/cfd_tunnel/{tid}/token") if apply else None
         if token:
             mask(token)
         return tid, token
 
-    def dns(self, tunnel_id: str | None, apply: bool) -> None:
+    def dns(self, tunnel_id: str | None, apply: bool, name: str | None = None) -> None:
+        name = name or self.domain
         target = f"{tunnel_id}.cfargotunnel.com" if tunnel_id else None
-        recs = self.r("GET", f"/zones/{self.zone}/dns_records?name={urllib.parse.quote(self.domain)}") or []
-        rec = {"type": "CNAME", "name": self.domain, "content": target, "proxied": True, "ttl": 1,
+        recs = self.r("GET", f"/zones/{self.zone}/dns_records?name={urllib.parse.quote(name)}") or []
+        rec = {"type": "CNAME", "name": name, "content": target, "proxied": True, "ttl": 1,
                "comment": "LACUNA tunnel (deploy/provision.py)"}
         cname = [x for x in recs if x["type"] == "CNAME"]
         others = [x for x in recs if x["type"] in ("A", "AAAA")]
         if others:
-            raise ProvisionError(f"{self.domain} already has A/AAAA records; remove them in the Cloudflare DNS page first")
+            raise ProvisionError(f"{name} already has A/AAAA records; remove them in the Cloudflare DNS page first")
         if not apply or not target:
-            log("DNS record: " + ("ok" if cname and cname[0]["content"] == target else "would be set"))
+            log(f"DNS record {name}: " + ("ok" if cname and cname[0]["content"] == target else "would be set"))
             return
         if not cname:
             self.r("POST", f"/zones/{self.zone}/dns_records", rec)
@@ -220,28 +229,31 @@ class Cloudflare:
             return p["id"]
         return self.r("POST", f"/accounts/{a}/access/policies", {"name": name, **body})["id"]
 
-    def application(self, group_id: str | None, idp_id: str | None, apply: bool) -> str | None:
-        """The Access application in front of the site; returns its audience tag (CF_ACCESS_AUD)."""
+    def application(self, group_id: str | None, idp_id: str | None, apply: bool, domain: str | None = None,
+                    name: str = ACCESS_APP) -> str | None:
+        """The Access application in front of the site (or the staging site); returns its audience tag
+        (CF_ACCESS_AUD). Both sites let in the same invite list and the deploy checks."""
+        domain = domain or self.domain
         a = self.account
         people = self.policy(ACCESS_POLICY, {"decision": "allow", "include": [{"group": {"id": group_id}}],
                                              "session_duration": "24h"}, apply and bool(group_id))
         checks = self.policy(DEPLOY_POLICY, {"decision": "non_identity",
                                              "include": [{"any_valid_service_token": {}}]}, apply)
         apps = self.r("GET", f"/accounts/{a}/access/apps") or []
-        app = next((x for x in apps if x.get("domain") == self.domain), None)
-        body = {"name": ACCESS_APP, "type": "self_hosted", "domain": self.domain, "session_duration": "24h",
+        app = next((x for x in apps if x.get("domain") == domain), None)
+        body = {"name": name, "type": "self_hosted", "domain": domain, "session_duration": "24h",
                 "app_launcher_visible": False, "auto_redirect_to_identity": True,
                 "allowed_idps": [idp_id] if idp_id else [], "http_only_cookie_attribute": True,
                 "same_site_cookie_attribute": "lax",
                 "policies": [{"id": people, "precedence": 1}, {"id": checks, "precedence": 2}]}
         if not apply:
-            log("Access application: " + ("ok" if app else "would be created"))
+            log(f"Access application {name}: " + ("ok" if app else "would be created"))
             return app.get("aud") if app else None
         if app:
             app = self.r("PUT", f"/accounts/{a}/access/apps/{app['id']}", body)
         else:
             app = self.r("POST", f"/accounts/{a}/access/apps", body)
-            log("created the Access application")
+            log(f"created the Access application {name}")
         return app["aud"]
 
     # ---- R2 + scoped tokens for the server
@@ -475,9 +487,11 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
     team = cf.team_domain()
     tunnel_id, tunnel_token = cf.tunnel(apply)
     cf.dns(tunnel_id, apply)
+    cf.dns(tunnel_id, apply, cf.preview)
     idp = cf.one_time_pin(apply)
     group = cf.group(emails, apply)
     aud = cf.application(group, idp, apply)
+    preview_aud = cf.application(group, idp, apply, cf.preview, PREVIEW_APP)
     cf.bucket(apply)
     registry = do.registry(apply)
     volume = do.volume(apply)
@@ -496,12 +510,18 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
                "CF_ACCOUNT_ID": cf.account, "CF_ACCESS_GROUP_ID": group, "CF_ACCESS_API_TOKEN": cf.invites_token(),
                "LACUNA_PUBLIC_URL": f"https://{DOMAIN}", "LACUNA_OWNER_EMAIL": emails[0], "ANTHROPIC_API_KEY": need("ANTHROPIC_API_KEY"),
                "RESEND_API_KEY": need("RESEND_API_KEY")}
+    # staging: its own Access audience and address; no Access token, so an invite tried out there never
+    # changes who can reach the real site
+    preview_env = {k: v for k, v in app_env.items() if k != "CF_ACCESS_API_TOKEN"} | {
+        "CF_ACCESS_AUD": preview_aud, "LACUNA_PUBLIC_URL": f"https://{cf.preview}", "LACUNA_STAGING": "1"}
     backup_env = cf.backup_credentials() | {"RESTIC_PASSWORD": need("BACKUP_PASSWORD")}
     files = {
         "/etc/lacuna/lacuna.env": (env_file(app_env), "0600"),
         "/etc/lacuna/tunnel.env": (env_file({"TUNNEL_TOKEN": tunnel_token}), "0600"),
         "/etc/lacuna/backup.env": (env_file(backup_env), "0600"),
         "/etc/lacuna/image": (f"registry.digitalocean.com/{registry}/{REPO_IMAGE}:main\n", "0644"),
+        "/etc/lacuna/preview.env": (env_file(preview_env), "0600"),
+        "/etc/lacuna/preview-image": (f"registry.digitalocean.com/{registry}/{REPO_IMAGE}:preview\n", "0644"),
         "/root/.docker/config.json": (do.pull_credentials(), "0600"),
     }
     user_data = cloud_init(files)

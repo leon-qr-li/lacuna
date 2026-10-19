@@ -31,3 +31,4 @@ Changing core code (episode, review, chat, export, import, the engine) is fine; 
 5. No need to merge main just because main moved: if the PR is mergeable and "CI ok" is green, merge it.
 6. Keep PRs small and merge them as soon as they are green; split a big feature into several PRs rather than one long-lived branch. Docs-only PRs (status, validation notes) skip CI and merge in seconds.
 7. If you must edit a file another open PR is also changing, tell that thread first (via the coordinator) and agree who merges first.
+8. Staging (decision `staging-site`): for a change Leon will see, add the `staging` label to the PR. Once CI is green it goes to https://preview.lacunastudio.app (a copy of his real data), and the workflow comments on the PR. Ask Leon to check it there, and merge only after he says it passes; merging then ships it. One PR is on staging at a time: ask the coordinator before taking the label from another thread's PR.

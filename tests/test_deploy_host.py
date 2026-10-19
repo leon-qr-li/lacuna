@@ -1,5 +1,6 @@
 """deploy/host/lacuna-update (the server's pull-based deploy) against a fake `docker`: deploys a new
-image, waits while jobs run, rolls back an image that doesn't start and never retries it."""
+image, waits while jobs run, rolls back an image that doesn't start and never retries it; the staging
+copy (lacuna-update-preview.service) starts each new version on a fresh copy of the real workspace."""
 from __future__ import annotations
 
 import json
@@ -14,8 +15,9 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 SCRIPT = REPO / "deploy" / "host" / "lacuna-update"
 
-pytestmark = pytest.mark.skipif(sys.platform == "win32" or not shutil.which("jq") or not shutil.which("flock"),
-                                reason="host scripts run on Linux (needs bash, jq, flock)")
+pytestmark = pytest.mark.skipif(sys.platform == "win32" or not shutil.which("jq") or not shutil.which("flock")
+                                or not shutil.which("rsync"),
+                                reason="host scripts run on Linux (needs bash, jq, flock, rsync)")
 
 FAKE_DOCKER = r'''#!/usr/bin/env python3
 import json, os, sys
@@ -36,7 +38,9 @@ if a[0] == "inspect":
 if a[0] == "rm":
     s["container"] = None; save(); sys.exit(0)
 if a[0] == "run":
-    img = a[-1]; s["container"] = {"image": img, "running": img not in s["crash"]}; s["started"].append(img); save()
+    img = a[-1]; s["container"] = {"image": img, "running": img not in s["crash"]}; s["started"].append(img)
+    s["runs"].append({"name": a[a.index("--name") + 1], "mount": a[a.index("-v") + 1],
+                      "env_file": a[a.index("--env-file") + 1], "memory": a[a.index("--memory") + 1]}); save()
     sys.exit(0)
 if a[0] == "logs":
     print("boom"); sys.exit(0)
@@ -62,14 +66,14 @@ def host(tmp_path):
 
     def set_state(**kw):
         s = json.loads(state.read_text()) if state.exists() else {
-            "tags": {}, "container": None, "crash": [], "unhealthy": [], "busy": 0, "started": []}
+            "tags": {}, "container": None, "crash": [], "unhealthy": [], "busy": 0, "started": [], "runs": []}
         s.update(kw)
         state.write_text(json.dumps(s))
 
-    def run():
+    def run(**extra):
         env = os.environ | {"PATH": f"{bindir}:{os.environ['PATH']}", "FAKE_DOCKER_STATE": str(state),
                             "LACUNA_STATE_DIR": str(tmp_path / "state"), "LACUNA_IMAGE_FILE": str(tmp_path / "image"),
-                            "HEALTH_WAIT": "3", "HEALTH_POLL": "0"}
+                            "HEALTH_WAIT": "3", "HEALTH_POLL": "0"} | extra
         p = subprocess.run(["bash", str(SCRIPT)], env=env, capture_output=True, text=True, timeout=60)
         s = json.loads(state.read_text())
         st = tmp_path / "state" / "deploy.json"
@@ -115,6 +119,58 @@ def test_bad_image_rolls_back_and_is_not_retried(host, failure):
     set_state(tags={"reg/lacuna:main": "img3"})            # a newer image is tried
     code, s, st = run()
     assert s["container"]["image"] == "img3" and st["state"] == "deployed"
+
+
+def test_staging_starts_each_new_version_on_a_fresh_copy(host, tmp_path):
+    set_state, run = host
+    real, data = tmp_path / "real", tmp_path / "preview"
+    (real / "episodes" / "EP1").mkdir(parents=True)
+    (real / "episodes" / "EP1" / "state.json").write_text("real")
+    (real / "tmp").mkdir()
+    (real / "tmp" / "upload.part").write_text("scratch")
+    staging = {"LACUNA_NAME": "lacuna-preview", "LACUNA_DATA": str(data), "LACUNA_SEED_FROM": str(real),
+               "LACUNA_ENV_FILE": "/etc/lacuna/preview.env", "LACUNA_OWNER": f"{os.getuid()}:{os.getgid()}",
+               "LACUNA_LIMITS": "--memory 3g --cpus 2"}
+    set_state(tags={"reg/lacuna:main": "img1"})
+    code, s, st = run(**staging)
+    assert code == 0 and st["state"] == "deployed"
+    assert s["runs"][-1] == {"name": "lacuna-preview", "mount": f"{data}:/data",
+                             "env_file": "/etc/lacuna/preview.env", "memory": "3g"}
+    ws = data / "workspace"
+    assert (ws / "episodes" / "EP1" / "state.json").read_text() == "real"
+    assert not (ws / "tmp").exists() and (data / "home").is_dir() and (data / "tmp").is_dir()
+    # trying things out on staging changes only the copy
+    (ws / "episodes" / "EP1" / "state.json").write_text("edited on staging")
+    (ws / "episodes" / "EP2").mkdir()
+    run(**staging)                                           # same version: copy left as it is
+    assert (ws / "episodes" / "EP1" / "state.json").read_text() == "edited on staging"
+    assert (real / "episodes" / "EP1" / "state.json").read_text() == "real"
+    set_state(tags={"reg/lacuna:main": "img2"})
+    code, s, st = run(**staging)                             # a new version: fresh copy of the real one
+    assert st["state"] == "deployed" and s["container"]["image"] == "img2"
+    assert (ws / "episodes" / "EP1" / "state.json").read_text() == "real" and not (ws / "episodes" / "EP2").exists()
+
+
+def test_staging_without_disk_room_keeps_the_old_version(host, tmp_path):
+    set_state, run = host
+    real = tmp_path / "real"
+    real.mkdir()
+    (real / "a").write_text("x")
+    staging = {"LACUNA_NAME": "lacuna-preview", "LACUNA_DATA": str(tmp_path / "preview"), "LACUNA_SEED_FROM": str(real),
+               "LACUNA_OWNER": f"{os.getuid()}:{os.getgid()}"}
+    set_state(tags={"reg/lacuna:main": "img1"})
+    run(**staging)
+    set_state(tags={"reg/lacuna:main": "img2"})
+    code, s, st = run(**staging, LACUNA_SEED_MARGIN=str(10 ** 18))
+    assert code == 0 and st["state"] == "no-space" and s["container"] == {"image": "img1", "running": True}
+
+
+def test_the_real_site_is_never_seeded(host, tmp_path):
+    set_state, run = host
+    set_state(tags={"reg/lacuna:main": "img1"})
+    code, s, _ = run()
+    assert s["runs"][-1] == {"name": "lacuna", "mount": "/data:/data", "env_file": "/etc/lacuna/lacuna.env",
+                             "memory": "7g"}
 
 
 def test_provision_cloud_init_carries_host_scripts_and_secret_files():

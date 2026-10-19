@@ -31,8 +31,12 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
   Finish checks file count + bytes, rewrites the desktop's absolute paths in JSON (`C:\Projects\LACUNA_Workspace\…`)
   to the server root, moves everything in, restarts (exit 76). Tests: `tests/app/test_migrate.py`,
   `web/e2e/migrate.spec.ts`.
-- Next: Leon runs the move, then retire the desktop app; staging site (preview.lacunastudio.app); invite
-  others only when Leon asks.
+- Staging (decision `docs/decisions/2026-10-19-staging-site.md`): preview.lacunastudio.app, second container
+  on the same server, data `/data/preview` re-copied from the real workspace for each new version; PR label
+  `staging` + workflow **Staging**. Needs one Provision `recreate` to reach the server (host scripts and
+  env files only arrive with cloud-init). Tests: `tests/test_provision.py`, `tests/test_deploy_host.py`,
+  `tests/app/test_staging.py`, `web/e2e/staging.spec.ts`.
+- Next: Leon runs the move, then retire the desktop app; invite others only when Leon asks.
 - Gotcha: Deploy and Provision share the concurrency group `deploy`; a Deploy waiting for a server that
   doesn't exist yet blocks Provision until it is cancelled.
 

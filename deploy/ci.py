@@ -1,7 +1,8 @@
 """Small steps the deploy / backup workflows run (stdlib only; secrets come from the environment).
 
     python deploy/ci.py registry               # print the registry name, write a push login to ~/.docker
-    python deploy/ci.py wait-live <version>    # wait until https://<domain> serves <version> (through Access)
+    python deploy/ci.py wait-live <version> [preview]   # wait until https://<domain> (or the staging site)
+                                                        # serves <version> (through Access)
     python deploy/ci.py registry-gc            # drop old image tags + garbage-collect (free registry tier)
     python deploy/ci.py r2-env                 # S3 credentials for the backup bucket, as GITHUB_ENV lines
     python deploy/ci.py snapshot               # weekly snapshot of the data volume, keep the newest 4
@@ -20,10 +21,11 @@ import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from provision import (BUCKET, DOMAIN, REPO_IMAGE, VOLUME, Cloudflare, DigitalOcean, Http,  # noqa: E402
+from provision import (BUCKET, DOMAIN, PREVIEW_DOMAIN, REPO_IMAGE, VOLUME, Cloudflare, DigitalOcean, Http,  # noqa: E402
                        ProvisionError, log, mask, need)
 
-KEEP_TAGS = 3          # main + two previous builds by commit
+KEEP_TAGS = 3          # the newest builds by commit (the newest is main)
+ALWAYS_KEEP = {"main", "preview"}     # the real site's and the staging site's current images
 KEEP_SNAPSHOTS = 4
 
 
@@ -70,7 +72,7 @@ def _get(url: str, headers: dict) -> tuple[int, dict]:
         return 0, {}
 
 
-def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20) -> None:
+def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20, domain: str = DOMAIN) -> None:
     """A short-lived Access service token (deleted afterwards) lets this job through the front door."""
     c = cf()
     a = c.account
@@ -81,7 +83,7 @@ def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20) -> None:
     try:
         end, seen = time.time() + timeout, None
         while time.time() < end:
-            status, body = _get(f"https://{DOMAIN}/api/health", headers)
+            status, body = _get(f"https://{domain}/api/health", headers)
             live = body.get("version")
             if live == version:
                 log(f"live: {version}")
@@ -105,7 +107,8 @@ def registry_gc() -> None:
     name = d.registry(apply=False)
     tags = d.http("GET", f"/v2/registry/{name}/repositories/{REPO_IMAGE}/tags?per_page=100").get("tags", [])
     tags.sort(key=lambda t: t.get("updated_at", ""), reverse=True)
-    keep = {"main"} | {t["tag"] for t in tags[:KEEP_TAGS]}
+    builds = [t["tag"] for t in tags if t["tag"] not in ALWAYS_KEEP]
+    keep = ALWAYS_KEEP | set(builds[:KEEP_TAGS])
     old = [t["tag"] for t in tags if t["tag"] not in keep]
     for tag in old:
         d.http("DELETE", f"/v2/registry/{name}/repositories/{REPO_IMAGE}/tags/{tag}")
@@ -145,6 +148,8 @@ def main(argv: list[str]) -> int:
     try:
         if argv[:1] == ["wait-live"] and len(argv) == 2:
             wait_live(argv[1])
+        elif argv[:1] == ["wait-live"] and len(argv) == 3 and argv[2] == "preview":
+            wait_live(argv[1], domain=PREVIEW_DOMAIN)
         elif len(argv) == 1 and argv[0] in cmds:
             cmds[argv[0]]()
         else:

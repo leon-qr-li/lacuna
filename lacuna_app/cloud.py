@@ -52,6 +52,11 @@ def enabled() -> bool:
     return os.environ.get("LACUNA_CLOUD") == "1"
 
 
+def staging() -> bool:
+    """The staging site (preview.<domain>, decision staging-site): a copy where Leon checks new work."""
+    return enabled() and os.environ.get("LACUNA_STAGING") == "1"
+
+
 def blocked(method: str, path: str) -> bool:
     return any(m == method and rx.match(path) for m, rx in BLOCKED)
 

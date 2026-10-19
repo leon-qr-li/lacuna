@@ -13,6 +13,8 @@ export interface AppInfo {
   busy: string[];
   /** the shared server (lacunastudio.app): updates ship themselves, keys are the server's */
   cloud?: boolean;
+  /** the staging site (preview.lacunastudio.app): a copy where new work is checked first */
+  staging?: boolean;
   key: { present: boolean; source: string | null; editor: string; sdk: boolean };
   update: {
     installed: boolean;

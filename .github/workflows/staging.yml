@@ -1,0 +1,138 @@
+name: Staging
+
+# Leon checks new work on https://preview.lacunastudio.app before it reaches the real site (decision
+# staging-site). A PR with the "staging" label goes there once its CI is green, and again after every
+# green push; merging it to main then ships it (Deploy). One PR at a time: labelling a PR takes the label
+# off the others. The staging container lives on the same server with its own data (a fresh copy of the
+# real workspace each time a new version arrives); its updater pulls the "preview" image within a minute.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: PR number to put on staging
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write         # the "staging" label
+  actions: read
+
+jobs:
+  pick:
+    # only this repo's own branches: a fork's code never runs with the cloud secrets
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'staging' &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'pull_request' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      go: ${{ steps.pick.outputs.go }}
+      pr: ${{ steps.pick.outputs.pr }}
+      sha: ${{ steps.pick.outputs.sha }}
+    env:
+      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Which PR, and is it ready?
+        id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_PR: ${{ github.event.inputs.pr }}
+          LABEL_PR: ${{ github.event.pull_request.number }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          go=true
+          if [ -z "$DIGITALOCEAN_TOKEN" ] || [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::cloud secrets not set; nothing to deploy"; go=false
+          fi
+          case "$EVENT" in
+            workflow_dispatch) pr="$INPUT_PR" ;;
+            pull_request) pr="$LABEL_PR" ;;
+            workflow_run) pr=$(gh pr list --state open --head "$RUN_BRANCH" --label staging --json number -q '.[0].number // ""') ;;
+          esac
+          if [ -z "${pr:-}" ]; then
+            echo "::notice::no PR with the staging label here"; go=false; pr=""
+          fi
+          sha=""
+          if [ "$go" = true ]; then
+            [[ "$pr" =~ ^[0-9]+$ ]] || { echo "::error::not a PR number"; exit 1; }
+            info=$(gh pr view "$pr" --json headRefOid,headRepositoryOwner,state,isCrossRepository)
+            [ "$(jq -r .isCrossRepository <<<"$info")" = false ] || { echo "::error::PRs from forks never go to staging"; exit 1; }
+            [ "$(jq -r .state <<<"$info")" = OPEN ] || { echo "::notice::PR #$pr is not open"; go=false; }
+            sha=$(jq -r .headRefOid <<<"$info")
+            if [ "$EVENT" = workflow_run ] && [ "$sha" != "$RUN_SHA" ]; then
+              echo "::notice::a newer commit is on PR #$pr; its own CI run will deploy it"; go=false
+            fi
+            if [ "$EVENT" != workflow_run ] && [ "$go" = true ]; then
+              # labelled (or started by hand): only a commit whose CI already passed; otherwise CI's end brings us back
+              ok=$(gh api "repos/$GH_REPO/actions/workflows/ci.yml/runs?head_sha=$sha&event=pull_request" \
+                     -q '[.workflow_runs[] | select(.conclusion == "success")] | length')
+              if [ "${ok:-0}" = 0 ]; then
+                echo "::notice::CI has not passed on this commit yet; staging follows when it does"; go=false
+              fi
+            fi
+          fi
+          echo "go=$go" >> "$GITHUB_OUTPUT"
+          echo "pr=$pr" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+  # every CI run on any PR wakes "pick"; only a real deploy takes the one staging slot, and a newer one
+  # replaces an older one still running
+  deploy:
+    needs: pick
+    if: needs.pick.outputs.go == 'true'
+    concurrency:
+      group: staging
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR: ${{ needs.pick.outputs.pr }}
+      SHA: ${{ needs.pick.outputs.sha }}
+    steps:
+      - name: One PR on staging at a time
+        run: |
+          gh label create staging --color 0e8a16 --description "Leon checks it on preview.lacunastudio.app" >/dev/null 2>&1 || true
+          gh pr edit "$PR" --add-label staging >/dev/null
+          for n in $(gh pr list --state open --label staging --json number -q '.[].number'); do
+            [ "$n" = "$PR" ] || gh pr edit "$n" --remove-label staging >/dev/null
+          done
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
+      - name: Registry login
+        id: registry
+        run: python3 deploy/ci.py registry
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          provenance: false
+          build-args: VERSION=${{ env.SHA }}
+          tags: registry.digitalocean.com/${{ steps.registry.outputs.name }}/lacuna:preview
+          cache-from: type=gha,scope=lacuna
+      - name: Wait until staging serves it
+        run: python3 deploy/ci.py wait-live "$SHA" preview
+      - name: Tell the PR
+        run: |
+          gh pr comment "$PR" --body "Staging now runs this PR (commit ${SHA:0:7}): https://preview.lacunastudio.app — its data is a fresh copy of the real workspace. Merge to ship it to https://lacunastudio.app."

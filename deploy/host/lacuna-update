@@ -3,6 +3,9 @@
 #   - never swaps while an import / export / publish job runs (the app's /api/app "busy" list)
 #   - health-checks the new container; if it doesn't come up, goes back to the previous image and
 #     remembers the bad one so it isn't retried until a newer image arrives
+#   - the staging site runs the same script (lacuna-update-preview.service) with its own container name,
+#     image, env file and data folder; LACUNA_SEED_FROM makes each new version start on a fresh copy of
+#     the real workspace (decision staging-site)
 # Status: /var/lib/lacuna/deploy.json. Tested with a fake docker in tests/test_deploy_host.py.
 set -uo pipefail
 STATE=${LACUNA_STATE_DIR:-/var/lib/lacuna}
@@ -10,7 +13,11 @@ mkdir -p "$STATE"
 exec 9>"$STATE/update.lock"
 flock -n 9 || exit 0
 IMAGE=$(cat "${LACUNA_IMAGE_FILE:-/etc/lacuna/image}")
-NAME=lacuna
+NAME=${LACUNA_NAME:-lacuna}
+ENV_FILE=${LACUNA_ENV_FILE:-/etc/lacuna/lacuna.env}
+DATA=${LACUNA_DATA:-/data}                      # mounted as /data in the container
+LIMITS=${LACUNA_LIMITS:---memory 7g --pids-limit 512}
+SEED_FROM=${LACUNA_SEED_FROM:-}                 # staging: copy this workspace in before each new version
 HEALTH_WAIT=${HEALTH_WAIT:-180}
 
 status() {  # status <state> <image> <message>
@@ -33,10 +40,28 @@ busy() {
 
 start() {  # start <image id>
   docker rm -f "$NAME" >/dev/null 2>&1
+  # shellcheck disable=SC2086  # LIMITS is a list of flags
   docker run -d --name "$NAME" --network lacuna --restart unless-stopped \
-    --env-file /etc/lacuna/lacuna.env -e TMPDIR=/data/tmp -v /data:/data \
-    --memory 7g --pids-limit 512 --security-opt no-new-privileges --cap-drop ALL \
+    --env-file "$ENV_FILE" -e TMPDIR=/data/tmp -v "$DATA:/data" \
+    $LIMITS --security-opt no-new-privileges --cap-drop ALL \
     --stop-timeout 30 "$1" >/dev/null
+}
+
+seed() {  # staging only: replace its workspace with a fresh copy of the real one (never the other way)
+  [ -n "$SEED_FROM" ] || return 0
+  local need have free
+  mkdir -p "$DATA/workspace"
+  need=$(du -sb --exclude=tmp "$SEED_FROM" 2>/dev/null | cut -f1)
+  have=$(du -sb "$DATA/workspace" 2>/dev/null | cut -f1)
+  free=$(df -B1 --output=avail "$DATA" | tail -1)
+  if [ $(( ${need:-0} - ${have:-0} )) -gt $(( ${free:-0} - ${LACUNA_SEED_MARGIN:-2147483648} )) ]; then
+    status no-space "$new" "not enough disk to copy the workspace for staging"
+    return 1
+  fi
+  docker rm -f "$NAME" >/dev/null 2>&1
+  mkdir -p "$DATA/workspace" "$DATA/home" "$DATA/tmp"
+  rsync -a --delete --exclude /tmp/ "$SEED_FROM/" "$DATA/workspace/" || { status seed-failed "$new" "could not copy the workspace"; return 1; }
+  chown -R "${LACUNA_OWNER:-10001:10001}" "$DATA"
 }
 
 wait_healthy() {
@@ -68,6 +93,7 @@ if [ "$running" = true ] && [ -n "$cur" ]; then
   fi
 fi
 
+seed || exit 0
 status deploying "$new" "starting the new version"
 start "$new"
 if wait_healthy; then
