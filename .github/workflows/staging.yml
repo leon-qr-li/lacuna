@@ -115,9 +115,15 @@ jobs:
           for n in $(gh pr list --state open --label staging --json number -q '.[].number'); do
             [ "$n" = "$PR" ] || gh pr edit "$n" --remove-label staging >/dev/null
           done
+      # the deploy tooling (deploy/ci.py) comes from main, never from the PR: a PR branched before a tooling
+      # change would run an old copy, and PR code never runs with the cloud secrets. Only the image is built
+      # from the PR's commit.
+      - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.SHA }}
+          path: pr
+          persist-credentials: false
       - name: Registry login
         id: registry
         run: python3 deploy/ci.py registry
@@ -125,7 +131,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: pr
           push: true
           provenance: false
           build-args: VERSION=${{ env.SHA }}
