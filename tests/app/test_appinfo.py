@@ -72,3 +72,15 @@ def test_save_api_key_validates_and_writes_file(tmp_path, monkeypatch):
     f = tmp_path / "api_key"
     assert f.read_text() == "sk-ant-api03-" + "y" * 40 and (f.stat().st_mode & 0o777) == 0o600
     assert "ANTHROPIC_API_KEY" not in editor.os.environ
+
+
+def test_sdk_check_does_not_import_the_sdk():
+    """设置 asks on every visit; importing the SDK takes seconds on Windows / macOS."""
+    import subprocess
+    import sys
+
+    code = ("import sys; from lacuna_app.editor import sdk_installed; sdk_installed(); "
+            "print('anthropic' in sys.modules)")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True,
+                         cwd=Path(__file__).resolve().parents[2])
+    assert out.stdout.strip() == "False"

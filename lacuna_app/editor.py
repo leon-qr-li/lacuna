@@ -8,6 +8,7 @@ shown; `resolve` turns those references into timeline ranges, so a model can nev
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -265,11 +266,9 @@ def _windows_registry_key() -> tuple[str, str] | None:
 
 
 def sdk_installed() -> bool:
-    try:
-        import anthropic  # noqa: F401
-    except ImportError:
-        return False
-    return True
+    """Whether the AI SDK is installed, without importing it: 设置 asks on every visit, and the first
+    import takes seconds on Windows / macOS (the page waited on it)."""
+    return importlib.util.find_spec("anthropic") is not None
 
 
 # USD per million tokens (input, output); unknown models are priced like Opus 5.
