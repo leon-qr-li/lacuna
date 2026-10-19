@@ -18,6 +18,17 @@ from .test_cloud import PW, hdr, keys, token, verifier  # noqa: F401  (fixtures)
 DESK = r"C:\Projects\LACUNA_Workspace"
 
 
+def windows(data, root: str):
+    """Every absolute path under `root` becomes C:\\Projects\\LACUNA_Workspace\\…, as saved on Leon's PC."""
+    if isinstance(data, str) and data.startswith(root):
+        return DESK + data[len(root):].replace("/", "\\")
+    if isinstance(data, dict):
+        return {k: windows(v, root) for k, v in data.items()}
+    if isinstance(data, list):
+        return [windows(v, root) for v in data]
+    return data
+
+
 def desktop_copy(tmp_path) -> dict[str, bytes]:
     """A desktop workspace as the browser reads it: every file, with Windows paths inside the JSON."""
     src = make_workspace(tmp_path / "desk")
@@ -31,15 +42,7 @@ def desktop_copy(tmp_path) -> dict[str, bytes]:
         rel = p.relative_to(src).as_posix()
         data = p.read_bytes()
         if p.suffix == ".json" or p.name.endswith(".json.bak"):
-            text = data.decode("utf-8")
-            esc = json.dumps(str(src))[1:-1]
-            # every absolute path under the desktop root becomes C:\Projects\LACUNA_Workspace\…
-            while esc in text:
-                i = text.index(esc)
-                j = text.index('"', i)
-                win = DESK + text[i + len(esc):j].replace("/", "\\")
-                text = text[:i] + json.dumps(win)[1:-1] + text[j:]
-            data = text.encode("utf-8")
+            data = json.dumps(windows(json.loads(data.decode("utf-8")), str(src)), ensure_ascii=False).encode("utf-8")
         out[rel] = data
     return out
 
@@ -120,7 +123,7 @@ def test_owner_moves_the_desktop_workspace(cloud, tmp_path, restarts):
     root = cloud.app.state.workspace.root
     assert not (root / "tmp" / "migrate").exists()
     state = (root / "episodes" / EPISODE / "state.json").read_text(encoding="utf-8")
-    assert "C:\\\\Projects" not in state and str(root) in state
+    assert "Projects" not in state and json.dumps(str(root))[1:-1] in state
     ep = Episode(Workspace(root), EPISODE)           # the moved episode opens with its audio on the server
     assert all(Path(m.path).is_file() for m in ep.media.values())
     time.sleep(0.8)
