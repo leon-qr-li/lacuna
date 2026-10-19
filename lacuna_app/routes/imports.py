@@ -82,6 +82,10 @@ def register(app, ctx) -> None:
 
     @app.post("/api/imports")
     def start_import(body: ImportBody):
+        from ..cloud import enabled as cloud_enabled
+        # on the shared server a track is always an upload: never read a path on the server itself
+        if cloud_enabled() and not all(import_tracks.owned(ws, p) for p in (body.leon, body.pei)):
+            raise HTTPException(422, tr("请先上传音轨"))
         try:
             return {"job": importer.start(body.id.strip(), body.title, body.leon, body.pei)}
         except ImportBusy as e:

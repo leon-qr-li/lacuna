@@ -14,7 +14,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8", "pytest-xdist>=3.5", "httpx>=0.27"]
+test = ["pytest>=8", "pytest-xdist>=3.5", "httpx>=0.27", "pyjwt[crypto]>=2.8"]
+cloud = ["pyjwt[crypto]>=2.8"]
 claude = ["anthropic>=1.15"]
 asr = ["sherpa-onnx>=1.12"]
 
