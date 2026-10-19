@@ -27,6 +27,7 @@ class FakeAPI:
         self.tunnels, self.dns, self.idps, self.groups, self.policies, self.apps = [], [], [], [], [], []
         self.buckets, self.tokens = [], []
         self.registry, self.volumes, self.firewalls, self.droplets = None, [], [], []
+        self.sizes = [{"slug": "s-4vcpu-8gb", "available": True, "regions": ["sfo3"], "vcpus": 4}]
 
     def id(self):
         self.n += 1
@@ -113,10 +114,13 @@ class FakeAPI:
                 return 200, {"firewalls": self.firewalls}
             self.firewalls.append(body)
             return 202, {}
+        if p == "/v2/sizes":
+            return 200, {"sizes": self.sizes}
         if p == "/v2/droplets":
             if method == "GET":
                 return 200, {"droplets": self.droplets}
-            d = {"id": len(self.droplets) + 100 + self.n, "status": "active", "user_data": body["user_data"]}
+            d = {"id": len(self.droplets) + 100 + self.n, "status": "active", "user_data": body["user_data"],
+                 "size": body["size"]}
             self.n += 1
             self.droplets.append(d)
             return 202, {"droplet": d}
@@ -185,6 +189,7 @@ def test_apply_builds_everything_once(api, capsys):
     env = files["/etc/lacuna/lacuna.env"]
     assert "LACUNA_CLOUD=1" in env and "CF_ACCESS_AUD=aud-xyz" in env and "ANTHROPIC_API_KEY=sk-ant-secret" in env
     assert "CF_ACCESS_TEAM_DOMAIN=lacunastudio.cloudflareaccess.com" in env
+    assert "LACUNA_OWNER_EMAIL=leon@example.com" in env
     assert "TUNNEL_TOKEN=tunnel-token-secret" in files["/etc/lacuna/tunnel.env"]
     assert "RESTIC_PASSWORD=restic-pw-123456" in files["/etc/lacuna/backup.env"]
     assert "registry.digitalocean.com" in files["/etc/lacuna/image"]
@@ -261,3 +266,19 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
     with pytest.raises(provision.ProvisionError, match="not live"):
         ci.wait_live("abc", timeout=0.01, poll=0)
     assert tokens == []                      # deleted on failure too
+
+
+def test_server_size_falls_back_when_the_region_stops_offering_it(api):
+    a, run = api
+    a.sizes = [{"slug": "s-4vcpu-8gb", "available": True, "regions": ["nyc1"], "vcpus": 4},
+               {"slug": "s-4vcpu-8gb-amd", "available": True, "regions": ["sfo3"], "vcpus": 4}]
+    run("apply")
+    assert a.droplets[0]["size"] == "s-4vcpu-8gb-amd"
+
+
+def test_no_size_in_the_region_stops_before_creating_the_server(api):
+    a, run = api
+    a.sizes = [{"slug": "s-4vcpu-8gb", "available": False, "regions": ["sfo3"], "vcpus": 4}]
+    with pytest.raises(provision.ProvisionError, match="no 4 vCPU"):
+        run("apply")
+    assert not a.droplets

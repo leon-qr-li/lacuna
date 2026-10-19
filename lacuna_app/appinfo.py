@@ -247,6 +247,7 @@ def register(app, updater: Updater, workspace: Path, busy: Callable[[], list[str
     from fastapi import HTTPException
 
     from . import editor
+    from .cloud import enabled as cloud_enabled
 
     def restart_later(code: int) -> None:
         # answer the request first, then stop
@@ -264,7 +265,7 @@ def register(app, updater: Updater, workspace: Path, busy: Callable[[], list[str
         return {"version": updater.version, "installed": updater.installed, "platform": platform_name(),
                 "workspace": str(workspace), "home": str(updater.home) if updater.home else None,
                 "update": updater.status(), "key": key_status(), "models": models_ready(),
-                "busy": busy()} | ffmpeg_status()
+                "busy": busy(), "cloud": cloud_enabled()} | ffmpeg_status()
 
     @app.get("/api/app")
     def app_info():

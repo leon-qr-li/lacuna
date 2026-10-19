@@ -138,16 +138,17 @@ export function SettingsView() {
         <div className="card-head">
           <h2>{t("版本")}</h2>
           <span className="badge" data-testid="app-version">
-            {info.installed ? info.version : t("开发版")}
+            {info.cloud ? info.version.slice(0, 7) : info.installed ? info.version : t("开发版")}
           </span>
         </div>
-        {!info.installed && <p className="muted small">{t("这是从源码直接运行的开发版，不在 App 里更新。")}</p>}
-        {u.last_update && (
+        {info.cloud && <p className="muted small" data-testid="cloud-auto-update">{t("新版本测试通过后会自动上线，不用手动更新。")}</p>}
+        {!info.installed && !info.cloud && <p className="muted small">{t("这是从源码直接运行的开发版，不在 App 里更新。")}</p>}
+        {!info.cloud && u.last_update && (
           <p className={u.last_update.ok ? "muted small" : "error"}>
             {t("上次更新（{at}）：{message}", { at: u.last_update.at, message: u.last_update.message })}
           </p>
         )}
-        {info.installed && (
+        {info.installed && !info.cloud && (
           <>
             {u.available ? (
               <div data-testid="update-available">
@@ -191,6 +192,9 @@ export function SettingsView() {
             {info.key.present ? t("已设置（{p0}）", { p0: KEY_SOURCE[info.key.source ?? ""] ?? info.key.source }) : t("没有设置")}
           </span>
         </div>
+        {info.cloud ? (
+          <p className="muted small">{t("AI 密钥由服务器统一管理，只保存在服务器上，不会显示出来。")}</p>
+        ) : (<>
         <p className="muted small">
           {info.platform === "macOS" ? t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上（钥匙串），不会显示出来。") : t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上，不会显示出来。")}
         </p>
@@ -208,11 +212,13 @@ export function SettingsView() {
             {info.key.present ? t("换一个") : t("保存")}
           </button>
         </div>
+        </>)}
       </section>
 
       <AccountCard />
       <SpacesCard />
 
+      {!info.cloud && (
       <section className="card" aria-label={t("这台电脑")}>
         <h2>{t("这台电脑")}</h2>
         <ul className="plain small">
@@ -223,6 +229,7 @@ export function SettingsView() {
           {info.home && <li>{t("安装位置：")}{info.home}</li>}
         </ul>
       </section>
+      )}
     </main>
   );
 }
