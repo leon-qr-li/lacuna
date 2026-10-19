@@ -7,8 +7,11 @@ import type { RememberDraft } from "./api";
 import { lessonsApi } from "./api";
 import { TalkBox } from "./TalkBox";
 import "./lessons.css";
+import { useShow } from "../show/api";
 
 export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft: RememberDraft; onPauseMain: () => void }) {
+  const show = useShow();
+  const example = show?.hosts[show.hosts.length - 1]?.name ?? t("某位主持人");
   const [d, setD] = useState(draft);
   const [talk, setTalk] = useState(false);
   const [busy, setBusy] = useState<"confirm" | "drop" | null>(null);
@@ -70,7 +73,7 @@ export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft
           {talk && (
             <TalkBox
               label={t("告诉 LACUNA 这条规则要怎么改")}
-              placeholder={t("比如：只针对 Pei / 片头片尾除外 / 直接写你想要的说法")}
+              placeholder={t("比如：只针对 {name} / 片头片尾除外 / 直接写你想要的说法", { name: example })}
               onMic={onPauseMain}
               onCancel={() => setTalk(false)}
               onSend={async (text) => {

@@ -5,10 +5,12 @@ export const en: Dict = {
   // shell
   "发布": "Publish",
   "剧集": "Episodes",
-  "导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。":
-    "Import Leon's and Pei's separate tracks. AI makes the first cut, then you review, listen and export.",
-  "工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。":
-    "No episodes in the workspace yet. Click “Import an episode” and pick Leon's and Pei's tracks.",
+  "导入 {names} 的分轨，AI 先剪第一刀，你来过目、试听、导出。":
+    "Import {names}'s separate tracks. AI makes the first cut, then you review, listen and export.",
+  "导入每位主持人的分轨，AI 先剪第一刀，你来过目、试听、导出。":
+    "Import each host's separate track. AI makes the first cut, then you review, listen and export.",
+  "工作区里还没有剧集。点「导入新一集」，选每位主持人的分轨。":
+    "No episodes in the workspace yet. Click “Import an episode” and pick each host's track.",
   "无法打开：": "Can't open: ",
   " · 演示数据": " · demo data",
   "{n} 处待过目": { one: "{n} to review", other: "{n} to review" },
@@ -80,8 +82,6 @@ export const en: Dict = {
   "导入新一集": "Import an episode",
   "剧集编号": "Episode ID",
   "标题（可不填）": "Title (optional)",
-  "Leon 的分轨": "Leon's track",
-  "Pei 的分轨": "Pei's track",
   "还没选": "Not chosen",
   "开始导入": "Start import",
   "取消": "Cancel",

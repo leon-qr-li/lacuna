@@ -30,7 +30,7 @@ def test_a_deleted_episodes_id_is_never_proposed_or_taken_again(tmp_path):
     delete(c, "EP003")
     assert c.get("/api/imports").json()["next_id"] == "EP004"       # used to propose EP003 again
     rec = write_recordings(tmp_path / "rec")
-    r = c.post("/api/imports", json={"id": "EP003", "title": "新的一集", "leon": str(rec["Leon"]), "pei": str(rec["Pei"])})
+    r = c.post("/api/imports", json={"id": "EP003", "title": "新的一集", "tracks": [str(rec["Leon"]), str(rec["Pei"])]})
     assert r.status_code == 422 and "EP003" in r.json()["detail"]
 
 

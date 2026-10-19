@@ -22,12 +22,12 @@ from lacuna_core import SourcePool
 from lacuna_core.export import FORMATS, export, timeline_source
 from lacuna_core.master import MasterSettings
 
+from . import show as show_profile
 from .episode import Episode
 from .music import EpisodeMusic, credits
 from .store import Workspace, atomic_write_json, check_id, inside
 from .i18n import tr
 
-DEFAULT_SHOW = "洛城二三事"  # i18n-ignore
 FILE_SUFFIXES = (".wav", ".mp3", ".json")
 
 
@@ -68,7 +68,7 @@ class Exporter:
             version = ep.version_key(enabled)
             music_version = EpisodeMusic(self.ws, ep).export_key()
             title = ep.meta.get("title", ep.id)
-            show = ep.meta.get("show", DEFAULT_SHOW)
+            show = ep.meta.get("show") or show_profile.load(self.ws.root)["show_name"] or title
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         job = {"id": uuid.uuid4().hex[:12], "state": "running", "progress": 0.0, "stage": tr("准备"),
                "version": version, "music_version": music_version, "formats": formats, "basename": f"{ep.id}_{stamp}",

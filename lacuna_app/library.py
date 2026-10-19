@@ -39,6 +39,7 @@ from lacuna_core.master import LoudnessMeter
 from lacuna_core.media import resample_filter
 
 from .store import PathError, Workspace, atomic_write_json, inside, read_json, now_iso as _now
+from . import show
 from .i18n import AI_NAME_RULE, N_, lang, tr
 
 SCHEMA = 1
@@ -573,20 +574,30 @@ CREDIT_TOOL = {
 }
 
 
-def _credit_tool() -> dict:
+def _credit_tool(legacy: bool = True) -> dict:
     """The note is for Leon, in the interface language; the credit itself stays Chinese (show notes)."""
-    if lang() != "en":
-        return CREDIT_TOOL
-    return json.loads(json.dumps(CREDIT_TOOL).replace(json.dumps(NOTE_FOR_LEON)[1:-1], "one short sentence for Leon, in English"))
+    tool = CREDIT_TOOL if lang() != "en" else json.loads(json.dumps(CREDIT_TOOL).replace(
+        json.dumps(NOTE_FOR_LEON)[1:-1], "one short sentence for Leon, in English"))
+    return tool if legacy else json.loads(json.dumps(tool).replace("for Leon", "for the editor"))
 
 
-def lookup_request(asset: dict) -> dict:
+def lookup_system(profile: dict | None = None) -> str:
+    """LOOKUP_SYSTEM for this workspace's show (Leon's: unchanged)."""
+    return show.neutral(LOOKUP_SYSTEM, profile, [] if show.is_legacy(profile) else [
+        ("the music Leon uses in 《洛城二三事》, a Chinese film podcast,",  # i18n-ignore
+         f"the music used in 《{profile['show_name']}》, a podcast,"),
+        ("Leon's own casual note", "the editor's own casual note"),
+    ])
+
+
+def lookup_request(asset: dict, profile: dict | None = None) -> dict:
+    legacy = show.is_legacy(profile)
     info = {"file_name": asset.get("name"), "embedded_tags": asset.get("tags") or {},
-            "duration_s": asset.get("duration_s"), "leons_note": asset.get("note") or "",
+            "duration_s": asset.get("duration_s"), ("leons_note" if legacy else "editors_note"): asset.get("note") or "",
             "used_as": KINDS.get(asset.get("kind"), "")}
-    return dict(model="claude-opus-5-5", max_tokens=16000, system=LOOKUP_SYSTEM,
+    return dict(model="claude-opus-5-5", max_tokens=16000, system=lookup_system(profile),
                 output_config={"effort": "medium"},
-                tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 5}, _credit_tool()],
+                tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 5}, _credit_tool(legacy)],
                 tool_choice={"type": "auto"},
                 messages=[{"role": "user", "content": json.dumps(info, ensure_ascii=False)}])
 
@@ -604,7 +615,7 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
             return {"asset": asset, "message": tr("还没接上 AI（没有 AI 密钥），没法查曲名。"), "usage": None}
         import anthropic
         client = anthropic.Anthropic(api_key=key, timeout=180.0, max_retries=1)
-    req = lookup_request(asset)
+    req = lookup_request(asset, show.load(lib.ws.root))
     t0 = time.monotonic()
     usage = None
     try:

@@ -9,6 +9,7 @@ import { BusyLabel, Waiting } from "../loading/Loading";
 import type { Lesson, LessonEdit, LessonsView as View } from "./api";
 import { lessonsApi } from "./api";
 import { TalkBox } from "./TalkBox";
+import { useShow } from "../show/api";
 
 const RELATION: Record<Lesson["relation"], string> = {
   new: t("新规则"),
@@ -137,6 +138,8 @@ export function LessonsView({ id, pauseMain }: { id: string; pauseMain: () => vo
 }
 
 function LessonCard({ epId, x, onChange, pauseMain }: { epId: string; x: Lesson; onChange: (x: Lesson) => void; pauseMain: () => void }) {
+  const show = useShow();
+  const example = show?.hosts[show.hosts.length - 1]?.name ?? t("某位主持人");
   const [mode, setMode] = useState<"view" | "edit" | "talk">("view");
   const [draft, setDraft] = useState(x.title);
   const [busy, setBusy] = useState<string | null>(null);
@@ -218,7 +221,7 @@ function LessonCard({ epId, x, onChange, pauseMain }: { epId: string; x: Lesson;
       {mode === "talk" && (
         <TalkBox
           label={t("告诉 LACUNA 这条规则要怎么改")}
-          placeholder={t("比如：只针对 Pei / 别那么绝对 / 直接写你想要的说法")}
+          placeholder={t("比如：只针对 {name} / 别那么绝对 / 直接写你想要的说法", { name: example })}
           onMic={pauseMain}
           onCancel={() => setMode("view")}
           onSend={async (text) => {

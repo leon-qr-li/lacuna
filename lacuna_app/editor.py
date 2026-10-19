@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from . import show
 from .analysis import Span
 from .i18n import AI_NAME_RULE, in_reply_language, tr
 
@@ -65,6 +66,7 @@ class ChatContext:
     transcript: str = ""                # words near the playhead, if a transcript exists
     utterances: list[Utterance] = field(default_factory=list)
     history: list[dict] = field(default_factory=list)        # earlier turns {said, at, reply, outcome}
+    show: dict | None = None            # the workspace's show profile (show.py); None = Leon's show
 
 
 @dataclass
@@ -307,6 +309,24 @@ Use an empty actions list when nothing should change. The host previews every pr
 it is applied. `message` says in one or two short sentences what will change and where (m:ss); \
 `title` is a short label of the change; confidence is how sure you are this is what the host wants.""" + AI_NAME_RULE  # i18n-ignore
 
+
+
+def system_for(profile: dict | None) -> str:
+    """SYSTEM for this workspace's show: Leon's show word for word, any other with its own hosts."""
+    if show.is_legacy(profile):
+        return SYSTEM
+    n = len(profile["hosts"])
+    return show.neutral(SYSTEM, profile, [
+        ("editing 《洛城二三事》, a casual two-host Chinese film podcast (hosts: Leon and Pei, one track each)",  # i18n-ignore
+         "editing " + show.describe_en(profile)),
+        ("- Be strict with Leon's rambling, repeated explanations, false starts and off-point detail; be "
+         "somewhat strict with Pei's clear stumbles, but gentler than with Leon.",
+         "How strict to be with each host:\n" + show.style_lines(profile)),
+        ("抹掉 Pei 那几个嗯", f"抹掉 {show.example_host(profile)} 那几个嗯"),  # i18n-ignore
+        ("over the other host's speech", "over the other host's speech" if n > 1 else "over the speech"),
+    ])
+
+
 _ID = {"type": ["string", "null"]}
 TOOL = {
     "name": "propose_edit",
@@ -395,7 +415,7 @@ class ClaudeEditorAdapter:
         return self._client
 
     def build_request(self, ctx: ChatContext) -> dict:
-        return dict(model=self.model, max_tokens=8000, system=in_reply_language(SYSTEM),
+        return dict(model=self.model, max_tokens=8000, system=in_reply_language(system_for(ctx.show)),
                     output_config={"effort": self.effort},
                     tools=[in_reply_language(TOOL)], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": json.dumps(scene(ctx), ensure_ascii=False)}])

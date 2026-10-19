@@ -29,7 +29,8 @@ from typing import Any, Callable
 from .chat_learning import MAX_ASK, ChatAsks, _id as ask_id
 from .ai_tools import call_tool
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
-from .learning import LEARN_DIR, Learning, decisions
+from . import show
+from .learning import LEARN_DIR, Learning, decisions, reviewer
 from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
 from .i18n import AI_NAME_RULE, in_reply_language, tr
 
@@ -114,6 +115,30 @@ it contradicts an existing rule.
 Do not repeat anything in already_reviewed.""" + AI_NAME_RULE  # i18n-ignore
 
 
+
+def _for_show(system: str, profile: dict | None) -> str:
+    """REWRITE_SYSTEM / LESSONS_SYSTEM for this workspace's show (Leon's show: unchanged)."""
+    if show.is_legacy(profile):
+        return system
+    n, ex = len(profile["hosts"]), show.example_host(profile)
+    intro = (f"《{profile['show_name']}》 is {profile.get('about') or 'a podcast'} hosted by {show.names_en(profile)}"
+             f"{'' if n == 1 else ' (one track each)'}; LACUNA is the AI producer that edits it with its editor.")
+    return show.neutral(system, profile, [
+        (SHOW, intro),
+        ("Leon asked", "The editor asked"), ("Leon just finished", "The editor just finished"),
+        ("Leon is correcting", "the editor is correcting"), ("speaking to Leon", "speaking to the editor"),
+        ("Never store his words", "Never store their words"), ("tell him", "tell them"),
+        ("so he can", "so they can"), ("where he was vague", "where they were vague"),
+        ("apply his feedback", "apply their feedback"), ("wording he wants", "wording they want"),
+        ("what he asked", "what they asked"),
+        ("whether he approved", "whether they approved"), ("and his review decisions", "and their review decisions"),
+        ("cuts he kept", "cuts they kept"), ("suggestions he accepted", "suggestions they accepted"),
+        ("edits he asked", "edits they asked"),
+        ("quote marks around his words", "quote marks around their words"),
+        ("Pei 的", f"{ex} 的"), ("只针对 Pei", f"只针对 {ex}"),  # i18n-ignore
+    ])
+
+
 class NoAnswer(RuntimeError):
     """The model answered without calling the tool (or refused / ran out of room)."""
 
@@ -170,11 +195,11 @@ class ClaudeRuleWriter:
             raise NoAnswer(getattr(resp, "stop_reason", ""))
         return out, usage
 
-    def rewrite(self, payload: dict) -> tuple[dict, dict]:
-        return self._call(REWRITE_SYSTEM, REWRITE_TOOL, payload, 1000)
+    def rewrite(self, payload: dict, profile: dict | None = None) -> tuple[dict, dict]:
+        return self._call(_for_show(REWRITE_SYSTEM, profile), REWRITE_TOOL, payload, 1000)
 
-    def summarize(self, payload: dict) -> tuple[list[dict], dict]:
-        out, usage = self._call(LESSONS_SYSTEM, LESSONS_TOOL, payload, 6000)
+    def summarize(self, payload: dict, profile: dict | None = None) -> tuple[list[dict], dict]:
+        out, usage = self._call(_for_show(LESSONS_SYSTEM, profile), LESSONS_TOOL, payload, 6000)
         return list(out.get("lessons") or []), usage
 
 
@@ -229,7 +254,7 @@ class Lessons:
         """The writer's rule, or (no key / it failed) his words for him to confirm or change."""
         if getattr(self.writer, "available", True):
             try:
-                out, usage = self.writer.rewrite(payload)
+                out, usage = self.writer.rewrite(payload, show.load(self.ws.root))
                 self._usage(episode_id, usage, "remember")
                 title = _clean(out.get("title"))
                 if title:
@@ -248,9 +273,10 @@ class Lessons:
         return {"title": words, "understood": "", "instruction": self._verbatim(words), "same_as": "",
                 "fallback": True, "error": error}
 
-    @staticmethod
-    def _verbatim(title: str) -> str:
-        return f'Leon\'s standing rule, in his words (Chinese): "{title}"'
+    def _verbatim(self, title: str) -> str:
+        who = reviewer(self.ws)
+        return (f'Leon\'s standing rule, in his words (Chinese): "{title}"' if who == "Leon"
+                else f'The editor\'s standing rule, in their words (Chinese): "{title}"')
 
     def _draft_view(self, d: dict) -> dict:
         titles = {r["id"].removeprefix("ask:"): r["title"] for r in self._ask_rules()}
@@ -396,7 +422,7 @@ class Lessons:
                 for d in drafts],
         }
         try:
-            found, usage = self.writer.summarize(payload)
+            found, usage = self.writer.summarize(payload, show.load(self.ws.root))
         except Exception as e:             # noqa: BLE001 - the step must never break the episode
             traceback.print_exc()
             self._set_summary(ep.id, state="error", error=ai_failure(e), friendly=True)

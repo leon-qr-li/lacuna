@@ -248,7 +248,7 @@ def test_import_levels_the_new_episode(tmp_path):
     sf.write(rec["Pei"], x * 0.25, sr, subtype="PCM_16")             # Pei 12 dB quieter
     ws = Workspace(tmp_path / "ws").ensure()
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=fake_asr)
-    job = imp.start("EP009", "导入", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    job = imp.start("EP009", "导入", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     assert imp.status("EP009")["state"] == "done", job
     ep = Episode(ws, "EP009")
     g = levels.current_gains(ep)
@@ -268,7 +268,7 @@ def test_import_still_finishes_when_levelling_fails(tmp_path, monkeypatch):
     ws = Workspace(tmp_path / "ws").ensure()
     monkeypatch.setattr(levels, "level_new_episode", lambda ep: 1 / 0)
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=fake_asr)
-    imp.start("EP010", "导入", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP010", "导入", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     assert imp.status("EP010")["state"] == "done"
     assert levels.current_gains(Episode(ws, "EP010")) == {"Leon": 0.0, "Pei": 0.0}
 

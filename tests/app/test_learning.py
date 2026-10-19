@@ -1,6 +1,7 @@
 """Phase 5 (D27): Leon's review decisions -> candidate rules -> (once approved) first-cut prompt + review policy."""
 from __future__ import annotations
 
+import re
 import json
 from pathlib import Path
 
@@ -180,7 +181,7 @@ def test_decisions_do_not_write_the_episode(ai_ws):
 # ---------------------------------------------------------------- store + approval + consumers
 
 def fake_rules(monkeypatch, rules):
-    monkeypatch.setattr(learning, "learn", lambda ds: [learning.Rule(**r) for r in rules])
+    monkeypatch.setattr(learning, "learn", lambda ds, who="Leon": [learning.Rule(**r) for r in rules])
 
 
 RULE = dict(id="protect:disfluency:Pei", kind="protect", title="Pei的口误：AI 删多了，以后少删", detail="…",
@@ -352,3 +353,17 @@ def test_episode_accepted_as_is_ignores_review_clicks(ai_ws):
     lr.accept_as_is(AI_EPISODE, on=False)
     assert lr.overview([ep])["stats"]["restored"] == 1
     ep.close()
+
+
+def test_rules_of_another_show_name_its_editor_not_leon():
+    """A workspace that is not Leon's show: learned rules speak of "the editor", never Leon or "he"."""
+    ds = [dec("restored", host="Ana") for _ in range(6)]
+    ds += [dec("accepted", kind="content", host="Bo", category="content", cons=True) for _ in range(3)]
+    ds += [dec("added", kind="content", host="Bo", source="chat", text=t) for t in ("那个任天堂", "元宇宙吧")]
+    ds += [dec("kept", kind="content", host="Bo", category="content", cons=True, text=f"跑题{k}") for k in range(2)]
+    ds += [dec("restored", kind="content", host="Bo", category="content", cons=True, text="这段很好笑")]
+    legacy, other = learn(ds), learn(ds, "The editor")
+    assert [r.id for r in legacy] == [r.id for r in other] and len(other) >= 4
+    for r in other:
+        assert not re.search(r"\b(Leon|Pei|he|his|him|He|His)\b", r.prompt), r.prompt
+    assert any("Leon" in r.prompt for r in legacy)

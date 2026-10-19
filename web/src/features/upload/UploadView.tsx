@@ -7,12 +7,15 @@ import type { UploadView as View } from "./api";
 import { uploadApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
+import { useShow } from "../show/api";
 
 const mb = (b: number) => `${(b / 1024 / 1024).toFixed(b >= 100 * 1024 * 1024 ? 0 : 1)} MB`;
 
 /** 上传喜马拉雅: everything for the 喜马拉雅 upload form on one page, in the form's order. Leon uploads
  *  by hand (no upload API for personal creators); this page only gathers what other tabs made. */
 export function UploadView({ id, version, flash }: { id: string; version: string; flash: (m: string) => void }) {
+  const show = useShow();
+  const album = show?.publish.album || show?.show_name || "";
   const [view, setView] = useState<View | null>(null);
   const [pub, setPub] = useState<PublishView | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -193,7 +196,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
         )}
       </section>
 
-      <p className="muted small">{t("最后在喜马拉雅上选专辑「洛城二三事」，确认后发布。")}</p>
+      {album && <p className="muted small">{t("最后在喜马拉雅上选专辑「{album}」，确认后发布。", { album })}</p>}
     </main>
   );
 }

@@ -36,7 +36,7 @@ from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
 from lacuna_core.refine import snap_cut
 
-from . import analysis, declip, room_tone
+from . import analysis, declip, room_tone, show
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
@@ -527,7 +527,8 @@ class Episode:
                     for i in self._near(t, 30.0, cuts)]
             ctx = ChatContext(text, t, dur, runs, analysis.speech_around(runs, t, max(t - 20, lo), min(t + 20, hi)),
                               near, self.transcript_text(to_base(int(t * self.sr), cuts) / self.sr),
-                              self.utterances(lo, hi, enabled, cuts), self.chat_history())
+                              self.utterances(lo, hi, enabled, cuts), self.chat_history(),
+                              show.load(self.dir.parent.parent))
             return ctx, {"enabled": enabled, "cuts": cuts, "mix": mix, "lo": lo}
 
     def chat(self, text: str, playhead_s: float, adapter: EditorAdapter) -> dict:

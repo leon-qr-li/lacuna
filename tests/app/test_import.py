@@ -14,10 +14,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from lacuna_app import create_app
+from lacuna_app import create_app, show
+from lacuna_app.episode import Episode
 from lacuna_app.editor import MockEditorAdapter
 from lacuna_app.first_cut import (TOOL, ClaudeFirstCut, RuleFirstCut, system_prompt, to_s5_ops, windows)
-from lacuna_app.importer import Importer, check_track
+from lacuna_app.importer import ImportError_, Importer, check_track
 from lacuna_app.server import next_episode_id
 from lacuna_app.store import Workspace
 
@@ -45,7 +46,7 @@ def importer(ws, client=None, **kw):
 def test_full_import_creates_reviewable_episode(ws, rec):
     fake = FakeFirstCutAnthropic()
     imp = importer(ws, fake)
-    job = imp.start("EP002", "EP002 · 测试", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    job = imp.start("EP002", "EP002 · 测试", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job = imp.status("EP002")
     assert job["state"] == "done", job["error"]
     assert job["progress"] == 1.0
@@ -76,7 +77,7 @@ def test_import_over_http_then_review(tmp_path, ws, rec):
     imp = importer(ws, FakeFirstCutAnthropic())
     c = TestClient(create_app(ws.root, MockEditorAdapter(), web_dist=Path("/nonexistent"), importer=imp))
     assert c.get("/api/imports").json() == {"jobs": [], "next_id": "EP001"}
-    r = c.post("/api/imports", json={"id": "EP002", "title": "第二集", "leon": str(rec["Leon"]), "pei": str(rec["Pei"])})
+    r = c.post("/api/imports", json={"id": "EP002", "title": "第二集", "tracks": [str(rec["Leon"]), str(rec["Pei"])]})
     assert r.status_code == 200, r.text
     t = time.time()
     while (job := c.get("/api/imports/EP002").json()["job"])["state"] in ("queued", "running"):
@@ -94,26 +95,28 @@ def test_import_over_http_then_review(tmp_path, ws, rec):
     assert after["duration"] > ep["duration"]
     assert c.post("/api/episodes/EP002/undo", json={}).json()["duration"] == ep["duration"]
     # same id again -> refused
-    r = c.post("/api/imports", json={"id": "EP002", "leon": str(rec["Leon"]), "pei": str(rec["Pei"])})
+    r = c.post("/api/imports", json={"id": "EP002", "tracks": [str(rec["Leon"]), str(rec["Pei"])]})
     assert r.status_code == 422 and "EP002" in r.json()["detail"]
 
 
 def test_bad_requests(ws, rec, tmp_path):
     imp = importer(ws)
     c = TestClient(create_app(ws.root, MockEditorAdapter(), web_dist=Path("/nonexistent"), importer=imp))
-    post = lambda **kw: c.post("/api/imports", json={"id": "EP009", "leon": str(rec["Leon"]), "pei": str(rec["Pei"])} | kw)  # noqa: E731
-    assert "找不到" in post(leon=str(tmp_path / "nope.wav")).json()["detail"]
-    assert "同一个" in post(pei=str(rec["Leon"])).json()["detail"]
+    post = lambda *t, **kw: c.post("/api/imports", json={"id": "EP009", "tracks": list(t)} | kw)  # noqa: E731
+    leon, pei = str(rec["Leon"]), str(rec["Pei"])
+    assert "找不到" in post(str(tmp_path / "nope.wav"), pei).json()["detail"]
+    assert "Leon 和 Pei 选了同一个文件" in post(leon, leon).json()["detail"]
     (tmp_path / "notes.txt").write_text("x")
-    assert "不是音频" in post(pei=str(tmp_path / "notes.txt")).json()["detail"]
-    assert post(id="../x").status_code == 422
+    assert "不是音频" in post(leon, str(tmp_path / "notes.txt")).json()["detail"]
+    assert "要 2 条分轨" in post(leon).json()["detail"]
+    assert post(leon, pei, id="../x").status_code == 422
     assert c.post("/api/imports/EP404/resume").status_code == 404
 
 
 def test_api_failure_resumes_from_cache(ws, rec):
     fake = FakeFirstCutAnthropic(fail_windows={0})
     imp = importer(ws, fake)
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job = imp.status("EP002")
     assert job["state"] == "error" and "AI 第一刀没做完" in job["error"] and "继续" in job["error"]
     assert "asr_P" in job["steps"] and "first_cut" not in job["steps"]
@@ -132,7 +135,7 @@ def test_api_failure_resumes_from_cache(ws, rec):
 def test_refusal_names_the_category_and_is_billed(ws, rec):
     fake = FakeFirstCutAnthropic(refuse_windows={0})          # every model refuses window 1
     imp = importer(ws, fake)
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job = imp.status("EP002")
     assert job["state"] == "error" and "拒绝" in job["error"] and "reasoning_extraction" in job["error"]
     usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
@@ -143,7 +146,7 @@ def test_opus_refusal_falls_back_to_sonnet(ws, rec):
     fake = FakeFirstCutAnthropic(refuse_windows={0}, refuse_models={"claude-opus-5-5"})
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=fake, model="claude-opus-5-5"),
                    asr_backend=fake_asr)
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job = imp.status("EP002")
     assert job["state"] == "done", job["error"]
     assert [r["model"] for r in fake.requests] == ["claude-opus-5-5", "claude-sonnet-5-5"]
@@ -163,7 +166,7 @@ def test_first_cut_defaults_to_sonnet(monkeypatch):
 
 def test_restart_marks_running_job_interrupted(ws, rec):
     imp = importer(ws)
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job_file = ws.root / "imports" / "EP002" / "job.json"
     j = json.loads(job_file.read_text(encoding="utf-8"))
     j.update(state="running")
@@ -182,9 +185,9 @@ def test_cancel_and_one_job_at_a_time(ws, rec):
         progress(0.5, "…")          # raises Cancelled once cancel was requested
         return fake_asr(tag, x, progress)
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=slow_asr)
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]))
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])])
     with pytest.raises(Exception, match="正在导入"):
-        imp.start("EP003", "", str(rec["Leon"]), str(rec["Pei"]))
+        imp.start("EP003", "", [str(rec["Leon"]), str(rec["Pei"])])
     imp.cancel("EP002")
     gate.set()
     t = time.time()
@@ -197,7 +200,7 @@ def test_cancel_and_one_job_at_a_time(ws, rec):
 
 def test_rules_fallback_without_claude(ws, rec):
     imp = Importer(ws, first_cut_factory=RuleFirstCut, asr_backend=fake_asr)
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job = imp.status("EP002")
     assert job["state"] == "done", job["error"]
     assert job["result"]["engine"] == "rules" and job["result"]["edits"] > 0 and job["result"]["to_review"] == 0
@@ -209,7 +212,7 @@ def test_learned_rules_reach_the_prompt(ws, rec, monkeypatch):
     monkeypatch.setattr(learning, "prompt_rules", lambda w: "- Leon 恢复了所有关于猫的题外话：别剪猫。")
     monkeypatch.setattr(learning, "review_policy", lambda w: seen.append(w) or None)
     fake = FakeFirstCutAnthropic()
-    importer(ws, fake).start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    importer(ws, fake).start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     assert "别剪猫" in fake.requests[0]["system"][0]["text"]
     assert seen                                      # review thresholds come from approved rules too
 
@@ -263,3 +266,50 @@ def test_next_episode_id():
 def test_check_track(rec):
     info = check_track(rec["Leon"])
     assert info["duration"] == 60.0 and info["sample_rate"] == 16000
+
+def _show(ws, *names):
+    show.write_new(ws.root)
+    return show.save(ws.root, {"show_name": "周末电影院", "hosts": [{"name": n} for n in names]})
+
+
+@pytest.mark.parametrize("names", [("Ana", "Bo", "Cy"), ("Solo",)])
+def test_import_with_the_shows_own_hosts(ws, rec, tmp_path, names):
+    """Any number of hosts: one track each, named and tagged by the workspace's show."""
+    prof = _show(ws, *names)
+    tags = [h["tag"] for h in prof["hosts"]]
+    words = {tags[0]: "L", **({tags[1]: "P"} if len(tags) > 1 else {})}
+    paths = [rec["Leon"], rec["Pei"]][:len(tags)]
+    if len(tags) == 3:
+        third = tmp_path / "Cy.wav"
+        shutil.copy(rec["Pei"], third)
+        paths.append(third)
+
+    def asr(tag, x, progress=lambda f, s: None):
+        if tag in words:
+            return fake_asr(words[tag], x, progress)
+        return {"audio_s": round(len(x) / 16000, 3), "segments": []}       # a host who never speaks
+
+    fake = FakeFirstCutAnthropic()
+    imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=fake), asr_backend=asr)
+    imp.start("EP002", "", [str(p) for p in paths], wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "done", job["error"]
+    assert job["hosts"] == [[t, n] for t, n in zip(tags, names)]
+    assert set(job["steps"]) == {"models", *(f"asr_{t}" for t in tags), "features", "first_cut", "episode"}
+    ep = Episode(ws, "EP002")
+    assert [t.name for t in ep.base.tracks] == list(names)
+    assert set(ep.meta["raw_tracks"]) == set(names)
+    # the editor document and the tool speak of these hosts, not Leon and Pei
+    req = fake.requests[0]
+    doc = req["system"][1]["text"]
+    assert all(f"{t} 轨只有 {n} 的麦" in doc for t, n in zip(tags, names))
+    assert "Leon" not in doc and "Pei" not in doc and "洛城" not in doc
+    assert req["tools"][0]["input_schema"]["properties"]["ops"]["items"]["properties"]["track"]["enum"] == tags + ["both"]
+    ep.close()
+
+
+def test_wrong_number_of_tracks(ws, rec):
+    _show(ws, "Ana", "Bo", "Cy")
+    imp = importer(ws)
+    with pytest.raises(ImportError_, match="要 3 条分轨"):
+        imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])])
