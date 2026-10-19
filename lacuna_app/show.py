@@ -30,6 +30,7 @@ MAX_HOSTS = 6
 # colour names, each a light + dark pair in web/src/features/show/show.css (WCAG AA checked there)
 COLORS = ("blue", "purple", "teal", "amber", "green", "pink")
 CUT_LEVELS = ("gentle", "normal", "firm")
+LANGUAGES = ("zh", "en")         # what the hosts speak: picks the speech recognisers and the editing brief
 # letters for new hosts' tags; I/O look like digits
 _TAGS = [c for c in string.ascii_uppercase if c not in "IOLP"]
 # (L and P: Leon and Pei in LEGACY)
@@ -40,6 +41,7 @@ LEGACY: dict = {
     "legacy": True,          # Leon's show: the EP001-calibrated prompts and texts, unchanged
     "show_name": "洛城二三事",  # i18n-ignore
     "about": "两个朋友的电影闲聊",  # i18n-ignore
+    "language": "zh",
     "hosts": [
         {"tag": "L", "name": "Leon", "color": "blue", "cut_level": "firm",
          "style": "Cut his rambling hard: tangents, restarts, long build-ups."},
@@ -56,6 +58,7 @@ NEW: dict = {
     "legacy": False,
     "show_name": "",
     "about": "",
+    "language": "zh",
     "hosts": [],
     "footer": "",
     "publish": {"ximalaya": False, "album": ""},
@@ -114,6 +117,7 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
     legacy = bool((before or data).get("legacy"))
     out = {"version": VERSION, "setup_done": bool(data.get("setup_done", True)), "legacy": legacy,
            "show_name": _text(data.get("show_name"), 80), "about": _text(data.get("about"), 200),
+           "language": data.get("language") if data.get("language") in LANGUAGES else "zh",
            "footer": str(data.get("footer") or "").strip()[:600]}
     pub = data.get("publish") if isinstance(data.get("publish"), dict) else {}
     out["publish"] = {"ximalaya": bool(pub.get("ximalaya")), "album": _text(pub.get("album"), 80)}
@@ -164,7 +168,7 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
 def view(profile: dict) -> dict:
     """What the interface gets (GET /api/show)."""
     return profile | {"needs_setup": not profile.get("setup_done"), "colors": list(COLORS),
-                      "cut_levels": list(CUT_LEVELS), "max_hosts": MAX_HOSTS}
+                      "cut_levels": list(CUT_LEVELS), "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES)}
 
 
 def tracks(profile: dict) -> list[tuple[str, str]]:

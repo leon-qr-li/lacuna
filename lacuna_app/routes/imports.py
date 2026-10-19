@@ -23,6 +23,7 @@ class ImportBody(BaseModel):
     title: str = Field("", max_length=200)
     tracks: list[Annotated[str, Field(min_length=1, max_length=2000)]] = Field(
         min_length=1, max_length=6, description="path of each host's raw track, in the show's host order")
+    language: str | None = Field(None, max_length=8, description="what the hosts speak (zh / en); default: the show's")
 
 
 def register(app, ctx) -> None:
@@ -92,7 +93,8 @@ def register(app, ctx) -> None:
         if cloud_enabled() and not all(import_tracks.owned(ws, p) for p in body.tracks):
             raise HTTPException(422, tr("请先上传音轨"))
         try:
-            return {"job": importer.start(body.id.strip(), body.title, body.tracks)}
+            return {"job": importer.start(body.id.strip(), body.title, body.tracks,
+                                               language=body.language)}
         except ImportBusy as e:
             raise HTTPException(409, str(e))
         except ImportError_ as e:

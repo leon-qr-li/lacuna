@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from .words import join_words
 from . import show
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
@@ -204,7 +205,7 @@ def segments(ep: Episode) -> list[Segment]:
             groups.append([u])
     out = []
     for g in groups:
-        text = "".join(u.text for u in g)
+        text = join_words(u.text for u in g)
         if len(text) < MIN_CHARS:
             continue
         start = g[0].start

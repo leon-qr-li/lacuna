@@ -37,6 +37,7 @@ from lacuna_core import MediaRef, Project, SourcePool, new_timeline
 from lacuna_core.edl import Clip, Track, replace
 from lacuna_core.refine import snap_cut
 
+from .words import join_words
 from .episode import APPLIED, RESTORED, Edit
 from .review import ReviewPolicy, needs_review
 from .i18n import N_, tr
@@ -92,7 +93,7 @@ class TrackTokens:
         return sum(min(b, t["end"]) - max(a, t["start"]) for t in self.overlapping(a, b))
 
     def text_in(self, a: float, b: float) -> str:
-        return "".join(t["t"] for t in self.overlapping(a, b)
+        return join_words(t["t"] for t in self.overlapping(a, b)
                        if (min(b, t["end"]) - max(a, t["start"])) >= 0.5 * (t["end"] - t["start"]))
 
     def gap_at(self, t: float) -> tuple[float, float] | None:

@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from .words import join_words
 from . import show
 from .analysis import Span
 from .i18n import AI_NAME_RULE, in_reply_language, tr
@@ -52,7 +53,7 @@ class Utterance:
 
     @property
     def text(self) -> str:
-        return "".join(w.text for w in self.words)
+        return join_words(w.text for w in self.words)
 
 
 @dataclass
@@ -562,7 +563,7 @@ def _range_cut(a: dict, ctx: ChatContext, utts: dict[str, Utterance]) -> tuple[d
     x_before = max(0.0, gb + keep_after - desired)
     cut = {"start": round(start - x_before, 3), "end": round(end + x_after, 3), "track": None}
     speakers = {u1.speaker, u2.speaker}
-    caught = "".join(w.text for sp, w in allw if sp not in speakers
+    caught = join_words(w.text for sp, w in allw if sp not in speakers
                      and cut["start"] <= (w.start + w.end) / 2 < cut["end"])
     note = None
     if caught:

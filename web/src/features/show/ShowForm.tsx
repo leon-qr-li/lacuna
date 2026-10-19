@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { t } from "../../i18n";
 import { BusyLabel } from "../loading/Loading";
-import { setShow, showApi, type CutLevel, type Host, type HostColor, type Show } from "./api";
+import { LANGUAGE_LABELS, LANGUAGES, setShow, showApi, type CutLevel, type Host, type HostColor, type Language, type Show } from "./api";
 
 const COLOR_LABELS: Record<HostColor, string> = {
   blue: t("蓝"),
@@ -30,6 +30,7 @@ const newHost = (s: Show, hosts: Host[]): Host => ({
 export function ShowForm({ show, compact, onSaved }: { show: Show; compact?: boolean; onSaved?: (s: Show) => void }) {
   const [name, setName] = useState(show.show_name);
   const [about, setAbout] = useState(show.about);
+  const [language, setLanguage] = useState<Language>(show.language ?? "zh");
   const [footer, setFooter] = useState(show.footer);
   const [hosts, setHosts] = useState<Host[]>(show.hosts.length ? show.hosts : [newHost(show, [])]);
   const [album, setAlbum] = useState(show.publish.album);
@@ -48,6 +49,7 @@ export function ShowForm({ show, compact, onSaved }: { show: Show; compact?: boo
       const s = await showApi.save({
         show_name: name,
         about,
+        language,
         footer,
         hosts,
         publish: { ximalaya: show.publish.ximalaya || !!album.trim(), album },
@@ -75,6 +77,17 @@ export function ShowForm({ show, compact, onSaved }: { show: Show; compact?: boo
       <label className="show-field">
         <span>{t("节目名")}</span>
         <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder={t("比如：周末电影院")} data-testid="show-name" />
+      </label>
+      <label className="show-field">
+        <span>{t("节目语言")}</span>
+        <select value={language} onChange={(e) => setLanguage(e.target.value as Language)} data-testid="show-language">
+          {LANGUAGES.map((l) => (
+            <option key={l} value={l}>
+              {LANGUAGE_LABELS[l]}
+            </option>
+          ))}
+        </select>
+        <small className="muted">{t("主持人说的语言。决定用哪个语音识别和剪辑方式；导入时每集还能单独改。")}</small>
       </label>
       {!compact && (
         <label className="show-field">
