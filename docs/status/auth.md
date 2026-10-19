@@ -1,6 +1,7 @@
 # Sign-in (登录 / 注册 / 忘记密码)
 
-Thread「登录与 Resend 邮件」. Decision: `docs/decisions/2026-10-17-local-sign-in.md`.
+Thread「登录与 Resend 邮件」, then「账号与权限」. Decisions: `docs/decisions/2026-10-17-local-sign-in.md`,
+`2026-10-19-invites-roles-2fa.md`.
 
 ## State (2026-10-17)
 - Built: `lacuna_app/auth.py`, `keystore.py`, `routes/auth.py` (API + 401 gate); web `features/auth/`
@@ -12,9 +13,17 @@ Thread「登录与 Resend 邮件」. Decision: `docs/decisions/2026-10-17-local-
 - 2026-10-18 (PR #92, 首检 #2): signing in or creating the account always lands on 剧集 (`#/`), not on 设置 where
   the sign-out happened (`AuthGate`; covered in `auth.spec.ts`). Waiting for the 2026-10-18 batch validation.
 
+## 2026-10-19: invites, roles, two-step sign-in (thread「账号与权限」, PR A)
+- Built: invite-only sign-up, roles owner/admin/member, TOTP two-step (`lacuna_app/totp.py`) + recovery codes,
+  15-minute lockout, signed-in devices, change password; 设置 cards 账号与安全 / 成员与邀请 (admins) / 邮件 (owner).
+  `LACUNA_CLOUD=1` makes two-step mandatory, cookies Secure, first account needs `auth/setup-code.txt`.
+- Owner-only API: `/api/app/api-key`, `/api/app/update/prepare|apply`, `/api/auth/config|resend-key|test-mail`.
+- Tests: `tests/app/test_auth.py`, `test_auth_invites_2fa.py`; `web/e2e/auth.spec.ts` (6, incl. a cloud first run).
+- Next (PR B): content ownership via workspaces (episodes, library, learned rules per workspace).
+
 ## Update notes
-After updating, the app opens on「创建你的账号」(first account, no code). Then 设置 → 账号与邮件: paste the
-Resend key (re_…), 发测试邮件. No extra install steps.
+No extra install steps. Leon's existing account becomes 所有者 and signs in as before; two-step is optional on the
+desktop (设置 → 账号与安全). The 设置 card 账号与邮件 is now split into 账号与安全 / 成员与邀请 / 邮件.
 
 ## Validated
 - 2026-10-17 20:23Z: Leon validated sign-in on his PC (「没问题，验收通过」).

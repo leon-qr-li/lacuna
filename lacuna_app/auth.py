@@ -1,19 +1,25 @@
-"""Sign-in for the local app: accounts, sessions, email codes (via Resend).
+"""Sign-in: accounts, roles, invites, two-step codes, sessions, email codes (via Resend).
 
-Threat model (docs/decisions/2026-10-17-local-sign-in.md): the server only listens on 127.0.0.1, so
-sign-in does not protect the files on disk from someone at the computer. What it adds: a person who
-opens the app must know the password, and other websites in the browser can no longer drive the local
-API (the session cookie is SameSite=Strict and every /api call needs it once an account exists).
+Decisions: docs/decisions/2026-10-17-local-sign-in.md (the base), 2026-10-19-invites-roles-2fa.md (this).
 
 - Passwords: scrypt with a random salt, checked locally, so signing in works offline.
-- Sessions: random tokens; only their SHA-256 is stored. "Remember me" = 30 days, else 12 hours.
-- Email codes (register, reset password): 6 digits, 10 minutes, 5 tries, one send per 60 s.
-  They live in memory only (a restart forgets them; ask for a new one).
-- Until the first account exists the API stays open, and that first account needs no code (it is the
-  owner, sitting at this computer). After that, new accounts need "allow sign-up" in 设置 + an email code.
+- Invite-only: the first account (the owner) is created on the first run; every later account needs an
+  invite link from the owner or an admin (one use, bound to one email, 7 days). There is no open sign-up.
+- Roles: owner (one, can do everything), admin (invites and manages members), member.
+- Two-step sign-in (TOTP from an authenticator app, lacuna_app/totp.py) plus 10 one-time recovery codes.
+  Required for everyone when the app runs in the cloud (`cloud=True`); optional on the desktop app.
+  Signing in is password -> short-lived ticket -> code -> session; no session exists before the code.
+- Sessions: random tokens; only their SHA-256 is stored. "Remember me" = 30 days, else 12 hours. Each
+  person sees their signed-in devices and can sign any of them out.
+- Wrong password or code 5 times in 15 minutes locks the account for 15 minutes (and, in the cloud,
+  30 failures from one address lock that address).
+- Email codes (reset password): 6 digits, 10 minutes, 5 tries, one send per 60 s, in memory only.
+  With two-step sign-in on, a reset also needs the authenticator (or a recovery code).
+- In the cloud the first account also needs the setup code written to <root>/auth/setup-code.txt (and the
+  server log) on the first start, so nobody who reaches a fresh server first can make themselves owner.
 - Locked out with no email: delete <workspace>/auth/users.json and the app asks for a new first account.
 
-Files: <workspace>/auth/users.json, sessions.json (atomic writes, see store.py).
+Files: <workspace>/auth/users.json (accounts, invites, config), sessions.json (atomic writes, store.py).
 """
 from __future__ import annotations
 
@@ -21,6 +27,8 @@ import base64
 import hashlib
 import hmac
 import json
+import math
+import os
 import re
 import secrets
 import threading
@@ -30,6 +38,7 @@ import urllib.request
 from pathlib import Path
 from typing import Callable
 
+from . import totp
 from .i18n import tr
 from .keystore import find_secret, save_secret
 from .store import atomic_write_json, read_json
@@ -41,12 +50,18 @@ CODE_S = 600
 CODE_TRIES = 5
 CODE_COOLDOWN_S = 60
 LOGIN_TRIES = 5
-LOCK_S = 60
+LOCK_S = 15 * 60
+IP_TRIES = 30
+INVITE_S = 7 * 86400
+TICKET_S = 300
+SEEN_SAVE_S = 300
 MIN_PASSWORD = 10
 RESEND_KEY = "RESEND_API_KEY"
 DEFAULT_SENDER = "LACUNA <onboarding@resend.dev>"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _SCRYPT = dict(n=2 ** 14, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
+RANK = {"member": 1, "admin": 2, "owner": 3}
+SETUP_FILE = "setup-code.txt"
 
 
 class AuthError(Exception):
@@ -136,33 +151,67 @@ class ResendMailer:
             raise MailError(tr("连不上 Resend，检查一下网络（{e}）", e=getattr(e, "reason", e)))
 
 
+
 # ------------------------------------------------------------------------------------------- store
 
 class Auth:
-    def __init__(self, root: Path, mailer=None, clock: Callable[[], float] = time.time, skip_setup: bool = False):
+    def __init__(self, root: Path, mailer=None, clock: Callable[[], float] = time.time, skip_setup: bool = False,
+                 cloud: bool = False):
         self.dir = Path(root) / "auth"
         self.skip_setup = skip_setup     # E2E servers: don't force the first-account screen
+        self.cloud = cloud               # require two-step sign-in, Secure cookies, setup code for the owner
         self.mailer = mailer if mailer is not None else ResendMailer()
         self.now = clock
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         data = read_json(self.dir / "users.json") if (self.dir / "users.json").exists() else None
         data = data or {}
         self.users: dict[str, dict] = {u["email"]: u for u in data.get("users", [])}
-        self.config: dict = {"allow_register": False, "sender": DEFAULT_SENDER, **data.get("config", {})}
-        sess = read_json(self.dir / "sessions.json") if (self.dir / "sessions.json").exists() else None
+        for u in self.users.values():            # accounts from before roles: the first one is the owner
+            u.setdefault("role", "owner" if u.pop("owner", False) else "member")
+            u.pop("owner", None)
+        self.config: dict = {"sender": DEFAULT_SENDER, **data.get("config", {})}
+        self.config.pop("allow_register", None)  # sign-up is by invite only now
         now = self.now()
+        self.invites: dict[str, dict] = {i["hash"]: i for i in data.get("invites", []) if i["exp"] > now}
+        sess = read_json(self.dir / "sessions.json") if (self.dir / "sessions.json").exists() else None
         self.sessions: dict[str, dict] = {k: v for k, v in (sess or {}).get("sessions", {}).items() if v["exp"] > now}
         self.codes: dict[tuple[str, str], dict] = {}
+        self.tickets: dict[str, dict] = {}        # password checked, waiting for the two-step code
+        self.pending_totp: dict[str, dict] = {}   # signed in, setting up the authenticator
         self.fails: dict[str, list[float]] = {}
+        self._seen_saved = now
+        self.setup_code: str | None = None
+        if self.cloud and not self.users:
+            self._make_setup_code()
+
+    @property
+    def require_2fa(self) -> bool:
+        return self.cloud
 
     # -- persistence
     def _save_users(self) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(self.dir / "users.json", {"users": list(self.users.values()), "config": self.config})
+        now = self.now()
+        self.invites = {k: v for k, v in self.invites.items() if v["exp"] > now}
+        atomic_write_json(self.dir / "users.json", {"users": list(self.users.values()), "config": self.config,
+                                                    "invites": list(self.invites.values())})
 
     def _save_sessions(self) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
         atomic_write_json(self.dir / "sessions.json", {"sessions": self.sessions})
+        self._seen_saved = self.now()
+
+    def _make_setup_code(self) -> None:
+        f = self.dir / SETUP_FILE
+        if f.is_file() and f.read_text().strip():
+            self.setup_code = f.read_text().strip()
+        else:
+            self.dir.mkdir(parents=True, exist_ok=True)
+            self.setup_code = "-".join(secrets.token_hex(3) for _ in range(3))
+            fd = os.open(f, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as fh:
+                fh.write(self.setup_code + "\n")
+        print(f"LACUNA setup code for the first account: {self.setup_code}  (also in {f})", flush=True)
 
     # -- queries
     def has_accounts(self) -> bool:
@@ -173,29 +222,62 @@ class Auth:
         if not token:
             return None
         s = self.sessions.get(_sha(token))
-        if not s or s["exp"] <= self.now() or s["email"] not in self.users:
+        now = self.now()
+        if not s or s["exp"] <= now:
             return None
+        u = self.users.get(s["email"])
+        if not u or u.get("disabled"):
+            return None
+        s["seen"] = now
+        if now - self._seen_saved > SEEN_SAVE_S:
+            with self.lock:
+                self._save_sessions()
         return s["email"]
 
+    def role(self, email: str | None) -> str | None:
+        u = self.users.get(email or "")
+        return u["role"] if u else None
+
     def status(self, token: str | None) -> dict:
+        email = self.who(token)
+        u = self.users.get(email or "")
         return {"accounts": self.has_accounts(), "setup": not self.users and not self.skip_setup,
-                "email": self.who(token),
-                "allow_register": bool(self.config["allow_register"]) or not self.users,
-                "first": not self.users, "mail": self.mail_status()}
+                "email": email, "role": u["role"] if u else None,
+                "twofa": bool(u and u.get("totp")), "require_2fa": self.require_2fa, "cloud": self.cloud,
+                "first": not self.users, "setup_code": bool(self.setup_code) and not self.users,
+                "mail": self.mail_status() if u and u["role"] == "owner" else None}
 
     def mail_status(self) -> dict:
         source = find_secret(RESEND_KEY)[1] if isinstance(self.mailer, ResendMailer) else "test"
         configured = self.mailer.configured()
         return {"configured": configured, "source": source if configured else None, "sender": self.config["sender"]}
 
+    # -- failures and lockout
+    def _check_lock(self, email: str, ip: str | None) -> None:
+        now = self.now()
+        for key, limit in ((email, LOGIN_TRIES), (f"ip:{ip}" if ip else None, IP_TRIES)):
+            if not key:
+                continue
+            recent = self.fails[key] = [t for t in self.fails.get(key, []) if now - t < LOCK_S]
+            if len(recent) >= limit:
+                mins = max(1, math.ceil((LOCK_S - (now - recent[-limit])) / 60))
+                raise AuthError(tr("错了太多次，{n} 分钟后再试", n=mins), 429)
+
+    def _fail(self, email: str, ip: str | None) -> None:
+        now = self.now()
+        self.fails.setdefault(email, []).append(now)
+        if ip:
+            self.fails.setdefault(f"ip:{ip}", []).append(now)
+
     # -- sessions
-    def _session(self, email: str, remember: bool) -> tuple[str, int | None]:
+    def _session(self, email: str, remember: bool, agent: str = "") -> tuple[str, int | None]:
         token = secrets.token_urlsafe(32)
         ttl = REMEMBER_S if remember else SHORT_S
         with self.lock:
             now = self.now()
             self.sessions = {k: v for k, v in self.sessions.items() if v["exp"] > now}
-            self.sessions[_sha(token)] = {"email": email, "exp": now + ttl, "created": now}
+            self.sessions[_sha(token)] = {"email": email, "exp": now + ttl, "created": now, "seen": now,
+                                          "agent": (agent or "")[:200]}
             self._save_sessions()
         return token, (ttl if remember else None)
 
@@ -204,26 +286,45 @@ class Auth:
             if token and self.sessions.pop(_sha(token), None) is not None:
                 self._save_sessions()
 
+    def list_sessions(self, email: str, token: str | None) -> list[dict]:
+        cur = _sha(token or "")
+        now = self.now()
+        rows = [{"id": k[:16], "created": v["created"], "seen": v.get("seen", v["created"]), "agent": v.get("agent", ""),
+                 "current": k == cur} for k, v in self.sessions.items() if v["email"] == email and v["exp"] > now]
+        return sorted(rows, key=lambda r: (not r["current"], -r["seen"]))
+
+    def end_sessions(self, email: str, token: str | None, sid: str | None = None) -> int:
+        """Sign out one device of `email` (`sid` from list_sessions), or every other device (`sid` None)."""
+        cur = _sha(token or "")
+        with self.lock:
+            drop = [k for k, v in self.sessions.items() if v["email"] == email and k != cur
+                    and (sid is None or k[:16] == sid)]
+            for k in drop:
+                del self.sessions[k]
+            if drop:
+                self._save_sessions()
+        return len(drop)
+
+    def _end_all(self, email: str, keep: str | None = None) -> None:
+        self.sessions = {k: v for k, v in self.sessions.items() if v["email"] != email or k == keep}
+        self._save_sessions()
+
     # -- codes
     def send_code(self, email: str, purpose: str) -> None:
         email = norm_email(email)
-        if purpose == "register":
-            self._can_register(email)
-        elif purpose == "reset":
-            if email not in self.users:
-                return       # say nothing about which emails have accounts
-        else:
+        if purpose != "reset":
             raise AuthError("bad purpose")
+        if email not in self.users or self.users[email].get("disabled"):
+            return       # say nothing about which emails have accounts
         now = self.now()
         old = self.codes.get((email, purpose))
         if old and now - old["sent"] < CODE_COOLDOWN_S:
             raise AuthError(tr("验证码刚发过，{n} 秒后再试", n=int(CODE_COOLDOWN_S - (now - old["sent"])) + 1), 429)
         code = f"{secrets.randbelow(10 ** 6):06d}"
-        what = tr("注册 LACUNA 账号") if purpose == "register" else tr("重设 LACUNA 密码")
         try:
             self.mailer.send(self.config["sender"], email, tr("LACUNA 验证码：{code}", code=code),
                              tr("你的验证码是 {code}，10 分钟内有效，用于{what}。\n\n如果不是你本人操作，忽略这封邮件即可。",
-                                code=code, what=what))
+                                code=code, what=tr("重设 LACUNA 密码")))
         except MailError as e:
             raise AuthError(str(e), 502)
         self.codes[(email, purpose)] = {"hash": _sha(code), "exp": now + CODE_S, "tries": 0, "sent": now}
@@ -240,60 +341,289 @@ class Auth:
             raise AuthError(tr("验证码不对"))
         del self.codes[(email, purpose)]
 
-    # -- accounts
-    def _can_register(self, email: str) -> None:
-        if email in self.users:
-            raise AuthError(tr("这个邮箱已经注册过了，直接登录或者找回密码"), 409)
-        if self.users and not self.config["allow_register"]:
-            raise AuthError(tr("注册已关闭。请账号主人在「设置 → 账号与邮件」里打开「允许新注册」。"), 403)
+    # -- the step after the password
+    def _next_step(self, email: str, remember: bool, agent: str, then: dict | None = None) -> dict:
+        """Password (or invite, or email code) accepted: a session, or a ticket for the two-step code."""
+        u = self.users[email]
+        if u.get("totp") or self.require_2fa:
+            ticket = secrets.token_urlsafe(24)
+            now = self.now()
+            self.tickets = {k: v for k, v in self.tickets.items() if v["exp"] > now}
+            t = {"email": email, "remember": remember, "agent": agent, "exp": now + TICKET_S, "then": then or {}}
+            if u.get("totp"):
+                self.tickets[ticket] = t | {"kind": "2fa"}
+                return {"step": "2fa", "ticket": ticket}
+            secret = totp.new_secret()
+            self.tickets[ticket] = t | {"kind": "enroll", "secret": secret}
+            return {"step": "enroll", "ticket": ticket, "secret": secret, "uri": totp.uri(secret, email)}
+        self._apply(email, then or {})
+        return {"step": "done", "session": self._session(email, remember, agent)}
 
-    def register(self, email: str, password: str, code: str | None, remember: bool) -> tuple[str, int | None]:
-        email = norm_email(email)
-        check_password(password)
-        first = not self.users
-        self._can_register(email)
-        if not first:
-            self._use_code(email, "register", code or "")
-        with self.lock:
-            self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
-                                 "owner": first, "verified": not first}
+    def _apply(self, email: str, then: dict) -> None:
+        if then.get("hash"):          # a password reset waiting for the two-step code
+            with self.lock:
+                self.users[email]["hash"] = then["hash"]
+                self.users[email]["verified"] = True
+                self._end_all(email)
+                self._save_users()
+
+    def _ticket(self, ticket: str, kind: str) -> dict:
+        t = self.tickets.get(ticket or "")
+        if not t or t["exp"] <= self.now() or t["kind"] != kind or t["email"] not in self.users:
+            self.tickets.pop(ticket or "", None)
+            raise AuthError(tr("这一步等太久了，请重新登录"), 401)
+        return t
+
+    def _second_factor(self, u: dict, code: str) -> bool:
+        """An authenticator code (not reused) or an unused recovery code; uses it up."""
+        tf = u.get("totp") or {}
+        step = totp.match(tf.get("secret", ""), code, self.now(), tf.get("last", -1)) if tf else None
+        if step is not None:
+            tf["last"] = step
             self._save_users()
-        return self._session(email, remember)
+            return True
+        rc = totp.norm_recovery(code)
+        hashes = u.get("recovery", [])
+        if rc and _sha(rc) in hashes:
+            hashes.remove(_sha(rc))
+            self._save_users()
+            return True
+        return False
 
-    def login(self, email: str, password: str, remember: bool) -> tuple[str, int | None]:
-        email = (email or "").strip().lower()
-        now = self.now()
-        recent = [t for t in self.fails.get(email, []) if now - t < LOCK_S]
-        if len(recent) >= LOGIN_TRIES:
-            raise AuthError(tr("密码错了太多次，{n} 秒后再试", n=int(LOCK_S - (now - recent[0])) + 1), 429)
-        u = self.users.get(email)
-        if not u or not verify_password(password or "", u["hash"]):
-            self.fails[email] = recent + [now]
-            raise AuthError(tr("邮箱或密码不对"), 401)
+    def second_step(self, ticket: str, code: str, ip: str | None = None) -> dict:
+        t = self._ticket(ticket, "2fa")
+        email = t["email"]
+        self._check_lock(email, ip)
+        with self.lock:
+            ok = self._second_factor(self.users[email], code)
+        if not ok:
+            self._fail(email, ip)
+            raise AuthError(tr("两步验证码不对"), 401)
+        self.tickets.pop(ticket, None)
         self.fails.pop(email, None)
-        return self._session(email, remember)
+        self._apply(email, t["then"])
+        return {"step": "done", "session": self._session(email, t["remember"], t["agent"])}
 
-    def reset(self, email: str, code: str, password: str) -> tuple[str, int | None]:
+    def enroll(self, ticket: str, code: str, ip: str | None = None) -> dict:
+        """First sign-in where two-step is required: confirm the authenticator, get recovery codes."""
+        t = self._ticket(ticket, "enroll")
+        email = t["email"]
+        self._check_lock(email, ip)
+        step = totp.match(t["secret"], code, self.now())
+        if step is None:
+            self._fail(email, ip)
+            raise AuthError(tr("两步验证码不对：看一下手机上 LACUNA 这一项现在的 6 位数字"), 401)
+        self.tickets.pop(ticket, None)
+        codes = self._turn_on(email, t["secret"], step)
+        self._apply(email, t["then"])
+        return {"step": "done", "session": self._session(email, t["remember"], t["agent"]), "recovery": codes}
+
+    def _turn_on(self, email: str, secret: str, step: int) -> list[str]:
+        codes = totp.recovery_codes()
+        with self.lock:
+            u = self.users[email]
+            u["totp"] = {"secret": secret, "since": self.now(), "last": step}
+            u["recovery"] = [_sha(c) for c in codes]
+            self._save_users()
+        return codes
+
+    # -- two-step settings (signed in)
+    def start_2fa(self, email: str) -> dict:
+        secret = totp.new_secret()
+        self.pending_totp[email] = {"secret": secret, "exp": self.now() + 15 * 60}
+        return {"secret": secret, "uri": totp.uri(secret, email)}
+
+    def confirm_2fa(self, email: str, code: str) -> list[str]:
+        p = self.pending_totp.get(email)
+        if not p or p["exp"] <= self.now():
+            raise AuthError(tr("这一步等太久了，重新点「开启两步验证」"))
+        step = totp.match(p["secret"], code, self.now())
+        if step is None:
+            raise AuthError(tr("两步验证码不对：看一下手机上 LACUNA 这一项现在的 6 位数字"))
+        del self.pending_totp[email]
+        return self._turn_on(email, p["secret"], step)
+
+    def _check_own_code(self, email: str, code: str) -> None:
+        self._check_lock(email, None)
+        with self.lock:
+            ok = self._second_factor(self.users[email], code)
+        if not ok:
+            self._fail(email, None)
+            raise AuthError(tr("两步验证码不对"))
+
+    def new_recovery(self, email: str, code: str) -> list[str]:
+        u = self.users[email]
+        if not u.get("totp"):
+            raise AuthError(tr("还没开两步验证"))
+        self._check_own_code(email, code)
+        codes = totp.recovery_codes()
+        with self.lock:
+            u["recovery"] = [_sha(c) for c in codes]
+            self._save_users()
+        return codes
+
+    def disable_2fa(self, email: str, code: str) -> None:
+        if self.require_2fa:
+            raise AuthError(tr("云端版必须开两步验证"), 403)
+        self._check_own_code(email, code)
+        with self.lock:
+            self.users[email].pop("totp", None)
+            self.users[email].pop("recovery", None)
+            self._save_users()
+
+    def change_password(self, email: str, old: str, new: str, token: str | None) -> None:
+        check_password(new)
+        self._check_lock(email, None)
+        if not verify_password(old or "", self.users[email]["hash"]):
+            self._fail(email, None)
+            raise AuthError(tr("现在的密码不对"))
+        with self.lock:
+            self.users[email]["hash"] = hash_password(new)
+            self._end_all(email, keep=_sha(token or ""))   # other devices sign in again
+            self._save_users()
+
+    # -- accounts
+    def register_first(self, email: str, password: str, setup_code: str | None, remember: bool,
+                       agent: str = "") -> dict:
+        """The owner's account, on the first run (no invite; in the cloud, the setup code)."""
         email = norm_email(email)
         check_password(password)
-        if email not in self.users:
+        with self.lock:
+            if self.users:
+                raise AuthError(tr("只能通过邀请链接注册。请向 LACUNA 的管理员要一个邀请。"), 403)
+            if self.setup_code and not hmac.compare_digest(self.setup_code, (setup_code or "").strip().lower()):
+                raise AuthError(tr("初始化码不对：在服务器上的 auth/setup-code.txt 里"), 403)
+            self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
+                                 "role": "owner", "verified": False}
+            self._save_users()
+            if self.setup_code:
+                (self.dir / SETUP_FILE).unlink(missing_ok=True)
+                self.setup_code = None
+        return self._next_step(email, remember, agent)
+
+    def invite_info(self, token: str) -> dict:
+        i = self.invites.get(_sha(token or ""))
+        if not i or i["exp"] <= self.now() or i["email"] in self.users:
+            raise AuthError(tr("这个邀请链接已经失效（用过了、过期了或被撤回了）。请向邀请你的人要一个新的。"), 404)
+        return i
+
+    def register_invite(self, token: str, password: str, remember: bool, agent: str = "") -> dict:
+        check_password(password)
+        with self.lock:
+            i = self.invite_info(token)
+            email = i["email"]
+            self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
+                                 "role": i["role"], "verified": True, "invited_by": i["by"]}
+            del self.invites[i["hash"]]
+            self._save_users()
+        return self._next_step(email, remember, agent)
+
+    def login(self, email: str, password: str, remember: bool, ip: str | None = None, agent: str = "") -> dict:
+        email = (email or "").strip().lower()
+        self._check_lock(email, ip)
+        u = self.users.get(email)
+        if not u or not verify_password(password or "", u["hash"]) or u.get("disabled"):
+            self._fail(email, ip)
+            raise AuthError(tr("邮箱或密码不对"), 401)
+        if not u.get("totp"):
+            self.fails.pop(email, None)
+        return self._next_step(email, remember, agent)
+
+    def reset(self, email: str, code: str, password: str, agent: str = "") -> dict:
+        email = norm_email(email)
+        check_password(password)
+        if email not in self.users or self.users[email].get("disabled"):
             raise AuthError(tr("验证码过期了，重新发一个"))
         self._use_code(email, "reset", code)
-        with self.lock:
-            self.users[email]["hash"] = hash_password(password)
-            self.users[email]["verified"] = True
-            # every other session of this account ends
-            self.sessions = {k: v for k, v in self.sessions.items() if v["email"] != email}
-            self._save_users()
-            self._save_sessions()
         self.fails.pop(email, None)
-        return self._session(email, remember=True)
+        return self._next_step(email, True, agent, then={"hash": hash_password(password)})
 
-    # -- settings (signed in)
-    def update_config(self, allow_register: bool | None = None, sender: str | None = None) -> None:
+    # -- members (owner / admin)
+    def _manage(self, actor: str, target: str) -> dict:
+        a, u = self.users.get(actor), self.users.get(target)
+        if not u:
+            raise AuthError(tr("没有这个账号"), 404)
+        if actor == target or not a or RANK[a["role"]] <= RANK[u["role"]]:
+            raise AuthError(tr("你没有权限改这个账号"), 403)
+        return u
+
+    def _grantable(self, actor: str, role: str) -> None:
+        if role not in ("admin", "member") or RANK[self.users[actor]["role"]] <= RANK[role]:
+            raise AuthError(tr("你没有权限给这个角色"), 403)
+
+    def list_users(self) -> list[dict]:
+        last: dict[str, float] = {}
+        for v in self.sessions.values():
+            last[v["email"]] = max(last.get(v["email"], 0), v.get("seen", v["created"]))
+        rows = [{"email": u["email"], "role": u["role"], "created": u["created"], "twofa": bool(u.get("totp")),
+                 "disabled": bool(u.get("disabled")), "seen": last.get(u["email"])} for u in self.users.values()]
+        return sorted(rows, key=lambda r: (-RANK[r["role"]], r["created"]))
+
+    def update_user(self, actor: str, target: str, role: str | None = None, disabled: bool | None = None,
+                    reset_2fa: bool = False) -> None:
         with self.lock:
-            if allow_register is not None:
-                self.config["allow_register"] = bool(allow_register)
+            u = self._manage(actor, target)
+            if role is not None:
+                self._grantable(actor, role)
+                u["role"] = role
+            if disabled is not None:
+                u["disabled"] = bool(disabled)
+                if disabled:
+                    self._end_all(target)
+            if reset_2fa:            # lost phone and recovery codes: they set it up again at next sign-in
+                u.pop("totp", None)
+                u.pop("recovery", None)
+                self._end_all(target)
+            self._save_users()
+
+    def delete_user(self, actor: str, target: str) -> None:
+        """Removes the account only; what they made stays where it is."""
+        with self.lock:
+            self._manage(actor, target)
+            del self.users[target]
+            self._end_all(target)
+            self._save_users()
+
+    # -- invites (owner / admin)
+    def list_invites(self) -> list[dict]:
+        now = self.now()
+        return sorted(({"id": i["hash"][:16], "email": i["email"], "role": i["role"], "by": i["by"],
+                        "created": i["created"], "exp": i["exp"]} for i in self.invites.values() if i["exp"] > now),
+                      key=lambda r: -r["created"])
+
+    def invite(self, actor: str, email: str, role: str, origin: str) -> dict:
+        """A one-time sign-up link for `email`; emailed when Resend can, always returned for copying."""
+        email = norm_email(email)
+        self._grantable(actor, role)
+        if email in self.users:
+            raise AuthError(tr("这个邮箱已经有账号了"), 409)
+        token = secrets.token_urlsafe(32)
+        now = self.now()
+        with self.lock:
+            self.invites = {k: v for k, v in self.invites.items() if v["email"] != email}   # the newest link wins
+            self.invites[_sha(token)] = {"hash": _sha(token), "email": email, "role": role, "by": actor,
+                                         "created": now, "exp": now + INVITE_S}
+            self._save_users()
+        link = f"{origin.rstrip('/')}/#/invite/{token}"
+        mailed, why = False, None
+        try:
+            self.mailer.send(self.config["sender"], email, tr("{who} 邀请你使用 LACUNA", who=actor),
+                             tr("{who} 邀请你加入 LACUNA Studio。\n\n打开这个链接设置密码（7 天内有效，只能用一次）：\n{link}\n\n如果你不认识邀请人，忽略这封邮件即可。",
+                                who=actor, link=link))
+            mailed = True
+        except MailError as e:
+            why = str(e)
+        return {"link": link, "mailed": mailed, "mail_error": why, "email": email, "role": role}
+
+    def revoke_invite(self, iid: str) -> None:
+        with self.lock:
+            for k in [k for k in self.invites if k[:16] == iid]:
+                del self.invites[k]
+            self._save_users()
+
+    # -- settings (owner)
+    def update_config(self, sender: str | None = None) -> None:
+        with self.lock:
             if sender is not None:
                 s = sender.strip() or DEFAULT_SENDER
                 if "@" not in s:
