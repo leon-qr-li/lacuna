@@ -8,6 +8,7 @@ import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
 import { Lanes, Overview } from "./components/Timeline";
 import { navLinks, pages, tabs } from "./features/registry";
+import { MissingSources } from "./features/sources/MissingSources";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
@@ -260,6 +261,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         )}
       </div>
       {ep?.demo && <p className="banner">{ep.demo_note || t("演示数据")}</p>}
+      {ep && <MissingSources ep={ep} />}
       {toast && (
         <div className="toast" role="status">
           {toast}

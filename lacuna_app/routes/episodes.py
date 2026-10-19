@@ -66,6 +66,7 @@ def register(app, ctx) -> None:
             if version != ep.version_key():
                 raise HTTPException(404, "unknown or expired version")
             enabled = ep.enabled
+        ep.previewer      # recordings missing: a clear 409 now, not a stream cut off after its headers
         total = ep.wav_size(enabled)
         rng = parse_range(request.headers.get("range"), total)
         headers = {"Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600"}

@@ -428,4 +428,12 @@ EN: dict[str, str | tuple[str, str]] = {
     # English engine (asr.py, importer.py)
     "不支持这种语言：{language}": "This language is not supported: {language}",
     "找识别漏掉的 um / uh": "Finding the um / uh the transcript missed",
+    # missing recordings (sources.py)
+    "这一集的原始音轨不在服务器上，现在放不了声音。请在这一集页面顶上重新上传原始音轨。":
+        "This episode's original tracks are not on the server, so nothing can play yet. Upload them again at the top of the episode page.",
+    "读不了这一集的原始音轨。请在这一集页面顶上重新上传原始音轨。":
+        "This episode's original tracks can't be read. Upload them again at the top of the episode page.",
+    "这一集的原始音轨都在，不用再上传。": "All of this episode's original tracks are here; nothing to upload.",
+    "{name} 不是这一集缺的原始音轨（内容对不上）。请选当初导入这一集用的那个文件。":
+        "{name} is not one of this episode's missing tracks (the content differs). Pick the file this episode was imported from.",
 }

@@ -23,10 +23,10 @@ import threading
 import traceback
 import uuid
 from collections import OrderedDict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from functools import cached_property
 from itertools import accumulate
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import numpy as np
 
@@ -79,6 +79,10 @@ def history_label(label: str) -> str:
 
 class ConflictError(ValueError):
     """The requested change cannot be applied (overlap, nothing to undo, wrong state ...)."""
+
+
+class MissingSources(ConflictError):
+    """The episode's recordings are not on this machine, so nothing can be played or rendered."""
 
 
 @dataclass
@@ -282,10 +286,38 @@ class Episode:
     @property
     def previewer(self) -> Previewer:
         if self._previewer is None:
+            if self.missing_sources():
+                raise MissingSources(tr("这一集的原始音轨不在服务器上，现在放不了声音。请在这一集页面顶上重新上传原始音轨。"))
             self._pool = SourcePool(self.media)
             self._previewer = Previewer(Renderer(self._pool, RenderSettings(channels=1)),
                                         SegmentCache(192 << 20), block_s=2.0)
         return self._previewer
+
+    def missing_sources(self) -> list[dict]:
+        """Recordings the episode plays that are not on this machine (an episode moved from the
+        desktop kept its raw tracks' desktop paths): every listen, review clip, music mix and export
+        fails until they are uploaded again (`relink`, routes/sources.py)."""
+        tracks = {c.media_id: t.name for t in self.base.tracks for c in t.clips}
+        return [{"media_id": m.media_id, "track": tracks.get(m.media_id, ""),
+                 "file": PureWindowsPath(m.path).name, "duration": round(m.frames / m.sample_rate, 1)}
+                for m in self.media.values() if not Path(m.path).is_file()]
+
+    def relink(self, media_id: str, path: Path) -> None:
+        """Point a recording at its re-uploaded copy (same bytes: the media id is their sha256)."""
+        with self.lock:
+            old = self.media[media_id]
+            self.media[media_id] = replace(old, path=str(path))
+            self.media = declip.attach(self.dir, self.media, self.base)   # clipping repair, cached
+            if self._pool:
+                self._pool.close()
+            self._pool = self._previewer = None
+            self._clips.clear()
+            self.save()
+            raw = self.meta.get("raw_tracks") or {}
+            if old.path in raw.values():
+                self.meta["raw_tracks"] = {k: (str(path) if v == old.path else v) for k, v in raw.items()}
+                atomic_write_json(self.dir / META_FILE, self.meta,
+                                  protected=tuple(Path(m.path) for m in self.media.values()))
 
     def render(self, enabled: frozenset[str], a: int, b: int) -> np.ndarray:
         with self.lock:
@@ -857,6 +889,7 @@ class Episode:
                 "duration": round(tl.length / self.sr, 3), "raw_duration": round(self.base.length / self.sr, 3),
                 "raw_offset_s": float(self.meta.get("raw_offset_s", 0.0)),
                 "version": key, "audio_url": f"/api/episodes/{self.id}/audio/{key}.wav",
+                "missing_sources": self.missing_sources(),
                 "can_undo": bool(undo), "can_redo": bool(redo),
                 "undo_label": history_label(undo[-1]["label"]) if undo else None,
                 "redo_label": history_label(redo[-1]["label"]) if redo else None,
