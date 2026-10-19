@@ -8,17 +8,17 @@ import threading
 import webbrowser
 from pathlib import Path
 
-HOST = "127.0.0.1"   # loopback only, never exposed on the network
+HOST = "127.0.0.1"   # loopback only, never exposed on the network (the desktop app)
 # On restart/update, connections still open (a paused <audio> keeps its WAV stream open) get this
 # long to finish before they are dropped; the process is killed if it still hasn't exited after FORCE_EXIT.
 GRACEFUL_SHUTDOWN = 3
 FORCE_EXIT = 20
 
 
-def make_server(app, port: int):
+def make_server(app, port: int, host: str = HOST):
     import uvicorn
 
-    return uvicorn.Server(uvicorn.Config(app, host=HOST, port=port, log_level="warning",
+    return uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="warning",
                                          timeout_graceful_shutdown=GRACEFUL_SHUTDOWN))
 
 
@@ -38,7 +38,12 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--editor", choices=["auto", "mock", "claude"], default="auto",
                     help="AI producer backend: auto = Claude if ANTHROPIC_API_KEY is set, else rules")
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--host", default=HOST,
+                    help="address to listen on; anything but loopback needs LACUNA_CLOUD=1 (the cloud container)")
     args = ap.parse_args(argv)
+    from .cloud import enabled as cloud_enabled
+    if args.host not in ("127.0.0.1", "localhost", "::1") and not cloud_enabled():
+        ap.error("--host other than loopback is only for cloud mode (LACUNA_CLOUD=1)")
     if not args.workspace:
         ap.error("--workspace is required")
     ws = Path(args.workspace).expanduser()
@@ -66,11 +71,11 @@ def main(argv: list[str] | None = None) -> None:
 
     quiet_disconnect_noise()
     app = create_app(ws, make_adapter(args.editor), restart=restart)
-    url = f"http://{HOST}:{args.port}/"
+    url = f"http://{args.host}:{args.port}/"
     print(f"LACUNA Studio {current_version()} → {url}  (workspace: {ws.resolve()}, editor: {args.editor})")
-    if not args.no_browser:
+    if not args.no_browser and not cloud_enabled():
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    server = make_server(app, args.port)
+    server = make_server(app, args.port, args.host)
     server.run()
     if exit_code:
         sys.exit(exit_code)
