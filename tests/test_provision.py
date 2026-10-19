@@ -144,6 +144,8 @@ class FakeHttp(provision.Http):
 
 @pytest.fixture
 def api(monkeypatch):
+    # on GitHub the ::add-mask:: lines are swallowed by the runner; here they would print the values
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     for k, v in SECRETS.items():
         monkeypatch.setenv(k, v)
     a = FakeAPI()
