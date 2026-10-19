@@ -96,6 +96,8 @@ class ChatAsks:
         for a in self.all():
             by.setdefault(a["id"], []).append(a)
         out = []
+        from .learning import reviewer
+        who = reviewer(self.ws)
         for aid, group in by.items():
             group.sort(key=lambda a: a.get("at", ""))
             last = group[-1]                       # the latest wording wins; quotes add up
@@ -110,7 +112,7 @@ class ChatAsks:
                 f"ask:{aid}", "ask", last["title"],
                 tr("{how}，出自 {episodes} 的对话（{n} 句）。采用后从下一期的 AI 初剪开始照做。",
                    how=how, episodes=join_list(eps), n=n),
-                f"Leon's standing request (from the chat): {last['instruction']}",
+                f"{who}'s standing request (from the chat): {last['instruction']}",
                 {"ask": aid}, {"said": n, "episodes": eps}, examples[:6]))
         return out
 

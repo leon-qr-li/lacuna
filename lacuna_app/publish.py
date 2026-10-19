@@ -262,13 +262,22 @@ class ClaudePublisher:
         return self._client
 
     @staticmethod
-    def system() -> str:
-        return ((PROMPTS / "show_notes_brief.txt").read_text(encoding="utf-8")
-                + "\n\nAPPROVED EXAMPLE (EP001, format and voice only):\n\n"
+    def system(profile: dict | None = None) -> str:
+        brief = (PROMPTS / "show_notes_brief.txt").read_text(encoding="utf-8")
+        label = "APPROVED EXAMPLE (EP001, format and voice only):"
+        if not show.is_legacy(profile):
+            brief = show.neutral(brief, profile, [
+                (brief[:brief.index("WHAT YOU GET")], notes_intro(profile)),
+                ("Names Leon already corrected", "Names the editor already corrected"),
+                ("sounds like Leon or Pei wrote it themselves", "sounds like the hosts wrote it themselves"),
+            ])
+            label = ("APPROVED EXAMPLE (from another show, 《洛城二三事》 EP001: format and voice only; never "  # i18n-ignore
+                     "borrow its content, its hosts' names or its jokes):")
+        return (brief + "\n\n" + label + "\n\n"
                 + (PROMPTS / "show_notes_example.md").read_text(encoding="utf-8") + AI_NAME_RULE)
 
-    def request(self, user: str) -> dict:
-        return dict(model=self.model, max_tokens=32000, system=self.system(),
+    def request(self, user: str, profile: dict | None = None) -> dict:
+        return dict(model=self.model, max_tokens=32000, system=self.system(profile),
                     output_config={"effort": self.effort}, tools=[TOOL], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": user}])
 
@@ -278,7 +287,7 @@ class ClaudePublisher:
         t0 = time.monotonic()
         try:
             with self.client.beta.messages.stream(betas=["server-side-fallback-2026-07-01"], fallbacks="default",
-                                                  **self.request(user)) as s:
+                                                  **self.request(user, show.load(ep.dir.parent.parent))) as s:
                 resp = s.get_final_message()
         except Exception as e:      # noqa: BLE001
             raise PublishError(error_message(e, tail="")) from e
@@ -291,6 +300,17 @@ class ClaudePublisher:
         if resp.stop_reason == "max_tokens":
             raise PublishError(tr("回答太长被截断了"))
         raise PublishError(tr("LACUNA 没有交回发布资料"))
+
+
+def notes_intro(profile: dict) -> str:
+    """The show-notes brief's opening for a show other than Leon's."""
+    where = "喜马拉雅" if profile["publish"].get("ximalaya") else "the podcast platforms"  # i18n-ignore
+    return (f"LACUNA — publish pack writer (show notes for 《{profile['show_name']}》)\n\n"
+            f"YOU ARE: the producer of 《{profile['show_name']}》, {profile.get('about') or 'a podcast'} "
+            f"(hosts: {show.names_en(profile)}). After the episode is edited you write what goes on {where} "
+            "next to the audio: the episode title, a one-line blurb and the show notes. The fields below "
+            "say films and shows; if this show is about something else, use them for the works or subjects "
+            "it discusses (books, games, products, people…) and leave a list empty when nothing fits.\n\n")
 
 
 class RulePublisher:

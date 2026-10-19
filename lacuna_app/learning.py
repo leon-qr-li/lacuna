@@ -26,6 +26,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Iterable
 
+from . import show
 from .review import REVIEW_CONFIDENCE, ReviewPolicy
 from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
 from .i18n import N_, lang, tr
@@ -246,8 +247,11 @@ def _sources(ds: list[Decision], review_word: str, hand_word: str) -> str:
     return (", " if lang() == "en" else "，").join(parts)
 
 
-def learn(ds: list[Decision]) -> list[Rule]:
-    """Candidate rules from Leon's decisions (all episodes, both sources). Pure: same input, same rules."""
+def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
+    """Candidate rules from the reviewer's decisions (all episodes, both sources). Pure: same input, same
+    rules. `who`: how the AI prompts name the person reviewing (Leon in his show, else "The editor")."""
+    W, w = who, (who if who == "Leon" else who[:1].lower() + who[1:])      # sentence start / inside one
+    he, He = ("he", "He") if who == "Leon" else ("they", "They")
     ds = _merge(ds)
     rules: list[Rule] = []
     first = [d for d in ds if d.source == "first_cut"]
@@ -277,10 +281,10 @@ def learn(ds: list[Decision]) -> list[Rule]:
                 _rid("protect", kind, host), "protect",
                 tr("{what}：AI 删多了，以后少删", what=what),
                 tr("AI 删了 {n_edits} 处{what}，其中{p2}（加权约 {rate}）。例如 {p4}。", n_edits=n_edits, what=what, p2=_sources(restored, tr('恢复了'), tr('没删')), rate=f"{rate:.0%}", p4=_quote(restored)),
-                (f"Leon undid {len(restored)} of {n_edits} pause tightenings ({rate:.0%} weighted): leave more air; "
+                (f"{W} undid {len(restored)} of {n_edits} pause tightenings ({rate:.0%} weighted): leave more air; "
                  f"tighten only clearly dead gaps." if kind == "pause" else
-                 f"Leon kept the words in {len(restored)} of {n_edits} '{kind}' cuts on {_en(host)} ({rate:.0%} "
-                 f"weighted): cut this kind there much less often; only clear, distracting cases. Examples he kept: "
+                 f"{W} kept the words in {len(restored)} of {n_edits} '{kind}' cuts on {_en(host)} ({rate:.0%} "
+                 f"weighted): cut this kind there much less often; only clear, distracting cases. Examples {he} kept: "
                  f"{_prompt_quotes(restored)}."),
                 key, ev, ex, {"review": True} if routine else None))
         elif routine and len(restored) >= MIN_RESTORED and rate >= REVIEW_RATE and ev["restored_review"]:
@@ -295,7 +299,7 @@ def learn(ds: list[Decision]) -> list[Rule]:
                 _rid("trust", kind, host), "trust",
                 tr("{what}：AI 删得对，以后不用逐条过目", what=what),
                 tr("{p0}{what}，审阅里一处没恢复。以后这类直接应用（仍可在列表里恢复），删掉超过 5 秒说话的仍会让你过目。", p0=_sources(considered, tr('确认了'), tr('也删了')), what=what),
-                f"Leon agreed with {len(considered)} '{kind}' cuts on {host}'s speech: keep cutting this kind "
+                f"{W} agreed with {len(considered)} '{kind}' cuts on {host}'s speech: keep cutting this kind "
                 f"at the same rate.",
                 key, ev, [_example(d) for d in considered[:MAX_EXAMPLES]], {"review": False}))
 
@@ -313,7 +317,7 @@ def learn(ds: list[Decision]) -> list[Rule]:
                 _rid("timid", kind, host), "timid",
                 tr("{what}：AI 太犹豫，该直接删", what=what),
                 tr("AI 没敢删、留给你决定的 {p0} 处{what}里，{p2}。例如 {p3}。", p0=len(g), what=what, p2=_sources(acc, tr('你删了'), tr('删了')), p3=_quote(acc)),
-                f"When unsure about '{kind}' on {_en(host)}, cut it (Leon cut {len(acc)} of {len(g)} such "
+                f"When unsure about '{kind}' on {_en(host)}, cut it ({w} cut {len(acc)} of {len(g)} such "
                 f"suggestions): {_prompt_quotes(acc)}.",
                 {"category": kind, "host": host}, {"suggested": len(g), "accepted": len(acc)},
                 [_example(d) for d in acc[:MAX_EXAMPLES]]))
@@ -330,7 +334,7 @@ def learn(ds: list[Decision]) -> list[Rule]:
                 _rid("missed", kind, host), "missed",
                 tr("{what}：AI 漏删了，你得自己说", what=what),
                 tr("你在聊天里让 AI 补删了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g)),
-                f"Leon had to ask for {len(g)} extra cuts of this kind ({kind}) on {_en(host)} after the first "
+                f"{W} had to ask for {len(g)} extra cuts of this kind ({kind}) on {_en(host)} after the first "
                 f"cut; look for similar passages: {_prompt_quotes(g)}.",
                 {"category": kind, "host": host}, {"added": len(g)}, [_example(d) for d in g[:MAX_EXAMPLES]]))
 
@@ -349,9 +353,9 @@ def learn(ds: list[Decision]) -> list[Rule]:
             tr("{who}的内容删减：按你删 / 留的例子学品味", who=who),
             tr("跑题和啰嗦段落你删了 {p0} 处（如 {p1}），留了 {p2} 处（如 {p3}）", p0=len(cut_), p1=_quote(cut_, 3), p2=len(kept), p3=_quote(kept, 3)) + (tr("；其中 {p0} 处是 AI 没删、你手剪时删掉的", p0=len(missed)) if missed else "")
             + tr("。这些例子会给 AI 参考，让它挑段落时更像你。"),
-            f"Leon's taste on content trims of {_en(host)} (learn the kind of passage, not the ranges). "
-            f"He CUT: {_prompt_quotes(cut_[:TASTE_EXAMPLES])}. "
-            f"He KEPT (do not cut passages like these): {_prompt_quotes(kept[:TASTE_EXAMPLES])}.",
+            f"{W}'s taste on content trims of {_en(host)} (learn the kind of passage, not the ranges). "
+            f"{He} CUT: {_prompt_quotes(cut_[:TASTE_EXAMPLES])}. "
+            f"{He} KEPT (do not cut passages like these): {_prompt_quotes(kept[:TASTE_EXAMPLES])}.",
             {"category": "content", "host": host}, {"cut": len(cut_), "kept": len(kept), "missed_by_ai": len(missed)},
             [_example(d) for d in (cut_[:3] + kept[:3])]))
 
@@ -536,7 +540,7 @@ class Learning:
         rules = []
         refreshed = False
         from .chat_learning import ChatAsks      # it builds on Rule, so imported here
-        for r in learn(ds) + ChatAsks(self.ws).rules():
+        for r in learn(ds, reviewer(self.ws)) + ChatAsks(self.ws).rules():
             s = st["rules"].get(r.id, {})
             state = s.get("state", "candidate")
             if state == "deleted":
@@ -626,8 +630,15 @@ def prompt_rules(ws: Workspace | str | Path) -> str:
     lines = [r["prompt"] for r in Learning(ws).active() if r.get("prompt")]
     if not lines:
         return ""
-    return ("LEARNED FROM LEON'S REVIEWS AND CHAT (approved by Leon; these override the generic brief where they "
-            "conflict):\n" + "\n".join(f"- {x}" for x in lines))
+    who = reviewer(ws)
+    return (f"LEARNED FROM {who.upper()}'S REVIEWS AND CHAT (approved by {who if who == 'Leon' else 'them'}; these "
+            "override the generic brief where they conflict):\n" + "\n".join(f"- {x}" for x in lines))
+
+
+def reviewer(ws: Workspace | str | Path) -> str:
+    """How AI prompts name the person reviewing the cuts: Leon in his own show, else "The editor"."""
+    root = ws.root if isinstance(ws, Workspace) else Path(ws)
+    return "Leon" if show.load(root).get("legacy") else "The editor"
 
 
 def review_policy(ws: Workspace | str | Path) -> ReviewPolicy | None:

@@ -180,3 +180,58 @@ def byline(profile: dict) -> str:
     """"Leon & Pei", "A, B & C", or one name."""
     names = host_names(profile)
     return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " & " + names[-1] if names else ""
+
+
+# ---------------------------------------------------------------------------- AI prompts
+# Leon's show keeps its prompts word for word (they were tuned on his episodes); any other show gets
+# the same prompts with its own name, hosts and style (`neutral`), checked by tests/app/test_show_prompts.py.
+
+LEVEL_EN = {
+    "gentle": "be gentle: cut only clear stumbles, stuck fillers and dead air; keep tangents and verbal tics",
+    "normal": "cut clear stumbles, false starts and dead-end rambling; keep a natural residue of tics",
+    "firm": "be strict: cut rambling, repeated explanations, false starts and off-point detail",
+}
+
+
+def is_legacy(profile: dict | None) -> bool:
+    return profile is None or bool(profile.get("legacy"))
+
+
+def names_en(profile: dict) -> str:
+    """"Ana", "Ana and Bo", "Ana, Bo and Cy"."""
+    n = host_names(profile)
+    return n[0] if len(n) == 1 else ", ".join(n[:-1]) + " and " + n[-1] if n else "the host"
+
+
+def describe_en(profile: dict) -> str:
+    """《name》, what it is (hosts: …, one track each) - for "You are … for <this>"."""
+    n = len(profile["hosts"])
+    who = (f"host: {names_en(profile)}, one track" if n == 1 else f"hosts: {names_en(profile)}, one track each")
+    about = profile.get("about") or ("a solo podcast" if n == 1 else f"a {n}-host podcast")
+    return f"《{profile['show_name']}》, {about} ({who})"
+
+
+def style_lines(profile: dict) -> str:
+    """One line per host: how strict to be, plus the show's own notes for them."""
+    out = []
+    for h in profile["hosts"]:
+        line = f"- {h['name']} (track {h['tag']}): {LEVEL_EN[h['cut_level']]}."
+        if h.get("style"):
+            line += f" {h['style']}"
+        out.append(line)
+    return "\n".join(out)
+
+
+def example_host(profile: dict) -> str:
+    """A host's name for examples in prompts (the last one: in Leon's show that was Pei)."""
+    names = host_names(profile)
+    return names[-1] if names else "主持人"  # i18n-ignore
+
+
+def neutral(text: str, profile: dict | None, pairs: list[tuple[str, str]]) -> str:
+    """`text` as written for Leon's show, or with each (Leon's wording, this show's wording) swapped."""
+    if is_legacy(profile):
+        return text
+    for a, b in pairs:
+        text = text.replace(a, b)
+    return text
