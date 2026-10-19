@@ -1,6 +1,6 @@
 # Generic show (commercialisation step 1) - 2026-10-19
 
-State: PR #126 (draft), waiting for Leon's validation on the preview site before merge.
+State: merged (#126) and live on lacunastudio.app 2026-10-19 15:13Z after Leon validated it on staging.
 Decision: docs/decisions/2026-10-19-show-profile.md
 
 ## Done
