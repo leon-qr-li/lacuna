@@ -11,7 +11,7 @@ export function StagingBadge() {
   }, []);
   useEffect(() => {
     if (!on) return;
-    const mark = t("预览站");
+    const mark = t("Staging");
     const keep = () => {
       if (!document.title.startsWith(mark)) document.title = `${mark} · ${document.title}`;
     };
@@ -23,8 +23,8 @@ export function StagingBadge() {
   }, [on]);
   if (!on) return null;
   return (
-    <span className="staging-badge" data-testid="staging-badge" title={t("这里是预览站：数据是正式站的一份复制，在这里怎么改都不影响正式站。")}>
-      {t("预览站")}
+    <span className="staging-badge" data-testid="staging-badge" title={t("这里是 staging：数据是正式站的一份复制，在这里怎么改都不影响正式站。")}>
+      {t("Staging")}
     </span>
   );
 }

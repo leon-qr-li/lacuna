@@ -418,8 +418,4 @@ EN: dict[str, str | tuple[str, str]] = {
     "AI 服务出了点问题": "Something went wrong with the AI service",
     "请先上传音轨": "Upload the tracks first",
     "上传没有完成，请重新上传": "The upload did not finish. Please upload it again.",
-    "文件名不能用：{name}": "This file name can't be used: {name}",
-    "还有导入或导出在进行，做完再搬。": "An import or export is still running. Move the workspace when it is done.",
-    "这个文件夹里没有剧集也没有素材库。请选电脑上的 LACUNA_Workspace 文件夹。": "This folder has no episodes and no library. Pick the LACUNA_Workspace folder on your computer.",
-    "文件没有传全，请再点一次「开始搬」接着传。": "Not every file arrived. Click Start again to send the rest.",
 }
