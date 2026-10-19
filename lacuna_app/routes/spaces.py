@@ -15,9 +15,12 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from .. import cloud
+from ..appinfo import current_version
 from ..auth import COOKIE, Auth, AuthError
 from ..i18n import tr
 from ..spaces import MAIN, SPACE_RANK, Spaces
+from .auth import _cookie
 
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
@@ -108,6 +111,11 @@ def register(app, ctx) -> None:
 
     app.state.space_apps = children
     app.add_middleware(_Dispatch, auth=auth, spaces=spaces, child=child)
+    # in the cloud the Cloudflare Access check (routes/cloud.py) must come before anything else, this
+    # dispatcher included: install it once more on the outside (the inner one and each workspace's own
+    # app check again, which costs one cached signature check)
+    cloud.install(app, lambda raw: bool(auth.who(_cookie(raw))), current_version,
+                  verifier=ctx.option("access_verifier"))
 
     # accounts follow into workspaces
     def joined(email: str, invite: dict | None) -> None:

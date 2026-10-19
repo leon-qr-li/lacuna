@@ -170,3 +170,17 @@ def test_cloud_access_check_also_guards_other_workspaces(tmp_path, monkeypatch):
     assert beta.get("/api/episodes").status_code == 200
     beta.headers.pop("Cf-Access-Jwt-Assertion")
     assert beta.get("/api/episodes").status_code == 403          # session cookie alone is not enough
+
+
+def test_cloud_access_check_comes_first_on_every_path(tmp_path, monkeypatch):
+    """Even calls the workspace dispatcher would answer itself need a valid Access token."""
+    from tests.app.test_cloud import AccessVerifier, AUD, TEAM
+    monkeypatch.setenv("LACUNA_CLOUD", "1")
+    verifier = AccessVerifier(TEAM, AUD, fetch_keys=lambda url: {"keys": []})
+    app = create_app(tmp_path / "ws", MockEditorAdapter(), web_dist=tmp_path / "none", mailer=FakeMailer(),
+                     access_verifier=verifier)
+    c = TestClient(app, base_url="https://testserver")
+    for path in ("/", "/api/spaces", "/api/episodes", "/api/auth/status", "/api/whatever", "/nothing/here"):
+        assert c.get(path).status_code == 403, path
+    assert c.post("/api/spaces/switch", json={"id": "main"}).status_code == 403
+    assert app.user_middleware[0].cls.__name__ == "CloudGate"       # outermost
