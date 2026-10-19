@@ -1,0 +1,70 @@
+name: Deploy
+
+# Every green CI run on main ships to https://lacunastudio.app (decision cloud-deploy): build the cloud
+# image, push it to the DigitalOcean registry, and wait until the server has swapped it in (its updater
+# pulls within a minute, waits for running imports/exports, rolls back a version that doesn't start).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # only pushes to this repo's main: a fork's PR CI can also be named "main"
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Cloud set up?
+        id: ready
+        run: |
+          if [ -z "$DIGITALOCEAN_TOKEN" ] || [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::cloud secrets not set yet; nothing to deploy"
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'true'
+        with:
+          ref: ${{ env.SHA }}
+      - name: Registry login
+        id: registry
+        if: steps.ready.outputs.go == 'true'
+        run: python3 deploy/ci.py registry
+      - uses: docker/setup-buildx-action@v3
+        if: steps.ready.outputs.go == 'true'
+      - name: Build and push
+        if: steps.ready.outputs.go == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: VERSION=${{ env.SHA }}
+          tags: |
+            registry.digitalocean.com/${{ steps.registry.outputs.name }}/lacuna:main
+            registry.digitalocean.com/${{ steps.registry.outputs.name }}/lacuna:${{ env.SHA }}
+          cache-from: type=gha,scope=lacuna
+          cache-to: type=gha,scope=lacuna,mode=max
+      - name: Wait until live
+        if: steps.ready.outputs.go == 'true'
+        run: python3 deploy/ci.py wait-live "$SHA"
+      - name: Clean old images
+        if: steps.ready.outputs.go == 'true'
+        run: python3 deploy/ci.py registry-gc

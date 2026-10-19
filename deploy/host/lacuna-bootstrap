@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# First boot of the LACUNA server (cloud-init runcmd; written by deploy/provision.py).
+# Mounts the data volume, hardens the host, installs Docker + restic, starts the tunnel and the updater.
+# Safe to run again.
+set -euo pipefail
+exec > >(tee -a /var/log/lacuna-bootstrap.log) 2>&1
+echo "== lacuna-bootstrap $(date -u +%FT%TZ)"
+
+# ---- data volume at /data (never formatted if it already holds a filesystem)
+DEV=/dev/disk/by-id/scsi-0DO_Volume_lacuna-data
+for i in $(seq 1 60); do [ -e "$DEV" ] && break; sleep 2; done
+[ -e "$DEV" ] || { echo "data volume not attached"; exit 1; }
+if ! blkid -p "$DEV" >/dev/null 2>&1; then
+  echo "new volume: formatting"
+  mkfs.ext4 -q -L lacuna-data "$DEV"
+fi
+mkdir -p /data
+grep -q "$DEV" /etc/fstab || echo "$DEV /data ext4 defaults,nofail,discard,noatime 0 2" >> /etc/fstab
+mountpoint -q /data || mount /data
+mkdir -p /data/workspace /data/home /data/tmp
+chown -R 10001:10001 /data/workspace /data/home /data/tmp
+
+# ---- host hardening: no way in from the network (the DO firewall also has no inbound rules)
+passwd -l root || true
+systemctl disable --now ssh.socket ssh.service 2>/dev/null || true
+apt-get install -y -q ufw unattended-upgrades restic docker.io jq
+ufw default deny incoming
+ufw default allow outgoing
+ufw --force enable
+cat > /etc/apt/apt.conf.d/52lacuna-upgrades <<'CONF'
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "11:30";
+CONF
+systemctl enable --now unattended-upgrades
+
+mkdir -p /etc/docker
+cat > /etc/docker/daemon.json <<'CONF'
+{"log-driver": "json-file", "log-opts": {"max-size": "20m", "max-file": "5"}, "live-restore": false}
+CONF
+systemctl enable docker
+systemctl restart docker
+docker network inspect lacuna >/dev/null 2>&1 || docker network create lacuna
+
+systemctl daemon-reload
+systemctl enable --now lacuna-metadata-block.service
+
+# ---- tunnel (outbound only; Cloudflare holds its routes)
+docker rm -f cloudflared >/dev/null 2>&1 || true
+docker run -d --name cloudflared --network lacuna --restart unless-stopped \
+  --env-file /etc/lacuna/tunnel.env --security-opt no-new-privileges --cap-drop ALL \
+  cloudflare/cloudflared:latest tunnel --no-autoupdate run
+
+# ---- app updater (every minute) + nightly backup
+systemctl enable --now lacuna-update.timer lacuna-backup.timer
+/usr/local/bin/lacuna-update || true
+systemctl start --no-block lacuna-backup.service     # first backup right away, then nightly
+echo "== bootstrap done"
