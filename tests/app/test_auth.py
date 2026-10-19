@@ -49,7 +49,7 @@ def test_password_hash_roundtrip_and_salted():
 def test_api_open_until_first_account_then_gated(client):
     assert client.get("/api/episodes").status_code == 200
     st = client.get("/api/auth/status").json()
-    assert st["accounts"] is False and st["setup"] is True and st["first"] is True and st["allow_register"] is True
+    assert st["accounts"] is False and st["setup"] is True and st["first"] is True
     # the first account needs no email code and signs in at once
     r = client.post("/api/auth/register", json={"email": "Leon@Example.com", "password": PW})
     assert r.status_code == 200
@@ -62,8 +62,8 @@ def test_api_open_until_first_account_then_gated(client):
     assert other.post("/api/episodes/x/undo").status_code == 401
     assert other.get("/api/health").status_code == 200
     assert other.get("/api/app").status_code == 200
-    assert other.get("/api/auth/status").json() == {**st, "accounts": True, "setup": False, "first": False, "allow_register": False,
-                                                    "email": None}
+    assert other.get("/api/auth/status").json() == {**st, "accounts": True, "setup": False, "first": False}
+    assert st["mail"] is None and st["require_2fa"] is False         # nothing about email until signed in
 
 
 def test_login_logout_remember(client):
@@ -94,11 +94,11 @@ def test_sessions_survive_restart_and_store_no_secrets(tmp_path, mailer):
 def test_session_expiry(tmp_path, mailer):
     clock = Clock()
     a = Auth(tmp_path, mailer, clock=clock)
-    tok, _ = a.register("leon@example.com", PW, None, remember=False)
+    tok, _ = a.register_first("leon@example.com", PW, None, remember=False)["session"]
     assert a.who(tok) == "leon@example.com"
     clock.t += 12 * 3600 + 1
     assert a.who(tok) is None
-    tok, _ = a.login("leon@example.com", PW, remember=True)
+    tok, _ = a.login("leon@example.com", PW, remember=True)["session"]
     clock.t += 29 * 86400
     assert a.who(tok) == "leon@example.com"
 
@@ -106,15 +106,18 @@ def test_session_expiry(tmp_path, mailer):
 def test_login_lockout(tmp_path, mailer):
     clock = Clock()
     a = Auth(tmp_path, mailer, clock=clock)
-    a.register("leon@example.com", PW, None, remember=True)
+    a.register_first("leon@example.com", PW, None, remember=True)
     for _ in range(5):
         with pytest.raises(AuthError):
             a.login("leon@example.com", "nope nope nope", True)
     with pytest.raises(AuthError) as e:
         a.login("leon@example.com", PW, True)      # right password, still locked
-    assert e.value.status == 429
+    assert e.value.status == 429 and "15 分钟" in str(e.value)
+    clock.t += 14 * 60
+    with pytest.raises(AuthError):
+        a.login("leon@example.com", PW, True)
     clock.t += 61
-    assert a.login("leon@example.com", PW, True)
+    assert a.login("leon@example.com", PW, True)["step"] == "done"
 
 
 def test_validation(client):
@@ -123,29 +126,10 @@ def test_validation(client):
     assert client.get("/api/auth/status").json()["accounts"] is False
 
 
-def test_second_account_needs_open_signup_and_code(client, mailer):
-    client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
-    pei = TestClient(client.app)
-    r = pei.post("/api/auth/code", json={"email": "pei@example.com", "purpose": "register"})
-    assert r.status_code == 403 and not mailer.outbox            # sign-up closed by default
-    assert client.post("/api/auth/config", json={"allow_register": True}).json()["allow_register"] is True
-    assert pei.post("/api/auth/config", json={"allow_register": False}).status_code == 401   # not signed in
-    assert pei.post("/api/auth/code", json={"email": "pei@example.com", "purpose": "register"}).status_code == 200
-    assert mailer.outbox[-1]["to"] == "pei@example.com"
-    code = last_code(mailer)
-    assert pei.post("/api/auth/register", json={"email": "pei@example.com", "password": PW}).status_code == 400
-    wrong = "000000" if code != "000000" else "111111"
-    assert pei.post("/api/auth/register", json={"email": "pei@example.com", "password": PW, "code": wrong}).status_code == 400
-    assert pei.post("/api/auth/register", json={"email": "pei@example.com", "password": PW, "code": code}).status_code == 200
-    assert pei.get("/api/episodes").status_code == 200
-    # a code works once
-    assert pei.post("/api/auth/register", json={"email": "pei@example.com", "password": PW, "code": code}).status_code == 409
-
-
 def test_code_cooldown_and_tries(tmp_path, mailer):
     clock = Clock()
     a = Auth(tmp_path, mailer, clock=clock)
-    a.register("leon@example.com", PW, None, True)
+    a.register_first("leon@example.com", PW, None, True)
     a.send_code("leon@example.com", "reset")
     with pytest.raises(AuthError) as e:
         a.send_code("leon@example.com", "reset")
@@ -188,7 +172,7 @@ def test_mail_failure_is_reported(tmp_path):
         def send(self, *a):
             raise MailError("连不上 Resend")  # i18n-ignore
     a = Auth(tmp_path, Down())
-    a.register("leon@example.com", PW, None, True)
+    a.register_first("leon@example.com", PW, None, True)
     with pytest.raises(AuthError) as e:
         a.send_code("leon@example.com", "reset")
     assert e.value.status == 502 and "Resend" in str(e.value)

@@ -1,0 +1,139 @@
+import { useMemo, useRef, useState } from "react";
+import qrcode from "qrcode-generator";
+import { t } from "../../i18n";
+
+/** The authenticator-app QR code (dark on a white tile in both themes, so every phone can scan it)
+ *  with the key written out for typing it in by hand. */
+export function TwoStepQR({ uri, secret }: { uri: string; secret: string }) {
+  const src = useMemo(() => {
+    const qr = qrcode(0, "M");
+    qr.addData(uri);
+    qr.make();
+    return qr.createDataURL(5, 2);
+  }, [uri]);
+  const [show, setShow] = useState(false);
+  return (
+    <div className="twostep-qr">
+      <img src={src} alt={t("两步验证二维码")} width={180} height={180} data-testid="twostep-qr" />
+      <div>
+        <ol className="twostep-how">
+          <li>{t("在手机上打开验证器 App（Google Authenticator、Microsoft Authenticator、1Password、iPhone 的「密码」都行）。")}</li>
+          <li>{t("点「添加」，扫左边的二维码。")}</li>
+          <li>{t("把 App 里 LACUNA 这一项的 6 位数字填到下面。")}</li>
+        </ol>
+        <button type="button" className="auth-link" onClick={() => setShow(!show)}>
+          {show ? t("收起密钥") : t("扫不了？手动输入密钥")}
+        </button>
+        {show && (
+          <code className="twostep-secret" data-testid="twostep-secret">
+            {secret.replace(/(.{4})/g, "$1 ").trim()}
+          </code>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Six boxes over one real input (paste and autofill work as usual). */
+export function CodeInput({ value, onChange, label }: { value: string; onChange: (s: string) => void; label?: string }) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="auth-code" onClick={() => ref.current?.focus()}>
+      <input
+        ref={ref}
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={6}
+        value={value}
+        aria-label={label ?? t("验证码")}
+        data-testid="auth-code"
+        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
+      />
+      {Array.from({ length: 6 }, (_, i) => (
+        <span key={i} className={i === Math.min(value.length, 5) ? "is-cur" : ""}>
+          {value[i] ?? ""}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** A two-step code from the app, or (after a click) one of the recovery codes. */
+export function SecondFactor({ value, onChange }: { value: string; onChange: (s: string) => void }) {
+  const [recovery, setRecovery] = useState(false);
+  return (
+    <>
+      {recovery ? (
+        <label className="auth-field">
+          <span className="auth-label">{t("恢复码")}</span>
+          <span className="auth-input">
+            <input
+              value={value}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="abcde-23456"
+              data-testid="auth-recovery"
+              onChange={(e) => onChange(e.target.value.slice(0, 16))}
+            />
+          </span>
+        </label>
+      ) : (
+        <CodeInput value={value} onChange={onChange} label={t("两步验证码")} />
+      )}
+      <div className="auth-hint">
+        <span>{recovery ? t("每个恢复码只能用一次。") : t("手机上验证器 App 里 LACUNA 这一项的 6 位数字。")}</span>
+        <button
+          type="button"
+          className="auth-link"
+          onClick={() => {
+            setRecovery(!recovery);
+            onChange("");
+          }}
+        >
+          {recovery ? t("用手机上的数字") : t("手机不在身边？用恢复码")}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** The ten one-time recovery codes, shown once: copy or download, then confirm they are saved. */
+export function RecoveryCodes({ codes, email, onDone, doneLabel }: {
+  codes: string[];
+  email: string;
+  onDone: () => void;
+  doneLabel: string;
+}) {
+  const [saved, setSaved] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const text = `LACUNA ${t("恢复码")} · ${email}\n\n${codes.join("\n")}\n`;
+  const file = useMemo(() => URL.createObjectURL(new Blob([text], { type: "text/plain" })), [text]);
+  return (
+    <div className="twostep-recovery">
+      <ul className="twostep-codes" data-testid="recovery-codes">
+        {codes.map((c) => (
+          <li key={c}>{c}</li>
+        ))}
+      </ul>
+      <div className="row gap">
+        <button
+          type="button"
+          className="btn btn-outline btn-small"
+          onClick={() => navigator.clipboard?.writeText(text).then(() => setCopied(true), () => setCopied(false))}
+        >
+          {copied ? t("已复制") : t("复制")}
+        </button>
+        <a className="btn btn-outline btn-small" href={file} download="LACUNA-recovery-codes.txt">
+          {t("下载 .txt")}
+        </a>
+      </div>
+      <label className="auth-check twostep-saved">
+        <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} data-testid="recovery-saved" />
+        {t("我已经把恢复码存好了（比如密码管理器里）")}
+      </label>
+      <button type="button" className="auth-btn" disabled={!saved} onClick={onDone}>
+        {doneLabel}
+      </button>
+    </div>
+  );
+}

@@ -69,3 +69,27 @@
 .account-card .switch input:checked + span { background: var(--accent); }
 .account-card .switch input:checked + span::after { transform: translateX(18px); }
 .account-card .switch input:focus-visible + span { box-shadow: 0 0 0 4px var(--accent-soft); }
+
+/* two-step sign-in: QR code, recovery codes */
+.twostep-qr { display: flex; gap: 18px; align-items: flex-start; margin: 4px 0 18px; }
+.twostep-qr img { flex: none; width: 160px; height: 160px; border-radius: 12px; background: #fff; padding: 6px; image-rendering: pixelated; border: 1px solid var(--line-2); }
+.twostep-how { margin: 0 0 8px; padding-left: 18px; font-size: 13px; color: var(--ink-2); display: grid; gap: 4px; }
+.twostep-secret { display: block; margin-top: 8px; font: 500 13px var(--mono); word-break: break-all; color: var(--ink); background: var(--hover); padding: 8px 10px; border-radius: 8px; user-select: all; }
+.twostep-codes { list-style: none; padding: 14px; margin: 0 0 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 18px; border-radius: 12px; border: 1px dashed var(--line-2); background: var(--hover); font: 500 15px var(--mono); }
+.twostep-saved { margin: 16px 0; font-size: 13px; }
+@media (max-width: 520px) { .twostep-qr { flex-direction: column; } }
+
+/* 设置 → 成员与邀请, 登录设备 */
+.people-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
+.people-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.people-list li:first-child { border-top: 0; }
+.people-who { flex: 1 1 220px; min-width: 0; }
+.people-who strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+.people-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.people-link { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.people-link code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 12px var(--mono); background: var(--hover); padding: 8px 10px; border-radius: 8px; }
+.account-card h3 { font-size: 14px; margin: 18px 0 6px; }
+.account-wrap { flex-wrap: wrap; margin-top: 8px; }
+.account-stack { display: grid; gap: 8px; max-width: 420px; margin-top: 8px; }
+.account-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
+.people-list li.is-off .people-who strong { color: var(--ink-3); text-decoration: line-through; }
