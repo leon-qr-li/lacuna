@@ -51,3 +51,8 @@ cookie in cloud mode and call `cloud.access_allow(email)` / `access_revoke(email
   push once more when the first push fails, and a failed Staging deploy comments on its PR (wakes the thread
   watching it). An hourly scheduled check in the 「上云部署」 thread looks at Deploy / Staging / Backup check
   runs and fixes failures without waiting for Leon.
+- 2026-10-19 ~16:00–17:00Z every push failed with 401: the real cause of the "registry 401" failures was the
+  registry's garbage collection, which Deploy started after every release (`ci.py registry-gc`). While it
+  runs the registry is read-only and refuses pushes with 401; back-to-back merges kept it busy. Now Deploy
+  only deletes old tags; the daily Backup check starts the collection (`ci.py registry-collect`), and every
+  push first waits for a running collection (`ci.py wait_gc`, up to 45 min).
