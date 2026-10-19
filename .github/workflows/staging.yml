@@ -129,6 +129,21 @@ jobs:
         run: python3 deploy/ci.py registry
       - uses: docker/setup-buildx-action@v3
       - name: Build and push
+        id: push
+        continue-on-error: true    # the registry now and then refuses fresh credentials (401); retried below
+        uses: docker/build-push-action@v6
+        with:
+          context: pr
+          push: true
+          provenance: false
+          build-args: VERSION=${{ env.SHA }}
+          tags: registry.digitalocean.com/${{ steps.registry.outputs.name }}/lacuna:preview
+          cache-from: type=gha,scope=lacuna
+      - name: Registry login again
+        if: steps.push.outcome == 'failure'
+        run: sleep 20 && python3 deploy/ci.py registry
+      - name: Build and push (again)
+        if: steps.push.outcome == 'failure'
         uses: docker/build-push-action@v6
         with:
           context: pr
@@ -142,3 +157,7 @@ jobs:
       - name: Tell the PR
         run: |
           gh pr comment "$PR" --body "Staging now runs this PR (commit ${SHA:0:7}): https://preview.lacunastudio.app — its data is a fresh copy of the real workspace. Merge to ship it to https://lacunastudio.app."
+      - name: Tell the PR it failed
+        if: failure()
+        run: |
+          gh pr comment "$PR" --body "Staging could not deploy this PR (commit ${SHA:0:7}): $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID — look at the failed step and fix it, or re-run if it is the registry."
