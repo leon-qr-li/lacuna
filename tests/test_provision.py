@@ -98,7 +98,12 @@ class FakeAPI:
             if method == "GET":
                 return (200, {"registry": self.registry}) if self.registry else (404, {})
             self.registry = {"name": body["name"]}
+            self.tier = body["subscription_tier_slug"]
             return 201, {"registry": self.registry}
+        if p == "/v2/registry/subscription":
+            if method == "POST":
+                self.tier = body["tier_slug"]
+            return 200, {"subscription": {"tier": {"slug": self.tier}}}
         if p == "/v2/registry/docker-credentials":
             return 200, {"auths": {"registry.digitalocean.com": {"auth": "pull-cred-secret"}}}
         if p == "/v2/volumes":
@@ -282,3 +287,12 @@ def test_no_size_in_the_region_stops_before_creating_the_server(api):
     with pytest.raises(provision.ProvisionError, match="no 4 vCPU"):
         run("apply")
     assert not a.droplets
+
+
+def test_registry_on_the_free_plan_moves_to_basic(api):
+    a, run = api
+    a.registry, a.tier = {"name": "lacunastudio"}, "starter"
+    run("plan")
+    assert a.tier == "starter"
+    run("apply")
+    assert a.tier == "basic" and ("POST", "/v2/registry/subscription") in a.writes

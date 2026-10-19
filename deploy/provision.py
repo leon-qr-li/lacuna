@@ -43,6 +43,8 @@ VOLUME = "lacuna-data"
 FIREWALL = "lacuna-no-inbound"
 REGISTRY = os.environ.get("LACUNA_REGISTRY", "lacunastudio")
 REPO_IMAGE = "lacuna"
+# "starter" (free) stores only 500 MB; the image (ffmpeg, speech recognition, CJK fonts) is bigger
+REGISTRY_TIER = "basic"
 BUCKET = "lacuna-backup"
 ACCESS_GROUP = "LACUNA invited"
 ACCESS_APP = "LACUNA"
@@ -295,17 +297,28 @@ class DigitalOcean:
     def registry(self, apply: bool) -> str | None:
         status, out = self.http.send("GET", "/v2/registry")
         if status == 200:
+            self.registry_tier(apply)
             return out["registry"]["name"]
         if not apply:
             log("would create the container registry")
             return None
         for name in (REGISTRY, f"{REGISTRY}-{os.urandom(3).hex()}"):
             status, out = self.http.send("POST", "/v2/registry",
-                                         {"name": name, "subscription_tier_slug": "starter", "region": REGION})
+                                         {"name": name, "subscription_tier_slug": REGISTRY_TIER, "region": REGION})
             if status in (200, 201):
                 log("created the container registry")
                 return out["registry"]["name"]
         raise ProvisionError(f"could not create the container registry: {json.dumps(out)[:300]}")
+
+    def registry_tier(self, apply: bool) -> None:
+        tier = ((self.http("GET", "/v2/registry/subscription").get("subscription") or {}).get("tier") or {}).get("slug")
+        if tier == REGISTRY_TIER:
+            return
+        if not apply:
+            log(f"container registry: would move from the {tier} to the {REGISTRY_TIER} plan")
+            return
+        self.http("POST", "/v2/registry/subscription", {"tier_slug": REGISTRY_TIER})
+        log(f"container registry: moved to the {REGISTRY_TIER} plan")
 
     def pull_credentials(self) -> str:
         """Docker config.json that can only pull from our registry."""

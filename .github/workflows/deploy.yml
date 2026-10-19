@@ -56,6 +56,7 @@ jobs:
         with:
           context: .
           push: true
+          provenance: false     # attestations take registry space and nothing reads them
           build-args: VERSION=${{ env.SHA }}
           tags: |
             registry.digitalocean.com/${{ steps.registry.outputs.name }}/lacuna:main

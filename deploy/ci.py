@@ -110,7 +110,7 @@ def registry_gc() -> None:
     for tag in old:
         d.http("DELETE", f"/v2/registry/{name}/repositories/{REPO_IMAGE}/tags/{tag}")
     if old:
-        status, _ = d.http.send("POST", f"/v2/registry/{name}/garbage-collection", {"type": "untagged manifests only"})
+        status, _ = d.http.send("POST", f"/v2/registry/{name}/garbage-collection", {"type": "untagged manifests and unreferenced blobs"})
         log(f"removed {len(old)} old image(s); garbage collection {'started' if status in (200, 201) else 'skipped'}")
 
 
