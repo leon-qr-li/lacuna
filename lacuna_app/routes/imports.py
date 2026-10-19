@@ -25,7 +25,7 @@ class ImportBody(BaseModel):
 
 def register(app, ctx) -> None:
     ws = ctx.ws
-    importer = ctx.provide("importer", lambda: Importer(ws))
+    importer = ctx.provide("importer", lambda: Importer(ws, models_dir=ctx.models_dir))
 
     def tracks_in_use() -> list[str]:
         paths = importer.track_paths()

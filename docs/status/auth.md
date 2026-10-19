@@ -19,7 +19,9 @@ Thread「登录与 Resend 邮件」, then「账号与权限」. Decisions: `docs
   `LACUNA_CLOUD=1` makes two-step mandatory, cookies Secure, first account needs `auth/setup-code.txt`.
 - Owner-only API: `/api/app/api-key`, `/api/app/update/prepare|apply`, `/api/auth/config|resend-key|test-mail`.
 - Tests: `tests/app/test_auth.py`, `test_auth_invites_2fa.py`; `web/e2e/auth.spec.ts` (6, incl. a cloud first run).
-- Next (PR B): content ownership via workspaces (episodes, library, learned rules per workspace).
+- PR B: workspaces (`lacuna_app/spaces.py`, `routes/spaces.py`, web `features/spaces/`): content belongs to a
+  workspace; top-bar menu to switch; 设置 → 工作区; invites pick a workspace (default: a new one of their own).
+  Decision `2026-10-19-workspaces.md`. Tests `tests/app/test_spaces.py`, `web/e2e/spaces.spec.ts`.
 
 ## Update notes
 No extra install steps. Leon's existing account becomes 所有者 and signs in as before; two-step is optional on the

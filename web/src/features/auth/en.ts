@@ -152,4 +152,5 @@ export const en: Dict = {
     "Reset two-step sign-in for {email}? They scan a new code at their next sign-in (for a lost phone).",
   "重置": "Reset",
   "重置两步验证": "Reset two-step",
+  "云端版的 key 在服务器的环境变量里设置，不能在网页上改。": "Online, the key is set in the server's environment, not in the browser.",
 };

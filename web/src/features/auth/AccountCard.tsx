@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { AUTH_EVENT, authApi, type AuthStatus, type Device, type People, type Role } from "./api";
 import { CodeInput, RecoveryCodes, SecondFactor, TwoStepQR } from "./TwoStep";
 import { confirmDialog } from "../dialog/Dialog";
+import { spacesApi, type SpaceInfo, type SpaceRole } from "../spaces/api";
+import { SPACE_ROLE } from "../spaces/SpacesCard";
 import { BusyLabel } from "../loading/Loading";
 import { t } from "../../i18n";
 import "./auth.css";
@@ -328,9 +330,13 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
   const [newRole, setNewRole] = useState<Role>("member");
   const [link, setLink] = useState<{ link: string; email: string; mailed: boolean; why: string | null } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
+  const [space, setSpace] = useState("new");
+  const [spaceRole, setSpaceRole] = useState<SpaceRole>("editor");
   const { busy, msg, act } = useAct();
   useEffect(() => {
     authApi.people().then(setPeople, () => setPeople(null));
+    spacesApi.list().then((s) => setSpaces(s?.all ?? []), () => setSpaces([]));
   }, []);
   if (!people) return null;
   const canManage = (r: Role) => RANK[role] > RANK[r];
@@ -348,7 +354,7 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
         onSubmit={(e) => {
           e.preventDefault();
           act("invite", async () => {
-            const r = await authApi.sendInvite(email, newRole);
+            const r = await authApi.sendInvite(email, newRole, space, space === "new" ? null : spaceRole);
             setPeople(r);
             setLink({ link: r.link, email: r.email, mailed: r.mailed, why: r.mail_error });
             setCopied(false);
@@ -364,6 +370,25 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
             </option>
           ))}
         </select>
+        {spaces.length > 0 && (
+          <select aria-label={t("加入哪个工作区")} value={space} onChange={(e) => setSpace(e.target.value)} data-testid="invite-space">
+            <option value="new">{t("给对方新建一个工作区")}</option>
+            {spaces.map((s) => (
+              <option key={s.id} value={s.id}>
+                {t("加入「{name}」", { name: s.name })}
+              </option>
+            ))}
+          </select>
+        )}
+        {space !== "new" && (
+          <select aria-label={t("在工作区里的角色")} value={spaceRole} onChange={(e) => setSpaceRole(e.target.value as SpaceRole)}>
+            {(["admin", "editor", "viewer"] as SpaceRole[]).map((r) => (
+              <option key={r} value={r}>
+                {SPACE_ROLE[r]}
+              </option>
+            ))}
+          </select>
+        )}
         <button className="btn btn-primary" disabled={!!busy || !email}>
           <BusyLabel busy={busy === "invite"} label={t("发送邀请")} busyLabel={t("发送中…")} />
         </button>
@@ -491,6 +516,9 @@ function MailCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => voi
           {mail.configured ? t("已接上（{p0}）", { p0: KEY_SOURCE[mail.source ?? ""] ?? mail.source }) : t("还没接上")}
         </span>
       </Row>
+      {st.cloud ? (
+        <p className="muted small">{t("云端版的 key 在服务器的环境变量里设置，不能在网页上改。")}</p>
+      ) : (
       <div className="row gap8 account-wrap">
         <input className="grow" type="password" autoComplete="off" placeholder="re_…" aria-label="Resend API key" value={key} onChange={(e) => setKey(e.target.value)} />
         <button
@@ -507,6 +535,7 @@ function MailCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => voi
           <BusyLabel busy={busy === "key"} label={mail.configured ? t("换一个") : t("保存")} />
         </button>
       </div>
+      )}
       <Row title={t("发件地址")} help={t("没验证域名时用 onboarding@resend.dev，只能发到你注册 Resend 的邮箱。验证了域名就改成那个域名下的地址。")} />
       <div className="row gap8 account-wrap">
         <input className="grow" value={sender} aria-label={t("发件地址")} onChange={(e) => setSender(e.target.value)} />
