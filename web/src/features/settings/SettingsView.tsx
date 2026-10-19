@@ -5,6 +5,7 @@ import { navCurrent } from "../registry";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { AccountCard } from "../auth/AccountCard";
 import { SpacesCard } from "../spaces/SpacesCard";
+import { MigrateCard } from "../migrate/MigrateCard";
 import { joinList, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
@@ -217,6 +218,7 @@ export function SettingsView() {
 
       <AccountCard />
       <SpacesCard />
+      {info.cloud && <MigrateCard />}
 
       {!info.cloud && (
       <section className="card" aria-label={t("这台电脑")}>
