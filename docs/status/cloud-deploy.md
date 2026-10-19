@@ -24,7 +24,14 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
 - Big files in pieces: `lacuna_app/upload_parts.py` + `routes/upload_parts.py`; the browser sends files over
   48 MB as 32 MB pieces (`web/src/features/upload-parts/pieces.ts`), then the import-track / library upload
   endpoint takes `part=<id>`. Tests: `tests/app/test_upload_parts.py`.
-- Next: move Leon's workspace to the cloud (after he has signed in), then retire the desktop app; invite
+- Moving the desktop workspace: 设置 →「从电脑搬过来」 (cloud, owner, main workspace only;
+  `lacuna_app/migrate.py`, `routes/migrate.py`, `web/src/features/migrate/`). The browser picks the
+  LACUNA_Workspace folder (webkitdirectory), skips `auth/ spaces/ models/ tmp/`, sends each file (pieces above
+  48 MB, 4 at a time) into `tmp/migrate/files/`; files already there with the same size are not resent.
+  Finish checks file count + bytes, rewrites the desktop's absolute paths in JSON (`C:\Projects\LACUNA_Workspace\…`)
+  to the server root, moves everything in, restarts (exit 76). Tests: `tests/app/test_migrate.py`,
+  `web/e2e/migrate.spec.ts`.
+- Next: Leon runs the move, then retire the desktop app; staging site (preview.lacunastudio.app); invite
   others only when Leon asks.
 - Gotcha: Deploy and Provision share the concurrency group `deploy`; a Deploy waiting for a server that
   doesn't exist yet blocks Provision until it is cancelled.
