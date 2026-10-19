@@ -44,14 +44,14 @@ WEIGHT = {"single": 1.0, "batch": 0.5, "none": 0.25, "hand_edit": 0.5}
 # rules he stated since). Where it contradicts an explicit rule, the explicit rule wins (precedence in
 # EDITORIAL_RULES.md): R002 asks for Pei's stumbles to be cut more than EP001 showed, so his old edit
 # keeping them is not evidence against cutting them.
-EXPLICIT_OVERRIDES = {("disfluency", "Pei"), ("repetition", "Pei")}
+EXPLICIT_OVERRIDES = {("disfluency", "Pei"), ("repetition", "Pei")}      # Leon's show (R002)
 
 KIND_LABELS = {
     "pause": N_("停顿收紧"), "disfluency": N_("口误"), "repetition": N_("重复"), "crosstalk": N_("抢话"),
     "content": N_("内容删减"), "interjection_move": N_("插话挪位"), "single_track_noise": N_("单轨杂声"),
     "filler": N_("口误与重复"), "interjection": N_("插话处理"), "single_track": N_("单轨删减"), "chat": N_("聊天修改"),
 }
-HOST_LABELS = {"Leon": "Leon", "Pei": "Pei", "both": N_("两人"), "none": N_("无人说话处")}
+HOST_LABELS = {"both": N_("两人"), "none": N_("无人说话处")}       # any other host: their name
 
 # evidence needed before a pattern becomes a candidate rule
 MIN_RESTORED = 3          # "AI cuts too much of X": at least this many restores ...
@@ -109,8 +109,8 @@ def _first_status(history: dict) -> dict[str, str]:
     return out
 
 
-def _host(ep, e) -> tuple[str, float, float]:
-    """(host, Leon speech s, Pei speech s) removed by edit `e` (lifts: their track)."""
+def _host(ep, e) -> str:
+    """Whose speech edit `e` removes: a host (track name), "both" (several) or "none" (lifts: their track)."""
     per: dict[str, float] = defaultdict(float)
     sr = ep.sr
     ranges = [(o["start"] / sr, o["end"] / sr, o.get("track")) for o in e.ops if o["op"] in ("cut", "lift", "erase")]
@@ -120,12 +120,12 @@ def _host(ep, e) -> tuple[str, float, float]:
                 per[trk] += max(0.0, min(b, en) - max(a, s))
     lift_tracks = {o["track"] for o in e.ops if o["op"] in ("lift", "erase", "slip")}
     if lift_tracks and not e.cuts:
-        return (lift_tracks.pop() if len(lift_tracks) == 1 else "both"), per["Leon"], per["Pei"]
+        return lift_tracks.pop() if len(lift_tracks) == 1 else "both"
     top = max(per.values(), default=0.0)
     if top < 0.05:
-        return "none", per["Leon"], per["Pei"]
+        return "none"
     big = [t for t, v in per.items() if v >= 0.3 * top]
-    return (big[0] if len(big) == 1 else "both"), per["Leon"], per["Pei"]
+    return big[0] if len(big) == 1 else "both"
 
 
 def _text(ep, e, host: str, limit: int = 40) -> str:
@@ -169,7 +169,7 @@ def decisions(ep, accepted_as_is: bool = False) -> list[Decision]:
                 if e.status != APPLIED:
                     continue                           # Leon's own cut, later undone: no signal
                 verdict, how = ADDED, "single"
-            host, _, _ = _host(ep, e)
+            host = _host(ep, e)
             j = ep.edit_json(e, [])
             out.append(Decision(
                 episode=ep.id, edit_id=e.id, source=e.source, kind=e.ai_category or e.category,
@@ -207,11 +207,11 @@ def _what(kind: str, host: str) -> str:
     k = tr(KIND_LABELS.get(kind, kind))
     if lang() == "en":
         k = k[:1].lower() + k[1:]                   # inside a sentence ("Leon's stumbles")
-    return tr("{host}的{kind}", host=tr(HOST_LABELS.get(host, host)), kind=k) if host in ("Leon", "Pei") else k
+    return tr("{host}的{kind}", host=tr(HOST_LABELS.get(host, host)), kind=k) if host not in ("both", "none") else k
 
 
 def _en(host: str) -> str:
-    return {"Leon": "Leon's speech", "Pei": "Pei's speech", "both": "both hosts' speech"}.get(host, "silences")
+    return {"both": "both hosts' speech", "none": "silences"}.get(host, f"{host}'s speech")
 
 
 def _example(d: Decision) -> dict:
@@ -335,14 +335,14 @@ def learn(ds: list[Decision]) -> list[Rule]:
                 {"category": kind, "host": host}, {"added": len(g)}, [_example(d) for d in g[:MAX_EXAMPLES]]))
 
     # content taste: which passages he cut and which he kept, per host - the part rules cannot capture
-    for host in ("Leon", "Pei", "both"):
+    for host in sorted({d.host for d in ds} - {"both", "none"}) + ["both"]:
         g = [d for d in ds if d.kind == "content" and d.host == host and
              (d.verdict in (RESTORED_V, ACCEPTED, DECLINED, ADDED) or (d.verdict == KEPT and d.how != "batch"))]
         cut_ = sorted([d for d in g if d.verdict in (KEPT, ACCEPTED, ADDED)], key=lambda d: -d.speech_s)
         kept = sorted([d for d in g if d.verdict in (RESTORED_V, DECLINED)], key=lambda d: -d.speech_s)
         if len(g) < MIN_TASTE or not cut_ or not kept:
             continue          # all one way: the protect / trust / timid rules already say it
-        who = tr(HOST_LABELS[host])
+        who = tr(HOST_LABELS.get(host, host))
         missed = [d for d in cut_ if d.verdict == ADDED]
         rules.append(Rule(
             _rid("taste", "content", host), "taste",
@@ -406,7 +406,7 @@ def _as_received(ep) -> list[Decision]:
             initial = first.get(e.id, RESTORED if e.title.startswith(SUGGESTION_PREFIX) else e.status)
             if initial not in (APPLIED, RESTORED):
                 continue
-            host, _, _ = _host(ep, e)
+            host = _host(ep, e)
             j = ep.edit_json(e, [])
             out.append(Decision(
                 episode=ep.id, edit_id=e.id, source=e.source, kind=e.ai_category or e.category, category=e.category,
@@ -459,7 +459,7 @@ def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list]
         suggestion = e.title.startswith(SUGGESTION_PREFIX)
         did_cut = frac >= 0.6
         verdict = (ACCEPTED if did_cut else DECLINED) if suggestion else (KEPT if did_cut else RESTORED_V)
-        host, _, _ = _host(ep, e)
+        host = _host(ep, e)
         j = ep.edit_json(e, [])
         out.append(Decision(
             episode=f"{ep.id}.hand_edit", edit_id=e.id, source="first_cut", kind=e.ai_category or e.category,

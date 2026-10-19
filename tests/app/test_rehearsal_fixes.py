@@ -31,7 +31,7 @@ def test_longer_track_keeps_its_tail(tmp_path, short):
     rec[short] = _trim(rec[short], tmp_path / f"{short}_short.wav", 40)
     ws = Workspace(tmp_path / "ws").ensure()
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=fake_asr)
-    imp.start("EP_LEN", "长短不一", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP_LEN", "长短不一", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job = imp.status("EP_LEN")
     assert job["state"] == "done", job["error"]
     assert job["result"]["raw_duration"] == pytest.approx(60.0, abs=0.01)
@@ -63,7 +63,7 @@ def test_words_past_the_end_of_a_short_track_get_finite_features(tmp_path):
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=fake_asr)
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)
-        imp.start("EP_NAN", "长短不一", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+        imp.start("EP_NAN", "长短不一", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     assert imp.status("EP_NAN")["state"] == "done", imp.status("EP_NAN")["error"]
     for f in (ws.root / "imports" / "EP_NAN").rglob("*.json"):
         assert "NaN" not in f.read_text(encoding="utf-8"), f

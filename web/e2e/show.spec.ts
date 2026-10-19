@@ -46,6 +46,12 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   await setup.getByTestId("show-save").click();
   await expect(setup).toHaveCount(0);
   await expect(p.getByText("导入 Ana、Bo 和 Cy 的分轨")).toBeVisible();
+  // the import form asks for one track per host
+  await p.getByRole("button", { name: "导入新一集" }).click();
+  await expect(p.getByText("把 Ana、Bo 和 Cy 的分轨拖到这里")).toBeVisible();
+  for (const n of ["ana", "bo", "cy"]) await expect(p.getByTestId(`import-slot-${n}`)).toBeVisible();
+  await expect(p.getByTestId("import-swap")).toHaveCount(0);
+  await p.getByRole("button", { name: "取消" }).click();
 
   // and it is kept, with its own colours
   await p.getByTestId("show-link").click();

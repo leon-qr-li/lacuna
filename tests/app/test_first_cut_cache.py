@@ -20,7 +20,7 @@ def test_torn_window_cache_is_cut_again(tmp_path):
     ws = Workspace(tmp_path / "ws").ensure()
     fake = FakeFirstCutAnthropic()
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=fake), asr_backend=fake_asr)
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]), wait=True)
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     assert imp.status("EP002")["state"] == "done"
     d = imp.dir_for("EP002")
     win = d / "ai_windows" / "window_00.json"

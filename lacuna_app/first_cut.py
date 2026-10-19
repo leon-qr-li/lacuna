@@ -11,6 +11,7 @@ EP001 targets only, so an imported episode is still reviewable.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import threading
@@ -67,7 +68,14 @@ TOOL = {
         },
     },
 }
-_TOKEN = re.compile(r"^[LP]\d{6}$")
+_TOKEN = re.compile(r"^[A-Z]\d{6}$")       # <track tag><index>, e.g. L000812
+
+
+def tool_for(tags: list[str]) -> dict:
+    """TOOL with the episode's own track tags (+ "both" = every track)."""
+    t = json.loads(json.dumps(TOOL))
+    t["input_schema"]["properties"]["ops"]["items"]["properties"]["track"]["enum"] = list(tags) + ["both"]
+    return t
 
 Progress = Callable[[float, str], None]
 
@@ -186,6 +194,8 @@ class ClaudeFirstCut:
         self.concurrency = concurrency
         self.model = model or os.environ.get("LACUNA_FIRST_CUT_MODEL", self.MODEL)
         self.on_usage: Callable[[dict], None] = lambda u: None
+        self.names: dict[str, str] = {"L": "Leon", "P": "Pei"}   # track tag -> host (set by the importer)
+        self.show: dict | None = None                            # the workspace's show (prompt), None = Leon's
 
     @property
     def available(self) -> bool:
@@ -202,7 +212,7 @@ class ClaudeFirstCut:
         return dict(model=model or self.model, max_tokens=64000,
                     system=[{"type": "text", "text": system + AI_NAME_RULE},
                             {"type": "text", "text": doc, "cache_control": {"type": "ephemeral"}}],
-                    output_config={"effort": self.effort}, tools=[in_reply_language(TOOL)],
+                    output_config={"effort": self.effort}, tools=[in_reply_language(tool_for(list(self.names)))],
                     tool_choice={"type": "auto"}, messages=[{"role": "user", "content": user}])
 
     def _call(self, req: dict):
@@ -307,12 +317,18 @@ class RuleFirstCut:
     name = "rules"
     available = True
 
+    def __init__(self):
+        self.names: dict[str, str] = {"L": "Leon", "P": "Pei"}
+
     @staticmethod
     def target(prev: str, nxt: str, gap: float) -> float | None:
+        # Leon -> Pei / Pei -> Leon: measured on EP001 (tags L and P are only ever Leon's and Pei's)
         if prev == "L" and nxt == "P":
             return 0.2 if gap >= 0.4 else None
         if prev == "P" and nxt == "L":
             return 0.5 if gap >= 0.8 else None
+        if prev != nxt:                      # any other change of speaker: a natural reply gap
+            return 0.4 if gap >= 0.7 else None
         if gap < 0.9:
             return None
         return 0.8 if gap < 2.0 else 1.0
@@ -331,7 +347,8 @@ class RuleFirstCut:
                 if tgt is not None and gap - tgt >= 0.05:
                     ops.append({"id": f"op{len(ops) + 1:04d}", "op": "tighten_pause", "track": "both",
                                 "at": round((end + s) / 2, 3), "target_s": tgt, "category": "pause",
-                                "reason": tr("{p0}→{p1} {gap}s→{tgt}s（规则）", p0='Leon' if who == 'L' else 'Pei', p1='Leon' if tag == 'L' else 'Pei', gap=f"{gap:.2f}", tgt=tgt), "confidence": 0.6})
+                                "reason": tr("{p0}→{p1} {gap}s→{tgt}s（规则）", p0=self.names.get(who, who), p1=self.names.get(tag, tag),
+                                              gap=f"{gap:.2f}", tgt=tgt), "confidence": 0.6})
             if end is None or e > end:
                 end, who = e, tag
         progress(1.0, tr("规则第一刀完成"))

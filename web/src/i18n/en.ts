@@ -82,8 +82,6 @@ export const en: Dict = {
   "导入新一集": "Import an episode",
   "剧集编号": "Episode ID",
   "标题（可不填）": "Title (optional)",
-  "Leon 的分轨": "Leon's track",
-  "Pei 的分轨": "Pei's track",
   "还没选": "Not chosen",
   "开始导入": "Start import",
   "取消": "Cancel",
