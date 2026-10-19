@@ -60,15 +60,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "没有可以撤销的操作": "Nothing to undo",
     "没有可以重做的操作": "Nothing to redo",
 
-    # ---- in-app update (appinfo)
-    "开发版不能在 App 里更新": "A development build can't update from the app",
-    "已经是最新版本": "Already on the latest version",
-    "文件校验不对，可能没下完整，再试一次": "The checksum doesn't match; the download may be incomplete. Try again",
-    "新版本还没下载好": "The new version isn't downloaded yet",
-    "{tasks}还没做完，做完再更新": "{tasks} still running; update once it's done",
-    "检查更新失败：{e}": "Checking for updates failed: {e}",
-    "下载新版本失败：{e}": "Downloading the new version failed: {e}",
-    "更新包的版本号和说明对不上": "The update package doesn't match its release notes",
+    # ---- work in progress (appinfo busy list)
     "导入（{_running}）": "Import ({_running})",
     "导出（{_running}）": "Export ({_running})",
     "生成发布资料": "Publish pack",

@@ -5,8 +5,8 @@ import { navCurrent } from "../registry";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { AccountCard } from "../auth/AccountCard";
 import { SpacesCard } from "../spaces/SpacesCard";
-import { joinList, t } from "../../i18n";
-import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
+import { t } from "../../i18n";
+import { PageLoading } from "../loading/Loading";
 
 const KEY_SOURCE: Record<string, string> = {
   env: t("环境变量"),
@@ -16,49 +16,11 @@ const KEY_SOURCE: Record<string, string> = {
   file: t("本机文件"),
 };
 
-/** Polls /api/app until the server has gone down and answers again (a plain restart). */
-async function waitForRestart(): Promise<void> {
-  const end = Date.now() + 10 * 60_000; // first install of new packages can take a few minutes
-  let wentDown = false;
-  while (Date.now() < end) {
-    await new Promise((r) => setTimeout(r, 1500));
-    try {
-      await settingsApi.appInfo();
-      if (wentDown) return;
-    } catch {
-      wentDown = true;
-    }
-  }
-}
-
-/** After an update: polls until the launcher has logged how it went (updated, or rolled back).
- * The new version answers a moment before the log is written, and a rollback keeps the old version,
- * so neither the version alone nor the server coming back is enough. */
-async function waitForUpdate(target: string, lastAt: string | undefined): Promise<void> {
-  const end = Date.now() + 10 * 60_000;
-  while (Date.now() < end) {
-    await new Promise((r) => setTimeout(r, 1500));
-    try {
-      const last = (await settingsApi.appInfo()).update.last_update;
-      if (last && last.to === target && last.at !== lastAt) return;
-    } catch {
-      // restarting
-    }
-  }
-}
-
-/** Top-bar link to 设置, with a dot when an update is waiting. */
+/** Top-bar link to 设置. */
 export function SettingsLink() {
-  const [update, setUpdate] = useState(false);
-  useEffect(() => {
-    settingsApi
-      .appInfo()
-      .then((i) => setUpdate(i.update.available))
-      .catch(() => setUpdate(false));
-  }, []);
   return (
     <a className="btn btn-outline row" href="#/settings" aria-current={navCurrent("settings")}>
-      {t("设置")}{update ? t(" · 有新版本") : ""}
+      {t("设置")}
     </a>
   );
 }
@@ -75,14 +37,6 @@ export function SettingsView() {
     load();
   }, [load]);
 
-  // while a download runs, follow its progress
-  const job = info?.update.job;
-  useEffect(() => {
-    if (job?.state !== "running") return;
-    const t = setInterval(load, 1000);
-    return () => clearInterval(t);
-  }, [job?.state, load]);
-
   const run = async (label: string, fn: () => Promise<unknown>) => {
     setBusy(label);
     setErr(null);
@@ -96,38 +50,21 @@ export function SettingsView() {
     }
   };
 
-  const check = () => run("check", async () => setInfo(await settingsApi.checkUpdate()));
-  const prepare = () => run("prepare", async () => setInfo(await settingsApi.prepareUpdate()));
-  const apply = () =>
-    run("apply", async () => {
-      const lastAt = info!.update.last_update?.at;
-      const r = await settingsApi.applyUpdate();
-      setMsg(t("正在更新并重启，页面会自己刷新…"));
-      await waitForUpdate(r.version, lastAt);
-      window.location.reload();
-    });
   const saveKey = () =>
     run("key", async () => {
-      const r = await settingsApi.saveApiKey(key.trim());
+      await settingsApi.saveApiKey(key.trim());
       setKey("");
-      if (r.restarting) {
-        setMsg(t("已保存，正在重启让它生效…"));
-        await waitForRestart();
-        window.location.reload();
-      } else {
-        setMsg(t("已保存。重启 LACUNA 后生效。"));
-        load();
-      }
+      setMsg(t("已保存。重启 LACUNA 后生效。"));
+      load();
     });
 
   if (!info) return err ? <p className="error pad">{err}</p> : <PageLoading label={t("正在打开设置…")} />;
-  const u = info.update;
   return (
     <main className="home settings">
       <h1>{t("设置")}</h1>
       {msg && (
         <p className="card" role="status">
-          <BusyLabel busy={busy === "apply" || busy === "key"} label={msg} />
+          {msg}
         </p>
       )}
       {err && <p className="error">{err}</p>}
@@ -138,51 +75,10 @@ export function SettingsView() {
         <div className="card-head">
           <h2>{t("版本")}</h2>
           <span className="badge" data-testid="app-version">
-            {info.cloud ? info.version.slice(0, 7) : info.installed ? info.version : t("开发版")}
+            {info.cloud ? info.version.slice(0, 7) : info.version === "dev" ? t("开发版") : info.version}
           </span>
         </div>
         {info.cloud && <p className="muted small" data-testid="cloud-auto-update">{t("新版本测试通过后会自动上线，不用手动更新。")}</p>}
-        {!info.installed && !info.cloud && <p className="muted small">{t("这是从源码直接运行的开发版，不在 App 里更新。")}</p>}
-        {!info.cloud && u.last_update && (
-          <p className={u.last_update.ok ? "muted small" : "error"}>
-            {t("上次更新（{at}）：{message}", { at: u.last_update.at, message: u.last_update.message })}
-          </p>
-        )}
-        {info.installed && !info.cloud && (
-          <>
-            {u.available ? (
-              <div data-testid="update-available">
-                <p>
-                  {t("有新版本")} <strong>{u.latest}</strong>
-                </p>
-                {u.notes && <pre className="notes">{u.notes}</pre>}
-                {job?.state === "running" ? (
-                  <JobProgress flat title={t("正在下载 {version}", { version: u.latest })} progress={job.progress ?? 0} testId="update-download" />
-                ) : job?.state === "ready" ? (
-                  <>
-                    {info.busy.length > 0 && <p className="muted small">{t("{tasks}还在进行，做完才能更新。", { tasks: joinList(info.busy) })}</p>}
-                    <button className="btn btn-primary" disabled={!!busy || info.busy.length > 0} onClick={apply}>
-                      {t("更新并重启")}
-                    </button>
-                    <p className="muted small">{t("大约一两分钟。正在编辑的内容都已经自动保存。新版本起不来会自动回到现在的版本。")}</p>
-                  </>
-                ) : (
-                  <>
-                    {job?.state === "error" && <p className="error">{job.error}</p>}
-                    <button className="btn btn-primary" disabled={!!busy} onClick={prepare}>
-                      {t("下载新版本")}
-                    </button>
-                  </>
-                )}
-              </div>
-            ) : (
-              <p className="muted">{u.error ?? (u.latest ? t("已经是最新版本。") : t("还没检查过更新。"))}</p>
-            )}
-            <button className="btn btn-outline" disabled={!!busy} onClick={check}>
-              <BusyLabel busy={busy === "check"} label={t("检查更新")} busyLabel={t("检查中…")} />
-            </button>
-          </>
-        )}
       </section>
 
       <section className="card" aria-label={t("AI 密钥")}>
@@ -226,7 +122,6 @@ export function SettingsView() {
           <li>{t("工作区：")}{info.workspace}</li>
           <li data-testid="ffmpeg-state">ffmpeg：{info.ffmpeg && info.ffprobe ? t("已就绪") : t("没找到（导入和导出会失败）")}</li>
           <li>{t("语音识别模型：")}{info.models ? t("已下载") : t("第一次导入时自动下载（约 400 MB）")}</li>
-          {info.home && <li>{t("安装位置：")}{info.home}</li>}
         </ul>
       </section>
       )}

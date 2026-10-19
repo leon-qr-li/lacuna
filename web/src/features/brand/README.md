@@ -4,8 +4,6 @@
 "L" and "A", sunset gradient on navy, a glowing ON AIR light. It is used by
 
 - the favicon (`web/index.html`),
-- the top-bar brand (`.brand::before` in `web/src/styles.css`) and the sign-in brand panel (`.auth-logo i`),
-- the desktop icons `installer/LACUNA.ico` (Windows shortcut) and `installer/LACUNA.icns` (LACUNA.app),
-  regenerated with `node design/logo/render_icons.mjs && python design/logo/make_icons.py`.
+- the top-bar brand (`.brand::before` in `web/src/styles.css`) and the sign-in brand panel (`.auth-logo i`).
 
 New places reuse the file (CSS `url(...)` or `import logo from "…/brand/logo.svg"`), never a copy.

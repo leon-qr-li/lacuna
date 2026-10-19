@@ -167,7 +167,7 @@ def test_member_cannot_use_owner_settings(tmp_path, mailer):
     assert pei.get("/api/auth/status").json()["mail"] is None
     for path, body in [("/api/auth/config", {"sender": "x <a@b.c>"}), ("/api/auth/resend-key", {"key": "re_" + "x" * 30}),
                        ("/api/auth/test-mail", None), ("/api/app/api-key", {"key": "x"}),
-                       ("/api/app/update/apply", None), ("/api/auth/invites", {"email": "z@example.com"})]:
+                       ("/api/auth/invites", {"email": "z@example.com"})]:
         assert pei.post(path, json=body).status_code == 403, path
     assert pei.get("/api/auth/users").status_code == 403
     assert c.get("/api/auth/users").json()["users"][1]["email"] == "pei@example.com"

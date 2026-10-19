@@ -1,7 +1,7 @@
 name: CI
 
-# Leon works on Windows, Pei on macOS (Apple Silicon); nobody can hand-test the Mac side,
-# so this matrix is the Mac verification. Linux is the cloud dev box.
+# Linux is what the cloud image runs; Windows and macOS stay in the matrix so a development checkout
+# (`python -m lacuna_app`) keeps working there.
 on:
   push:
     branches: [main]
@@ -9,8 +9,7 @@ on:
   workflow_dispatch:
 
 # A newer push to a PR branch cancels that PR's older run. Runs on main are never cancelled: each
-# merge gets its own group (by commit), so every merge leaves a full result and a release can start
-# from green main without re-running CI by hand.
+# merge gets its own group (by commit), so every merge leaves a full result.
 concurrency:
   group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -20,7 +19,6 @@ jobs:
   #   docs only (*.md, docs/, design/)      -> nothing runs
   #   web/ only                             -> UI build + E2E (pytest skipped)
   #   Python (engine, app, tests, scripts)  -> pytest + UI build + E2E (E2E drives the real backend)
-  #   installer/, pyproject.toml            -> also a real install + update + rollback (tests/installer/smoke_install.py)
   #   CI config or any unknown path         -> everything
   # Whatever runs, runs on all three OSes: Mac-only bugs have shown up in both Python and UI code.
   changes:
@@ -28,7 +26,6 @@ jobs:
     outputs:
       python: ${{ steps.classify.outputs.python }}
       web: ${{ steps.classify.outputs.web }}
-      install: ${{ steps.classify.outputs.install }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,25 +34,23 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: |
-          python=false; web=false; install=false
+          python=false; web=false
           if [ "${{ github.event_name }}" = workflow_dispatch ] || [ -z "$BASE" ] \
              || [ "$BASE" = 0000000000000000000000000000000000000000 ] \
              || ! files=$(git diff --name-only "$BASE"...HEAD); then
-            python=true; web=true; install=true; files="(full run)"
+            python=true; web=true; files="(full run)"
           fi
           echo "$files"
           for f in $files; do
             case "$f" in
               *.md|docs/*|design/*|.gitignore) ;;
               web/*) web=true ;;
-              installer/*|tests/installer/*|pyproject.toml|.github/workflows/release.yml) python=true; install=true ;;
               lacuna_core/*|lacuna_app/*|tests/*|scripts/*|spikes/*|pyproject.toml) python=true ;;
-              *) python=true; web=true; install=true ;;
+              *) python=true; web=true ;;
             esac
           done
-          echo "python=$python web=$web install=$install"
+          echo "python=$python web=$web"
           echo "python=$python" >> "$GITHUB_OUTPUT"
-          echo "install=$install" >> "$GITHUB_OUTPUT"
           echo "web=$web" >> "$GITHUB_OUTPUT"
 
   # pytest and the browser E2E run as separate jobs so they overlap instead of queueing behind each
@@ -203,56 +198,16 @@ jobs:
             web/playwright-report
           if-no-files-found: ignore
 
-  # What Leon and Pei do: run the installer script, start, update in the app, survive a broken
-  # release. No preinstalled ffmpeg/uv/Python on purpose: the installer must bring its own.
-  install:
-    name: install ${{ matrix.os }}
-    needs: changes
-    if: needs.changes.outputs.install == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    defaults:
-      run:
-        shell: bash
-    env:
-      PYTHONUTF8: "1"
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5      # only to run the smoke script; the app gets uv's Python
-        with:
-          python-version: "3.12"
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-
-      - name: Build UI
-        working-directory: web
-        run: |
-          npm ci
-          npm run build
-
-      - name: Install → start → update → rollback
-        run: python tests/installer/smoke_install.py
-
   # The one check to read before merging: green when every job that had to run passed,
   # including when the change was docs-only and nothing needed to run.
   ci-ok:
     name: CI ok
-    needs: [changes, pytest, e2e, install]
+    needs: [changes, pytest, e2e]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "changes=${{ needs.changes.result }} pytest=${{ needs.pytest.result }} e2e=${{ needs.e2e.result }} install=${{ needs.install.result }}"
+          echo "changes=${{ needs.changes.result }} pytest=${{ needs.pytest.result }} e2e=${{ needs.e2e.result }}"
           [ "${{ needs.changes.result }}" = success ] || exit 1
           case "${{ needs.pytest.result }}" in success|skipped) ;; *) exit 1 ;; esac
           case "${{ needs.e2e.result }}" in success|skipped) ;; *) exit 1 ;; esac
-          case "${{ needs.install.result }}" in success|skipped) ;; *) exit 1 ;; esac
