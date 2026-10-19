@@ -1,0 +1,12 @@
+[Unit]
+Description=Keep containers away from the cloud metadata service (it holds the server's setup secrets)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'iptables -C DOCKER-USER -d 169.254.169.254 -j DROP 2>/dev/null || iptables -I DOCKER-USER -d 169.254.169.254 -j DROP'
+
+[Install]
+WantedBy=multi-user.target

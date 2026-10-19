@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for a new LACUNA image every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=60s
+
+[Install]
+WantedBy=timers.target
