@@ -10,3 +10,6 @@ State: fix built (decision `missing-recordings`); PR with the `staging` label.
 Update 22:10Z: #138 merged and live on production. Leon then chose a full clean-out instead of
 re-uploading (decision `cloud-clean-out`): PR adds `lacuna_app/clear_once.py` (runs once at startup on
 the cloud). Next: staging clears → merge → production clears → Leon tests end to end → remove clear_once.
+
+Update 22:30Z: #140 ran on staging and production (Leon: episode list empty). clear_once removed;
+the restart also clears the stale 生化危机 row in 导入任务 (in-memory importer job). Done; Leon testing E2E.
