@@ -14,3 +14,8 @@ EP001_样本集 included (his earlier "never delete EP001" no longer applies).
   Staging clears its copy when the PR is on staging; production when it merges. Staging's later copies
   of production carry the marker. Removed in a later release.
 - Undo: the nightly encrypted R2 backup from before the clean-out.
+
+Follow-up (22:30Z): both sites ran it; the code is removed. One miss: the import list keeps jobs in
+memory (Importer, built by routes/appinfo.py before the clean-out ran), so 生化危机's finished import
+still showed until the next restart even though its files were gone. The restart that ships this
+removal clears it. Lesson: a startup clean-out must also drop in-memory state built before it.
