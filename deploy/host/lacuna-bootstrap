@@ -17,13 +17,13 @@ fi
 mkdir -p /data
 grep -q "$DEV" /etc/fstab || echo "$DEV /data ext4 defaults,nofail,discard,noatime 0 2" >> /etc/fstab
 mountpoint -q /data || mount /data
-mkdir -p /data/workspace /data/home /data/tmp
-chown -R 10001:10001 /data/workspace /data/home /data/tmp
+mkdir -p /data/workspace /data/home /data/tmp /data/preview/workspace /data/preview/home /data/preview/tmp
+chown -R 10001:10001 /data/workspace /data/home /data/tmp /data/preview
 
 # ---- host hardening: no way in from the network (the DO firewall also has no inbound rules)
 passwd -l root || true
 systemctl disable --now ssh.socket ssh.service 2>/dev/null || true
-apt-get install -y -q ufw unattended-upgrades restic docker.io jq
+apt-get install -y -q ufw unattended-upgrades restic docker.io jq rsync
 ufw default deny incoming
 ufw default allow outgoing
 ufw --force enable
@@ -50,8 +50,8 @@ docker run -d --name cloudflared --network lacuna --restart unless-stopped \
   --env-file /etc/lacuna/tunnel.env --security-opt no-new-privileges --cap-drop ALL \
   cloudflare/cloudflared:latest tunnel --no-autoupdate run
 
-# ---- app updater (every minute) + nightly backup
-systemctl enable --now lacuna-update.timer lacuna-backup.timer
+# ---- app updaters (every minute: the site, the staging site) + nightly backup
+systemctl enable --now lacuna-update.timer lacuna-update-preview.timer lacuna-backup.timer
 /usr/local/bin/lacuna-update || true
 systemctl start --no-block lacuna-backup.service     # first backup right away, then nightly
 echo "== bootstrap done"

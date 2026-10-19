@@ -10,6 +10,7 @@ Decision: `docs/decisions/2026-10-19-cloud-deploy.md`. Status: `docs/status/clou
 | Create / change infra | workflow **Provision** (`plan` / `apply` / `recreate`) → `deploy/provision.py` |
 | Server first boot | cloud-init built by `provision.py` from `deploy/host/*` (`lacuna-bootstrap`) |
 | Server updater | `deploy/host/lacuna-update` (timer, every minute; waits for jobs; rolls back) |
+| Staging | PR label `staging` → workflow **Staging** → registry `:preview` → `lacuna-update-preview` (fresh copy of the workspace in `/data/preview`, then the new version) → https://preview.lacunastudio.app |
 | Backups | `deploy/host/lacuna-backup` (nightly restic → R2); workflow **Backup check** (daily: age, restore drill; Sundays: volume snapshot) |
 
 GitHub secrets: `DIGITALOCEAN_TOKEN`, `CLOUDFLARE_API_TOKEN`, `ACCESS_EMAILS`, `BACKUP_PASSWORD`,
