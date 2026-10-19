@@ -18,6 +18,8 @@ export interface AuthStatus {
   first: boolean;
   /** the first account also needs the setup code from the server */
   setup_code: boolean;
+  /** in the cloud: the owner's email, when Cloudflare Access proved this visitor is the owner (no setup code) */
+  owner_email?: string | null;
   /** owner only */
   mail: { configured: boolean; source: string | null; sender: string } | null;
 }

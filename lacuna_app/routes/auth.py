@@ -167,6 +167,11 @@ def register(app, ctx) -> None:
             return None
         return request.headers.get("cf-connecting-ip") or (request.client.host if request.client else None)
 
+    def owner(request: Request) -> str | None:
+        """The owner's email when Cloudflare Access proved this request comes from it (cloud only)."""
+        e = cloudflare.owner_email()
+        return e if e and cloudflare.access_email(request) == e else None
+
     def agent(request: Request) -> str:
         return request.headers.get("user-agent", "")
 
@@ -187,7 +192,11 @@ def register(app, ctx) -> None:
 
     @app.get("/api/auth/status")
     def status(request: Request):
-        return auth.status(token(request))
+        out = auth.status(token(request))
+        if out.get("first") and owner(request):
+            out["setup_code"] = False          # Access proved it is the owner: no code to type
+            out["owner_email"] = owner(request)
+        return out
 
     @app.post("/api/auth/login")
     def login(body: Creds, request: Request):
@@ -211,7 +220,7 @@ def register(app, ctx) -> None:
         if body.invite:
             return finish(run(lambda: auth.register_invite(body.invite, body.password, body.remember, agent(request))))
         return finish(run(lambda: auth.register_first(body.email or "", body.password, body.setup_code, body.remember,
-                                                      agent(request))))
+                                                      agent(request), proven=owner(request))))
 
     @app.post("/api/auth/code")
     def code(body: CodeBody):

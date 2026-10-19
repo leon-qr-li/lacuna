@@ -303,6 +303,9 @@ function First({ status, email, setEmail, next }: FormProps) {
   const [pw2, setPw2] = useState("");
   const [setup, setSetup] = useState("");
   const { busy, err, setErr, run } = useSubmit();
+  useEffect(() => {
+    if (status.owner_email && !email) setEmail(status.owner_email); // the email Cloudflare Access just checked
+  }, [status.owner_email]); // eslint-disable-line react-hooks/exhaustive-deps
   const submit = (e: FormEvent) => {
     e.preventDefault();
     const bad = checkNew(pw, pw2);
