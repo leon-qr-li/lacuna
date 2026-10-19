@@ -34,6 +34,8 @@ HERE = Path(__file__).resolve().parent
 DOMAIN = os.environ.get("LACUNA_DOMAIN", "lacunastudio.app")
 REGION = os.environ.get("LACUNA_REGION", "sfo3")
 SIZE = os.environ.get("LACUNA_SIZE", "s-4vcpu-8gb")
+# same price class (4 vCPU / 8 GB): DigitalOcean sometimes stops offering one of these in a region
+SIZE_FALLBACKS = ("s-4vcpu-8gb", "s-4vcpu-8gb-amd", "s-4vcpu-8gb-intel")
 VOLUME_GB = int(os.environ.get("LACUNA_VOLUME_GB", "50"))
 NAME = "lacuna"
 TAG = "lacuna"
@@ -342,6 +344,17 @@ class DigitalOcean:
             self.http("PUT", f"/v2/firewalls/{fw['id']}", body)
             log("removed inbound rules from the firewall")
 
+    def size(self) -> str:
+        """The first of SIZE + fallbacks that this region offers right now."""
+        sizes = {z["slug"]: z for z in self.http("GET", "/v2/sizes?per_page=200").get("sizes", [])}
+        for slug in dict.fromkeys((SIZE, *SIZE_FALLBACKS)):
+            z = sizes.get(slug)
+            if z and z.get("available", True) and REGION in z.get("regions", []):
+                log(f"server size: {slug}")
+                return slug
+        offered = sorted(k for k, z in sizes.items() if REGION in z.get("regions", []) and z.get("vcpus") == 4)
+        raise ProvisionError(f"no 4 vCPU / 8 GB size is offered in {REGION} now (4 vCPU sizes there: {offered})")
+
     def droplets(self) -> list[dict]:
         return self.http("GET", f"/v2/droplets?tag_name={TAG}").get("droplets", [])
 
@@ -373,14 +386,14 @@ class DigitalOcean:
             self.sleep(5)
         log("removed the old server (data volume kept)")
 
-    def create(self, user_data: str, volume_id: str) -> None:
+    def create(self, user_data: str, volume_id: str, size: str = SIZE) -> None:
         for _ in range(60):     # the volume must be free (detached from a deleted server)
             v = self.http("GET", f"/v2/volumes/{volume_id}")["volume"]
             if not v.get("droplet_ids"):
                 break
             self.sleep(5)
         out = self.http("POST", "/v2/droplets", {
-            "name": NAME, "region": REGION, "size": SIZE, "image": "ubuntu-24-04-x64", "tags": [TAG],
+            "name": NAME, "region": REGION, "size": size, "image": "ubuntu-24-04-x64", "tags": [TAG],
             "volumes": [volume_id], "monitoring": True, "ipv6": False, "backups": False, "user_data": user_data})
         did = out["droplet"]["id"]
         for _ in range(120):
@@ -456,6 +469,7 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
     registry = do.registry(apply)
     volume = do.volume(apply)
     do.firewall(apply)
+    size = do.size()
 
     servers = do.droplets()
     if len(servers) > 1:
@@ -482,7 +496,7 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
         raise ProvisionError("cloud-init is over DigitalOcean's 64 KiB limit")
     if servers:
         do.remove(servers[0])
-    do.create(user_data, volume)
+    do.create(user_data, volume, size)
     return {"registry": registry, "server": True}
 
 
