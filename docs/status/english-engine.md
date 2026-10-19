@@ -14,6 +14,22 @@ measurement report `/mnt/project-files/lacuna/docs/英文剪辑实测_2026-10-19
   (ASR ~37 s), real importer, rule first cut (no API key in the container).
 - Tests: `tests/app/test_english.py`; real models `tests/test_asr_en_real.py` (set `LACUNA_ASR_MODELS`).
 
+## Dropped um/uh (spike + first version, same PR)
+- Problem: English recognisers drop most fillers (Whisper all; Parakeet wrote 34 in 30 min of a CC-BY
+  podcast, SenseVoice 1), so the AI cannot cut what it cannot see.
+- Spike (scripts in the thread's scratch; data: Request for Explanation ep4 + ep6, 15 min each, mono mix):
+  every short sound with no word (energy activity ≥0.15 s, ≥50 ms from any word) is decoded again on its
+  own by Parakeet. Result: 28 extra um/uh in 30 min on top of the 34 written; on 300 real short words
+  decoded alone it said "Uh" once (FP ~0.3 %). "Mm" / "Hmm" are useless as a signal (clipped words
+  decoded alone come back "Mm." about 1 in 7), so only um/uh/er/erm/ah count.
+- Limits: no labelled ground truth, so recall is unknown (fillers inside a word's span or glued to it are
+  missed; known fillers decoded alone often come back "Yeah." / "Mm-hmm.", so this cannot confirm the
+  ones the recogniser wrote). Mono 11 kHz test audio; real separate tracks should do better.
+- Product: `features.build(hear=asr.Listener)` for English: `~filler 0.42s e+1 heard "Uh"` lines,
+  `(1.11 ~filler)` on the pause it sits in, `heard "…"` on other `~snd` sounds; the English brief tells the
+  AI to treat `~filler` like filler words (cut piled-up ones by raw seconds, keep a residue). Cost:
+  ~15 s per 15 min track (4 vCPU, batches of 16 clips).
+
 ## Next
-- um/uh detector spike (recognisers drop most fillers; `~snd` sounds inside a sentence are the candidates).
+- Calibrate on a human-edited English episode (cut rate, filler residue) when one is available.
 - English show notes / poster copy.

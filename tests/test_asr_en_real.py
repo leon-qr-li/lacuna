@@ -36,3 +36,10 @@ def test_english_words_end_to_end():
     flagged = sum(1 for t in toks["tracks"]["A"] if t["flag"])
     assert flagged <= len(words) // 3               # case / punctuation are not disagreements
     assert "The episode is in **English**" in doc
+
+
+def test_listener_decodes_clips_on_their_own():
+    x, _ = sf.read(str(MODELS / asr.PARAKEET / "test_wavs" / "0.wav"), dtype="float32")
+    hear = asr.Listener(asr.load_main(MODELS, "en", threads=2), {"A": x})
+    out = hear([("A", 0.0, 1.5), ("A", 1.5, 3.0)])
+    assert len(out) == 2 and all(isinstance(t, str) for t in out) and any(out)

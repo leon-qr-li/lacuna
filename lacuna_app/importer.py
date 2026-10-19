@@ -103,6 +103,9 @@ class Importer:
         self.models_dir = Path(models_dir) if models_dir else ws.root / "models"
         self.first_cut_factory = first_cut_factory or (lambda: make_first_cut("auto"))
         self.asr_backend = asr_backend          # None = real sherpa-onnx ASR (tests inject a fake)
+        # English: listens again to short sounds without words (dropped um/uh); None = real recogniser
+        # with the real ASR, nothing with a fake one (tests inject a fake: audio -> [(tag, a, b)] -> [text])
+        self.hear_backend: Callable[[dict], Callable] | None = None
         self._lock = threading.Lock()
         self._usage_lock = threading.Lock()
         self._running: str | None = None
@@ -357,12 +360,21 @@ class Importer:
                 if tag not in audio16:
                     audio16[tag] = asr_mod.decode_16k(job["tracks"][tag]["path"])
             profile = show_mod.load(self.ws.root)
+            hear = None
+            if lang == "en":
+                if self.hear_backend is not None:
+                    hear = self.hear_backend(audio16)
+                elif backend is None:
+                    self._progress(job, "features", 0.3, tr("找识别漏掉的 um / uh"))
+                    hear = asr_mod.Listener(asr_mod.load_main(self.models_dir, lang), audio16)
             tokens_doc, feats, doc = features.build(asr, audio16, job["id"], log=lambda *_: None, names=dict(hosts),
-                                                    show_name=profile["show_name"], lang=lang)
+                                                    show_name=profile["show_name"], lang=lang, hear=hear)
+            hear = None
             atomic_write_json(feat_p, feats)
             atomic_write_json(tok_p, tokens_doc)
             doc_p.write_text(doc, encoding="utf-8")
-            self._done_step(job, "features", {"tokens": {t: len(v) for t, v in tokens_doc["tracks"].items()}})
+            self._done_step(job, "features", {"tokens": {t: len(v) for t, v in tokens_doc["tracks"].items()},
+                                              "fillers": feats["stats"].get("filler_candidates", 0)})
         audio16.clear()
         tokens_doc = read_json(tok_p)
         tokens = {tag: TrackTokens(t) for tag, t in tokens_doc["tracks"].items()}

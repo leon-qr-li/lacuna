@@ -15,6 +15,7 @@ import difflib
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
+from typing import Callable
 
 import numpy as np
 
@@ -248,6 +249,21 @@ def build_tokens(asr, db, act, tag):
     return toks, segs
 
 
+# --------------------------------------------------------------------------- dropped fillers (English)
+# English recognisers leave most um/uh out of the text (Whisper all, Parakeet ~2 in 3). A short sound
+# with no word, decoded again on its own, often comes back as "Uh" / "Um": spike 2026-10-19 on 30 min
+# of a CC-BY podcast found 28 such fillers next to the 34 Parakeet wrote, and said "Uh" for 1 of 300
+# real words decoded alone. "Mm" / "Hmm" are not counted: a clipped word decoded alone often comes back
+# as "Mm." (docs/status/english-engine.md).
+FILLERS = {"um", "uh", "er", "erm", "uhm", "umm", "uhh", "ah"}
+HEAR_MAX_S = 1.5
+
+
+def is_filler(text: str) -> bool:
+    words = [re.sub(r"[^a-z]", "", w.lower()) for w in (text or "").split()]
+    return bool(words) and all(w in FILLERS for w in words)
+
+
 # --------------------------------------------------------------------------- utterance features
 
 
@@ -306,9 +322,12 @@ def utt_features(toks, segs, db, f0, speech_ref_db, f0_ref):
 
 
 def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str] | None = None,
-          show_name: str = "洛城二三事", lang: str = "zh") -> tuple[dict, dict, str]:
+          show_name: str = "洛城二三事", lang: str = "zh",
+          hear: Callable[[list[tuple[str, float, float]]], list[str]] | None = None) -> tuple[dict, dict, str]:
     """(tokens doc, features doc, editor document) from per-track ASR + 16 kHz mono audio.
-    `names`: track tag -> host name, in host order. `lang`: the episode's language (asr.LANGUAGES)."""
+    `names`: track tag -> host name, in host order. `lang`: the episode's language (asr.LANGUAGES).
+    `hear`: decodes short sounds that have no recognised word on their own ([(tag, start, end)] ->
+    text each, asr.Listener); English only, it finds the um/uh the recognisers dropped."""
     names = dict(names or TRACKS)
     data = {}
     for tag, name in names.items():
@@ -377,14 +396,16 @@ def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str]
     gaps = [{"start": round(s * HOP, 2), "end": round(e * HOP, 2), "dur": round((e - s) * HOP, 2)}
             for s, e in runs(~talk_any) if e - s >= 100]
 
-    # non-speech sound candidates: active energy >= 0.25 s with no token within 0.1 s, loud enough
+    # non-speech sound candidates: active energy >= 0.25 s with no token within 0.1 s, loud enough.
+    # English: from 0.15 s and 0.05 s away from a word, since a dropped "uh" is that short.
     sounds = []
+    pad, shortest = (5, 15) if lang == "en" else (10, 25)
     for tag, d in data.items():
         cover = np.zeros(len(d["act"]), bool)
         for t in d["toks"]:
-            cover[max(0, int(t["start"] / HOP) - 10):int(t["end"] / HOP) + 10] = True
+            cover[max(0, int(t["start"] / HOP) - pad):int(t["end"] / HOP) + pad] = True
         for s, e in runs(d["act"] & ~cover):
-            if e - s < 25:
+            if e - s < shortest:
                 continue
             pk = float(np.percentile(d["db"][s:e], 90) - d["speech_ref_db"])
             if pk < -8:
@@ -400,6 +421,11 @@ def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str]
                                "peak_rel_db": u.get("energy_rel_db"),
                                "src": "sv:" + (u["sv_event"] or "") if u["sv_event"] != "Speech" else "text:哈哈"})
     sounds.sort(key=lambda s: s["start"])
+    if hear:
+        listen = [s for s in sounds if s["src"] == "energy" and s["dur"] <= HEAR_MAX_S]
+        for s, text in zip(listen, hear([(s["track"], s["start"], s["end"]) for s in listen])):
+            s["heard"] = text.strip()
+            s["filler"] = is_filler(text)
 
     # stats
     stats = {}
@@ -418,6 +444,7 @@ def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str]
         f"{tag}_first": sum(o["first"] == tag for o in overlaps) for tag in tags}
     stats["floor_gaps_ge_1s"] = {"count": len(gaps), "total_s": round(sum(g["dur"] for g in gaps), 1)}
     stats["sound_candidates"] = len(sounds)
+    stats["filler_candidates"] = sum(1 for s in sounds if s.get("filler"))
 
     tok_out = {"episode": episode, "time_base": "raw seconds of each track (tracks start in sync)",
                "tracks": {tag: [{k: t[k] for k in ("id", "t", "start", "end", "pause_after", "flag")}
@@ -461,10 +488,11 @@ One line per utterance (= one VAD segment):
 
 - Head: track · start-end seconds · `r` speaking rate (words/s, pauses ≥0.3 s inside the line removed) · `e` loudness relative to this track's normal speech (dB) · pitch at the end of the line `↗` rising `↘` falling `→` flat (missing = not measurable) · `pb`/`pa` gap to the previous/next line on the same track (s) · `ov` = overlaps another track (see the overlap table).
 - `@812` = anchor: the next word's token id is `{a}000812` (on a {b} line `{b}000812`). Every following word takes the next id: `@812 So I think` → So={a}000812, I={a}000813, think={a}000814. Punctuation belongs to its word. Anchors appear at the start of a line, after every pause and every 10 tokens.
-- `(0.45)` = a pause ≥0.30 s after the previous token (same track).
+- `(0.45)` = a pause ≥0.30 s after the previous token (same track); `(1.11 ~filler)` = that pause holds a `~filler` (see below).
 - `{the the|the}` = the two recognisers disagree: left is the main recogniser (Parakeet, with ids), right is SenseVoice's reading (no ids). `{|um}` = only SenseVoice heard it (attached after the previous token); `{so|}` = only the main recogniser heard it. Disagreements are mostly fillers, repeats, names or mumbling: trust the text less there and edit more conservatively.
 - Both recognisers tend to DROP fillers (um, uh, er). A filler they dropped still sits in the audio, usually inside a pause or a `~snd` sound.
-- `~snd 0.45s e-3` = sound without any recognised word (a dropped um/uh, laughter, breath, cough, mic bump; energy only, uncertain).
+- `~snd 0.45s e-3` = sound without any recognised word (laughter, breath, cough, mic bump, a backchannel, a dropped filler; energy only, uncertain). `heard "Yeah."` = what the main recogniser hears when that sound is decoded on its own (a hint, often wrong for clipped sounds).
+- `~filler 0.30s e+1 heard "Uh"` = such a sound that, decoded on its own, is um/uh/er: very likely a filler the transcript dropped. It has no token id: cut it with raw seconds (its start-end) on its own track.
 - `{a} ... (no text) e-12` = VAD heard sound but neither recogniser produced a word.
 - `--- 12:00 ---` = a time mark every minute (raw).
 - `== floor gap 2.31s (raw 300.12-302.43) ==` = {all} silent (no speech) for ≥1.0 s: a pause that may be tightened.
@@ -490,7 +518,8 @@ def format_help(names: dict[str, str], lang: str = "zh") -> str:
             .replace("{a}", tags[0]).replace("{b}", tags[-1]))
 
 
-def fmt_utt_line(tag, u, d, ov_ranges):
+def fmt_utt_line(tag, u, d, ov_ranges, fillers=()):
+    """`fillers`: (start, end) of this track's `~filler` sounds; a pause holding one reads "(1.11 ~filler)"."""
     T = d["toks"]
     a, b = u["tok"]
     head = f"{tag} {u['start']:.2f}-{u['end']:.2f}"
@@ -540,7 +569,8 @@ def fmt_utt_line(tag, u, d, ov_ranges):
             if fl and fl["kind"] == "sv_insert_after":
                 parts.append(f"{{|{fl['sv']}}}")
         if i < b and last["pause_after"] and last["pause_after"] >= 0.3:
-            parts.append(f" ({last['pause_after']:.2f})")
+            mark = " ~filler" if any(last["end"] <= a < T[i]["start"] for a, _ in fillers) else ""
+            parts.append(f" ({last['pause_after']:.2f}{mark})")
     body = re.sub(r" +", " ", "".join(parts)).strip()
     return f"{head} |{' ' if not body.startswith('@') else ' '}{body}"
 
@@ -573,7 +603,8 @@ def write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names=None
         lines += [f"- {'两轨' if len(tags) == 2 else '多轨'}同时说话 (≥0.2 s): {stats['overlap']['count']} 处, 共 {stats['overlap']['total_s']} s; "
                   + ", ".join(f"{t} 先开口 {stats['overlap'][t + '_first']} 次" for t in tags) + "。"]
     lines += [f"- 地板间隙 ({every}都没说话 ≥1.0 s): {stats['floor_gaps_ge_1s']['count']} 处, 共 {stats['floor_gaps_ge_1s']['total_s']} s。",
-              f"- {every}都完全无声 ≥1.5 s: {len(silences)} 处。", f"- 无文字声音候选: {len(sounds)} 个。", ""]
+              f"- {every}都完全无声 ≥1.5 s: {len(silences)} 处。", f"- 无文字声音候选: {len(sounds)} 个"
+             + (f" (其中像 um/uh 的 `~filler` {stats['filler_candidates']} 个)" if stats.get("filler_candidates") else "") + "。", ""]
     if len(tags) > 1:
         lines += ["### 重叠表 (overlaps)", "",
                   f"`起-止 时长 先开口者({'/'.join(tags)}/same=同时) | "
@@ -586,11 +617,15 @@ def write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names=None
     events = []
     ovr = [(o["start"], o["end"]) for o in overlaps]
     for tag, d in data.items():
+        fl = [(s["start"], s["end"]) for s in sounds if s.get("filler") and s["track"] == tag]
         for u in d["utts"]:
-            events.append((u["start"], 0, fmt_utt_line(tag, u, d, ovr)))
+            events.append((u["start"], 0, fmt_utt_line(tag, u, d, ovr, fl)))
     for s in sounds:
         if s["src"] == "energy":
-            events.append((s["start"], 1, f"{s['track']} {s['start']:.2f}-{s['end']:.2f} ~snd {s['dur']:.2f}s e{s['peak_rel_db']:+.0f}"))
+            kind = "~filler" if s.get("filler") else "~snd"
+            heard = f' heard "{s["heard"]}"' if s.get("heard") else ""
+            events.append((s["start"], 1, f"{s['track']} {s['start']:.2f}-{s['end']:.2f} {kind} {s['dur']:.2f}s "
+                                          f"e{s['peak_rel_db']:+.0f}{heard}"))
         else:
             pass  # sv / 哈哈 flags are already on the utterance line
     for g in gaps:

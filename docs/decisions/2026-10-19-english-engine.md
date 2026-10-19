@@ -19,8 +19,11 @@
   `web/src/words.ts`): Chinese reads as before, English gets spaces (review text, titles, chat, show-notes
   transcript, learned-habit examples).
 
+- **Dropped um/uh:** short sounds without words are decoded again on their own; those heard as um/uh/er
+  become `~filler` lines (raw seconds) in the editor document, which the English brief treats like
+  filler words. Spike numbers in `docs/status/english-engine.md`.
+
 ## Not yet
-- um/uh that the recognisers drop (both drop most): a detector is the next step (spike).
 - Calibrating the English defaults on a human-edited English episode (none available yet).
 - Show notes / poster prompts for an English show still write Chinese copy.
 - Other languages (the engine table `asr.ENGINES` takes more).

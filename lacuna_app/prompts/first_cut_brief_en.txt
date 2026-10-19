@@ -54,10 +54,13 @@ WHAT NOT TO DO
   the charm.
 - Do not trust the ASR text blindly: {a|b} marks a disagreement between the two recognisers
   (often fillers, repeats, names, mumbling). Be more conservative there.
-- English recognisers DROP many fillers: an um/uh is often not in the text at all, only a short
-  `~snd` sound or a pause with sound in it. You may cut a `~snd` (raw seconds) when it sits inside
-  one host's sentence and the line around it reads as a hesitation; confidence ≤ 0.5. Never cut a
-  `~snd` that may be laughter or a reaction to another host.
+- English recognisers DROP many fillers: an um/uh is often not in the text at all. LACUNA listens
+  again to every short sound without words: `~filler` lines are sounds it heard as um/uh/er. Treat
+  them like filler words: cut stuck or piled-up ones (raw seconds, that host's track, category
+  disfluency), keep a natural residue. A plain `~snd` may be a dropped filler too, but also laughter,
+  a breath or a reaction ("heard" says what it sounded like): cut one only when it sits inside one
+  host's sentence and reads as a hesitation, confidence ≤ 0.5; never cut laughter or a reaction to
+  another host.
 - Do not cut on prosody alone; use pitch/energy/rate as hints.
 
 HOW TO REFERENCE AUDIO (the op fields)

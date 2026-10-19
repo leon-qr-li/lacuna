@@ -427,4 +427,5 @@ EN: dict[str, str | tuple[str, str]] = {
     "最多 {n} 位主持人": "At most {n} hosts",
     # English engine (asr.py, importer.py)
     "不支持这种语言：{language}": "This language is not supported: {language}",
+    "找识别漏掉的 um / uh": "Finding the um / uh the transcript missed",
 }

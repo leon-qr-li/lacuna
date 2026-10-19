@@ -182,3 +182,63 @@ def test_show_api_keeps_the_language(tmp_path):
     body = c.get("/api/show").json() | {"language": "en"}
     assert c.put("/api/show", json=body).json()["language"] == "en"
     assert c.get("/api/show").json()["language"] == "en"
+
+
+# ---------------------------------------------------------------- dropped fillers
+
+
+def test_is_filler():
+    assert features.is_filler("Uh") and features.is_filler("Um.") and features.is_filler("uh, um")
+    assert not features.is_filler("Mm.") and not features.is_filler("Hmm.") and not features.is_filler("Yeah.")
+    assert not features.is_filler("") and not features.is_filler("Uh, so")
+
+
+def test_sounds_without_words_are_heard_again():
+    import numpy as np
+    sr = 16000
+    t = np.arange(sr * 6) / sr
+    x = np.zeros(len(t), np.float32)
+    x[int(0.5 * sr):int(1.4 * sr)] = 0.1 * np.sin(2 * np.pi * 150 * t[int(0.5 * sr):int(1.4 * sr)])   # "So I"
+    x[int(1.8 * sr):int(2.2 * sr)] = 0.1 * np.sin(2 * np.pi * 120 * t[int(1.8 * sr):int(2.2 * sr)])   # an um
+    x[int(2.8 * sr):int(3.7 * sr)] = 0.1 * np.sin(2 * np.pi * 150 * t[int(2.8 * sr):int(3.7 * sr)])   # "think so."
+    x[int(4.5 * sr):int(4.8 * sr)] = 0.1 * np.sin(2 * np.pi * 200 * t[int(4.5 * sr):int(4.8 * sr)])   # a "yeah"
+    x += 1e-4 * np.random.default_rng(0).standard_normal(len(x)).astype(np.float32)
+    seg = {"start": 0.4, "end": 3.8, "par": {"text": "So I think so.", "tokens": [
+        {"t": "So", "start": 0.5, "end": 0.9}, {"t": "I", "start": 1.0, "end": 1.4},
+        {"t": "think", "start": 2.8, "end": 3.2}, {"t": "so.", "start": 3.3, "end": 3.7}]},
+           "sv": {"text": "so i think so", "event": "Speech", "emotion": "NEUTRAL", "tokens": [
+        {"t": "so", "start": 0.5, "end": 0.9}, {"t": "i", "start": 1.0, "end": 1.4},
+        {"t": "think", "start": 2.8, "end": 3.2}, {"t": "so", "start": 3.3, "end": 3.7}]}}
+    asked = []
+
+    def hear(clips):
+        asked.extend(clips)
+        return ["Um" if a < 3 else "Yeah." for _, a, _ in clips]
+
+    _, feats, doc = features.build({"A": {"audio_s": 6.0, "segments": [seg]}}, {"A": x}, "E", log=lambda *_: None,
+                                   names={"A": "Ana"}, lang="en", hear=hear)
+    assert [round(a, 1) for _, a, _ in asked] == [1.8, 4.5]
+    assert feats["stats"]["filler_candidates"] == 1
+    assert '~filler 0.4' in doc and 'heard "Um"' in doc and '~snd 0.3' in doc and 'heard "Yeah."' in doc
+    assert "~filler) @" in doc, doc              # the pause inside "So I … think so." holds it
+    _, _, zh = features.build({"A": {"audio_s": 6.0, "segments": [seg]}}, {"A": x}, "E", log=lambda *_: None,
+                              names={"A": "Ana"})
+    assert "~filler" not in zh and "heard" not in zh
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not installed")
+def test_english_import_listens_for_fillers(tmp_path):
+    ws = Workspace(tmp_path / "ws").ensure()
+    rec = write_recordings(tmp_path / "rec")
+    show.write_new(ws.root)
+    show.save(ws.root, {"show_name": "Talk", "language": "en", "hosts": [{"name": "Ana"}, {"name": "Bo"}]})
+    tags = [h["tag"] for h in show.load(ws.root)["hosts"]]
+    imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()),
+                   asr_backend=lambda tag, x, p=lambda f, s: None: english_asr({tags[0]: "L", tags[1]: "P"}[tag], x, p))
+    heard, calls = [], []
+    imp.hear_backend = lambda audio: (lambda clips: calls.append(set(audio)) or heard.extend(clips) or ["Uh"] * len(clips))
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "done", job["error"]
+    assert job["language"] == "en" and calls == [set(tags)]
+    assert job["steps"]["features"]["fillers"] == len(heard)

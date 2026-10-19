@@ -244,3 +244,43 @@ def transcribe(audio: np.ndarray, rec: Recognizers, progress: Progress = lambda 
             if k % 10 == 0:
                 progress(0.05 + 0.95 * s1 / max(dur, 1e-9), tr("逐字识别 {p0}/{p1} 分钟", p0=int(s1 // 60), p1=int(dur // 60)))
     return {"audio_s": round(dur, 3), "segments": out}
+
+
+def load_main(models_dir: Path, lang: str, threads: int | None = None):
+    """Only the main recogniser (Parakeet for en): enough to listen to short sounds again."""
+    import sherpa_onnx as so
+
+    m = Path(models_dir)
+    threads = threads or max(1, min(8, (os.cpu_count() or 4) // 2))
+    if language(lang) == "en":
+        return so.OfflineRecognizer.from_transducer(
+            encoder=str(m / PARAKEET / "encoder.int8.onnx"), decoder=str(m / PARAKEET / "decoder.int8.onnx"),
+            joiner=str(m / PARAKEET / "joiner.int8.onnx"), tokens=str(m / PARAKEET / "tokens.txt"),
+            model_type="nemo_transducer", num_threads=threads)
+    return so.OfflineRecognizer.from_paraformer(paraformer=str(m / PARAFORMER / "model.int8.onnx"),
+                                                tokens=str(m / PARAFORMER / "tokens.txt"), num_threads=threads)
+
+
+class Listener:
+    """Decodes short sounds on their own (features.build `hear`): [(track tag, start, end)] -> text.
+    Each clip gets 80 ms of audio either side; clips are decoded in batches (~0.1 s a clip on 4 vCPU)."""
+
+    PAD_S = 0.08
+    BATCH = 16
+
+    def __init__(self, recognizer, audio: dict[str, np.ndarray]):
+        self.rec = recognizer
+        self.audio = audio
+
+    def __call__(self, clips: list[tuple[str, float, float]]) -> list[str]:
+        out: list[str] = []
+        for i in range(0, len(clips), self.BATCH):
+            streams = []
+            for tag, a, b in clips[i:i + self.BATCH]:
+                x = self.audio[tag]
+                st = self.rec.create_stream()
+                st.accept_waveform(SR, x[max(0, int((a - self.PAD_S) * SR)):int((b + self.PAD_S) * SR)])
+                streams.append(st)
+            self.rec.decode_streams(streams)
+            out += [st.result.text.strip() for st in streams]
+        return out
