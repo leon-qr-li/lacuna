@@ -1,5 +1,5 @@
-"""Restart/update must not hang on a connection the browser keeps open (a paused <audio> holding its
-WAV stream): the launcher can only swap versions once this process has exited."""
+"""Shutdown must not hang on a connection the browser keeps open (a paused <audio> holding its WAV
+stream)."""
 from __future__ import annotations
 
 import socket
@@ -48,9 +48,3 @@ def test_server_stops_despite_an_open_stream():
     assert not t.is_alive(), "server did not stop while a stream was open"
     assert time.monotonic() - t0 < main_mod.GRACEFUL_SHUTDOWN + 7
 
-
-def test_force_exit_timer_is_a_daemon(monkeypatch):
-    called = []
-    monkeypatch.setattr(main_mod.os, "_exit", lambda code: called.append(code))
-    main_mod.force_exit_later(75, after=0.05).join(1)
-    assert called == [75]

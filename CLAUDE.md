@@ -1,6 +1,6 @@
 # LACUNA Studio
 
-Local-first AI podcast producer for the two-host Chinese film podcast 《洛城二三事》. Runs on Windows + macOS, browser UI on localhost.
+Local-first AI podcast producer for the two-host Chinese film podcast 《洛城二三事》. Runs in the cloud at https://lacunastudio.app (Docker image); a development checkout runs on localhost.
 
 **Golden rule: Preserve the conversation. Polish the delivery. Remove awkwardness, not personality.**
 
@@ -25,5 +25,5 @@ Local-first AI podcast producer for the two-host Chinese film podcast 《洛城�
 - End every session by updating your phase's file in `docs/status/`; write each new decision as its own file in `docs/decisions/` (no D-number). Don't append to `PROJECT_STATUS.md`, `ROADMAP.md` or `DECISIONS.md`.
 - Interface text: Chinese in `t()` (web) / `tr()` (server) with English in the feature's `en.ts` (server: `lacuna_app/i18n_en.py`); `npm run build` and `tests/test_i18n.py` fail on bare Chinese. Episode content (transcripts, show notes) stays Chinese.
 - Confirmations and notices use the in-app dialog (`confirmDialog` / `noticeDialog` in `web/src/features/dialog/Dialog.tsx`), never the browser's `confirm` / `alert` / `prompt` (`npm run build` checks).
-- Releases are batched: threads merge to main only; the coordinator arranges one release (GitHub Actions **Release** workflow) and Leon updates in 设置 (`docs/INSTALL.md`).
+- Deploys go PR → staging → production: a change Leon will see gets the `staging` label, Leon checks it on preview.lacunastudio.app, and merging to main ships it (`docs/PARALLEL_WORK.md`, decision `staging-site`). No desktop releases (decision `desktop-retired`).
 - A new feature adds its own files (route module, web feature folder, E2E fake module, CSS) instead of editing shared ones; see `docs/PARALLEL_WORK.md`.

@@ -13,7 +13,6 @@ docs
 design
 spikes
 tests
-installer
 deploy
 dist
 *.wav

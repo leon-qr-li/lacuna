@@ -1,6 +1,8 @@
 # Phase 7 — 打包与更新
 
-State: **DONE, validated by Leon 2026-10-17** (Windows); Pei's Mac install waits for Leon's onboarding package
+State: **RETIRED 2026-10-19** (decision `docs/decisions/2026-10-19-desktop-retired.md`): LACUNA is cloud-only; installer, launcher, Release workflow and in-app update were removed. The notes below are history.
+
+Earlier state: DONE, validated by Leon 2026-10-17 (Windows); Pei's Mac install waits for Leon's onboarding package
 
 What Leon gets: 双击更新（不再靠远程装机）、Mac 实机跑通（Pei）
 

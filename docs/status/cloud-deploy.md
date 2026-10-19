@@ -56,3 +56,8 @@ cookie in cloud mode and call `cloud.access_allow(email)` / `access_revoke(email
   runs the registry is read-only and refuses pushes with 401; back-to-back merges kept it busy. Now Deploy
   only deletes old tags; the daily Backup check starts the collection (`ci.py registry-collect`), and every
   push first waits for a running collection (`ci.py wait_gc`, up to 45 min).
+- 2026-10-19 desktop app retired (decision `docs/decisions/2026-10-19-desktop-retired.md`): removed
+  `installer/`, `design/logo/`, the Release workflow, CI's `install` job, `tests/installer/`, the in-app
+  update (`Updater`, `/api/app/update/*`, exit codes 75/76 / restart plumbing) and the 设置 update section
+  (already hidden in cloud mode, so no visible change there). `/api/app` keeps version, `busy`, key status;
+  `docs/INSTALL.md` is a retired note.

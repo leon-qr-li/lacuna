@@ -30,6 +30,5 @@ export const en: Dict = {
   "生成中…": "Generating…",
   "正在写发布资料": "Writing the publish pack",
   "正在打开设置…": "Opening settings…",
-  "正在下载 {version}": "Downloading {version}",
   "正在打开上传页…": "Opening the upload page…",
 };
