@@ -77,6 +77,11 @@ class AppContext:
         """A plain create_app keyword (not a service), e.g. a fake client for tests."""
         return self._given.get(name, default)
 
+    @property
+    def models_dir(self) -> Path:
+        """Speech models: one copy for every workspace of the installation (routes/spaces.py)."""
+        return Path(self.option("models_dir") or self.ws.root / "models")
+
     def log_usage(self, episode_id: str, usage: dict) -> None:
         log_usage(self.ws.root / USAGE_LOG, episode_id, usage)
 

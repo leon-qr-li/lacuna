@@ -9,6 +9,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from .. import cloud as cloudflare
 from ..auth import COOKIE, RANK, Auth, AuthError
 from ..i18n import tr
 
@@ -109,6 +110,8 @@ class KeyBody(BaseModel):
 class InviteBody(BaseModel):
     email: str
     role: str = "member"
+    space: str | None = None        # workspace to join (routes/spaces.py): "new" = a workspace of their own
+    space_role: str | None = None
 
 
 class UserBody(BaseModel):
@@ -118,6 +121,8 @@ class UserBody(BaseModel):
 
 
 def register(app, ctx) -> None:
+    if ctx.option("space_child"):     # a workspace's own app (routes/spaces.py): sign-in is the main app's
+        return
     cloud = ctx.option("auth_cloud")
     auth: Auth = ctx.provide("auth", lambda: Auth(ctx.ws.root, mailer=ctx.option("mailer"),
                                                    skip_setup=bool(ctx.option("auth_skip_setup")),
@@ -166,8 +171,19 @@ def register(app, ctx) -> None:
         return request.headers.get("user-agent", "")
 
     def origin(request: Request) -> str:
+        public = os.environ.get("LACUNA_PUBLIC_URL", "").strip()     # the cloud site's own address
+        if public:
+            return public
         o = request.headers.get("origin")
         return o if o and o != "null" else str(request.base_url).rstrip("/")
+
+    def access(email: str, allow: bool) -> None:
+        """Keep Cloudflare Access's invite list in step (lacuna_app/cloud.py; nothing happens on the desktop).
+        A failure there must not undo the invite: the owner can still add the email in Cloudflare."""
+        try:
+            (cloudflare.access_allow if allow else cloudflare.access_revoke)(email)
+        except Exception as e:      # network, Cloudflare API
+            print(f"LACUNA: Cloudflare Access update for {email} failed: {e}", flush=True)
 
     @app.get("/api/auth/status")
     def status(request: Request):
@@ -261,13 +277,18 @@ def register(app, ctx) -> None:
     @app.post("/api/auth/invites")
     def invite(body: InviteBody, request: Request):
         email = at_least(request, "admin")
-        out = run(lambda: auth.invite(email, body.email, body.role, origin(request)))
+        check = getattr(app.state, "invite_space", None)     # set by routes/spaces.py
+        extra = run(lambda: check(email, body.space, body.space_role)) if check else None
+        out = run(lambda: auth.invite(email, body.email, body.role, origin(request), extra))
+        access(out["email"], True)
         return {**out, **people()}
 
     @app.delete("/api/auth/invites/{iid}")
     def revoke(iid: str, request: Request):
         at_least(request, "admin")
-        auth.revoke_invite(iid)
+        for email in auth.revoke_invite(iid):
+            if email not in auth.users:
+                access(email, False)
         return people()
 
     @app.post("/api/auth/users/{email}")
@@ -280,6 +301,7 @@ def register(app, ctx) -> None:
     def delete_user(email: str, request: Request):
         actor = at_least(request, "admin")
         run(lambda: auth.delete_user(actor, email.lower()))
+        access(email.lower(), False)
         return people()
 
     # -- email (owner)

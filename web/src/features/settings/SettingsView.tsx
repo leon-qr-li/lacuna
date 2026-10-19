@@ -4,6 +4,7 @@ import { settingsApi } from "./api";
 import { navCurrent } from "../registry";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { AccountCard } from "../auth/AccountCard";
+import { SpacesCard } from "../spaces/SpacesCard";
 import { joinList, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 
@@ -210,6 +211,7 @@ export function SettingsView() {
       </section>
 
       <AccountCard />
+      <SpacesCard />
 
       <section className="card" aria-label={t("这台电脑")}>
         <h2>{t("这台电脑")}</h2>

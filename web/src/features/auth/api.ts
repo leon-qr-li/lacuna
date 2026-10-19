@@ -86,8 +86,13 @@ export const authApi = {
   endDevices: (id: string | null) => req<{ ended: number; sessions: Device[] }>("POST", "/api/auth/sessions/end", { id }),
   // members and invites (owner, admins)
   people: () => req<People>("GET", "/api/auth/users"),
-  sendInvite: (email: string, role: Role) =>
-    req<People & { link: string; mailed: boolean; mail_error: string | null; email: string }>("POST", "/api/auth/invites", { email, role }),
+  sendInvite: (email: string, role: Role, space: string | null = null, space_role: string | null = null) =>
+    req<People & { link: string; mailed: boolean; mail_error: string | null; email: string }>("POST", "/api/auth/invites", {
+      email,
+      role,
+      space,
+      space_role,
+    }),
   revokeInvite: (id: string) => req<People>("DELETE", `/api/auth/invites/${encodeURIComponent(id)}`),
   updateMember: (email: string, c: { role?: Role; disabled?: boolean; reset_2fa?: boolean }) =>
     req<People>("POST", `/api/auth/users/${encodeURIComponent(email)}`, c),

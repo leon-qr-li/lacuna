@@ -12,7 +12,7 @@ from ..i18n import tr
 
 def register(app, ctx) -> None:
     ws = ctx.ws
-    importer = ctx.provide("importer", lambda: Importer(ws))
+    importer = ctx.provide("importer", lambda: Importer(ws, models_dir=ctx.models_dir))
     exporter = ctx.provide("exporter", lambda: Exporter(ws))
     publisher = publisher_of(ctx)
 
@@ -34,4 +34,4 @@ def register(app, ctx) -> None:
 
     app.state.restart = ctx.option("restart") or (lambda code: None)
     appinfo.register(app, ctx.option("updater") or appinfo.Updater(), ws.root, busy, key_status,
-                     lambda: models_present(ws.root / "models"))
+                     lambda: models_present(ctx.models_dir))

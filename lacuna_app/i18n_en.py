@@ -116,6 +116,18 @@ EN: dict[str, str | tuple[str, str]] = {
     "{who} 邀请你加入 LACUNA Studio。\n\n打开这个链接设置密码（7 天内有效，只能用一次）：\n{link}\n\n如果你不认识邀请人，忽略这封邮件即可。": "{who} invited you to LACUNA Studio.\n\nOpen this link to set your password (valid for 7 days, works once):\n{link}\n\nIf you don't know who sent this, you can ignore this email.",
     "只有所有者能改这项设置": "Only the owner can change this setting",
     "只有管理员能管理成员和邀请": "Only admins can manage members and invites",
+    # workspaces (docs/decisions/2026-10-19-workspaces.md)
+    "只有工作区管理员能改这个工作区": "Only a workspace manager can change this workspace",
+    "没有这个工作区": "No such workspace",
+    "没有这个角色": "No such role",
+    "你不在这个工作区里": "You're not in this workspace",
+    "只有管理员能新建工作区": "Only admins can create workspaces",
+    "没有这个账号：先在「成员与邀请」里邀请对方": "No such account: invite them first in Members & invites",
+    "你还没有加入任何工作区，请联系 LACUNA 的管理员。": "You're not in any workspace yet; ask a LACUNA admin.",
+    "你在这个工作区只能试听和查看，不能修改。": "In this workspace you can listen and read, not change anything.",
+    "只有工作区管理员能彻底删除剧集。": "Only a workspace manager can delete episodes for good.",
+    "工作区至少要留一个管理员": "A workspace needs at least one manager",
+    "给工作区起个名字": "Give the workspace a name",
     # ---- speech recognition, dictation
     "模型文件不完整：{probe}": "Model file incomplete: {probe}",
     "逐字识别 {p0}/{p1} 分钟": "Transcribing {p0}/{p1} min",
