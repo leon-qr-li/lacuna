@@ -45,6 +45,8 @@ test("missing recordings: named on the episode page, uploaded back", async ({ pa
   await reload;
   expect(sent).toEqual(["other.wav", "Leon_resident_evil.wav", "Pei_resident_evil.wav"]);
   await expect(page.getByTestId("missing-sources")).toHaveCount(0);
+  // the reloaded page may still be asking for the episode through the routes above
+  await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
 test("no banner when every recording is there", async ({ page }) => {
