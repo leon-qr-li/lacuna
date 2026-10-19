@@ -2,7 +2,7 @@ name: Backup check
 
 # The server backs itself up every night to Cloudflare R2 (deploy/host/lacuna-backup). This checks it
 # from outside: the newest backup is under 36 h old and a sample of it restores and decrypts.
-# Weekly it also snapshots the data volume at DigitalOcean (newest 4 kept). A failure emails the repo owner.
+# Daily it garbage-collects the image registry (read-only meanwhile; deploys wait). Weekly it also snapshots the data volume at DigitalOcean (newest 4 kept). A failure emails the repo owner.
 on:
   schedule:
     - cron: "0 16 * * *"
@@ -30,6 +30,9 @@ jobs:
           fi
       - uses: actions/checkout@v4
         if: steps.ready.outputs.go == 'true'
+      - name: Free registry space (old image tags deleted after deploys)
+        if: steps.ready.outputs.go == 'true'
+        run: python3 deploy/ci.py registry-collect
       - name: Install restic
         if: steps.ready.outputs.go == 'true'
         run: sudo apt-get install -y -q restic

@@ -3,7 +3,8 @@
     python deploy/ci.py registry               # print the registry name, write a push login to ~/.docker
     python deploy/ci.py wait-live <version> [preview]   # wait until https://<domain> (or the staging site)
                                                         # serves <version> (through Access)
-    python deploy/ci.py registry-gc            # drop old image tags + garbage-collect (free registry tier)
+    python deploy/ci.py registry-gc            # drop old image tags (after each deploy)
+    python deploy/ci.py registry-collect       # garbage-collect the registry (daily; pushes wait for it)
     python deploy/ci.py r2-env                 # S3 credentials for the backup bucket, as GITHUB_ENV lines
     python deploy/ci.py snapshot               # weekly snapshot of the data volume, keep the newest 4
 
@@ -27,6 +28,7 @@ from provision import (BUCKET, DOMAIN, PREVIEW_DOMAIN, REPO_IMAGE, VOLUME, Cloud
 KEEP_TAGS = 3          # the newest builds by commit (the newest is main)
 ALWAYS_KEEP = {"main", "preview"}     # the real site's and the staging site's current images
 KEEP_SNAPSHOTS = 4
+GC_WAIT = 45 * 60      # a garbage collection makes the registry read-only; pushes wait this long for it
 
 
 def cf() -> Cloudflare:
@@ -49,6 +51,7 @@ def registry() -> str:
     name = d.registry(apply=False)
     if not name:
         raise ProvisionError("no container registry yet: run the Provision workflow first")
+    wait_gc(d, name)
     creds = d.http("GET", "/v2/registry/docker-credentials?read_write=true&expiry_seconds=3600")
     for reg in creds.get("auths", {}).values():
         mask(reg.get("auth", ""))
@@ -102,6 +105,30 @@ def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20, domain: 
                 c.r("DELETE", f"/accounts/{a}/access/service_tokens/{t['id']}")
 
 
+def wait_gc(d: DigitalOcean, name: str, timeout: float = GC_WAIT, poll: float = 30) -> None:
+    """While a garbage collection runs the registry is read-only and refuses pushes with 401; wait it out."""
+    until = time.time() + timeout
+    while True:
+        status, body = d.http.send("GET", f"/v2/registry/{name}/garbage-collection")
+        state = (body.get("garbage_collection") or {}).get("status", "") if status == 200 else ""
+        if not state or state in ("succeeded", "failed", "cancelled"):
+            return
+        if time.time() > until:
+            raise ProvisionError(f"registry garbage collection still running ({state}); try again later")
+        log(f"registry garbage collection running ({state}); waiting before pushing")
+        time.sleep(poll)
+
+
+def registry_collect() -> None:
+    """Free the space of deleted tags. Not after every deploy: the registry is read-only meanwhile, and a
+    deploy that starts during it waits (wait_gc)."""
+    d = do()
+    name = d.registry(apply=False)
+    wait_gc(d, name)
+    status, _ = d.http.send("POST", f"/v2/registry/{name}/garbage-collection", {"type": "untagged manifests and unreferenced blobs"})
+    log(f"garbage collection {'started' if status in (200, 201) else 'skipped'}")
+
+
 def registry_gc() -> None:
     d = do()
     name = d.registry(apply=False)
@@ -113,8 +140,7 @@ def registry_gc() -> None:
     for tag in old:
         d.http("DELETE", f"/v2/registry/{name}/repositories/{REPO_IMAGE}/tags/{tag}")
     if old:
-        status, _ = d.http.send("POST", f"/v2/registry/{name}/garbage-collection", {"type": "untagged manifests and unreferenced blobs"})
-        log(f"removed {len(old)} old image(s); garbage collection {'started' if status in (200, 201) else 'skipped'}")
+        log(f"removed {len(old)} old image tag(s); the daily collection frees their space")
 
 
 def r2_env() -> None:
@@ -144,7 +170,7 @@ def snapshot() -> None:
 
 
 def main(argv: list[str]) -> int:
-    cmds = {"registry": registry, "registry-gc": registry_gc, "r2-env": r2_env, "snapshot": snapshot}
+    cmds = {"registry": registry, "registry-gc": registry_gc, "registry-collect": registry_collect, "r2-env": r2_env, "snapshot": snapshot}
     try:
         if argv[:1] == ["wait-live"] and len(argv) == 2:
             wait_live(argv[1])
