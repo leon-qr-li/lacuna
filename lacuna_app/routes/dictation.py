@@ -46,7 +46,7 @@ def fix_context(ws, ep, at: float | None, where: str) -> FixContext:
 
 
 def register(app, ctx) -> None:
-    dictation = ctx.provide("dictation", lambda: Dictation(ctx.ws.root / "models"))
+    dictation = ctx.provide("dictation", lambda: Dictation(ctx.models_dir))
     fixer = ctx.provide("dictation_fixer", DictationFixer)
 
     @app.post("/api/dictation/warm")

@@ -180,6 +180,9 @@ class Auth:
         self.pending_totp: dict[str, dict] = {}   # signed in, setting up the authenticator
         self.fails: dict[str, list[float]] = {}
         self._seen_saved = now
+        # other features follow accounts: joined(email, invite or None for the owner), deleted(email)
+        self.on_joined: list[Callable[[str, dict | None], None]] = []
+        self.on_deleted: list[Callable[[str], None]] = []
         self.setup_code: str | None = None
         if self.cloud and not self.users:
             self._make_setup_code()
@@ -499,6 +502,8 @@ class Auth:
             if self.setup_code:
                 (self.dir / SETUP_FILE).unlink(missing_ok=True)
                 self.setup_code = None
+        for f in self.on_joined:
+            f(email, None)
         return self._next_step(email, remember, agent)
 
     def invite_info(self, token: str) -> dict:
@@ -516,6 +521,8 @@ class Auth:
                                  "role": i["role"], "verified": True, "invited_by": i["by"]}
             del self.invites[i["hash"]]
             self._save_users()
+        for f in self.on_joined:
+            f(email, i)
         return self._next_step(email, remember, agent)
 
     def login(self, email: str, password: str, remember: bool, ip: str | None = None, agent: str = "") -> dict:
@@ -583,15 +590,18 @@ class Auth:
             del self.users[target]
             self._end_all(target)
             self._save_users()
+        for f in self.on_deleted:
+            f(target)
 
     # -- invites (owner / admin)
     def list_invites(self) -> list[dict]:
         now = self.now()
         return sorted(({"id": i["hash"][:16], "email": i["email"], "role": i["role"], "by": i["by"],
-                        "created": i["created"], "exp": i["exp"]} for i in self.invites.values() if i["exp"] > now),
+                        "created": i["created"], "exp": i["exp"], "space": i.get("space"),
+                        "space_role": i.get("space_role")} for i in self.invites.values() if i["exp"] > now),
                       key=lambda r: -r["created"])
 
-    def invite(self, actor: str, email: str, role: str, origin: str) -> dict:
+    def invite(self, actor: str, email: str, role: str, origin: str, extra: dict | None = None) -> dict:
         """A one-time sign-up link for `email`; emailed when Resend can, always returned for copying."""
         email = norm_email(email)
         self._grantable(actor, role)
@@ -602,7 +612,7 @@ class Auth:
         with self.lock:
             self.invites = {k: v for k, v in self.invites.items() if v["email"] != email}   # the newest link wins
             self.invites[_sha(token)] = {"hash": _sha(token), "email": email, "role": role, "by": actor,
-                                         "created": now, "exp": now + INVITE_S}
+                                         "created": now, "exp": now + INVITE_S, **(extra or {})}
             self._save_users()
         link = f"{origin.rstrip('/')}/#/invite/{token}"
         mailed, why = False, None
@@ -615,11 +625,13 @@ class Auth:
             why = str(e)
         return {"link": link, "mailed": mailed, "mail_error": why, "email": email, "role": role}
 
-    def revoke_invite(self, iid: str) -> None:
+    def revoke_invite(self, iid: str) -> list[str]:
+        """Withdraws the invite; returns the email(s) it was for."""
         with self.lock:
-            for k in [k for k in self.invites if k[:16] == iid]:
-                del self.invites[k]
+            gone = [k for k in self.invites if k[:16] == iid]
+            emails = [self.invites.pop(k)["email"] for k in gone]
             self._save_users()
+        return emails
 
     # -- settings (owner)
     def update_config(self, sender: str | None = None) -> None:

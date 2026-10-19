@@ -337,3 +337,20 @@ def test_cloud_locks_a_noisy_address(tmp_path, mailer):
         a.login("leon@example.com", PW, True, ip="1.2.3.4")
     assert e.value.status == 429
     assert a.login("leon@example.com", PW, True, ip="5.6.7.8")["step"] == "done"
+
+
+def test_invites_follow_cloudflare_access(tmp_path, mailer, monkeypatch):
+    calls = []
+    monkeypatch.setattr("lacuna_app.cloud.access_allow", lambda e: calls.append(("allow", e)))
+    monkeypatch.setattr("lacuna_app.cloud.access_revoke", lambda e: calls.append(("revoke", e)))
+    monkeypatch.setenv("LACUNA_PUBLIC_URL", "https://studio.example")
+    c = make(tmp_path, mailer)
+    c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
+    out = c.post("/api/auth/invites", json={"email": "pei@example.com"}).json()
+    assert out["link"].startswith("https://studio.example/#/invite/")
+    c.delete(f"/api/auth/invites/{out['invites'][0]['id']}")
+    tok = invite_token(c.post("/api/auth/invites", json={"email": "bob@example.com"}).json()["link"])
+    TestClient(c.app).post("/api/auth/register", json={"invite": tok, "password": PW})
+    c.delete("/api/auth/users/bob@example.com")
+    assert calls == [("allow", "pei@example.com"), ("revoke", "pei@example.com"), ("allow", "bob@example.com"),
+                     ("revoke", "bob@example.com")]

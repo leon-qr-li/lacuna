@@ -41,7 +41,7 @@ class OpBody(PlayheadBody):
 
 def register(app, ctx) -> None:
     ws, adapter, get, mutate = ctx.ws, ctx.adapter, ctx.get, ctx.mutate
-    dictation = ctx.provide("dictation", lambda: Dictation(ws.root / "models"))
+    dictation = ctx.provide("dictation", lambda: Dictation(ctx.models_dir))
     index = ctx.provide("episode_index", lambda: EpisodeIndex(ws, ctx.loaded, ctx.peek))
 
     @app.get("/api/health")
