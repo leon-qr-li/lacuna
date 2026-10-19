@@ -487,14 +487,15 @@ class Auth:
 
     # -- accounts
     def register_first(self, email: str, password: str, setup_code: str | None, remember: bool,
-                       agent: str = "") -> dict:
-        """The owner's account, on the first run (no invite; in the cloud, the setup code)."""
+                       agent: str = "", proven: str | None = None) -> dict:
+        """The owner's account, on the first run (no invite; in the cloud, the setup code, unless Cloudflare
+        Access already proved the request comes from `proven`, the owner's email, and that is the email given)."""
         email = norm_email(email)
         check_password(password)
         with self.lock:
             if self.users:
                 raise AuthError(tr("只能通过邀请链接注册。请向 LACUNA 的管理员要一个邀请。"), 403)
-            if self.setup_code and not hmac.compare_digest(self.setup_code, (setup_code or "").strip().lower()):
+            if self.setup_code and proven != email and not hmac.compare_digest(self.setup_code, (setup_code or "").strip().lower()):
                 raise AuthError(tr("初始化码不对：在服务器上的 auth/setup-code.txt 里"), 403)
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
                                  "role": "owner", "verified": False}

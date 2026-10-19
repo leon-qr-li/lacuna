@@ -16,7 +16,8 @@ Thread「登录与 Resend 邮件」, then「账号与权限」. Decisions: `docs
 ## 2026-10-19: invites, roles, two-step sign-in (thread「账号与权限」, PR A)
 - Built: invite-only sign-up, roles owner/admin/member, TOTP two-step (`lacuna_app/totp.py`) + recovery codes,
   15-minute lockout, signed-in devices, change password; 设置 cards 账号与安全 / 成员与邀请 (admins) / 邮件 (owner).
-  `LACUNA_CLOUD=1` makes two-step mandatory, cookies Secure, first account needs `auth/setup-code.txt`.
+  `LACUNA_CLOUD=1` makes two-step mandatory, cookies Secure, first account needs `auth/setup-code.txt`
+  unless Access proved it is `LACUNA_OWNER_EMAIL` registering that email.
 - Owner-only API: `/api/app/api-key`, `/api/app/update/prepare|apply`, `/api/auth/config|resend-key|test-mail`.
 - Tests: `tests/app/test_auth.py`, `test_auth_invites_2fa.py`; `web/e2e/auth.spec.ts` (6, incl. a cloud first run).
 - PR B: workspaces (`lacuna_app/spaces.py`, `routes/spaces.py`, web `features/spaces/`): content belongs to a

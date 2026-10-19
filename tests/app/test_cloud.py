@@ -171,3 +171,20 @@ def test_access_email_reaches_the_app(verifier, keys, monkeypatch):
     assert cloud.owner_email() == "leon@example.com"
     monkeypatch.delenv("LACUNA_CLOUD")
     assert cloud.owner_email() is None
+
+
+def test_owner_signs_up_first_without_setup_code(client, keys, monkeypatch):
+    """No shell on the server to read setup-code.txt: Access proved the owner's email (LACUNA_OWNER_EMAIL)."""
+    monkeypatch.setenv("LACUNA_OWNER_EMAIL", "leon@example.com")
+    leon, other = hdr(token(keys[0])), hdr(token(keys[0], email="pei@example.com"))
+    st = client.get("/api/auth/status", headers=leon).json()
+    assert st["setup_code"] is False and st["owner_email"] == "leon@example.com"
+    assert client.get("/api/auth/status", headers=other).json()["setup_code"] is True
+    # someone else through Access, or the owner's Access email with another account email: code still needed
+    for h, email in ((other, "pei@example.com"), (other, "leon@example.com"), (leon, "pei@example.com")):
+        r = client.post("/api/auth/register", json={"email": email, "password": PW}, headers=h)
+        assert r.status_code == 403, (h, email)
+    r = client.post("/api/auth/register", json={"email": "Leon@example.com", "password": PW}, headers=leon)
+    assert r.status_code == 200 and r.json()["step"] == "enroll"           # two-step sign-in still required
+    assert client.get("/api/auth/status", headers=leon).json()["email"] is None
+    assert not (client.app.state.workspace.root / "auth" / "setup-code.txt").exists()

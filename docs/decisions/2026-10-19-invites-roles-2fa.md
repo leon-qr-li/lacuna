@@ -23,7 +23,9 @@
   others. Changing the password signs out the other devices.
 - **Cloud extras:** session cookie also `Secure`; the very first account needs the setup code the server writes
   to `<root>/auth/setup-code.txt` (and its log) on a fresh start, so whoever reaches a new server first can't
-  become owner. Cloudflare Access in front stays the first gate (cloud analysis 2026-10-19).
+  become owner. Exception: when Cloudflare Access proved the request comes from `LACUNA_OWNER_EMAIL` and that is
+  the email being registered, no code is asked (the server has no shell to read it from); two-step sign-in is
+  still set up before the account can be used. Cloudflare Access in front stays the first gate (cloud analysis 2026-10-19).
 
 ## Not in this step
 Content ownership (who sees which episodes, library and learned rules) comes next as per-workspace spaces;
