@@ -1,0 +1,18 @@
+import { chromium } from "@playwright/test";
+const theme = process.argv[2] || "dark";
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1440, height: 1000 }, colorScheme: theme });
+p.on("console", (m) => m.type() === "error" && console.log("console:", m.text()));
+await p.addInitScript((th) => { try { localStorage.setItem("lacuna.theme", th); } catch {} }, theme);
+await p.goto("http://127.0.0.1:8798/#/ep/EP_AI_%E5%90%88%E6%88%90/listen"); await p.waitForTimeout(2500);
+await p.screenshot({ path: `/tmp/claude-0/shots/r_${theme}_1.png`, fullPage: true });
+const lane = p.getByTestId("lane-Pei"); const bb = await lane.boundingBox();
+await p.mouse.move(bb.x + bb.width * 0.30, bb.y + 20); await p.mouse.down();
+await p.mouse.move(bb.x + bb.width * 0.38, bb.y + 25, { steps: 6 }); await p.mouse.up();
+await p.waitForTimeout(400);
+await p.screenshot({ path: `/tmp/claude-0/shots/r_${theme}_2.png`, fullPage: true });
+console.log("bar:", await p.getByTestId("ml-bar").innerText());
+await p.getByTestId("ml-cut").click(); await p.waitForTimeout(1500);
+console.log("toast:", await p.locator(".toast").innerText().catch(() => "-"));
+await p.screenshot({ path: `/tmp/claude-0/shots/r_${theme}_3.png`, fullPage: true });
+await b.close();

@@ -6,7 +6,8 @@ import { Icon } from "./components/Icon";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
-import { Lanes, Overview } from "./components/Timeline";
+import { Overview } from "./components/Timeline";
+import { EditLanes } from "./features/manual/EditLanes";
 import { navLinks, pages, tabs } from "./features/registry";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
@@ -276,7 +277,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} />
             <main className="center">
               <Overview ep={ep} time={player.time} onSeek={player.seek} />
-              <Lanes ep={ep} time={player.time} onSeek={player.seek} highlight={pending} />
+              <EditLanes ep={ep} time={player.time} player={player} highlight={pending} run={run} />
               <PlayerBar player={player} duration={ep.duration} />
               <MusicListenToggle listen={listen} />
               <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />

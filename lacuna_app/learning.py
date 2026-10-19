@@ -51,6 +51,7 @@ KIND_LABELS = {
     "pause": N_("停顿收紧"), "disfluency": N_("口误"), "repetition": N_("重复"), "crosstalk": N_("抢话"),
     "content": N_("内容删减"), "interjection_move": N_("插话挪位"), "single_track_noise": N_("单轨杂声"),
     "filler": N_("口误与重复"), "interjection": N_("插话处理"), "single_track": N_("单轨删减"), "chat": N_("聊天修改"),
+    "manual": N_("手动剪辑"),
 }
 HOST_LABELS = {"both": N_("两人"), "none": N_("无人说话处")}       # any other host: their name
 
@@ -322,20 +323,24 @@ def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
                 {"category": kind, "host": host}, {"suggested": len(g), "accepted": len(acc)},
                 [_example(d) for d in acc[:MAX_EXAMPLES]]))
 
-    # cuts Leon had to ask for in chat
+    # cuts Leon had to ask for in chat, or made by hand (manual editing)
     added: dict[tuple[str, str], list[Decision]] = defaultdict(list)
     for d in ds:
         if d.verdict == ADDED and d.how != "hand_edit":
             added[(d.kind, d.host)].append(d)
     for (kind, host), g in sorted(added.items()):
         if len(g) >= MIN_ADDED:
-            what = _what(kind, host) if kind != "chat" else tr("{p0}说的话", p0=tr(HOST_LABELS.get(host, host)))
+            by_hand = kind == "manual"
+            what = _what(kind, host) if kind not in ("chat", "manual") else tr("{p0}说的话", p0=tr(HOST_LABELS.get(host, host)))
             rules.append(Rule(
                 _rid("missed", kind, host), "missed",
-                tr("{what}：AI 漏删了，你得自己说", what=what),
-                tr("你在聊天里让 AI 补删了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g)),
-                f"{W} had to ask for {len(g)} extra cuts of this kind ({kind}) on {_en(host)} after the first "
-                f"cut; look for similar passages: {_prompt_quotes(g)}.",
+                tr("{what}：AI 漏删了，你自己剪了", what=what) if by_hand else tr("{what}：AI 漏删了，你得自己说", what=what),
+                (tr("你自己手动补剪了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g)) if by_hand else
+                 tr("你在聊天里让 AI 补删了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g))),
+                (f"{W} cut {len(g)} extra passages of {_en(host)} by hand after the first cut; look for similar "
+                 f"passages: {_prompt_quotes(g)}." if by_hand else
+                 f"{W} had to ask for {len(g)} extra cuts of this kind ({kind}) on {_en(host)} after the first "
+                 f"cut; look for similar passages: {_prompt_quotes(g)}."),
                 {"category": kind, "host": host}, {"added": len(g)}, [_example(d) for d in g[:MAX_EXAMPLES]]))
 
     # content taste: which passages he cut and which he kept, per host - the part rules cannot capture

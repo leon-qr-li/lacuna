@@ -55,19 +55,21 @@ CATEGORY_LABELS = {
     "interjection": N_("插话处理"),
     "loudness": N_("响度匹配"),
     "chat": N_("聊天修改"),
+    "manual": N_("手动剪辑"),
 }
 
 ONE_TRACK = ("lift", "erase")      # ops that remove one host's sound without moving the timeline
 
 # Undo-history labels are stored in Chinese (learning.py reads them) and shown in the interface language.
 _STEP_LABELS = {"保留": N_("保留：{title}"), "恢复": N_("恢复：{title}"), "重新应用": N_("重新应用：{title}"),
-                "应用": N_("应用：{title}"), "批准": N_("批准：{title}")}
+                "应用": N_("应用：{title}"), "批准": N_("批准：{title}"),
+                "手动剪辑": N_("手动剪辑：{title}")}
 _BATCH_LABELS = {"全部通过": N_("全部通过（{n} 处）"), "全部保留删除": N_("全部保留删除（{n} 处）"),
                  "全部恢复原话": N_("全部恢复原话（{n} 处）")}
 
 
 def history_label(label: str) -> str:
-    m = re.match(r"(保留|恢复|重新应用|应用|批准)：(.*)", label, re.S)
+    m = re.match(r"(保留|恢复|重新应用|应用|批准|手动剪辑)：(.*)", label, re.S)
     if m:
         return tr(_STEP_LABELS[m.group(1)], title=m.group(2))
     m = re.fullmatch(r"(全部通过|全部保留删除|全部恢复原话)（(\d+) 处）", label)
