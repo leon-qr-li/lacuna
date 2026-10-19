@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-from lacuna_app import cloud, create_app
+from lacuna_app import cloud, create_app, totp
 from lacuna_app.cloud import AccessVerifier, CloudConfigError
 from lacuna_app.editor import MockEditorAdapter
 from tests.app.e2e.auth import FakeMailer
@@ -42,7 +42,7 @@ def client(tmp_path, monkeypatch, verifier):
     monkeypatch.setenv("LACUNA_CLOUD", "1")
     app = create_app(tmp_path / "ws", MockEditorAdapter(), web_dist=tmp_path / "none", mailer=FakeMailer(),
                      access_verifier=verifier)
-    return TestClient(app)
+    return TestClient(app, base_url="https://testserver")     # the cloud session cookie is Secure
 
 
 def hdr(t):
@@ -80,11 +80,16 @@ def test_every_request_needs_an_access_token(client, keys):
 
 def test_before_sign_in_app_info_is_version_only(client, keys):
     h = hdr(token(keys[0]))
-    r = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW}, headers=h)
-    assert r.status_code == 200
+    # the first account in the cloud: setup code from the server, then two-step (docs/decisions/2026-10-19-invites-roles-2fa.md)
+    setup = (client.app.state.workspace.root / "auth" / "setup-code.txt").read_text().strip()
+    r = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "setup_code": setup},
+                    headers=h)
+    assert r.status_code == 200 and r.json()["step"] == "enroll"
+    code = totp.code_at(r.json()["secret"], int(time.time() // totp.STEP))
+    assert client.post("/api/auth/2fa/enroll", json={"ticket": r.json()["ticket"], "code": code}, headers=h).status_code == 200
     signed_in = client.get("/api/app", headers=h).json()
     assert "workspace" in signed_in and "busy" in signed_in and signed_in["cloud"] is True
-    stranger = TestClient(client.app)
+    stranger = TestClient(client.app, base_url="https://testserver")
     for path in ("/api/app", "/api/health"):
         info = stranger.get(path, headers=h).json()
         assert set(info) == {"ok", "version", "cloud"}, path

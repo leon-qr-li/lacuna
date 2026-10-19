@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AUTH_EVENT, authApi, type AuthStatus } from "./api";
-import { AuthScreen } from "./AuthScreen";
+import { AuthScreen, inviteToken } from "./AuthScreen";
 import { PageLoading } from "../loading/Loading";
 import { t } from "../../i18n";
 import "./auth.css";
@@ -42,6 +42,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     signedOut.current = true;
     return <AuthScreen status={st} onDone={check} />;
   }
+  if (inviteToken()) window.history.replaceState(null, "", "#/"); // an invite link opened while signed in
   if (signedOut.current) {
     signedOut.current = false;
     if (!["", "#", "#/"].includes(window.location.hash)) window.history.replaceState(null, "", "#/");
