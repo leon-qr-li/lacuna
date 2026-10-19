@@ -425,4 +425,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "给节目起个名字": "Give the show a name",
     "至少要有一位主持人": "The show needs at least one host",
     "最多 {n} 位主持人": "At most {n} hosts",
+    "文件名不能用：{name}": "This file name can't be used: {name}",
+    "还有导入或导出在进行，做完再搬。": "An import or export is still running. Move the workspace when it is done.",
+    "这个文件夹里没有剧集也没有素材库。请选电脑上的 LACUNA_Workspace 文件夹。": "This folder has no episodes and no library. Pick the LACUNA_Workspace folder on your computer.",
+    "文件没有传全，请再点一次「开始搬」接着传。": "Not every file arrived. Click Start again to send the rest.",
 }
