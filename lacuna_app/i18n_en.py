@@ -418,4 +418,10 @@ EN: dict[str, str | tuple[str, str]] = {
     "AI 服务出了点问题": "Something went wrong with the AI service",
     "请先上传音轨": "Upload the tracks first",
     "上传没有完成，请重新上传": "The upload did not finish. Please upload it again.",
+    # show profile (show.py)
+    "第 {n} 位主持人还没有名字": "Host {n} has no name yet",
+    "两位主持人不能同名：{name}": "Two hosts can't have the same name: {name}",
+    "给节目起个名字": "Give the show a name",
+    "至少要有一位主持人": "The show needs at least one host",
+    "最多 {n} 位主持人": "At most {n} hosts",
 }

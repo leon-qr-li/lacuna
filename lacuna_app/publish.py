@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from . import show
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
 from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
@@ -38,8 +39,6 @@ PUBLISH_SCHEMA = 1
 NAMES_SCHEMA = 1
 NAMES_FILE = "names.json"
 PROMPTS = Path(__file__).resolve().parent / "prompts"
-SHOW = "洛城二三事"  # i18n-ignore
-FOOTER = "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*"  # i18n-ignore
 ROLE_LABELS = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed": "铺底", "clip": "台词"}  # i18n-ignore
 MERGE_GAP_S = 1.5          # same speaker, shorter gap -> same segment
 MAX_SEGMENT_S = 45.0
@@ -231,8 +230,9 @@ class Draft:
 
 def user_message(ep: Episode, doc: str, duration: float, names: list[dict]) -> str:
     known = "\n".join(f"- {n['wrong']} → {n['right']}" for n in names) or "（还没有）"  # i18n-ignore
-    return (f"节目：《{SHOW}》 {episode_label(ep.id)}，剪辑里的标题：{ep.meta.get('title', ep.id)}\n"  # i18n-ignore
-            f"成品时长：{mmss(duration)}\n\nLeon 以前改过的名字（错 → 对）：\n{known}\n\n"  # i18n-ignore
+    prof = show.load(ep.dir.parent.parent)       # <workspace>/episodes/<id>
+    return (f"节目：《{prof['show_name']}》 {episode_label(ep.id)}，剪辑里的标题：{ep.meta.get('title', ep.id)}\n"  # i18n-ignore
+            f"成品时长：{mmss(duration)}\n\n以前改过的名字（错 → 对）：\n{known}\n\n"  # i18n-ignore
             f"成品转写（每行：段落编号 成品时间 说话人：内容）：\n{doc}\n\n"  # i18n-ignore
             "请按说明写这一期的发布资料，调用 submit_publish_pack 一次。")  # i18n-ignore
 
@@ -428,8 +428,11 @@ def bgm_lines(credits: list[dict] | None) -> list[str]:
     return out
 
 
-def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: list[dict] | None) -> str:
-    L = [f"# {draft['title'] or episode_id}", "", f"> 《{SHOW}》{episode_label(episode_id)} · Leon & Pei", ""]
+def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: list[dict] | None,
+                    profile: dict | None = None) -> str:
+    prof = profile or show.LEGACY
+    L = [f"# {draft['title'] or episode_id}", "",
+         f"> 《{prof['show_name']}》{episode_label(episode_id)} · {show.byline(prof)}", ""]
     if draft["intro"]:
         L += [draft["intro"], ""]
     L += ["---", "", "## ⏱ 时间轴", ""]  # i18n-ignore
@@ -450,7 +453,7 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
         L += ["## 😏 内部梗小词典", ""]  # i18n-ignore
         L += [f"- **{g['term']}**：{g['meaning']}" for g in draft["glossary"]]
         L.append("")
-    L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", "", FOOTER, ""]  # i18n-ignore
+    L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", ""] + ([prof["footer"], ""] if prof["footer"] else [])  # i18n-ignore
     return "\n".join(L)
 
 
@@ -701,7 +704,7 @@ class Publisher:
                                "heading": s["heading"]} for i, s in enumerate(pack["draft"]["sections"])],
                     gone=[r["text"] for r in rows if r["gone"]])
         if not keep_text:
-            pack["markdown"] = render_markdown(ep.id, pack["draft"], rows, music.credits)
+            pack["markdown"] = render_markdown(ep.id, pack["draft"], rows, music.credits, show.load(self.ws.root))
 
     # ---- view
     def view(self, ep: Episode) -> dict:

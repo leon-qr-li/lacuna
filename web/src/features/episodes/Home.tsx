@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import type { EpisodeListItem } from "../../api";
 import { api } from "../../api";
 import { t } from "../../i18n";
+import { hostList, useShow } from "../show/api";
+import { ShowSetup } from "../show/ShowView";
 import { EpisodeListSkeleton } from "../loading/Loading";
 import { ImportPanel } from "../import/ImportPanel";
 import { EpisodeCard } from "./EpisodeCard";
@@ -18,6 +20,8 @@ export function Home({ nav }: { nav: ReactNode }) {
   const [archived, setArchived] = useState(0);
   const [err, setErr] = useState<string | null>(null);
   const [undo, setUndo] = useState<EpisodeListItem | null>(null);
+  const show = useShow();
+  const names = hostList(show);
   const load = useCallback((first = false) => {
     Promise.all([episodesApi.episodes(), api.imports().catch(() => ({ jobs: [] }))])
       .then(([r, im]) => {
@@ -56,11 +60,18 @@ export function Home({ nav }: { nav: ReactNode }) {
       <main className="home">
         <div className="home-hero">
           <h1>{t("剧集")}</h1>
-          <p className="muted">{t("导入 Leon 和 Pei 的两条分轨，AI 先剪第一刀，你来过目、试听、导出。")}</p>
+          <p className="muted">
+            {names
+              ? t("导入 {names} 的分轨，AI 先剪第一刀，你来过目、试听、导出。", { names })
+              : t("导入每位主持人的分轨，AI 先剪第一刀，你来过目、试听、导出。")}
+          </p>
         </div>
-        <ImportPanel episodes={list} onEpisodesChanged={reload} onOpen={open} />
+        <ShowSetup />
+        {!show?.needs_setup && <ImportPanel episodes={list} onEpisodesChanged={reload} onOpen={open} />}
         {err && <p className="error">{err}</p>}
-        {list?.length === 0 && <p className="muted">{t("工作区里还没有剧集。点「导入新一集」，选 Leon 和 Pei 的两条分轨。")}</p>}
+        {list?.length === 0 && !show?.needs_setup && (
+          <p className="muted">{t("工作区里还没有剧集。点「导入新一集」，选每位主持人的分轨。")}</p>
+        )}
         {!list && !err && <EpisodeListSkeleton />}
         <ul className="ep-list">
           {list?.map((e) => (

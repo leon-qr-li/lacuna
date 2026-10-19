@@ -9,6 +9,7 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { SpeedButton } from "../review-speed/SpeedButton";
 import { useRate } from "../review-speed/speed";
+import { useShow } from "../show/api";
 
 const ROLE_HELP: Record<Role, string> = {
   intro: t("整首从头放：先只有音乐，然后压低当背景，人声进来，歌在背景里放完"),
@@ -446,7 +447,11 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [series, setSeries] = useState("洛城二三事"); // i18n-ignore
+  const show = useShow();
+  const [series, setSeries] = useState("");
+  useEffect(() => {
+    if (show?.show_name) setSeries((x) => x || show.show_name); // the show is its own series by default
+  }, [show?.show_name]);
   const clipRef = useRef<HTMLAudioElement | null>(null); // a suggestion's preview (not in the mix yet)
   const mixRef = useRef<HTMLAudioElement | null>(null); // the one player for the episode's music
   const [now, setNow] = useState(0);
@@ -670,7 +675,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
       {m.placements.some((p) => p.role === "intro" || p.role === "outro") && (
         <div className="row gap8 wrap">
           <input value={series} onChange={(e) => setSeries(e.target.value)} aria-label={t("系列名")} className="time" />
-          <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.saveSeries(id, series), t("已记住：以后「{series}」都用这个片头片尾", { series }))}>
+          <button type="button" className="btn btn-outline" disabled={!series.trim()} onClick={() => void run(libraryApi.saveSeries(id, series), t("已记住：以后「{series}」都用这个片头片尾", { series }))}>
             {t("记成系列片头片尾")}
           </button>
         </div>

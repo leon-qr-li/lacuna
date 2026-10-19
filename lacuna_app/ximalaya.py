@@ -409,12 +409,18 @@ def _frame(h: int, body: str) -> str:
             f"{body}</svg>")
 
 
+def _show(doc: Doc) -> str:
+    """The show's name from the notes' byline ("> 《show》EP08 · hosts"), "" if it has none."""
+    m = re.search(r"《([^》]+)》", doc.byline or "")
+    return m.group(1) if m else ""
+
+
 def banner_svg(doc: Doc, label: str) -> str:
     title = _plain(doc.title) or label
     main, sub = (title.split("：", 1) + [""])[:2] if "：" in title else (title, "")
     h = 600
     body = [f'<text x="96" y="132" font-family="Inter" font-weight="300" font-size="26" letter-spacing="8" fill="#ff8a4c">{_x(label)}</text>',
-            f'<text x="{96 + _units(label) * 26 + len(label) * 8 + 26}" y="132" font-family="{CJK}" font-size="26" fill="#c9cbe0">·  洛城二三事</text>',  # i18n-ignore
+            f'<text x="{96 + _units(label) * 26 + len(label) * 8 + 26}" y="132" font-family="{CJK}" font-size="26" fill="#c9cbe0">{_x(("·  " + _show(doc)) if _show(doc) else "")}</text>',
             '<circle cx="1088" cy="123" r="8" fill="#ff5e3a"/><circle cx="1088" cy="123" r="16" fill="#ff5e3a" fill-opacity="0.22"/>',
             '<text x="1056" y="132" text-anchor="end" font-family="Inter" font-weight="300" font-size="20" letter-spacing="6" fill="#c9cbe0">ON AIR</text>']
     size = 76 if _units(main) * 76 <= W - 192 else 60
@@ -427,7 +433,7 @@ def banner_svg(doc: Doc, label: str) -> str:
         for ln in _wrap(sub, 40, W - 192, 1):
             body.append(f'<text x="96" y="{y + 6}" font-family="{CJK}" font-size="40" fill="#ffc7a8">{_x(ln)}</text>')
             y += 52
-    who = (doc.byline.split("·")[-1].strip() if doc.byline else "Leon & Pei").upper()
+    who = (doc.byline.split("·")[-1].strip() if doc.byline else "").upper()
     body.append(f'<rect x="96" y="{h - 132}" width="132" height="4" rx="2" fill="url(#sun)"/>')
     body.append(f'<text x="96" y="{h - 84}" font-family="Inter" font-weight="300" font-size="24" letter-spacing="10" fill="#9aa0c4">{_x(who)}</text>')
     return _frame(h, "".join(body))
@@ -456,7 +462,7 @@ def films_svg(doc: Doc, label: str) -> str | None:
         y += row_note if note else row_plain
         if i < len(films) - 1:
             body.append(f'<rect x="170" y="{y - 8}" width="{W - 266}" height="1" fill="#ffffff" fill-opacity="0.08"/>')
-    body.append(f'<text x="{W - 96}" y="{h - 70}" text-anchor="end" font-family="{CJK}" font-size="22" fill="#6f7499">《洛城二三事》{_x(label)}</text>')  # i18n-ignore
+    body.append(f'<text x="{W - 96}" y="{h - 70}" text-anchor="end" font-family="{CJK}" font-size="22" fill="#6f7499">{_x(("《" + _show(doc) + "》") if _show(doc) else "")}{_x(label)}</text>')
     return _frame(h, "".join(body))
 
 

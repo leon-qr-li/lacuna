@@ -14,8 +14,8 @@ export const en: Dict = {
   "重新统一": "Even out again",
   "统一两人音量": "Even out both hosts",
   "正在统一…": "Evening out…",
-  "也可以在「整集试听」里直接对 AI 制作人说「我的声音太低」「Pei 小一点 3 dB」「两人音量统一一下」。每次调整都能撤销。":
-    "You can also tell the AI producer in Full listen “my voice is too quiet”, “Pei 3 dB lower” or “even out the hosts”. Every change can be undone.",
+  "也可以在「整集试听」里直接对 AI 制作人说「我的声音太低」「{name} 小一点 3 dB」「音量统一一下」。每次调整都能撤销。":
+    "You can also tell the AI producer in Full listen “my voice is too quiet”, “{name} 3 dB lower” or “even out the levels”. Every change can be undone.",
   "破音": "Clipping",
   "原始录音里声音过载被削平的地方（破音），LACUNA 会自动修好：审阅、试听和导出听到的都是修好的声音，原始录音不动。":
     "Where the raw recording overloaded and its peaks were flattened (clipping), LACUNA repairs it automatically: review, listening and export all hear the repaired sound, and the original recording is left untouched.",
