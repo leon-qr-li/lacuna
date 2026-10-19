@@ -1,0 +1,56 @@
+/* 节目设置 + host colours. Each host picks a colour name (lacuna_app/show.py COLORS); --host-N is the
+   colour of the episode's N-th track (set by ShowColors from the workspace's hosts, in host order). */
+:root {
+  --c-blue: #4677f0; --c-blue-ink: #4677f0;
+  --c-purple: #b882ff; --c-purple-ink: #8146d6;
+  --c-teal: #19a7a0; --c-teal-ink: #0b7570;
+  --c-amber: #e0a020; --c-amber-ink: #8a5a00;
+  --c-green: #3aa55c; --c-green-ink: #1d7438;
+  --c-pink: #e2559a; --c-pink-ink: #ad2d6b;
+  --host-0: var(--c-blue); --host-0-ink: var(--c-blue-ink);
+  --host-1: var(--c-purple); --host-1-ink: var(--c-purple-ink);
+  --host-2: var(--c-teal); --host-2-ink: var(--c-teal-ink);
+  --host-3: var(--c-amber); --host-3-ink: var(--c-amber-ink);
+  --host-4: var(--c-green); --host-4-ink: var(--c-green-ink);
+  --host-5: var(--c-pink); --host-5-ink: var(--c-pink-ink);
+}
+[data-theme="dark"] {
+  --c-blue: #6f95ff; --c-blue-ink: #6f95ff;
+  --c-purple: #c39bff; --c-purple-ink: #cfadff;
+  --c-teal: #3fd0c6; --c-teal-ink: #5ee0d6;
+  --c-amber: #f0b840; --c-amber-ink: #f5c964;
+  --c-green: #5cc97c; --c-green-ink: #7dd99a;
+  --c-pink: #f07ab5; --c-pink-ink: #f59cc8;
+}
+.clip-0, .levels-track-0 .levels-dot, .host-dot-0 { background: var(--host-0); }
+.clip-1, .levels-track-1 .levels-dot, .host-dot-1 { background: var(--host-1); }
+.clip-2, .levels-track-2 .levels-dot, .host-dot-2 { background: var(--host-2); }
+.clip-3, .levels-track-3 .levels-dot, .host-dot-3 { background: var(--host-3); }
+.clip-4, .levels-track-4 .levels-dot, .host-dot-4 { background: var(--host-4); }
+.clip-5, .levels-track-5 .levels-dot, .host-dot-5 { background: var(--host-5); }
+.spk-0 { color: var(--host-0-ink); } .spk-1 { color: var(--host-1-ink); } .spk-2 { color: var(--host-2-ink); }
+.spk-3 { color: var(--host-3-ink); } .spk-4 { color: var(--host-4-ink); } .spk-5 { color: var(--host-5-ink); }
+.host-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+.show-page { max-width: 760px; margin: 0 auto; padding: 32px 20px 64px; display: flex; flex-direction: column; gap: 18px; }
+.show-form { display: flex; flex-direction: column; gap: 18px; }
+.show-field { display: flex; flex-direction: column; gap: 6px; }
+.show-field > span { font-weight: 600; font-size: 13.5px; }
+.show-field input, .show-field textarea, .show-host input, .show-host textarea, .show-host select {
+  font: inherit; padding: 9px 12px; border-radius: var(--r-sm); border: 1px solid var(--line-2);
+  background: var(--solid); color: var(--ink); min-width: 0;
+}
+.show-field textarea, .show-host textarea { min-height: 64px; resize: vertical; }
+.show-hosts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.show-host { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; padding: 14px 16px; border-radius: 16px; background: var(--hover); }
+.show-host-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; grid-column: 1 / -1; }
+.show-host-top input { flex: 1 1 160px; }
+.show-host textarea { grid-column: 1 / -1; }
+.show-swatches { display: flex; gap: 6px; }
+.show-swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.show-swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--solid) inset; }
+.show-swatch.c-blue { background: var(--c-blue); } .show-swatch.c-purple { background: var(--c-purple); }
+.show-swatch.c-teal { background: var(--c-teal); } .show-swatch.c-amber { background: var(--c-amber); }
+.show-swatch.c-green { background: var(--c-green); } .show-swatch.c-pink { background: var(--c-pink); }
+.show-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.show-setup { border: 1px solid var(--line-2); }

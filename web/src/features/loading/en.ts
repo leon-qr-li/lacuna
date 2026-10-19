@@ -14,8 +14,6 @@ export const en: Dict = {
   "正在打开这一集…": "Opening this episode…",
   "正在导出成品": "Exporting the final mix",
   "准备识别模型": "Preparing speech models",
-  "识别 Leon 的分轨": "Transcribing Leon's track",
-  "识别 Pei 的分轨": "Transcribing Pei's track",
   "分析停顿、语速和重叠": "Analysing pauses, pace and overlaps",
   "AI 第一刀": "AI first cut",
   "生成审阅": "Preparing the review",

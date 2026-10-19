@@ -1,12 +1,14 @@
-"""New-episode import: two raw host tracks -> ASR -> features -> AI first cut -> reviewable episode.
+"""New-episode import: one raw track per host -> ASR -> features -> AI first cut -> reviewable episode.
 
 One job at a time (CPU bound). Every finished step is written to ``<workspace>/imports/<id>/``
 (ASR per track, tokens/features/editor document, each AI window), so a failed or interrupted
 import resumes where it stopped instead of starting over. The raw tracks are only read; the new
 episode references them by absolute path like every other episode (D29, read-only originals).
 
-Steps and their share of the progress bar: models 4 % (first import only), ASR Leon 34 %,
-ASR Pei 34 %, features 4 %, AI first cut 20 %, building the episode 4 %.
+The hosts (one track each, in the order of 节目设置) come from the workspace's show (show.py) when the
+import starts and are kept in the job, so a later rename doesn't change a running or resumed import.
+Steps and their share of the progress bar: models 4 % (first import only), ASR 68 % split evenly over
+the tracks, features 4 %, AI first cut 20 %, building the episode 4 %.
 """
 from __future__ import annotations
 
@@ -25,6 +27,7 @@ from lacuna_core.media import MediaRef, conform
 from . import asr as asr_mod
 from . import import_eta
 from . import learning
+from . import show as show_mod
 from .ai_cut import TrackTokens, build_episode, report_dict
 from .archive import retired_ids
 from .episode import create_episode
@@ -32,12 +35,33 @@ from .store import PathError, Workspace, atomic_write_json, check_id, inside, re
 from .i18n import N_, tr
 
 AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", ".aac"}
-HOSTS = (("L", "Leon"), ("P", "Pei"))
+LEGACY_HOSTS = (("L", "Leon"), ("P", "Pei"))      # jobs from before the show profile
 JOB_FILE = "job.json"
-STEPS = (("models", 0.04), ("asr_L", 0.34), ("asr_P", 0.34), ("features", 0.04), ("first_cut", 0.20),
-         ("episode", 0.04))
-STEP_LABELS = {"models": N_("准备识别模型"), "asr_L": N_("识别 Leon 的分轨"), "asr_P": N_("识别 Pei 的分轨"),
-               "features": N_("分析停顿、语速和重叠"), "first_cut": N_("AI 第一刀"), "episode": N_("生成审阅")}
+ASR_SHARE = 0.68
+STEP_LABELS = {"models": N_("准备识别模型"), "features": N_("分析停顿、语速和重叠"), "first_cut": N_("AI 第一刀"),
+               "episode": N_("生成审阅")}
+
+
+def job_hosts(job: dict) -> list[tuple[str, str]]:
+    """[(tag, name)] of an import's tracks, in order."""
+    return [(t, n) for t, n in (job.get("hosts") or LEGACY_HOSTS)]
+
+
+def steps_of(job: dict) -> list[tuple[str, float]]:
+    """(step, share of the progress bar) in order; one ASR step per track (``asr_<tag>``)."""
+    hosts = job_hosts(job)
+    return ([("models", 0.04)] + [(f"asr_{t}", ASR_SHARE / len(hosts)) for t, _ in hosts]
+            + [("features", 0.04), ("first_cut", 0.20), ("episode", 0.04)])
+
+
+def step_label(job: dict, step: str | None) -> str:
+    names = dict(job_hosts(job))
+    if step and step.startswith("asr_") and step[4:] in names:
+        return tr("识别 {name} 的分轨", name=names[step[4:]])
+    return tr(STEP_LABELS.get(step or "", N_("导入")))
+
+
+STEPS = tuple(steps_of({}))       # a two-host import (import_eta's defaults)
 
 
 class ImportBusy(RuntimeError):
@@ -132,7 +156,8 @@ class Importer:
             return [t["path"] for j in self.jobs.values() for t in j.get("tracks", {}).values()]
 
     # ------------------------------------------------------------------ control
-    def start(self, episode_id: str, title: str, leon: str, pei: str, wait: bool = False) -> dict:
+    def start(self, episode_id: str, title: str, paths: list[str], wait: bool = False) -> dict:
+        """`paths`: one raw track per host of the workspace's show, in the order of 节目设置."""
         try:
             check_id(episode_id)
         except PathError:
@@ -142,14 +167,24 @@ class Importer:
         if episode_id in retired_ids(self.ws):
             raise ImportError_(tr("{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号",
                                   episode_id=episode_id))
-        tracks = {"L": check_track(leon), "P": check_track(pei)}
-        if tracks["L"]["path"] == tracks["P"]["path"]:
-            raise ImportError_(tr("Leon 和 Pei 选了同一个文件"))
+        hosts = show_mod.tracks(show_mod.load(self.ws.root))
+        if not hosts:
+            raise ImportError_(tr("先在「节目」里填好主持人"))
+        if len(paths) != len(hosts):
+            raise ImportError_(tr("要 {n} 条分轨（每位主持人一条），收到 {got} 条", n=len(hosts), got=len(paths)))
+        tracks = {tag: check_track(p) for (tag, _), p in zip(hosts, paths)}
+        seen: dict[str, str] = {}
+        for tag, name in hosts:
+            other = seen.get(tracks[tag]["path"])
+            if other:
+                raise ImportError_(tr("{a} 和 {b} 选了同一个文件", a=other, b=name))
+            seen[tracks[tag]["path"]] = name
         with self._lock:
             old = self.jobs.get(episode_id)
             if old and old["state"] in ("queued", "running"):
                 raise ImportBusy(tr("这一集已经在导入"))
         job = {"id": episode_id, "title": title.strip() or episode_id, "tracks": tracks,
+               "hosts": [list(h) for h in hosts],
                "state": "queued", "progress": 0.0, "step": None, "stage": tr("排队"), "steps": {},
                "created": now(), "started": None, "finished": None, "error": None, "result": None}
         return self._launch(job, wait)
@@ -206,8 +241,9 @@ class Importer:
     def _progress(self, job: dict, step: str, frac: float, stage: str) -> None:
         if job["id"] in self._cancel:
             raise Cancelled()
-        before = sum(w for s, w in STEPS[:[s for s, _ in STEPS].index(step)])
-        weight = dict(STEPS)[step]
+        steps = steps_of(job)
+        before = sum(w for s, w in steps[:[s for s, _ in steps].index(step)])
+        weight = dict(steps)[step]
         with self._lock:
             if job.get("step") != step:          # when each step started, for the time-left estimate
                 job.update(step_at=time.time(), step_first=None)
@@ -243,7 +279,7 @@ class Importer:
         except Exception as e:     # noqa: BLE001 - surfaced to the UI; full trace on the console
             traceback.print_exc()
             with self._lock:
-                job.update(state="error", error=tr("{p0}出错：{p1}", p0=tr(STEP_LABELS.get(job.get('step'), N_('导入'))), p1=e or type(e).__name__),
+                job.update(state="error", error=tr("{p0}出错：{p1}", p0=step_label(job, job.get("step")), p1=e or type(e).__name__),
                            finished=now())
         finally:
             with self._lock:
@@ -267,12 +303,13 @@ class Importer:
         rec = None
         audio16: dict[str, Any] = {}
         asr: dict[str, dict] = {}
-        todo = [tag for tag, _ in HOSTS if not (d / f"asr_{tag}.json").is_file()]
+        hosts = job_hosts(job)
+        todo = [tag for tag, _ in hosts if not (d / f"asr_{tag}.json").is_file()]
         # the next track is decoded (ffmpeg, ~10 s an hour) while this one is being recognised
         prefetch = ThreadPoolExecutor(1, thread_name_prefix="decode16k")
         decoded = {tag: prefetch.submit(asr_mod.decode_16k, job["tracks"][tag]["path"]) for tag in todo[:1]}
         try:
-            for tag, name in HOSTS:
+            for tag, name in hosts:
                 step = f"asr_{tag}"
                 out = d / f"asr_{tag}.json"
                 if out.is_file():
@@ -307,10 +344,12 @@ class Importer:
         tok_p, feat_p, doc_p = d / "tokens.json", d / "features.json", d / "editor_input.md"
         if not (tok_p.is_file() and feat_p.is_file() and doc_p.is_file()):
             self._progress(job, "features", 0.0, tr("分析停顿、语速和重叠"))
-            for tag, _ in HOSTS:
+            for tag, _ in hosts:
                 if tag not in audio16:
                     audio16[tag] = asr_mod.decode_16k(job["tracks"][tag]["path"])
-            tokens_doc, feats, doc = features.build(asr, audio16, job["id"], log=lambda *_: None)
+            profile = show_mod.load(self.ws.root)
+            tokens_doc, feats, doc = features.build(asr, audio16, job["id"], log=lambda *_: None, names=dict(hosts),
+                                                    show_name=profile["show_name"])
             atomic_write_json(feat_p, feats)
             atomic_write_json(tok_p, tokens_doc)
             doc_p.write_text(doc, encoding="utf-8")
@@ -326,6 +365,10 @@ class Importer:
             ops_doc = read_json(ops_p)
         else:
             fc = self.first_cut_factory()
+            if hasattr(fc, "names"):              # whose track is whose (prompt, rule reasons)
+                fc.names = dict(hosts)
+            if hasattr(fc, "show"):
+                fc.show = show_mod.load(self.ws.root)
             if hasattr(fc, "on_usage"):
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
             duration = max(a["audio_s"] for a in asr.values())
@@ -352,12 +395,12 @@ class Importer:
         media = self._media(job, d)
         self._progress(job, "episode", 0.5, tr("生成审阅（精修剪辑点）"))
         project, edits, transcript, report = build_episode(media, ops_doc, tokens,
-                                                           policy=learning.review_policy(self.ws))
+                                                           policy=learning.review_policy(self.ws), names=dict(hosts))
         engine = job["steps"].get("first_cut", {}).get("engine", "claude")
         meta = {"title": job["title"], "demo": False, "raw_offset_s": 0.0, "source": "import",
                 "ai_model": ops_doc.get("model", ""), "ai_notes": ops_doc.get("notes", ""),
                 "ai_report": report_dict(report), "first_cut_engine": engine,
-                "imported_at": now(), "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in HOSTS}}
+                "imported_at": now(), "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in hosts}}
         create_episode(self.ws, job["id"], meta, project, edits, transcript)
         self._level(job["id"])          # not cancellable: the episode exists now
         cons = sum(e.consequential for e in edits)
@@ -371,7 +414,8 @@ class Importer:
     def _media(self, job: dict, d: Path) -> dict[str, MediaRef]:
         """Raw tracks as MediaRefs (read in place); conformed to WAV only if they can't be."""
         refs: dict[str, MediaRef] = {}
-        for tag, name in HOSTS:
+        hosts = job_hosts(job)
+        for tag, name in hosts:
             try:
                 refs[name] = MediaRef.probe(job["tracks"][tag]["path"])
             except Exception:       # noqa: BLE001 - format libsndfile can't read
@@ -379,7 +423,7 @@ class Importer:
         rates = {r.sample_rate for r in refs.values() if r is not None}
         if None in refs.values() or len(rates) > 1:
             sr = max(rates) if rates else 48000
-            for tag, name in HOSTS:
+            for tag, name in hosts:
                 r = refs[name]
                 if r is None or r.sample_rate != sr:
                     self._progress(job, "episode", 0.2, tr("把 {name} 的分轨转成 {sr} Hz WAV", name=name, sr=sr))

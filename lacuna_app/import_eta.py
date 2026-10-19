@@ -27,8 +27,13 @@ from .store import read_json
 CONCURRENCY = 3                     # ClaudeFirstCut's parallel windows after the first one
 DEFAULT_RATE = {                    # seconds per minute of audio
     "models": 0.0,                  # a one-off download; its own progress tells the rest
-    "asr_L": 3.6, "asr_P": 3.6, "features": 0.4, "first_cut": 7.5, "episode": 0.5,
+    "asr": 3.6, "features": 0.4, "first_cut": 7.5, "episode": 0.5,      # asr: per track
 }
+
+
+def _kind(step: str) -> str:
+    """Every track's ASR step (asr_L, asr_A …) shares one rate."""
+    return "asr" if step.startswith("asr_") else step
 TRUST_RATE_AT = 0.3                 # within a step, trust its own speed fully from 30 % on
 
 
@@ -48,8 +53,8 @@ def _ts(s: str | None) -> float | None:
 
 def history(root: Path) -> dict[str, float]:
     """Median seconds per audio minute for each step, from finished imports under `root`."""
-    from .importer import JOB_FILE, STEPS
-    samples: dict[str, list[float]] = {s: [] for s, _ in STEPS}
+    from .importer import JOB_FILE, steps_of
+    samples: dict[str, list[float]] = {}
     if not root.is_dir():
         return {}
     for f in root.glob(f"*/{JOB_FILE}"):
@@ -59,7 +64,7 @@ def history(root: Path) -> dict[str, float]:
             continue
         steps, mins = job.get("steps") or {}, _audio_min(job)
         prev = _ts(job.get("run_started"))
-        for s, _ in STEPS:
+        for s, _ in steps_of(job):
             info = steps.get(s)
             if not isinstance(info, dict):
                 prev = None
@@ -71,7 +76,7 @@ def history(root: Path) -> dict[str, float]:
             if s == "first_cut" and info.get("engine") not in (None, "claude"):
                 secs = None               # the no-AI fallback is near-instant; not a sample
             if secs is not None and secs >= 0 and mins > 0:
-                samples[s].append(secs / mins)
+                samples.setdefault(_kind(s), []).append(secs / mins)
             prev = done
     return {s: statistics.median(v) for s, v in samples.items() if v}
 
@@ -88,7 +93,7 @@ def _first_cut_left(job: dict, t: float, f: float, expected: float) -> float:
 
 def estimate(job: dict, hist: dict[str, float] | None = None, now: float | None = None) -> int | None:
     """Seconds left for a running import, or None before there is anything to go on."""
-    from .importer import STEPS
+    from .importer import steps_of
     if job.get("state") != "running":
         return None
     hist = hist or {}
@@ -96,8 +101,8 @@ def estimate(job: dict, hist: dict[str, float] | None = None, now: float | None 
     mins = _audio_min(job)
     done = job.get("steps") or {}
     left, before = 0.0, 0.0
-    for s, w in STEPS:
-        expected = hist.get(s, DEFAULT_RATE[s]) * mins
+    for s, w in steps_of(job):
+        expected = hist.get(_kind(s), DEFAULT_RATE[_kind(s)]) * mins
         if s in done:
             pass
         elif s == job.get("step"):

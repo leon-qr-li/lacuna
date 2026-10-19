@@ -19,6 +19,7 @@ import time
 from pathlib import Path
 from typing import Callable
 
+from . import show
 from .auth import AuthError
 from .i18n import tr
 from .store import atomic_write_json, read_json
@@ -89,6 +90,7 @@ class Spaces:
         with self.lock:
             sid = "sp_" + secrets.token_hex(4)
             self.path(sid).joinpath("episodes").mkdir(parents=True, exist_ok=True)
+            show.write_new(self.path(sid))       # a new show: the first visit asks for its name and hosts
             self.spaces[sid] = {"id": sid, "name": name, "created": self.now(), "members": {admin: "admin"}}
             self._save()
             return self.spaces[sid]

@@ -41,7 +41,7 @@ from .episode import APPLIED, RESTORED, Edit
 from .review import ReviewPolicy, needs_review
 from .i18n import N_, tr
 
-TRACK_NAMES = {"L": "Leon", "P": "Pei"}
+TRACK_NAMES = {"L": "Leon", "P": "Pei"}      # track tag -> host name when none are given (Leon's show)
 CATEGORY_MAP = {
     "pause": "pause",
     "disfluency": "filler",
@@ -139,8 +139,10 @@ class _OpError(ValueError):
 
 class Converter:
     def __init__(self, tokens: dict[str, TrackTokens], sr: int, w0: float = 0.0,
-                 w1: float = float("inf"), read: Reader | None = None, policy: ReviewPolicy | None = None):
+                 w1: float = float("inf"), read: Reader | None = None, policy: ReviewPolicy | None = None,
+                 names: dict[str, str] | None = None):
         self.tokens = tokens
+        self.names = dict(names or TRACK_NAMES)
         self.policy = policy
         self.sr = sr
         self.w0, self.w1 = w0, w1
@@ -201,8 +203,8 @@ class Converter:
         return sum(self.tokens[t].speech_in(a, b) for t in tags if t in self.tokens)
 
     def host(self, tags: list[str], a: float, b: float) -> str:
-        """Whose speech [a, b) removes on `tags`: Leon / Pei / both / none (same rule as learning.decisions)."""
-        per = {TRACK_NAMES[t]: self.tokens[t].speech_in(a, b) for t in tags if t in self.tokens}
+        """Whose speech [a, b) removes on `tags`: a host's name / both / none (same rule as learning.decisions)."""
+        per = {self.names[t]: self.tokens[t].speech_in(a, b) for t in tags if t in self.tokens}
         top = max(per.values(), default=0.0)
         if top < 0.05:
             return "none"
@@ -221,11 +223,11 @@ class Converter:
         if cat is None:
             raise _OpError(f"unknown category {ai_cat!r}")
         track = o.get("track")
-        if track not in ("L", "P", "both"):
+        if track != "both" and track not in self.names:
             raise _OpError(f"bad track {track!r}")
         conf = float(o.get("confidence", 0.5))
         reason = str(o.get("reason", "")).strip()
-        all_tags = list(TRACK_NAMES)
+        all_tags = list(self.names)
 
         if kind in ("cut", "keep_flag"):
             if kind == "keep_flag" and o.get("suggested", "cut") != "cut":
@@ -237,15 +239,15 @@ class Converter:
                 return self._outside(oid)
             if track == "both" or (ai_cat != "single_track_noise" and self.other_silent(track, a, b)):
                 tags = all_tags
-                x, y = self.snap_range([TRACK_NAMES[t] for t in tags], a, b, TOKEN_SNAP_MS)
+                x, y = self.snap_range([self.names[t] for t in tags], a, b, TOKEN_SNAP_MS)
                 ops = [{"op": "cut", "start": x, "end": y, "tracks": None}]
                 if track != "both":
                     self.report.converted["单轨 cut→双轨 cut（对方无声）"] += 1  # i18n-ignore
             else:
                 tags = [track]
-                x, y = self.snap_range([TRACK_NAMES[track]], a, b, TOKEN_SNAP_MS)
+                x, y = self.snap_range([self.names[track]], a, b, TOKEN_SNAP_MS)
                 # erased and filled with the track's room tone (picked from the audio in create_episode)
-                ops = [{"op": "erase", "track": TRACK_NAMES[track], "start": x, "end": y}]
+                ops = [{"op": "erase", "track": self.names[track], "start": x, "end": y}]
                 self.report.converted["单轨 cut→erase"] += 1  # i18n-ignore
             if (y - x) < MIN_CUT_S * self.sr:
                 raise _OpError("range vanished after snapping")
@@ -256,7 +258,7 @@ class Converter:
                 return self._edit(oid, ops, cat, "AI 建议（未删）· " + title,  # i18n-ignore
                                   tr("AI 没有删这段，留给你决定。") + reason, conf, sp, ai_cat,
                                   status=RESTORED, review=True)
-            host = TRACK_NAMES[tags[0]] if len(tags) == 1 else self.host(tags, a, b)
+            host = self.names[tags[0]] if len(tags) == 1 else self.host(tags, a, b)
             return self._edit(oid, ops, cat, title, reason, conf, sp, ai_cat, host=host)
 
         if kind == "tighten_pause":
@@ -284,7 +286,7 @@ class Converter:
                     self.report.skip(oid, "单轨停顿收紧（需按轨重新对时，暂不支持）")  # i18n-ignore
                     return None
                 self.report.converted["单轨停顿→双轨 cut（对方无声）"] += 1  # i18n-ignore
-            x, y = self.snap_range([TRACK_NAMES[g] for g in all_tags], a, b, PAUSE_SNAP_MS,
+            x, y = self.snap_range([self.names[g] for g in all_tags], a, b, PAUSE_SNAP_MS,
                                    bounds=(ga, gb))
             if (y - x) < MIN_CUT_S * self.sr:
                 raise _OpError("range vanished after snapping")
@@ -301,7 +303,7 @@ class Converter:
                 raise _OpError("empty slip")
             if not self.in_window(min(a, a + delta), max(b, b + delta)):
                 return self._outside(oid)
-            name = TRACK_NAMES[track]
+            name = self.names[track]
             x, y = self.snap_range([name], a, b, PAUSE_SNAP_MS)
             d = int(round(delta * self.sr))
             if x + d < 0:
@@ -319,7 +321,7 @@ class Converter:
         return None
 
     def _title(self, ai_cat: str, cat: str, tags: list[str], dur: float, text: str) -> str:
-        who = "" if len(tags) > 1 else tr("{p0} 单轨 · ", p0=TRACK_NAMES[tags[0]])
+        who = "" if len(tags) > 1 else tr("{p0} 单轨 · ", p0=self.names[tags[0]])
         quote = f" ·「{text[:14]}{'…' if len(text) > 14 else ''}」" if text else ""
         if cat == "content":
             return tr("{who}删除 {dur} 秒 · 内容删减{quote}", who=who, dur=f"{dur:.1f}", quote=quote)
@@ -374,27 +376,30 @@ class Converter:
 
 def convert_ops(doc: dict | list, tokens: dict[str, TrackTokens], sr: int, w0: float = 0.0,
                 w1: float = float("inf"), read: Reader | None = None,
-                policy: ReviewPolicy | None = None) -> tuple[list[Edit], Report]:
+                policy: ReviewPolicy | None = None, names: dict[str, str] | None = None) -> tuple[list[Edit], Report]:
     """AI ops document -> (edits in base coordinates, report). `policy`: learned review calibration
     (`learning.review_policy`), None = the defaults."""
     ops = doc["ops"] if isinstance(doc, dict) else doc
-    c = Converter(tokens, sr, w0, w1, read, policy)
+    c = Converter(tokens, sr, w0, w1, read, policy, names)
     edits = c.convert(ops)
     return edits, c.report
 
 
-def transcript_for(tokens: dict[str, TrackTokens], w0: float, w1: float) -> dict:
+def transcript_for(tokens: dict[str, TrackTokens], w0: float, w1: float, names: dict[str, str] | None = None) -> dict:
     """Window-relative word list per track for the episode's read-only transcript."""
-    return {"tracks": {TRACK_NAMES[tag]: [[round(t["start"] - w0, 3), round(t["end"] - w0, 3), t["t"]]
+    names = dict(names or TRACK_NAMES)
+    return {"tracks": {names[tag]: [[round(t["start"] - w0, 3), round(t["end"] - w0, 3), t["t"]]
                                           for t in tr.toks if w0 <= t["start"] < w1]
-                       for tag, tr in tokens.items() if tag in TRACK_NAMES}}
+                       for tag, tr in tokens.items() if tag in names}}
 
 
 def build_episode(media: dict[str, MediaRef], ops_doc: dict, tokens: dict[str, TrackTokens], w0: float = 0.0,
-                  w1: float | None = None, policy: ReviewPolicy | None = None) -> tuple[Project, list[Edit], dict, Report]:
+                  w1: float | None = None, policy: ReviewPolicy | None = None,
+                  names: dict[str, str] | None = None) -> tuple[Project, list[Edit], dict, Report]:
     """(project, edits, transcript, report) for raw window [w0, w1) (w1 None = to the end).
 
-    `media` maps host name (Leon / Pei) to its raw track; the base timeline is the uncut recording."""
+    `media` maps host name to its raw track, `names` track tag to host name (both in host order;
+    default Leon / Pei); the base timeline is the uncut recording."""
     sr = next(iter(media.values())).sample_rate
     if any(m.sample_rate != sr for m in media.values()):
         raise ValueError("host tracks have different sample rates")
@@ -406,15 +411,18 @@ def build_episode(media: dict[str, MediaRef], ops_doc: dict, tokens: dict[str, T
     if b <= a:
         raise ValueError("empty window")
     w1 = b / sr
-    tracks = [Track(name, (Clip(f"{name[0]}0", ref.media_id, a, min(b, ref.frames), 0),) if ref.frames > a else ())
-              for name, ref in media.items()]
+    # clip ids: the name's first letter ("L0", "P0") while those are unique, else the track's position
+    initials = [n[0] for n in media]
+    cid = (lambda i, n: f"{n[0]}0") if len(set(initials)) == len(initials) else (lambda i, n: f"t{i}c0")
+    tracks = [Track(name, (Clip(cid(i, name), ref.media_id, a, min(b, ref.frames), 0),) if ref.frames > a else ())
+              for i, (name, ref) in enumerate(media.items())]
     base = replace(new_timeline(sr, list(media)), tracks=tuple(tracks), next_id=1)
     project = Project({m.media_id: m for m in media.values()}, base)
     with SourcePool({m.media_id: m for m in media.values()}) as pool:
         def read(name: str, x: int, y: int):
             return pool.read(media[name].media_id, x + a, y + a)
-        edits, report = convert_ops(ops_doc, tokens, sr, w0, w1, read, policy)
-    return project, edits, transcript_for(tokens, w0, w1), report
+        edits, report = convert_ops(ops_doc, tokens, sr, w0, w1, read, policy, names)
+    return project, edits, transcript_for(tokens, w0, w1, names), report
 
 
 def report_dict(report: Report) -> dict:

@@ -41,7 +41,7 @@ def test_first_cut_before_any_window_uses_history():
 def test_steps_to_come_count_at_their_own_speed():
     # Leon's track half recognised in 100 s; Pei, features, first cut and review still to come
     j = job("asr_L", 0.5, 100, done=("models",))
-    hist = {"asr_L": 3.0, "asr_P": 3.0, "features": 0.4, "first_cut": 7.0, "episode": 0.5}
+    hist = {"asr": 3.0, "features": 0.4, "first_cut": 7.0, "episode": 0.5}
     left = import_eta.estimate(j, hist, now=NOW)
     rest = (3.0 + 0.4 + 7.0 + 0.5) * 40.5
     assert left == pytest.approx(100 + rest, abs=2)     # this step's own speed: 100 s more
@@ -49,7 +49,7 @@ def test_steps_to_come_count_at_their_own_speed():
 
 def test_early_in_a_step_history_counts_more():
     j = job("asr_P", 0.04, 6, done=("models", "asr_L"))
-    hist = {"asr_P": 3.0}
+    hist = {"asr": 3.0}
     left = import_eta.estimate(j, hist, now=NOW)
     by_rate, by_hist = 6 * 0.96 / 0.04, 3.0 * 40.5 - 6
     k = 0.04 / import_eta.TRUST_RATE_AT
@@ -79,7 +79,7 @@ def test_history_from_past_imports(tmp_path):
     (rules / "job.json").write_text(json.dumps({"state": "done", "tracks": {"L": {"duration": 3000}},
                                                 "steps": {"first_cut": {"done": "x", "engine": "rules", "seconds": 1}}}))
     h = import_eta.history(root)
-    assert h["asr_L"] == pytest.approx(250 / 50)
+    assert h["asr"] == pytest.approx(250 / 50)            # every track's ASR step together
     assert h["first_cut"] == pytest.approx(480 / 50)       # the no-AI fallback isn't a sample
     assert "episode" not in h
     assert import_eta.history(tmp_path / "missing") == {}
@@ -93,7 +93,7 @@ def test_running_import_reports_time_left_and_step_times(tmp_path):
     ws = Workspace(tmp_path / "ws").ensure()
     rec = write_recordings(tmp_path / "rec")
     imp = importer(ws, FakeFirstCutAnthropic(delay=1.0))
-    imp.start("EP002", "", str(rec["Leon"]), str(rec["Pei"]))
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])])
     seen = None
     for _ in range(300):
         j = imp.status("EP002")

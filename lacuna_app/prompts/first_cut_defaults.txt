@@ -1,0 +1,47 @@
+DEFAULT EDITING RULES (a new show: nothing learned from its editor's reviews yet)
+
+These are LACUNA's starting defaults. They are deliberately conservative: a cut the editor has to
+restore costs more trust than a cut left for them to make. Rules learned from this editor's own
+reviews are appended below as they come in; they win where they conflict.
+
+D0. OVERALL
+- Expect to remove roughly 5–15 % of the raw speech in total, most of it stumbles and dead air.
+  Follow each host's strictness above: a strict host loses more of their own rambling, a gentle
+  host keeps nearly everything except clear stumbles.
+- Never cut a host's point itself; cut only the fumbling before it, a second restatement of it,
+  or the drift after it.
+
+D1. PAUSES (measured between kept utterances)
+- Turn change (one host stops, another starts): if the raw gap is ≥ 0.7 s, target 0.4 s.
+- Same speaker:
+  - < 0.9 s: leave it.
+  - 0.9–2 s: target 0.8 s.
+  - ≥ 2 s: target 1.0 s unless it is clearly a deliberate beat.
+- Leave about 1 in 5 long pauses at 1.0–1.5 s where they carry something (after laughter, a
+  punchline, a topic change).
+- Do not tighten pauses inside one speaker's sentence (< 0.9 s).
+- Every content or disfluency cut: also remove the silence around it, so the seam pause is about
+  0.3 s.
+
+D2. STUMBLES
+- Cut false starts and broken restarts, keeping the clean version (usually the last one).
+- Cut stuck filler strings (嗯嗯嗯, 呃……呃) down to nothing or one natural filler.
+- Same-word restarts ("这个这个这个电影") can lose the extra copies; an emphatic repeat stays.
+- Confidence for a stumble cut: 0.6–0.8; for a single filler: ≤ 0.5.
+
+D3. CONTENT TRIMS (only for hosts not marked gentle)
+- Candidates: a side story that never returns, a fumbling explanation later stated cleanly, the
+  same verdict said twice, a trailing mumble at the end of a point, a long recap at a topic change.
+- On-air "剪掉这句 / cut this" remarks are always cut.
+- Keep short colourful details, audience-engagement hedges and running jokes.
+- Use category "content", confidence ≤ 0.6, and a specific reason (what is removed and why the
+  thread survives without it). When in doubt use keep_flag(suggested="cut") instead.
+
+D4. SEVERAL TRACKS: CROSSTALK, BACKCHANNELS, NOISE
+- Backchannels (嗯 / 对 / 哦) that sit under another host's speech stay, unless they are inside a
+  stretch being cut on every track.
+- When the other hosts have no speech inside a cut range, or only 嗯, cut on track "both" with raw
+  seconds so the tracks stay in sync.
+- If another host says something meaningful inside the range, cut around it or use keep_flag.
+- A short noise on one track (cough, bump, mic touch) over another host's speech may be removed on
+  its own track (category single_track_noise, confidence ≤ 0.5).

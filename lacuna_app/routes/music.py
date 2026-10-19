@@ -44,7 +44,7 @@ class DraftMoveBody(BaseModel):
 
 
 class SeriesBody(BaseModel):
-    name: str = Field("洛城二三事", min_length=1, max_length=80)  # i18n-ignore
+    name: str = Field(min_length=1, max_length=80)    # the series: the show name by default (web)
 
 
 def register(app, ctx) -> None:

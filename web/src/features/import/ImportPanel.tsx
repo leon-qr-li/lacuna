@@ -5,6 +5,7 @@ import { t } from "../../i18n";
 import { JobProgress } from "../loading/Loading";
 import type { JobStep } from "../loading/Loading";
 import { importApi, uploadTrack, type ImportJobView, type PickedTrack } from "./api";
+import { hostList, useShow, type Host, type Show } from "../show/api";
 import "./import.css";
 
 const RUNNING = new Set(["queued", "running"]);
@@ -17,22 +18,29 @@ const STATE_LABEL: Record<ImportJob["state"], string> = {
   cancelled: t("已取消"),
 };
 
-// the importer's steps and their share of the progress (lacuna_app/importer.py STEPS)
-const STEPS: [string, number, string][] = [
-  ["models", 0.04, t("准备识别模型")],
-  ["asr_L", 0.34, t("识别 Leon 的分轨")],
-  ["asr_P", 0.34, t("识别 Pei 的分轨")],
-  ["features", 0.04, t("分析停顿、语速和重叠")],
-  ["first_cut", 0.2, t("AI 第一刀")],
-  ["episode", 0.04, t("生成审阅")],
+const LEGACY_HOSTS: [string, string][] = [
+  ["L", "Leon"],
+  ["P", "Pei"],
 ];
+
+/** The importer's steps and their share of the progress (lacuna_app/importer.py steps_of): one ASR step per track. */
+function steps(j: ImportJob): [string, number, string][] {
+  const hosts = j.hosts?.length ? j.hosts : LEGACY_HOSTS;
+  return [
+    ["models", 0.04, t("准备识别模型")],
+    ...hosts.map(([tag, name]): [string, number, string] => [`asr_${tag}`, 0.68 / hosts.length, t("识别 {name} 的分轨", { name })]),
+    ["features", 0.04, t("分析停顿、语速和重叠")],
+    ["first_cut", 0.2, t("AI 第一刀")],
+    ["episode", 0.04, t("生成审阅")],
+  ];
+}
 
 // the same formats as the media library's drop zone (lacuna_app/importer.py AUDIO_EXT)
 const ACCEPT = ".wav,.flac,.aif,.aiff,.mp3,.m4a,.ogg,.opus,.aac,audio/*";
 
 function jobSteps(j: ImportJob): JobStep[] {
   let before = 0;
-  return STEPS.map(([key, w, label]) => {
+  return steps(j).map(([key, w, label]) => {
     const from = before;
     before += w;
     if (j.steps?.[key]) return { label, state: "done" };
@@ -46,7 +54,8 @@ function startedAt(j: ImportJob): number | undefined {
   return j.run_started ? Date.parse(j.run_started) - (j.elapsed_s ?? 0) * 1000 : undefined;
 }
 
-type Who = "leon" | "pei";
+/** A host's track slot, by the host's tag (lacuna_app/show.py). */
+type Who = string;
 /** One track slot: a file being copied to the app, or one it has. */
 interface Slot {
   key: object;
@@ -59,17 +68,20 @@ interface Slot {
 
 const hasFiles = (e: DragEvent | React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
 
-/** Which slot each dropped file belongs to: by "Leon" / "Pei" in its name, else the free slots in order. */
-export function assign(files: File[], free: Who[]): [Who, File][] {
+/** Which slot each dropped file belongs to: by a host's name in the file name ("Leon.wav"), else the
+ *  free slots in order. `hosts`: [tag, name] of every slot. */
+export function assign(files: File[], free: Who[], hosts: Host[]): [Who, File][] {
   const out = new Map<Who, File>();
   const rest: File[] = [];
+  // longer names first, so "Anna" wins over "Ann" in "anna.wav"
+  const byName = [...hosts].filter((h) => h.name.trim().length >= 2).sort((a, b) => b.name.length - a.name.length);
   for (const f of files) {
     const n = f.name.toLowerCase();
-    const who: Who | null = n.includes("leon") ? "leon" : n.includes("pei") ? "pei" : null;
-    if (who && !out.has(who)) out.set(who, f);
+    const who = byName.find((h) => n.includes(h.name.trim().toLowerCase()) && !out.has(h.tag))?.tag;
+    if (who) out.set(who, f);
     else rest.push(f);
   }
-  const order = [...free, ...(["leon", "pei"] as Who[]).filter((w) => !free.includes(w))];
+  const order = [...free, ...hosts.map((h) => h.tag).filter((w) => !free.includes(w))];
   for (const f of rest) {
     const who = order.find((w) => !out.has(w));
     if (who) out.set(who, f);
@@ -79,25 +91,29 @@ export function assign(files: File[], free: Who[]): [Who, File][] {
 
 function NewImport({
   nextId,
+  hosts,
   dropped,
   onStarted,
   onCancel,
 }: {
   nextId: string;
+  hosts: Host[];
   dropped: File[] | null;
   onStarted: () => void;
   onCancel: () => void;
 }) {
   const [id, setId] = useState(nextId);
   const [title, setTitle] = useState("");
-  const [slots, setSlots] = useState<Record<Who, Slot | null>>({ leon: null, pei: null });
+  const [slots, setSlots] = useState<Record<Who, Slot | null>>(() => Object.fromEntries(hosts.map((h) => [h.tag, null])));
   const [over, setOver] = useState<Who | "all" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const live = useRef(slots);
   live.current = slots;
   const started = useRef(false);
-  const inputs = { all: useRef<HTMLInputElement>(null), leon: useRef<HTMLInputElement>(null), pei: useRef<HTMLInputElement>(null) };
+  const inputs = useRef<Record<string, HTMLInputElement | null>>({});
+  const many = hosts.length > 1;
+  const names = hostList({ hosts } as Show);
 
   const letGo = (s: Slot | null) => {
     s?.abort?.();
@@ -132,22 +148,21 @@ function NewImport({
       if (files[0]) put(only, files[0]);
       return;
     }
-    const free = (["leon", "pei"] as Who[]).filter((w) => !live.current[w]);
-    for (const [who, f] of assign(files.slice(0, 2), free)) put(who, f);
+    const free = hosts.map((h) => h.tag).filter((w) => !live.current[w]);
+    for (const [who, f] of assign(files.slice(0, hosts.length), free, hosts)) put(who, f);
   };
   useEffect(() => {
     if (dropped?.length) add(dropped);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dropped]);
 
-  const leon = slots.leon?.track?.path ?? "";
-  const pei = slots.pei?.track?.path ?? "";
+  const paths = hosts.map((h) => slots[h.tag]?.track?.path ?? "");
   const copying = Object.values(slots).some((s) => s && !s.track && !s.error);
   const start = async () => {
     setBusy(true);
     setErr(null);
     try {
-      await api.startImport({ id: id.trim(), title: title.trim(), leon, pei });
+      await api.startImport({ id: id.trim(), title: title.trim(), tracks: paths });
       started.current = true;
       onStarted();
     } catch (e) {
@@ -176,15 +191,25 @@ function NewImport({
       if (files.length) add(files, who === "all" ? undefined : who);
     },
   });
+  const nameOf = (who: Who) => hosts.find((h) => h.tag === who)?.name ?? who;
+  const tid = (who: Who) => (who === "all" ? "all" : nameOf(who).toLowerCase()); // test ids: import-slot-leon …
   const fileInput = (who: Who | "all") => (
     <input
-      ref={inputs[who]}
+      ref={(el) => {
+        inputs.current[who] = el;
+      }}
       type="file"
       multiple={who === "all"}
       accept={ACCEPT}
       hidden
-      data-testid={`import-file-${who}`}
-      aria-label={who === "all" ? t("选择两条分轨") : who === "leon" ? t("选择 Leon 的分轨") : t("选择 Pei 的分轨")}
+      data-testid={`import-file-${tid(who)}`}
+      aria-label={
+        who === "all"
+          ? many
+            ? t("选择 {n} 条分轨", { n: hosts.length })
+            : t("选择分轨")
+          : t("选择 {name} 的分轨", { name: nameOf(who) })
+      }
       onChange={(e) => {
         const files = Array.from(e.target.files ?? []);
         e.target.value = "";
@@ -208,45 +233,50 @@ function NewImport({
         </label>
       </div>
       <div className={`lib-drop import-drop${over === "all" ? " lib-drop-active" : ""}`} data-testid="import-drop">
-        <p className="lib-drop-title">{t("把 Leon 和 Pei 的分轨拖到这里")}</p>
+        <p className="lib-drop-title">{t("把 {names} 的分轨拖到这里", { names })}</p>
         <div className="row gap12 lib-drop-actions">
-          <button type="button" className="btn btn-primary" onClick={() => inputs.all.current?.click()}>
+          <button type="button" className="btn btn-primary" onClick={() => inputs.current.all?.click()}>
             {t("选择文件")}
           </button>
         </div>
-        <p className="small muted">{t("可以一次拖两个。文件名里有 Leon、Pei 的会自动对上，也可以拖到下面某一条上。")}</p>
+        {many && (
+          <p className="small muted">
+            {t("可以一次拖 {n} 个。文件名里有主持人名字的会自动对上，也可以拖到下面某一条上。", { n: hosts.length })}
+          </p>
+        )}
         {fileInput("all")}
       </div>
       <div className="import-slots">
-        {(["leon", "pei"] as const).map((k) => {
+        {hosts.map((h, i) => {
+          const k = h.tag;
           const s = slots[k];
           return (
             <div
               key={k}
               className={`import-slot${over === k ? " import-slot-over" : ""}${s?.track ? " import-slot-set" : ""}`}
-              data-testid={`import-slot-${k}`}
+              data-testid={`import-slot-${tid(k)}`}
               {...dropProps(k)}
             >
-              <span className={`dot ${k}`} aria-hidden />
-              <strong>{k === "leon" ? t("Leon 的分轨") : t("Pei 的分轨")}</strong>
+              <span className={`dot host-dot-${i}`} aria-hidden />
+              <strong>{t("{name} 的分轨", { name: h.name })}</strong>
               <span className="import-slot-file small" title={s?.track?.path ?? s?.name}>
                 {!s ? (
-                  <span className="muted" data-testid={`import-${k}`}>
+                  <span className="muted" data-testid={`import-${tid(k)}`}>
                     {t("还没选")}
                   </span>
                 ) : s.error ? (
-                  <span className="error" data-testid={`import-${k}`}>
+                  <span className="error" data-testid={`import-${tid(k)}`}>
                     {s.name}：{s.error}
                   </span>
                 ) : s.track ? (
                   <>
-                    <span data-testid={`import-${k}`}>{s.track.name}</span>
+                    <span data-testid={`import-${tid(k)}`}>{s.track.name}</span>
                     <span className="muted">
                       {s.track.duration != null ? ` · ${fmt(s.track.duration)}` : ""} · {(s.track.size / 1e6).toFixed(0)} MB
                     </span>
                   </>
                 ) : (
-                  <span data-testid={`import-${k}`} className="import-slot-copying">
+                  <span data-testid={`import-${tid(k)}`} className="import-slot-copying">
                     <span>{t("正在读入 {name} · {pct}%", { name: s.name, pct: Math.round(s.progress * 100) })}</span>
                     <span className="import-slot-bar" aria-hidden>
                       <span style={{ width: `${Math.max(s.progress * 100, 2)}%` }} />
@@ -254,21 +284,21 @@ function NewImport({
                   </span>
                 )}
               </span>
-              <button type="button" className="btn btn-small btn-outline" onClick={() => inputs[k].current?.click()}>
+              <button type="button" className="btn btn-small btn-outline" onClick={() => inputs.current[k]?.click()}>
                 {s ? t("换一个") : t("选择文件")}
               </button>
               {fileInput(k)}
             </div>
           );
         })}
-        {slots.leon && slots.pei && (
+        {hosts.length === 2 && slots[hosts[0].tag] && slots[hosts[1].tag] && (
           <button
             type="button"
             className="btn btn-small btn-ghost import-swap"
-            onClick={() => setSlots((s) => ({ leon: s.pei, pei: s.leon }))}
+            onClick={() => setSlots((s) => ({ [hosts[0].tag]: s[hosts[1].tag], [hosts[1].tag]: s[hosts[0].tag] }))}
             data-testid="import-swap"
           >
-            {t("⇅ 对调 Leon 和 Pei")}
+            {t("⇅ 对调 {a} 和 {b}", { a: hosts[0].name, b: hosts[1].name })}
           </button>
         )}
       </div>
@@ -277,7 +307,7 @@ function NewImport({
       </p>
       {err && <p className="error small">{err}</p>}
       <div className="row gap8">
-        <button type="button" className="btn btn-primary" disabled={!leon || !pei || !id.trim() || busy || copying} onClick={() => void start()}>
+        <button type="button" className="btn btn-primary" disabled={paths.some((p) => !p) || !id.trim() || busy || copying} onClick={() => void start()}>
           {t("开始导入")}
         </button>
         <button type="button" className="btn" onClick={onCancel}>
@@ -369,6 +399,7 @@ export function ImportPanel({
   const [form, setForm] = useState(false);
   const [dropped, setDropped] = useState<File[] | null>(null);
   const prev = useRef<Map<string, string>>(new Map());
+  const hosts = useShow()?.hosts ?? [];
 
   const refresh = useCallback(async () => {
     try {
@@ -433,9 +464,10 @@ export function ImportPanel({
           {t("导入新一集")}
         </button>
       )}
-      {form && (
+      {form && hosts.length > 0 && (
         <NewImport
           nextId={nextId}
+          hosts={hosts}
           dropped={dropped}
           onCancel={() => {
             setForm(false);

@@ -106,7 +106,7 @@ def test_import_reads_only_uploaded_tracks(client, keys, tmp_path):
     h = hdr(token(keys[0]))
     outside = tmp_path / "secret.wav"
     outside.write_bytes(b"RIFF")
-    r = client.post("/api/imports", json={"id": "EP009", "leon": str(outside), "pei": str(outside)}, headers=h)
+    r = client.post("/api/imports", json={"id": "EP009", "tracks": [str(outside), str(outside)]}, headers=h)
     assert r.status_code == 422
 
 

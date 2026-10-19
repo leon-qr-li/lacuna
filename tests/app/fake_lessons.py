@@ -18,7 +18,7 @@ class FakeRuleWriter:
     def _usage(self) -> dict:
         return {"model": "fake", "input_tokens": 1200, "output_tokens": 200, "seconds": self.delay, "cost_usd": 0.004}
 
-    def rewrite(self, payload: dict) -> tuple[dict, dict]:
+    def rewrite(self, payload: dict, profile: dict | None = None) -> tuple[dict, dict]:
         self.calls.append(("rewrite", payload))
         time.sleep(self.delay)
         if self.boom or "AI 出错测试" in payload["said"]:     # E2E: a failed rewrite (V6)
@@ -34,7 +34,7 @@ class FakeRuleWriter:
                 "understood": f"我理解的是：以后每一集剪的时候都按「{said}」来，不只是这一处；片头片尾也一样。",
                 "instruction": f"In every episode: {said}.", "same_as": same}, self._usage()
 
-    def summarize(self, payload: dict) -> tuple[list[dict], dict]:
+    def summarize(self, payload: dict, profile: dict | None = None) -> tuple[list[dict], dict]:
         self.calls.append(("summarize", payload))
         time.sleep(self.delay)
         if self.boom:

@@ -34,6 +34,7 @@ from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_instal
 from .episode import Episode
 from .publish import Publisher, episode_label
 from .store import POSTER_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
+from . import show
 from .i18n import N_, tr
 
 POSTER_SCHEMA = 1
@@ -207,13 +208,13 @@ def _md_plain(s: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", s).strip()
 
 
-def brief_context(episode_id: str, pack: dict) -> str:
+def brief_context(episode_id: str, pack: dict, show_name: str = "洛城二三事") -> str:  # i18n-ignore
     """What Claude knows about the episode: the publish pack's text (phase 9)."""
     d = pack["draft"]
     films = "\n".join(f"- {f['name']}：{f['note']}" for f in d.get("films", [])) or "（没有列出）"  # i18n-ignore
     shows = "、".join(d.get("shows", [])) or "（无）"  # i18n-ignore
     heads = "\n".join(f"- {s['heading']}" for s in d.get("sections", [])) or "（无）"  # i18n-ignore
-    return (f"节目：《洛城二三事》 {episode_label(episode_id)}（cover text: \"EP {_num(episode_id)}\"）\n"  # i18n-ignore
+    return (f"节目：《{show_name}》 {episode_label(episode_id)}（cover text: \"EP {_num(episode_id)}\"）\n"  # i18n-ignore
             f"标题：{d['title']}\n一句话简介：{d.get('blurb', '')}\n\n"  # i18n-ignore
             f"开场介绍：\n{_md_plain(d.get('intro', ''))[:3000]}\n\n"  # i18n-ignore
             f"聊到的电影：\n{films}\n\n聊到的剧集：{shows}\n\n章节：\n{heads}")  # i18n-ignore
@@ -243,6 +244,7 @@ class ClaudeDesigner:
             api_key, _ = find_api_key()
         self.api_key = api_key
         self._client = client
+        self.show: dict | None = None        # the workspace's show (set by Posters), None = Leon's
         self.effort = effort or os.environ.get("LACUNA_POSTER_EFFORT", "medium")
 
     @property
@@ -257,14 +259,23 @@ class ClaudeDesigner:
         return self._client
 
     @staticmethod
-    def system() -> list[dict]:
+    def system(profile: dict | None = None) -> list[dict]:
         ex = "".join(f"\n\nEXAMPLE — {p.stem.upper()} (style reference only):\n{p.read_text(encoding='utf-8')}"
                      for p in sorted((PROMPTS / "poster_examples").glob("*.svg")))
-        text = (PROMPTS / "poster_brief.txt").read_text(encoding="utf-8") + ex
+        text = (PROMPTS / "poster_brief.txt").read_text(encoding="utf-8")
+        if not show.is_legacy(profile):
+            text = show.neutral(text, profile, [
+                (text[:text.index("WHAT YOU GET")], poster_intro(profile)),
+                ("so Leon has a real choice", "so the editor has a real choice"),
+                ("a cover Leon already likes plus one sentence from him", "a cover the editor already likes plus one sentence from them"),
+                ("THE STYLE LEON CHOSE (he loved the three examples below;", "THE HOUSE STYLE (the three examples below;"),
+                ("Simplified Chinese for Leon", "Simplified Chinese for the editor"),
+            ])
+        text += ex
         return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
 
     def request(self, user: str) -> dict:
-        return dict(model=self.model, max_tokens=48000, system=self.system(),
+        return dict(model=self.model, max_tokens=48000, system=self.system(self.show),
                     output_config={"effort": self.effort}, tools=[TOOL], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": user}])
 
@@ -295,11 +306,22 @@ class ClaudeDesigner:
                          "Design the cover and call submit_poster once.")
 
     def revise(self, context: str, svg: str, instruction: str) -> Design:
-        return self._ask(f"{context}\n\nLeon likes this cover:\n{svg}\n\n"
-                         f"Leon's change request (Chinese, may come from voice dictation):\n{instruction}\n\n"
-                         "Change exactly what he asks and keep everything else as it is. "
+        who = "Leon" if show.is_legacy(self.show) else "The editor"
+        return self._ask(f"{context}\n\n{who} likes this cover:\n{svg}\n\n"
+                         f"{who}'s change request (Chinese, may come from voice dictation):\n{instruction}\n\n"
+                         f"Change exactly what {'he asks' if who == 'Leon' else 'they ask'} and keep everything else as it is. "
                          "Call submit_poster once with the full new SVG; name it like the original, "
                          "concept = what you changed, in Chinese.")
+
+
+def poster_intro(profile: dict) -> str:
+    """The cover brief's opening for a show other than Leon's."""
+    where = "喜马拉雅 and other podcast apps" if profile["publish"].get("ximalaya") else "podcast apps"  # i18n-ignore
+    return (f"LACUNA — episode cover designer for 《{profile['show_name']}》\n\n"
+            f"YOU ARE: the art director of 《{profile['show_name']}》, {profile.get('about') or 'a podcast'} "
+            f"(hosts: {show.names_en(profile)}). For every episode you design the square cover that goes next "
+            f"to the audio on {where}. You draw it yourself, as SVG code. Where the brief says films, read "
+            "the works or subjects this episode discusses.\n\n")
 
 
 def make_designer():
@@ -390,12 +412,14 @@ class Posters:
         pack = self.publisher.load(ep)
         if pack is None:
             raise PosterError(tr("先在「发布资料」里生成标题和简介，海报按它来设计"))
-        return brief_context(ep.id, pack)
+        return brief_context(ep.id, pack, show.load(self.ws.root)["show_name"])
 
     def _designer(self):
         d = self.factory()
         if not getattr(d, "available", True):
             raise PosterError(tr("还没接上 AI（没有 AI 密钥），画不了海报"))
+        if hasattr(d, "show"):
+            d.show = show.load(self.ws.root)
         return d
 
     def _add(self, ep: Episode, design: Design, direction: str, parent: str | None = None,

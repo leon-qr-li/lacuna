@@ -29,6 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from . import show
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
 from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
@@ -38,8 +39,6 @@ PUBLISH_SCHEMA = 1
 NAMES_SCHEMA = 1
 NAMES_FILE = "names.json"
 PROMPTS = Path(__file__).resolve().parent / "prompts"
-SHOW = "洛城二三事"  # i18n-ignore
-FOOTER = "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*"  # i18n-ignore
 ROLE_LABELS = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed": "铺底", "clip": "台词"}  # i18n-ignore
 MERGE_GAP_S = 1.5          # same speaker, shorter gap -> same segment
 MAX_SEGMENT_S = 45.0
@@ -231,8 +230,9 @@ class Draft:
 
 def user_message(ep: Episode, doc: str, duration: float, names: list[dict]) -> str:
     known = "\n".join(f"- {n['wrong']} → {n['right']}" for n in names) or "（还没有）"  # i18n-ignore
-    return (f"节目：《{SHOW}》 {episode_label(ep.id)}，剪辑里的标题：{ep.meta.get('title', ep.id)}\n"  # i18n-ignore
-            f"成品时长：{mmss(duration)}\n\nLeon 以前改过的名字（错 → 对）：\n{known}\n\n"  # i18n-ignore
+    prof = show.load(ep.dir.parent.parent)       # <workspace>/episodes/<id>
+    return (f"节目：《{prof['show_name']}》 {episode_label(ep.id)}，剪辑里的标题：{ep.meta.get('title', ep.id)}\n"  # i18n-ignore
+            f"成品时长：{mmss(duration)}\n\n以前改过的名字（错 → 对）：\n{known}\n\n"  # i18n-ignore
             f"成品转写（每行：段落编号 成品时间 说话人：内容）：\n{doc}\n\n"  # i18n-ignore
             "请按说明写这一期的发布资料，调用 submit_publish_pack 一次。")  # i18n-ignore
 
@@ -262,13 +262,22 @@ class ClaudePublisher:
         return self._client
 
     @staticmethod
-    def system() -> str:
-        return ((PROMPTS / "show_notes_brief.txt").read_text(encoding="utf-8")
-                + "\n\nAPPROVED EXAMPLE (EP001, format and voice only):\n\n"
+    def system(profile: dict | None = None) -> str:
+        brief = (PROMPTS / "show_notes_brief.txt").read_text(encoding="utf-8")
+        label = "APPROVED EXAMPLE (EP001, format and voice only):"
+        if not show.is_legacy(profile):
+            brief = show.neutral(brief, profile, [
+                (brief[:brief.index("WHAT YOU GET")], notes_intro(profile)),
+                ("Names Leon already corrected", "Names the editor already corrected"),
+                ("sounds like Leon or Pei wrote it themselves", "sounds like the hosts wrote it themselves"),
+            ])
+            label = ("APPROVED EXAMPLE (from another show, 《洛城二三事》 EP001: format and voice only; never "  # i18n-ignore
+                     "borrow its content, its hosts' names or its jokes):")
+        return (brief + "\n\n" + label + "\n\n"
                 + (PROMPTS / "show_notes_example.md").read_text(encoding="utf-8") + AI_NAME_RULE)
 
-    def request(self, user: str) -> dict:
-        return dict(model=self.model, max_tokens=32000, system=self.system(),
+    def request(self, user: str, profile: dict | None = None) -> dict:
+        return dict(model=self.model, max_tokens=32000, system=self.system(profile),
                     output_config={"effort": self.effort}, tools=[TOOL], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": user}])
 
@@ -278,7 +287,7 @@ class ClaudePublisher:
         t0 = time.monotonic()
         try:
             with self.client.beta.messages.stream(betas=["server-side-fallback-2026-07-01"], fallbacks="default",
-                                                  **self.request(user)) as s:
+                                                  **self.request(user, show.load(ep.dir.parent.parent))) as s:
                 resp = s.get_final_message()
         except Exception as e:      # noqa: BLE001
             raise PublishError(error_message(e, tail="")) from e
@@ -291,6 +300,17 @@ class ClaudePublisher:
         if resp.stop_reason == "max_tokens":
             raise PublishError(tr("回答太长被截断了"))
         raise PublishError(tr("LACUNA 没有交回发布资料"))
+
+
+def notes_intro(profile: dict) -> str:
+    """The show-notes brief's opening for a show other than Leon's."""
+    where = "喜马拉雅" if profile["publish"].get("ximalaya") else "the podcast platforms"  # i18n-ignore
+    return (f"LACUNA — publish pack writer (show notes for 《{profile['show_name']}》)\n\n"
+            f"YOU ARE: the producer of 《{profile['show_name']}》, {profile.get('about') or 'a podcast'} "
+            f"(hosts: {show.names_en(profile)}). After the episode is edited you write what goes on {where} "
+            "next to the audio: the episode title, a one-line blurb and the show notes. The fields below "
+            "say films and shows; if this show is about something else, use them for the works or subjects "
+            "it discusses (books, games, products, people…) and leave a list empty when nothing fits.\n\n")
 
 
 class RulePublisher:
@@ -428,8 +448,11 @@ def bgm_lines(credits: list[dict] | None) -> list[str]:
     return out
 
 
-def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: list[dict] | None) -> str:
-    L = [f"# {draft['title'] or episode_id}", "", f"> 《{SHOW}》{episode_label(episode_id)} · Leon & Pei", ""]
+def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: list[dict] | None,
+                    profile: dict | None = None) -> str:
+    prof = profile or show.LEGACY
+    L = [f"# {draft['title'] or episode_id}", "",
+         f"> 《{prof['show_name']}》{episode_label(episode_id)} · {show.byline(prof)}", ""]
     if draft["intro"]:
         L += [draft["intro"], ""]
     L += ["---", "", "## ⏱ 时间轴", ""]  # i18n-ignore
@@ -450,7 +473,7 @@ def render_markdown(episode_id: str, draft: dict, rows: list[dict], credits: lis
         L += ["## 😏 内部梗小词典", ""]  # i18n-ignore
         L += [f"- **{g['term']}**：{g['meaning']}" for g in draft["glossary"]]
         L.append("")
-    L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", "", FOOTER, ""]  # i18n-ignore
+    L += ["## 🎵 本期 BGM", ""] + bgm_lines(credits) + ["", "---", ""] + ([prof["footer"], ""] if prof["footer"] else [])  # i18n-ignore
     return "\n".join(L)
 
 
@@ -701,7 +724,7 @@ class Publisher:
                                "heading": s["heading"]} for i, s in enumerate(pack["draft"]["sections"])],
                     gone=[r["text"] for r in rows if r["gone"]])
         if not keep_text:
-            pack["markdown"] = render_markdown(ep.id, pack["draft"], rows, music.credits)
+            pack["markdown"] = render_markdown(ep.id, pack["draft"], rows, music.credits, show.load(self.ws.root))
 
     # ---- view
     def view(self, ep: Episode) -> dict:

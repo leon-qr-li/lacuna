@@ -200,8 +200,7 @@ EN: dict[str, str | tuple[str, str]] = {
 
     # ---- import and first cut
     "准备识别模型": "Preparing speech models",
-    "识别 Leon 的分轨": "Transcribing Leon's track",
-    "识别 Pei 的分轨": "Transcribing Pei's track",
+    "识别 {name} 的分轨": "Transcribing {name}'s track",
     "分析停顿、语速和重叠": "Analysing pauses, pace and overlaps",
     "AI 第一刀": "AI first cut",
     "生成审阅": "Building the review",
@@ -214,7 +213,9 @@ EN: dict[str, str | tuple[str, str]] = {
     "已经有一集叫 {episode_id}，换个编号": "There's already an episode called {episode_id}; pick another ID",
     "{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号":
         "{episode_id} belonged to a deleted episode (its learned habits are still filed under it); pick another ID",
-    "Leon 和 Pei 选了同一个文件": "Leon and Pei have the same file",
+    "{a} 和 {b} 选了同一个文件": "{a} and {b} have the same file",
+    "先在「节目」里填好主持人": "Add the hosts under Show first",
+    "要 {n} 条分轨（每位主持人一条），收到 {got} 条": "{n} tracks are needed (one per host), got {got}",
     "这一集不需要继续": "This episode doesn't need resuming",
     "解码 {name} 的分轨": "Decoding {name}'s track",
     "打不开文件夹：{p}": "Can't open the folder: {p}",
@@ -418,4 +419,10 @@ EN: dict[str, str | tuple[str, str]] = {
     "AI 服务出了点问题": "Something went wrong with the AI service",
     "请先上传音轨": "Upload the tracks first",
     "上传没有完成，请重新上传": "The upload did not finish. Please upload it again.",
+    # show profile (show.py)
+    "第 {n} 位主持人还没有名字": "Host {n} has no name yet",
+    "两位主持人不能同名：{name}": "Two hosts can't have the same name: {name}",
+    "给节目起个名字": "Give the show a name",
+    "至少要有一位主持人": "The show needs at least one host",
+    "最多 {n} 位主持人": "At most {n} hosts",
 }

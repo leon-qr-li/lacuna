@@ -6,7 +6,8 @@ from fastapi import HTTPException, Request
 from starlette.concurrency import run_in_threadpool
 
 from ..dictation import Dictation, DictationError
-from ..dictation_fix import HOSTS, DictationFixer, FixContext
+from .. import show
+from ..dictation_fix import DictationFixer, FixContext
 from ..episode import to_base
 from ..publish import load_names
 from ..store import PUBLISH_FILE, read_json
@@ -18,13 +19,15 @@ MAX_TERMS = 40
 
 def fix_context(ws, ep, at: float | None, where: str) -> FixContext:
     corrections = load_names(ws)
-    ctx = FixContext(where=where, corrections=[{"wrong": c["wrong"], "right": c["right"]} for c in corrections])
-    names = list(HOSTS) + [c["right"] for c in corrections]
+    profile = show.load(ws.root)
+    ctx = FixContext(where=where, corrections=[{"wrong": c["wrong"], "right": c["right"]} for c in corrections],
+                     show=profile["show_name"])
+    names = show.host_names(profile) + [c["right"] for c in corrections]
     if ep is None:
         ctx.names = list(dict.fromkeys(names))
         return ctx
     if ep.transcript:
-        names += [t for t in ep.transcript.get("tracks", {}) if t not in ("L", "P")]
+        names += list(ep.transcript.get("tracks", {}))      # this episode's hosts (maybe since renamed)
     ctx.names = list(dict.fromkeys(names))
     ctx.episode_title = str(ep.meta.get("title") or "")
     try:

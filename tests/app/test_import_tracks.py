@@ -41,7 +41,7 @@ def test_dropped_tracks_import_and_go_with_the_episode(setup):
         assert t["name"] == f"{who} 原始音轨.wav" and t["duration"] > 10 and t["size"] == rec[who].stat().st_size
         assert Path(t["path"]).parent.parent == (ws.root / "imported_tracks").resolve()
         tracks[who] = t["path"]
-    r = c.post("/api/imports", json={"id": "EP002", "title": "", "leon": tracks["Leon"], "pei": tracks["Pei"]})
+    r = c.post("/api/imports", json={"id": "EP002", "title": "", "tracks": [tracks["Leon"], tracks["Pei"]]})
     assert r.status_code == 200, r.text
     for _ in range(300):
         if c.get("/api/imports/EP002").json()["job"]["state"] not in ("queued", "running"):

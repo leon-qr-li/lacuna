@@ -4,7 +4,10 @@ Library port of spike S5 ``build_input.py`` (the input the v1-v3 first cuts were
 fed by ``lacuna_app.asr`` instead of S2 JSON files. Text and numbers only - this is everything
 the AI editor ever sees of the audio. Ground-truth free.
 
-    tokens, features, doc = build(asr={"L": ..., "P": ...}, audio={"L": x16k, "P": x16k}, episode="EP002")
+    tokens, features, doc = build(asr={"L": ..., "P": ...}, audio={"L": x16k, "P": x16k}, episode="EP002",
+                                  names={"L": "Leon", "P": "Pei"}, show_name="洛城二三事")
+
+One track per host (any number from one up); the track tag (one letter) prefixes its token ids.
 """
 from __future__ import annotations
 
@@ -17,7 +20,7 @@ import numpy as np
 
 SR = 16000
 HOP = 0.01                     # feature frame hop (s)
-TRACKS = {"L": "Leon", "P": "Pei"}
+TRACKS = {"L": "Leon", "P": "Pei"}       # Leon's show: the default when no names are given
 
 # --------------------------------------------------------------------------- audio features
 
@@ -291,10 +294,13 @@ def utt_features(toks, segs, db, f0, speech_ref_db, f0_ref):
 # --------------------------------------------------------------------------- main
 
 
-def build(asr: dict, audio: dict, episode: str, log=print) -> tuple[dict, dict, str]:
-    """(tokens doc, features doc, editor document) from per-track ASR + 16 kHz mono audio."""
+def build(asr: dict, audio: dict, episode: str, log=print, names: dict[str, str] | None = None,
+          show_name: str = "洛城二三事") -> tuple[dict, dict, str]:
+    """(tokens doc, features doc, editor document) from per-track ASR + 16 kHz mono audio.
+    `names`: track tag -> host name, in host order."""
+    names = dict(names or TRACKS)
     data = {}
-    for tag, name in TRACKS.items():
+    for tag, name in names.items():
         x = audio[tag]
         db = frame_db(x)
         floor = float(np.percentile(db, 10))
@@ -320,17 +326,18 @@ def build(asr: dict, audio: dict, episode: str, log=print) -> tuple[dict, dict, 
             u["pause_before"] = round(u["start"] - spoken[i - 1]["end"], 2) if i else None
             u["pause_after"] = round(spoken[i + 1]["start"] - u["end"], 2) if i + 1 < len(spoken) else None
 
-    # overlaps: both tracks inside token spans simultaneously (token spans, gaps <=0.3 s bridged)
-    nfr = min(len(data["L"]["db"]), len(data["P"]["db"]))
+    # overlaps: two or more tracks inside token spans simultaneously (token spans, gaps <=0.3 s bridged)
+    tags = list(data)
+    nfr = min(len(d["db"]) for d in data.values())
     def talk_mask(d):
         m = np.zeros(nfr, bool)
         for t in d["toks"]:
             m[int(t["start"] / HOP):int(t["end"] / HOP)] = True
         return _fill_runs(m, False, 30)
-    mL, mP = talk_mask(data["L"]), talk_mask(data["P"])
-    both = mL & mP
+    masks = {tag: talk_mask(d) for tag, d in data.items()}
+    talking = np.sum([masks[t] for t in tags], axis=0)
     overlaps = []
-    for s, e in runs(both):
+    for s, e in runs(talking >= 2):
         if e - s < 20:            # ignore <0.2 s
             continue
         st, en = s * HOP, e * HOP
@@ -340,21 +347,22 @@ def build(asr: dict, audio: dict, episode: str, log=print) -> tuple[dict, dict, 
             while j > 0 and m[j - 1]:
                 j -= 1
             return j * HOP
-        sL, sP = run_start(mL), run_start(mP)
-        first = "L" if sL < sP - 0.05 else ("P" if sP < sL - 0.05 else "same")
+        starts = sorted((run_start(masks[t]), t) for t in tags if masks[t][s:e].any())
+        first = starts[0][1] if len(starts) == 1 or starts[0][0] < starts[1][0] - 0.05 else "same"
         def toks_in(d):
             return [t for t in d["toks"] if t["end"] > st and t["start"] < en]
-        tl, tp = toks_in(data["L"]), toks_in(data["P"])
-        overlaps.append({"start": round(st, 2), "end": round(en, 2), "dur": round(en - st, 2), "first": first,
-                         "L": [tl[0]["id"], tl[-1]["id"], "".join(t["t"] for t in tl)] if tl else None,
-                         "P": [tp[0]["id"], tp[-1]["id"], "".join(t["t"] for t in tp)] if tp else None})
+        o = {"start": round(st, 2), "end": round(en, 2), "dur": round(en - st, 2), "first": first}
+        for tag in tags:
+            tt = toks_in(data[tag])
+            o[tag] = [tt[0]["id"], tt[-1]["id"], "".join(t["t"] for t in tt)] if tt else None
+        overlaps.append(o)
 
-    # long silences: neither track has sound (energy activity) for >= 1.5 s
-    anyact = data["L"]["act"][:nfr] | data["P"]["act"][:nfr]
+    # long silences: no track has sound (energy activity) for >= 1.5 s
+    anyact = np.any([d["act"][:nfr] for d in data.values()], axis=0)
     silences = [{"start": round(s * HOP, 2), "end": round(e * HOP, 2), "dur": round((e - s) * HOP, 2)}
                 for s, e in runs(~anyact) if e - s >= 150]
-    # floor gaps: neither track has a token (speech) for >= 1.0 s (more useful than raw energy)
-    talk_any = mL | mP
+    # floor gaps: no track has a token (speech) for >= 1.0 s (more useful than raw energy)
+    talk_any = talking >= 1
     gaps = [{"start": round(s * HOP, 2), "end": round(e * HOP, 2), "dur": round((e - s) * HOP, 2)}
             for s, e in runs(~talk_any) if e - s >= 100]
 
@@ -395,9 +403,8 @@ def build(asr: dict, audio: dict, episode: str, log=print) -> tuple[dict, dict, 
                       "noise_floor_db": round(d["floor"], 1), "speech_level_db": round(d["speech_ref_db"], 1),
                       "asr_disagree_tokens": sum(1 for t in d["toks"] if t["flag"]),
                       "token_pauses_ge_0.3": int((pa >= 0.3).sum()), "token_pauses_ge_1.0": int((pa >= 1.0).sum())}
-    stats["overlap"] = {"count": len(overlaps), "total_s": round(sum(o["dur"] for o in overlaps), 1),
-                        "L_first": sum(o["first"] == "L" for o in overlaps),
-                        "P_first": sum(o["first"] == "P" for o in overlaps)}
+    stats["overlap"] = {"count": len(overlaps), "total_s": round(sum(o["dur"] for o in overlaps), 1)} | {
+        f"{tag}_first": sum(o["first"] == tag for o in overlaps) for tag in tags}
     stats["floor_gaps_ge_1s"] = {"count": len(gaps), "total_s": round(sum(g["dur"] for g in gaps), 1)}
     stats["sound_candidates"] = len(sounds)
 
@@ -407,7 +414,7 @@ def build(asr: dict, audio: dict, episode: str, log=print) -> tuple[dict, dict, 
     feat_out = {"episode": episode, "stats": stats, "overlaps": overlaps, "long_silences": silences,
                 "floor_gaps": gaps, "sounds": sounds,
                 "utterances": {tag: [{k: v for k, v in u.items()} for u in d["utts"]] for tag, d in data.items()}}
-    return tok_out, feat_out, write_doc(episode, data, stats, overlaps, gaps, silences, sounds)
+    return tok_out, feat_out, write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names, show_name)
 
 
 # --------------------------------------------------------------------------- document
@@ -415,20 +422,32 @@ def build(asr: dict, audio: dict, episode: str, log=print) -> tuple[dict, dict, 
 FORMAT_HELP = """\
 ## 格式说明 (format)
 
-时间一律为**原始音轨秒数** (raw seconds; 两轨从 0 起同步)。L = Leon 轨, P = Pei 轨。按开始时间交错排列，读起来就是对话本身。
+时间一律为**原始音轨秒数** (raw seconds; {all}从 0 起同步)。{legend}。按开始时间交错排列，读起来就是对话本身。
 
 每行一句 (= 一个 VAD 语段):
-`L 123.45-129.80 r5.1 e+2 ↗ pb0.62 pa1.20 ov | @812 我觉得这个电影吧 (0.45) @820 就是{那那|那}边 …`
+`{a} 123.45-129.80 r5.1 e+2 ↗ pb0.62 pa1.20 ov | @812 我觉得这个电影吧 (0.45) @820 就是{那那|那}边 …`
 
 - 头部: 轨 · 起止秒 · `r` 语速 (字/秒, 去掉句内≥0.3 s 停顿) · `e` 相对该轨正常说话音量 (dB, 已按轨归一) · 句尾音高 `↗`升 `↘`降 `→`平 (缺省=测不到) · `pb`/`pa` 同轨上一句/下一句的间隔秒 · `ov` = 本句与另一轨重叠 (见重叠表)
-- `@812` = 锚点: 后面第一个字的 token id 是 `L000812` (P 行则 `P000812`)。后续每个字 / 英文词各占一个连续 id: `@812 我觉得` → 我=L000812, 觉=L000813, 得=L000814。锚点出现在行首、每个停顿后、以及每 10 个 token。
+- `@812` = 锚点: 后面第一个字的 token id 是 `{a}000812` ({b} 行则 `{b}000812`)。后续每个字 / 英文词各占一个连续 id: `@812 我觉得` → 我={a}000812, 觉={a}000813, 得={a}000814。锚点出现在行首、每个停顿后、以及每 10 个 token。
 - `(0.45)` = 前一个 token 后面的停顿 ≥0.30 s (同轨)。
 - `{那那|那}` = Paraformer 与 SenseVoice 不一致: 左边是带 id 的 Paraformer 文本, 右边是 SenseVoice 的读法 (无 id)。`{|嗯}` 表示只有 SenseVoice 听到了 (附在前一个 token 后); `{对|}` 表示只有 Paraformer 听到了。不一致处多为语气词/重复/英文/专名, 文本不可全信, 删改要更保守。
 - `~snd 0.45s e-3 [sv:Laughter]` = 无 ASR 文字的声音候选 (笑声/呼吸/咳嗽/碰麦/口水声都有可能; 仅凭能量, 不确定)。
-- `L ... (no text) e-12` = VAD 认为有声但两个 ASR 都没出字。
+- `{a} ... (no text) e-12` = VAD 认为有声但两个 ASR 都没出字。
 - `--- 12:00 ---` = 每分钟一条时间刻度 (raw)。
-- `== 地板间隙 2.31s (raw 300.12-302.43) ==` = 两轨都没有说话 ≥1.0 s 的位置 (可能是可收紧的停顿)。
+- `== 地板间隙 2.31s (raw 300.12-302.43) ==` = {all}都没有说话 ≥1.0 s 的位置 (可能是可收紧的停顿)。
 """
+
+
+def _all(n: int) -> str:
+    """How the document says "every track": 这一轨 / 两轨 / 各轨."""
+    return "这一轨" if n == 1 else "两轨" if n == 2 else "各轨"
+
+
+def format_help(names: dict[str, str]) -> str:
+    tags = list(names)
+    legend = ", ".join(f"{t} = {n} 轨" for t, n in names.items())
+    return (FORMAT_HELP.replace("{all}", _all(len(tags))).replace("{legend}", legend)
+            .replace("{a}", tags[0]).replace("{b}", tags[-1]))
 
 
 def fmt_utt_line(tag, u, d, ov_ranges):
@@ -493,30 +512,37 @@ def _join(ts):
     return re.sub(r" +", " ", out).strip()
 
 
-def write_doc(episode, data, stats, overlaps, gaps, silences, sounds):
-    L, P = stats["L"], stats["P"]
-    lines = [f"# {episode} 剪辑输入 (editor input) — 《洛城二三事》", "",
-             "只含文字与数值特征 (无音频)。原始双轨来自 Riverside 分轨录音: L 轨只有 Leon 的麦, P 轨只有 Pei 的麦, 两轨时间轴一致。", "",
-             FORMAT_HELP, "## 概览 (overview)", "",
-             f"- 原始时长: L {L['duration_s']:.1f}s, P {P['duration_s']:.1f}s ({L['duration_s']/60:.1f} min)",
+def write_doc(episode, data, stats, overlaps, gaps, silences, sounds, names=None, show_name="洛城二三事"):
+    names = dict(names or TRACKS)
+    tags = list(data)
+    every = _all(len(tags))
+    mics = ", ".join(f"{t} 轨只有 {names[t]} 的麦" for t in tags)
+    dur0 = stats[tags[0]]["duration_s"]
+    lines = [f"# {episode} 剪辑输入 (editor input)" + (f" — 《{show_name}》" if show_name else ""), "",
+             f"只含文字与数值特征 (无音频)。原始{'单轨' if len(tags) == 1 else '双轨' if len(tags) == 2 else f'{len(tags)} 轨'}"
+             f"是分轨录音: {mics}" + ("。" if len(tags) == 1 else f", {every}时间轴一致。"), "",
+             format_help(names), "## 概览 (overview)", "",
+             "- 原始时长: " + ", ".join(f"{t} {stats[t]['duration_s']:.1f}s" for t in tags) + f" ({dur0/60:.1f} min)",
              "| 轨 | token 数 | 句数 | 说话秒数 | 语速中位 (字/s) | F0 中位 | ASR 不一致 token | 同轨 token 间停顿≥0.3s | ≥1.0s |",
              "|---|---|---|---|---|---|---|---|---|"]
-    for tag in ("L", "P"):
+    for tag in tags:
         s = stats[tag]
         lines.append(f"| {tag} | {s['tokens']} | {s['utterances']} | {s['speech_s']} | {s['median_rate']} | "
                      f"{s['f0_median_hz']} Hz | {s['asr_disagree_tokens']} | {s['token_pauses_ge_0.3']} | {s['token_pauses_ge_1.0']} |")
-    lines += ["", f"- 原始电平: L 说话 {L['speech_level_db']} dBFS (底噪 {L['noise_floor_db']}), "
-              f"P 说话 {P['speech_level_db']} dBFS (底噪 {P['noise_floor_db']}); `e` 已按轨归一。",
-              f"- 两轨同时说话 (≥0.2 s): {stats['overlap']['count']} 处, 共 {stats['overlap']['total_s']} s; "
-              f"L 先开口 {stats['overlap']['L_first']} 次, P 先开口 {stats['overlap']['P_first']} 次。",
-              f"- 地板间隙 (两轨都没说话 ≥1.0 s): {stats['floor_gaps_ge_1s']['count']} 处, 共 {stats['floor_gaps_ge_1s']['total_s']} s。",
-              f"- 两轨都完全无声 ≥1.5 s: {len(silences)} 处。", f"- 无文字声音候选: {len(sounds)} 个。", "",
-              "### 重叠表 (overlaps)", "",
-              "`起-止 时长 先开口者(L/P/same=同时) | L: 首id-末id 重叠部分文本 | P: 首id-末id 重叠部分文本`", ""]
-    for o in overlaps:
-        lt = f"{o['L'][0]}-{o['L'][1]} {o['L'][2]}" if o["L"] else "-"
-        pt = f"{o['P'][0]}-{o['P'][1]} {o['P'][2]}" if o["P"] else "-"
-        lines.append(f"- {o['start']:.2f}-{o['end']:.2f} {o['dur']:.2f}s {o['first']} | L: {lt} | P: {pt}")
+    lines += ["", "- 原始电平: " + ", ".join(f"{t} 说话 {stats[t]['speech_level_db']} dBFS (底噪 {stats[t]['noise_floor_db']})"
+                                         for t in tags) + "; `e` 已按轨归一。"]
+    if len(tags) > 1:
+        lines += [f"- {'两轨' if len(tags) == 2 else '多轨'}同时说话 (≥0.2 s): {stats['overlap']['count']} 处, 共 {stats['overlap']['total_s']} s; "
+                  + ", ".join(f"{t} 先开口 {stats['overlap'][t + '_first']} 次" for t in tags) + "。"]
+    lines += [f"- 地板间隙 ({every}都没说话 ≥1.0 s): {stats['floor_gaps_ge_1s']['count']} 处, 共 {stats['floor_gaps_ge_1s']['total_s']} s。",
+              f"- {every}都完全无声 ≥1.5 s: {len(silences)} 处。", f"- 无文字声音候选: {len(sounds)} 个。", ""]
+    if len(tags) > 1:
+        lines += ["### 重叠表 (overlaps)", "",
+                  f"`起-止 时长 先开口者({'/'.join(tags)}/same=同时) | "
+                  + " | ".join(f"{t}: 首id-末id 重叠部分文本" for t in tags) + "`", ""]
+        for o in overlaps:
+            cols = " | ".join(f"{t}: " + (f"{o[t][0]}-{o[t][1]} {o[t][2]}" if o.get(t) else "-") for t in tags)
+            lines.append(f"- {o['start']:.2f}-{o['end']:.2f} {o['dur']:.2f}s {o['first']} | {cols}")
     lines += ["", "## 全文 (transcript, chronological)", ""]
 
     events = []
@@ -531,7 +557,7 @@ def write_doc(episode, data, stats, overlaps, gaps, silences, sounds):
             pass  # sv / 哈哈 flags are already on the utterance line
     for g in gaps:
         events.append((g["start"], 2, f"== 地板间隙 {g['dur']:.2f}s (raw {g['start']:.2f}-{g['end']:.2f}) =="))
-    dur = max(data["L"]["x_dur"], data["P"]["x_dur"])
+    dur = max(d["x_dur"] for d in data.values())
     for m in range(1, int(dur // 60) + 1):
         events.append((m * 60.0, -1, f"--- {m:02d}:00 ---"))
     events.sort(key=lambda e: (e[0], e[1]))

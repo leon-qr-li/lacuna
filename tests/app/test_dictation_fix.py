@@ -114,7 +114,8 @@ def test_similarity_guard():
 
 
 def test_context_json_is_compact():
-    doc = json.loads(FixContext().as_json("嗯"))
-    assert doc == {"dictated_text": "嗯", "typed_into": doc["typed_into"], "people": ["Leon", "Pei"]}
+    doc = json.loads(FixContext(names=["Ana", "Bo"]).as_json("嗯"))
+    assert doc == {"dictated_text": "嗯", "typed_into": doc["typed_into"], "people": ["Ana", "Bo"]}
+    assert json.loads(FixContext(show="周末电影院").as_json("嗯"))["show"] == "周末电影院"
 
 

@@ -1,6 +1,8 @@
 """New-episode import (phase 4, D41): local ASR → features → Claude first cut → review."""
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
@@ -19,8 +21,8 @@ class TrackBody(BaseModel):
 class ImportBody(BaseModel):
     id: str = Field(min_length=1, max_length=120, description="episode id = folder name, e.g. EP002")
     title: str = Field("", max_length=200)
-    leon: str = Field(min_length=1, max_length=2000, description="path of Leon's raw track")
-    pei: str = Field(min_length=1, max_length=2000, description="path of Pei's raw track")
+    tracks: list[Annotated[str, Field(min_length=1, max_length=2000)]] = Field(
+        min_length=1, max_length=6, description="path of each host's raw track, in the show's host order")
 
 
 def register(app, ctx) -> None:
@@ -87,10 +89,10 @@ def register(app, ctx) -> None:
     def start_import(body: ImportBody):
         from ..cloud import enabled as cloud_enabled
         # on the shared server a track is always an upload: never read a path on the server itself
-        if cloud_enabled() and not all(import_tracks.owned(ws, p) for p in (body.leon, body.pei)):
+        if cloud_enabled() and not all(import_tracks.owned(ws, p) for p in body.tracks):
             raise HTTPException(422, tr("请先上传音轨"))
         try:
-            return {"job": importer.start(body.id.strip(), body.title, body.leon, body.pei)}
+            return {"job": importer.start(body.id.strip(), body.title, body.tracks)}
         except ImportBusy as e:
             raise HTTPException(409, str(e))
         except ImportError_ as e:

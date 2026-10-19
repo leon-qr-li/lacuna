@@ -11,6 +11,7 @@ EP001 targets only, so an imported episode is still reviewable.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import threading
@@ -20,6 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from . import show
 from .ai_cut import TrackTokens
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .i18n import AI_NAME_RULE, in_reply_language, lang, tr
@@ -67,18 +69,50 @@ TOOL = {
         },
     },
 }
-_TOKEN = re.compile(r"^[LP]\d{6}$")
+_TOKEN = re.compile(r"^[A-Z]\d{6}$")       # <track tag><index>, e.g. L000812
+
+
+def tool_for(tags: list[str], legacy: bool = True) -> dict:
+    """TOOL with the episode's own track tags (+ "both" = every track)."""
+    t = json.loads(json.dumps(TOOL))
+    props = t["input_schema"]["properties"]["ops"]["items"]["properties"]
+    props["track"]["enum"] = list(tags) + ["both"]
+    if not legacy:
+        props["confidence"]["description"] = "0..1: probability the show's editor makes the same edit"
+    return t
 
 Progress = Callable[[float, str], None]
 
 
-def system_prompt(extra_rules: str = "") -> str:
-    """Brief + learned EP001 rules (+ rules learned from Leon's later reviews, if any)."""
+def system_prompt(extra_rules: str = "", profile: dict | None = None) -> str:
+    """Brief + learned EP001 rules (+ rules learned from Leon's later reviews, if any).
+
+    Another show (`profile` from show.py, not Leon's): the same brief with its own name, tracks and
+    per-host strictness, LACUNA's default rules instead of Leon's EP001 calibration, then its own
+    learned rules."""
+    if not show.is_legacy(profile):
+        return generic_prompt(extra_rules, profile)
     parts = [(PROMPTS / "first_cut_brief.txt").read_text(encoding="utf-8"),
              (PROMPTS / "learned_rules_ep001.txt").read_text(encoding="utf-8")]
     if extra_rules.strip():
         parts.append("RULES LEARNED FROM LEON'S LATER REVIEWS (newer than EP001; they win where they conflict)\n"
                      + extra_rules.strip())
+    return "\n\n".join(parts)
+
+
+def generic_prompt(extra_rules: str, profile: dict) -> str:
+    tags = [h["tag"] for h in profile["hosts"]]
+    brief = (PROMPTS / "first_cut_brief_generic.txt").read_text(encoding="utf-8")
+    for k, v in {"<<SHOW>>": show.describe_en(profile).rsplit(" (", 1)[0],
+                 "<<TRACKS>>": ", ".join(f"{h['name']} = track {h['tag']}" for h in profile["hosts"]),
+                 "<<TOKEN_EXAMPLES>>": " / ".join(f'"{t}000812"' for t in tags[:2]),
+                 "<<T1>>": tags[0], "<<TRACK_LIST>>": ", ".join(tags),
+                 "<<STYLES>>": show.style_lines(profile)}.items():
+        brief = brief.replace(k, v)
+    parts = [brief, (PROMPTS / "first_cut_defaults.txt").read_text(encoding="utf-8")]
+    if extra_rules.strip():
+        parts.append("RULES LEARNED FROM THE EDITOR'S REVIEWS OF THIS SHOW (they win where they conflict "
+                     "with the defaults)\n" + extra_rules.strip())
     return "\n\n".join(parts)
 
 
@@ -94,12 +128,12 @@ def windows(duration: float, size: float = WINDOW_S) -> list[tuple[float, float]
     return [(a, b) for a, b in out]
 
 
-def window_request(a: float, b: float, k: int, n: int) -> str:
+def window_request(a: float, b: float, k: int, n: int, who: str = "Leon") -> str:
     m = lambda s: f"{int(s // 60):02d}:{int(s % 60):02d}"  # noqa: E731
     return (f"请剪第 {k + 1}/{n} 段：原始时间 {a:.2f}–{b:.2f} 秒（{m(a)}–{m(b)}）。"  # i18n-ignore
             f"Edit raw window {a:.2f}–{b:.2f} s only: output every op whose start lies in this window "
             "(an op may end slightly after it). Follow the brief and the learned rules; call submit_ops once."
-            + (" Leon reads LACUNA in English: write every reason and the notes in English." if lang() == "en" else ""))
+            + (f" {who} reads LACUNA in English: write every reason and the notes in English." if lang() == "en" else ""))
 
 
 @dataclass
@@ -186,6 +220,8 @@ class ClaudeFirstCut:
         self.concurrency = concurrency
         self.model = model or os.environ.get("LACUNA_FIRST_CUT_MODEL", self.MODEL)
         self.on_usage: Callable[[dict], None] = lambda u: None
+        self.names: dict[str, str] = {"L": "Leon", "P": "Pei"}   # track tag -> host (set by the importer)
+        self.show: dict | None = None                            # the workspace's show (prompt), None = Leon's
 
     @property
     def available(self) -> bool:
@@ -202,7 +238,7 @@ class ClaudeFirstCut:
         return dict(model=model or self.model, max_tokens=64000,
                     system=[{"type": "text", "text": system + AI_NAME_RULE},
                             {"type": "text", "text": doc, "cache_control": {"type": "ephemeral"}}],
-                    output_config={"effort": self.effort}, tools=[in_reply_language(TOOL)],
+                    output_config={"effort": self.effort}, tools=[in_reply_language(tool_for(list(self.names), show.is_legacy(self.show)))],
                     tool_choice={"type": "auto"}, messages=[{"role": "user", "content": user}])
 
     def _call(self, req: dict):
@@ -217,7 +253,7 @@ class ClaudeFirstCut:
         while True:
             t0 = time.monotonic()
             try:
-                resp = self._call(self.request(system, doc, window_request(a, b, k, n), model))
+                resp = self._call(self.request(system, doc, window_request(a, b, k, n, "Leon" if show.is_legacy(self.show) else "The editor"), model))
             except Exception as e:      # noqa: BLE001
                 raise FirstCutError(error_message(e, tail="")) from e
             usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
@@ -240,7 +276,7 @@ class ClaudeFirstCut:
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
             cancelled: Callable[[], bool] = lambda: False, extra_rules: str = "") -> FirstCutResult:
         """All windows; finished windows are cached in `cache_dir` so a retry resumes."""
-        system = system_prompt(extra_rules)
+        system = system_prompt(extra_rules, self.show)
         wins = windows(duration)
         n = len(wins)
         results: dict[int, tuple[list[dict], str, dict]] = {}
@@ -307,12 +343,18 @@ class RuleFirstCut:
     name = "rules"
     available = True
 
+    def __init__(self):
+        self.names: dict[str, str] = {"L": "Leon", "P": "Pei"}
+
     @staticmethod
     def target(prev: str, nxt: str, gap: float) -> float | None:
+        # Leon -> Pei / Pei -> Leon: measured on EP001 (tags L and P are only ever Leon's and Pei's)
         if prev == "L" and nxt == "P":
             return 0.2 if gap >= 0.4 else None
         if prev == "P" and nxt == "L":
             return 0.5 if gap >= 0.8 else None
+        if prev != nxt:                      # any other change of speaker: a natural reply gap
+            return 0.4 if gap >= 0.7 else None
         if gap < 0.9:
             return None
         return 0.8 if gap < 2.0 else 1.0
@@ -331,7 +373,8 @@ class RuleFirstCut:
                 if tgt is not None and gap - tgt >= 0.05:
                     ops.append({"id": f"op{len(ops) + 1:04d}", "op": "tighten_pause", "track": "both",
                                 "at": round((end + s) / 2, 3), "target_s": tgt, "category": "pause",
-                                "reason": tr("{p0}→{p1} {gap}s→{tgt}s（规则）", p0='Leon' if who == 'L' else 'Pei', p1='Leon' if tag == 'L' else 'Pei', gap=f"{gap:.2f}", tgt=tgt), "confidence": 0.6})
+                                "reason": tr("{p0}→{p1} {gap}s→{tgt}s（规则）", p0=self.names.get(who, who), p1=self.names.get(tag, tag),
+                                              gap=f"{gap:.2f}", tgt=tgt), "confidence": 0.6})
             if end is None or e > end:
                 end, who = e, tag
         progress(1.0, tr("规则第一刀完成"))

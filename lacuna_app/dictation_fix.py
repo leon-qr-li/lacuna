@@ -22,7 +22,6 @@ from typing import Any
 from .editor import find_api_key, sdk_installed
 from .i18n import AI_NAME_RULE
 
-HOSTS = ("Leon", "Pei")
 TIMEOUT_S = 8.0
 MIN_SIMILARITY = 0.5      # below this the "fix" rewrote the sentence: keep what was heard
 
@@ -38,7 +37,8 @@ SCHEMA = {
 
 @dataclass
 class FixContext:
-    names: list[str] = field(default_factory=lambda: list(HOSTS))
+    names: list[str] = field(default_factory=list)         # the show's hosts first (routes/dictation.py)
+    show: str = ""                                          # the workspace's show name
     corrections: list[dict] = field(default_factory=list)   # names.json: {"wrong", "right"}
     episode_title: str = ""
     terms: list[str] = field(default_factory=list)          # films, glossary of the episode
@@ -51,6 +51,8 @@ class FixContext:
             "chat": "the AI producer chat of the editing page (editing instructions)",
             "poster": "a one-line change request for an episode cover image"}.get(self.where, self.where),
             "people": self.names}
+        if self.show:
+            doc["show"] = self.show
         if self.corrections:
             doc["names_corrected_before"] = [f"{c['wrong']} → {c['right']}" for c in self.corrections]
         if self.episode_title:
