@@ -24,3 +24,4 @@ def test_app_info_says_whether_this_is_staging(tmp_path, monkeypatch):
     monkeypatch.setenv("LACUNA_STAGING", "1")      # ignored on the desktop
     c = TestClient(create_app(tmp_path / "ws", MockEditorAdapter(), web_dist=Path("/nonexistent")))
     assert c.get("/api/app").json()["staging"] is False
+    assert c.get("/api/staging").json() == {"staging": False}

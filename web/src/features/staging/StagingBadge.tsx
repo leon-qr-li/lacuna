@@ -5,7 +5,7 @@ import { t } from "../../i18n";
 export function StagingBadge() {
   const [on, setOn] = useState(false);
   useEffect(() => {
-    fetch("/api/app")
+    fetch("/api/staging")
       .then((r) => (r.ok ? r.json() : null))
       .then((info: { staging?: boolean } | null) => setOn(!!info?.staging), () => setOn(false));
   }, []);
