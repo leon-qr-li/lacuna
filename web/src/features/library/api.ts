@@ -1,6 +1,7 @@
 // API of this feature (moved out of src/api.ts so features don't all edit one file)
 import type { Usage } from "../../api";
 import { ep, failure, req } from "../../api";
+import { PIECES_ABOVE, sendPieces } from "../upload-parts/pieces";
 
 export type CreditStatus = "confirmed" | "suggested" | "unknown";
 
@@ -153,11 +154,14 @@ export type PlacementPatch = Partial<{
 async function uploadAsset(file: File, kind: string, note = "", episode = ""): Promise<{ asset: Asset; duplicate: boolean }> {
   const q = new URLSearchParams({ name: file.name, kind, note });
   if (episode) q.set("episode", episode);
+  // a big file goes in pieces first (upload-parts); this request then names them instead of a body
+  const part = file.size > PIECES_ABOVE ? await sendPieces(file, () => undefined).done : "";
+  if (part) q.set("part", part);
   const url = `/api/library/upload?${q}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/octet-stream" },
-    body: file,
+    body: part ? null : file,
   });
   if (!res.ok) throw await failure(res, url);
   return res.json() as Promise<{ asset: Asset; duplicate: boolean }>;

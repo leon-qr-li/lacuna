@@ -417,4 +417,5 @@ EN: dict[str, str | tuple[str, str]] = {
     "LACUNA 没有给出结果": "LACUNA gave no result",
     "AI 服务出了点问题": "Something went wrong with the AI service",
     "请先上传音轨": "Upload the tracks first",
+    "上传没有完成，请重新上传": "The upload did not finish. Please upload it again.",
 }

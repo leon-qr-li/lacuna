@@ -1,6 +1,7 @@
 import type { ImportJob } from "../../api";
 import { req } from "../../api";
 import { AUTH_EVENT } from "../auth/api";
+import { PIECES_ABOVE, sendPieces } from "../upload-parts/pieces";
 
 /** A raw track the server has (copied in from a drop, or picked): what the import form keeps. */
 export interface PickedTrack {
@@ -16,11 +17,28 @@ export type ImportJobView = ImportJob & { eta_s?: number | null };
 /**
  * Send a dropped / picked file to the local app (127.0.0.1 only; it keeps a copy in the workspace).
  * XHR rather than fetch so a 1-2 GB WAV shows how far the copy is. `abort` cancels it.
+ * A big file goes in pieces first (upload-parts), then this request names them instead of a body.
  */
 export function uploadTrack(file: File, onProgress: (f: number) => void): { done: Promise<PickedTrack>; abort: () => void } {
+  if (file.size > PIECES_ABOVE) {
+    const pieces = sendPieces(file, onProgress);
+    let finish: { abort: () => void } | null = null;
+    const done = pieces.done.then((part) => {
+      const f = sendTrack(file, null, part, () => undefined);
+      finish = f;
+      return f.done;
+    });
+    return { done, abort: () => (finish ?? pieces).abort() };
+  }
+  return sendTrack(file, file, "", onProgress);
+}
+
+function sendTrack(file: File, body: File | null, part: string, onProgress: (f: number) => void): { done: Promise<PickedTrack>; abort: () => void } {
   const xhr = new XMLHttpRequest();
   const done = new Promise<PickedTrack>((resolve, reject) => {
-    xhr.open("POST", `/api/imports/tracks?${new URLSearchParams({ name: file.name })}`);
+    const q = new URLSearchParams({ name: file.name });
+    if (part) q.set("part", part);
+    xhr.open("POST", `/api/imports/tracks?${q}`);
     xhr.setRequestHeader("Content-Type", "application/octet-stream");
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total);
     xhr.onload = () => {
@@ -36,7 +54,7 @@ export function uploadTrack(file: File, onProgress: (f: number) => void): { done
     };
     xhr.onerror = () => reject(new Error(xhr.statusText || "network error"));
     xhr.onabort = () => reject(new DOMException("aborted", "AbortError"));
-    xhr.send(file);
+    xhr.send(body);
   });
   return { done, abort: () => xhr.abort() };
 }

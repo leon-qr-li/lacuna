@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
+from .. import upload_parts
 from ..library import Library, LibraryError, lookup_credit
 from ..store import PathError, check_id
 from ..i18n import tr
@@ -93,7 +94,8 @@ def register(app, ctx) -> None:
         return {"asset": library.asset_view(a), "message": message}
 
     @app.post("/api/library/upload")
-    async def library_upload(request: Request, name: str, kind: str = "other", note: str = "", episode: str = ""):
+    async def library_upload(request: Request, name: str, kind: str = "other", note: str = "", episode: str = "",
+                             part: str = ""):
         """A file dragged into (or picked in) the browser, raw bytes in the body. It is written
         straight into the library folder; nothing leaves this machine. The octet-stream type is
         required so another web page can't post here without the browser's CORS preflight."""
@@ -104,26 +106,29 @@ def register(app, ctx) -> None:
         if episode:          # added on an episode's music page, or into an episode on the library page
             episode_or_404(episode)
         try:
-            part = library.upload_target(name, kind)
+            target = library.upload_target(name, kind)
         except LibraryError as e:
             raise HTTPException(422, str(e))
         try:
             size = 0
-            with part.open("wb") as f:
-                async for chunk in request.stream():
+            with target.open("wb") as f:
+                async for chunk in upload_parts.source(request, ctx.ws, part):
                     size += len(chunk)
                     if size > MAX_UPLOAD:
                         raise HTTPException(413, tr("文件太大"))
                     f.write(chunk)
             if not size:
                 raise HTTPException(422, tr("文件是空的"))
-            asset, duplicate = await run_in_threadpool(library.add_upload, part, kind, note.strip(),
+            asset, duplicate = await run_in_threadpool(library.add_upload, target, kind, note.strip(),
                                                        episode or None)
         except HTTPException:
-            part.unlink(missing_ok=True)
+            target.unlink(missing_ok=True)
             raise
+        except upload_parts.PartError:
+            target.unlink(missing_ok=True)
+            raise HTTPException(422, tr("上传没有完成，请重新上传"))
         except Exception as e:
-            part.unlink(missing_ok=True)
+            target.unlink(missing_ok=True)
             raise HTTPException(422, tr("读不了这个音频文件：{name}", name=name) if not isinstance(e, LibraryError) else str(e))
         return {"asset": library.asset_view(asset), "duplicate": duplicate}
 

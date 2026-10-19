@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
-from .. import import_tracks
+from .. import import_tracks, upload_parts
 from ..archive import retired_ids
 from ..importer import ImportBusy, ImportError_, Importer, check_track
 from ..server import next_episode_id
@@ -39,7 +39,7 @@ def register(app, ctx) -> None:
     import_tracks.prune(ws, tracks_in_use())
 
     @app.post("/api/imports/tracks")
-    async def upload_track(request: Request, name: str):
+    async def upload_track(request: Request, name: str, part: str = ""):
         """A raw track dragged into (or picked in) the import form: the raw bytes, copied into the
         workspace (import_tracks.py). Octet-stream only, so no other web page can post here without
         the browser's CORS preflight."""
@@ -56,7 +56,7 @@ def register(app, ctx) -> None:
         size = 0
         try:
             with target.open("wb") as f:
-                async for chunk in request.stream():
+                async for chunk in upload_parts.source(request, ws, part):
                     size += len(chunk)
                     if size > import_tracks.MAX_TRACK:
                         raise HTTPException(413, tr("文件太大"))
@@ -64,6 +64,9 @@ def register(app, ctx) -> None:
             if not size:
                 raise HTTPException(422, tr("文件是空的"))
             return {"track": check_track(target)}
+        except upload_parts.PartError:
+            import_tracks.remove(ws, target)
+            raise HTTPException(422, tr("上传没有完成，请重新上传"))
         except BaseException:
             import_tracks.remove(ws, target)
             raise

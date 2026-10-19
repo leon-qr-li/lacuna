@@ -14,11 +14,20 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
   narrow server tokens), `deploy/host/*` (bootstrap, updater, backup, metadata block), `deploy/ci.py`,
   workflows Provision / Deploy / Backup check, runbook `deploy/README.md`. Tests: `tests/test_provision.py`,
   `tests/test_deploy_host.py` (fake docker).
-- Next: first Provision run once Leon's secrets are in; chunked upload (Cloudflare's 100 MB request limit);
-  moving Leon's workspace to the cloud.
-- Waiting on Leon: DigitalOcean account + token, Cloudflare Zero Trust team + R2 + API token, six GitHub
-  secrets (DIGITALOCEAN_TOKEN, CLOUDFLARE_API_TOKEN, ACCESS_EMAILS, BACKUP_PASSWORD, ANTHROPIC_API_KEY,
-  RESEND_API_KEY). Asked 2026-10-19 02:4xZ.
+- PR #121: cloud 设置 page (no manual update, no key field, no 这台电脑); Provision picks an available
+  4 vCPU / 8 GB size (sfo3 refused `s-4vcpu-8gb`, server runs `s-4vcpu-8gb-intel`); `cloud.access_email()` /
+  `cloud.owner_email()` (`LACUNA_OWNER_EMAIL` = first ACCESS_EMAILS entry) so the owner's first sign-up needs
+  no setup code (the server has no shell; accounts thread #123 uses it).
+- PR #124: container registry on the basic plan ($5/month; starter's 500 MB is smaller than the image).
+- LIVE 2026-10-19 04:07Z: https://lacunastudio.app, deployed by the Deploy workflow (wait-live passed).
+  Leon signs in first (Access email code → password → TOTP → recovery codes). Only Leon is on the invite list.
+- Big files in pieces: `lacuna_app/upload_parts.py` + `routes/upload_parts.py`; the browser sends files over
+  48 MB as 32 MB pieces (`web/src/features/upload-parts/pieces.ts`), then the import-track / library upload
+  endpoint takes `part=<id>`. Tests: `tests/app/test_upload_parts.py`.
+- Next: move Leon's workspace to the cloud (after he has signed in), then retire the desktop app; invite
+  others only when Leon asks.
+- Gotcha: Deploy and Provision share the concurrency group `deploy`; a Deploy waiting for a server that
+  doesn't exist yet blocks Provision until it is cancelled.
 
 ## Agreed with 「账号与权限」
 They own auth.py / routes/auth.py, invites, 2FA, roles, per-user data. They set `secure=True` on the session
