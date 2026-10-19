@@ -31,8 +31,19 @@ Thread「上云部署」. Decision: `docs/decisions/2026-10-19-cloud-deploy.md`.
   Finish checks file count + bytes, rewrites the desktop's absolute paths in JSON (`C:\Projects\LACUNA_Workspace\…`)
   to the server root, moves everything in, restarts (exit 76). Tests: `tests/app/test_migrate.py`,
   `web/e2e/migrate.spec.ts`.
-- Next: Leon runs the move, then retire the desktop app; staging site (preview.lacunastudio.app); invite
-  others only when Leon asks.
+- Staging (decision `docs/decisions/2026-10-19-staging-site.md`): preview.lacunastudio.app, second container
+  on the same server, data `/data/preview` re-copied from the real workspace for each new version; PR label
+  `staging` + workflow **Staging**. Needs one Provision `recreate` to reach the server (host scripts and
+  env files only arrive with cloud-init). Tests: `tests/test_provision.py`, `tests/test_deploy_host.py`,
+  `tests/app/test_staging.py`, `web/e2e/staging.spec.ts`.
+- Staging live 2026-10-19 06:57Z (Provision apply + recreate; Deploy run 11 passed wait-live on the new
+  server). Release flow (Leon 06:55Z): thread deploys its PR to staging, Leon says 通过 in chat, the thread
+  merges = production. Leon presses no buttons.
+- Migration: Leon uploads once via 设置 →「从电脑搬过来」 (07:03Z; he chose this over a temporary upload
+  credential for his PC, which the security check would only allow with his explicit consent). Workspace
+  5.1 GB / 144 files (PULSE-013 生化危机 ≈ 590 MB incl. exports). After it is done: remove the migration
+  feature (Leon: everything cloud-only from then on), then retire the desktop app.
+- Never ask Leon before moving real data to the cloud (Leon 06:58Z).
 - Gotcha: Deploy and Provision share the concurrency group `deploy`; a Deploy waiting for a server that
   doesn't exist yet blocks Provision until it is cancelled.
 

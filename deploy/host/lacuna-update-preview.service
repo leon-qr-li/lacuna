@@ -1,0 +1,19 @@
+[Unit]
+Description=Deploy the newest LACUNA staging image (preview.<domain>)
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Nice=5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+Environment=LACUNA_NAME=lacuna-preview
+Environment=LACUNA_IMAGE_FILE=/etc/lacuna/preview-image
+Environment=LACUNA_ENV_FILE=/etc/lacuna/preview.env
+Environment=LACUNA_DATA=/data/preview
+Environment=LACUNA_STATE_DIR=/var/lib/lacuna/preview
+Environment=LACUNA_SEED_FROM=/data/workspace
+# staging gives way to the real site: half the CPU, less memory, and the first to go if memory runs out
+Environment="LACUNA_LIMITS=--memory 3g --cpus 2 --oom-score-adj 500 --pids-limit 512"
+ExecStart=/usr/local/bin/lacuna-update

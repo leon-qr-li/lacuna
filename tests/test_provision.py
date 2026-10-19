@@ -49,11 +49,13 @@ class FakeAPI:
             self.tunnels.append(t)
             return ok(t)
         if p.endswith("/configurations"):
+            self.ingress = body["config"]["ingress"]
             return ok({})
         if p.endswith("/token"):
             return ok("tunnel-token-secret")
         if p.endswith("/dns_records") and method == "GET":
-            return ok(self.dns)
+            name = path.split("name=", 1)[1] if "name=" in path else None
+            return ok([r for r in self.dns if name is None or r["name"] == name])
         if p.endswith("/dns_records"):
             self.dns.append(body | {"id": self.id()})
             return ok(body)
@@ -64,7 +66,8 @@ class FakeAPI:
             if p.endswith(f"/access/{name}"):
                 if method == "GET":
                     return ok(coll)
-                item = body | {"id": self.id(), "aud": "aud-xyz"}
+                n = self.id()
+                item = body | {"id": n, "aud": "aud-xyz" if name != "apps" or not self.apps else f"aud-{n}"}
                 coll.append(item)
                 return ok(item)
             if re.search(f"/access/{name}/[^/]+$", p):
@@ -182,11 +185,12 @@ def test_plan_changes_nothing(api):
 def test_apply_builds_everything_once(api, capsys):
     a, run = api
     run("apply")
-    assert len(a.tunnels) == 1 and len(a.dns) == 1 and a.dns[0]["proxied"] is True
-    assert a.dns[0]["content"] == f"{a.tunnels[0]['id']}.cfargotunnel.com"
+    assert len(a.tunnels) == 1 and len(a.dns) == 2 and all(r["proxied"] for r in a.dns)
+    assert {r["content"] for r in a.dns} == {f"{a.tunnels[0]['id']}.cfargotunnel.com"}
     assert [i["type"] for i in a.idps] == ["onetimepin"]
     assert [r["email"]["email"] for r in a.groups[0]["include"]] == ["leon@example.com", "pei@example.com"]
     assert a.apps[0]["domain"] == provision.DOMAIN and len(a.apps[0]["policies"]) == 2
+    assert a.apps[1]["domain"] == provision.PREVIEW_DOMAIN and a.apps[1]["policies"] == a.apps[0]["policies"]
     assert a.buckets == [provision.BUCKET] and a.registry and len(a.volumes) == 1
     assert a.firewalls[0]["inbound_rules"] == []
     assert len(a.droplets) == 1
@@ -209,6 +213,55 @@ def test_apply_builds_everything_once(api, capsys):
     creates = [w for w in a.writes if w[0] in ("POST", "DELETE")]
     assert creates == [], creates             # second run: only idempotent PUTs, same server
     assert len(a.droplets) == 1 and before
+
+
+def test_staging_site_has_its_own_address_door_and_data(api):
+    """decision staging-site: same server, same invite list, its own Access audience, no Access token"""
+    a, run = api
+    run("apply")
+    assert {r["name"] for r in a.dns} == {provision.DOMAIN, provision.PREVIEW_DOMAIN}
+    routes = {r.get("hostname"): r["service"] for r in a.ingress}
+    assert routes[provision.DOMAIN] == "http://lacuna:8765"
+    assert routes[provision.PREVIEW_DOMAIN] == "http://lacuna-preview:8765"
+    assert routes[None] == "http_status:404"
+    files = user_data(a)
+    real, staging = files["/etc/lacuna/lacuna.env"], files["/etc/lacuna/preview.env"]
+    env = dict(line.split("=", 1) for line in staging.splitlines())
+    assert env["CF_ACCESS_AUD"] == a.apps[1]["aud"] != a.apps[0]["aud"]
+    assert env["LACUNA_PUBLIC_URL"] == f"https://{provision.PREVIEW_DOMAIN}" and env["LACUNA_STAGING"] == "1"
+    assert "CF_ACCESS_API_TOKEN" not in env and "CF_ACCESS_API_TOKEN=" in real and "LACUNA_STAGING" not in real
+    assert files["/etc/lacuna/preview-image"].strip().endswith("/lacuna:preview")
+    assert "/etc/systemd/system/lacuna-update-preview.timer" in files
+    unit = files["/etc/systemd/system/lacuna-update-preview.service"]
+    assert "LACUNA_DATA=/data/preview" in unit and "LACUNA_SEED_FROM=/data/workspace" in unit
+    assert "--exclude /data/preview" in files["/usr/local/bin/lacuna-backup"]
+
+
+def test_registry_gc_keeps_the_site_and_staging_images(monkeypatch):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "deploy"))
+    import ci
+    sys.path.pop(0)
+    deleted = []
+
+    def doh(method, path, body=None):
+        p = path.split("?")[0]
+        if p == "/v2/registry":
+            return 200, {"registry": {"name": "reg"}}
+        if p == "/v2/registry/subscription":
+            return 200, {"subscription": {"tier": {"slug": "basic"}}}
+        if p.endswith("/tags") and method == "GET":
+            tags = ["main", "preview", "s5", "s4", "s3", "s2", "s1"]
+            return 200, {"tags": [{"tag": t, "updated_at": f"2026-10-{19 - i:02d}"} for i, t in enumerate(tags)]}
+        if "/tags/" in p:
+            deleted.append(p.rsplit("/", 1)[1])
+            return 204, {}
+        if p.endswith("/garbage-collection"):
+            return 201, {}
+        raise AssertionError(path)
+
+    monkeypatch.setattr(ci, "do", lambda: provision.DigitalOcean(FakeHttp(doh)))
+    ci.registry_gc()
+    assert deleted == ["s2", "s1"]          # main, preview and the three newest builds stay
 
 
 def test_apply_keeps_people_invited_in_the_app(api):
@@ -263,8 +316,13 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
     seen = []
     monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append(h), next(answers))[1])
     monkeypatch.setattr(ci.time, "sleep", lambda s: None)
+    urls = []
+    monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append(h), urls.append(url), next(answers))[2])
     ci.wait_live("abc")
     assert seen[0] == {"CF-Access-Client-Id": "cid", "CF-Access-Client-Secret": "csec"}
+    assert urls[-1] == f"https://{provision.DOMAIN}/api/health"
+    answers = iter([(200, {"version": "abc"})])
+    assert ci.main(["wait-live", "abc", "preview"]) == 0 and urls[-1] == f"https://{provision.PREVIEW_DOMAIN}/api/health"
     assert tokens == []                      # deleted afterwards
 
     monkeypatch.setattr(ci, "_get", lambda url, h: (200, {"version": "old"}))
