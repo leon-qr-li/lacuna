@@ -22,6 +22,7 @@ from lacuna_core.refine import snap_cut
 
 from .episode import APPLIED, ONE_TRACK, ConflictError, Episode, subtract, to_base, to_tl
 from .i18n import tr
+from .words import join_words
 
 CATEGORY = "manual"
 MIN_CUT_S = 0.05            # shorter selections are a click, not a cut
@@ -146,7 +147,7 @@ def _said(ep: Episode, en: frozenset[str], cuts, a_s: float, b_s: float, track: 
             if a_s <= (w.start + w.end) / 2 < b_s:
                 text.append(w.text)
                 speech += min(w.end, b_s) - max(w.start, a_s)
-    return "".join(text), round(max(speech, 0.0), 2)
+    return join_words(text), round(max(speech, 0.0), 2)
 
 
 def cut(ep: Episode, start: float, end: float, track: str | None = None) -> str:

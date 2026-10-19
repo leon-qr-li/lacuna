@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef } from "react";
 import type { Episode } from "../../api";
 import { api } from "../../api";
+import { needsSpace } from "../../words";
 import type { Player } from "../../usePlayer";
 import { t } from "../../i18n";
 import { manualApi, TEXT_S } from "./api";
@@ -14,6 +15,15 @@ const SHOW_S = 90; // ... this far, in steps of TEXT_S so it does not jump with 
 
 type W = { text: string; a: number; b: number; gone: string | null; key: string };
 type L = { speaker: string; start: number; words: W[] };
+
+/** Words as text: a space only between two Latin words (lacuna_app/words.py join_words). */
+const joinWords = (ws: string[]) => ws.reduce((s, w) => (s && needsSpace(s, w) ? `${s} ${w}` : s + w), "");
+
+/** " " before `w` in its line when it and the word before it are both Latin (English), else nothing. */
+const gap = (ws: W[], w: W) => {
+  const i = ws.indexOf(w);
+  return i > 0 && needsSpace(ws[i - 1].text, w.text) ? " " : null;
+};
 
 /** Group consecutive removed words of one edit, so a struck run is one click target. */
 function pieces(words: W[]): { gone: string | null; words: W[] }[] {
@@ -73,7 +83,7 @@ export function TranscriptEdit({
     const lo = Math.min(a.a, b.a);
     const hi = Math.max(a.b, b.b);
     const inside = audible.filter((w) => (w.a + w.b) / 2 >= lo && (w.a + w.b) / 2 < hi);
-    setSel({ a: lo, b: hi, from: "text", speakers: [...new Set(inside.map((w) => w.speaker))], text: inside.map((w) => w.text).join("") });
+    setSel({ a: lo, b: hi, from: "text", speakers: [...new Set(inside.map((w) => w.speaker))], text: joinWords(inside.map((w) => w.text)) });
   };
   const wordDown = (w: W) => (e: React.PointerEvent) => {
     if (e.button !== 0) return;
@@ -137,8 +147,9 @@ export function TranscriptEdit({
               <span className="ml-text">
                 {pieces(ln.words).map((p) =>
                   p.gone ? (
+                    <Fragment key={p.words[0].key}>
+                    {gap(ln.words, p.words[0])}
                     <s
-                      key={p.words[0].key}
                       className="ml-gone"
                       role="button"
                       tabIndex={0}
@@ -147,18 +158,21 @@ export function TranscriptEdit({
                       onKeyDown={(e) => e.key === "Enter" && restore(p.gone!)}
                       data-edit={p.gone}
                     >
-                      {p.words.map((w) => w.text).join("")}
+                      {joinWords(p.words.map((w) => w.text))}
                     </s>
+                    </Fragment>
                   ) : (
                     p.words.map((w) => (
+                      <Fragment key={w.key}>
+                      {gap(ln.words, w)}
                       <span
-                        key={w.key}
                         className={`ml-w ${picked(w) ? "is-sel" : ""} ${time >= w.a && time < w.b ? "is-now" : ""}`}
                         onPointerDown={wordDown(w)}
                         onPointerEnter={wordEnter(w)}
                       >
                         {w.text}
                       </span>
+                      </Fragment>
                     ))
                   ),
                 )}

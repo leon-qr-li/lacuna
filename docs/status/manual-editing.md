@@ -9,5 +9,5 @@ State: built on branch `claude/manual-editing-yx0i6o`, on staging for Leon's che
   shared selection); App.tsx only mounts them.
 - Learning: manual cuts are `added` decisions with kind `manual`; their candidate rule says "你自己手动补剪了".
 - Tests: `tests/app/test_manual.py`, `web/e2e/manual.spec.ts` (runs on the scopes server, its own state).
-- Not done (ideas, not asked): moving an existing cut's edges by dragging; English word spacing in the quoted
-  text waits for the English engine thread's `join_words` (PR #132).
+- English transcripts: words are spaced with `join_words` / `needsSpace` (from PR #132).
+- Not done (an idea, not asked): moving an existing cut's edges by dragging.
