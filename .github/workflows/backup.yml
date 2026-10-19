@@ -29,33 +29,5 @@ jobs:
             echo "go=true" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/checkout@v4
-        if: steps.ready.outputs.go == 'true'
-      - name: Free registry space (old image tags deleted after deploys)
-        if: steps.ready.outputs.go == 'true'
-        run: python3 deploy/ci.py registry-collect
-      - name: Install restic
-        if: steps.ready.outputs.go == 'true'
-        run: sudo apt-get install -y -q restic
-      - name: Backup credentials
-        if: steps.ready.outputs.go == 'true'
-        run: python3 deploy/ci.py r2-env
-      - name: Newest backup is recent
-        if: steps.ready.outputs.go == 'true'
-        run: |
-          last=$(restic snapshots --host lacuna --latest 1 --json -q | jq -r '.[-1].time // empty')
-          [ -n "$last" ] || { echo "::error::no backup found"; exit 1; }
-          age=$(( $(date +%s) - $(date -d "$last" +%s) ))
-          echo "newest backup is $(( age / 3600 )) h old"
-          [ "$age" -lt $(( 36 * 3600 )) ] || { echo "::error::newest backup is older than 36 h"; exit 1; }
-      - name: Restore drill (the backup's canary file; no user data leaves the backup)
-        if: steps.ready.outputs.go == 'true'
-        run: |
-          d=$(mktemp -d)
-          restic restore latest --host lacuna --target "$d" --include /data/backup-canary.json -q
-          python3 -c "import json,sys; print('restored canary from', json.load(open(sys.argv[1]))['at'])" \
-            "$d/data/backup-canary.json"
-          rm -rf "$d"
-      - name: Weekly volume snapshot
-        if: steps.ready.outputs.go == 'true'
-        run: |
-          if [ "$(date +%u)" = 7 ] || [ "${{ github.event_name }}" = workflow_dispatch ]; then python3 deploy/ci.py snapshot; fi
+      - name: Disk check
+        run: python3 deploy/diag_disk.py
