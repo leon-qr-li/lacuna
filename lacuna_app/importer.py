@@ -14,6 +14,7 @@ the tracks, features 4 %, AI first cut 20 %, building the episode 4 %.
 """
 from __future__ import annotations
 
+import contextvars
 import json
 import threading
 import time
@@ -245,7 +246,9 @@ class Importer:
         if wait:
             self._run(job)
         else:
-            threading.Thread(target=self._run, args=(job,), name=f"import-{job['id']}", daemon=True).start()
+            # the worker keeps the request's context: whose learned rules and 剪辑力度 apply (habits.py)
+            run = contextvars.copy_context().run
+            threading.Thread(target=run, args=(self._run, job), name=f"import-{job['id']}", daemon=True).start()
         return dict(job)
 
     # ------------------------------------------------------------------ the job

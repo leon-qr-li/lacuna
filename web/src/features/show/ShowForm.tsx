@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { t } from "../../i18n";
 import { BusyLabel } from "../loading/Loading";
-import { LANGUAGE_LABELS, LANGUAGES, setShow, showApi, type CutLevel, type Host, type HostColor, type Language, type Show } from "./api";
+import { LANGUAGE_LABELS, LANGUAGES, setShow, showApi, type CutAdjust, type Host, type HostColor, type Language, type Show } from "./api";
 
 const COLOR_LABELS: Record<HostColor, string> = {
   blue: t("蓝"),
@@ -11,17 +11,18 @@ const COLOR_LABELS: Record<HostColor, string> = {
   green: t("绿"),
   pink: t("粉"),
 };
-const LEVEL_LABELS: Record<CutLevel, string> = {
-  gentle: t("轻剪：多保留原话"),
-  normal: t("正常"),
-  firm: t("狠剪：啰嗦和跑题多删"),
+const ADJUST_LABELS: Record<CutAdjust, string> = {
+  more: t("比我平时更狠"),
+  same: t("和我平时一样"),
+  less: t("比我平时更松"),
 };
+const ADJUSTS: CutAdjust[] = ["more", "same", "less"];
 
 const newHost = (s: Show, hosts: Host[]): Host => ({
   tag: "",
   name: "",
   color: s.colors.find((c) => !hosts.some((h) => h.color === c)) ?? s.colors[0],
-  cut_level: "normal",
+  cut_adjust: "same",
   style: "",
 });
 
@@ -147,13 +148,16 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
                   <>
                     <label className="row gap8 wrap">
                       <span className="small muted">{t("剪辑力度")}</span>
-                      <select value={h.cut_level} onChange={(e) => edit(i, { cut_level: e.target.value as CutLevel })}>
-                        {show.cut_levels.map((l) => (
+                      <select value={h.cut_adjust} onChange={(e) => edit(i, { cut_adjust: e.target.value as CutAdjust })} data-testid="host-adjust">
+                        {ADJUSTS.map((l) => (
                           <option key={l} value={l}>
-                            {LEVEL_LABELS[l]}
+                            {ADJUST_LABELS[l]}
                           </option>
                         ))}
                       </select>
+                      <a className="small" href="#/settings">
+                        {t("我平时的剪辑力度")}
+                      </a>
                     </label>
                     <textarea
                       value={h.style}

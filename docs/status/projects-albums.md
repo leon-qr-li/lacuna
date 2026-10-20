@@ -20,5 +20,12 @@ Decision `projects-albums`. Thread 节目与系列设计.
     two or more projects), new project dialog, #/project settings tabs (基本信息 / 主持人 / 片头片尾 / 发布 /
     协作者), #/invite (邀请协作 top-bar link for managers). 节目 link gone; #/show redirects. 工作区 → 项目 in UI.
 
+- Step 3 — habits follow the editor (decision `habits-follow-the-editor`): built on `local/projects-step2`.
+  - Server: `lacuna_app/habits.py` (person's home, level, host adjust), `routes/habits.py` (`/api/habits`);
+    show hosts keep `cut_adjust`; `learning.Learning.path` = the person's home; dispatcher sets `habits.HOME`;
+    `routes/spaces.habits_moved` copies old approvals once at the first request.
+  - Web: `web/src/features/habits/` (设置 → 剪辑习惯 card); host select 比我平时更狠 / 一样 / 更松.
+  - Tests: `tests/app/test_habits.py`, `web/e2e/habits.spec.ts`.
+
 ## Next
-- Step 3: learned rules + 剪辑力度 global across projects.
+- #151 (step 1) on staging for Leon's 通过; then one PR for steps 2 + 3.

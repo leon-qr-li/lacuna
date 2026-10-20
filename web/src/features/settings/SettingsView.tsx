@@ -5,6 +5,7 @@ import { navCurrent } from "../registry";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { AccountCard } from "../auth/AccountCard";
 import { SpacesCard } from "../spaces/SpacesCard";
+import { HabitsCard } from "../habits/HabitsCard";
 import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 
@@ -70,6 +71,7 @@ export function SettingsView() {
       {err && <p className="error">{err}</p>}
 
       <ThemeSetting />
+      <HabitsCard />
 
       <section className="card" aria-label={t("版本")}>
         <div className="card-head">

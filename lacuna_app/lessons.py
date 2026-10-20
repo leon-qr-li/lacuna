@@ -18,6 +18,7 @@ Storage: ``<workspace>/learning/lessons/<episode>.json`` (atomic write + .bak), 
 """
 from __future__ import annotations
 
+import contextvars
 import hashlib
 import json
 import re
@@ -374,7 +375,8 @@ class Lessons:
         with self.lock:
             if ep.id not in self.running and not ep.meta.get("demo"):
                 self.running.add(ep.id)
-                threading.Thread(target=self._run, args=(ep,), name=f"lessons-{ep.id}", daemon=True).start()
+                run = contextvars.copy_context().run      # whose rules (habits.py)
+                threading.Thread(target=run, args=(self._run, ep), name=f"lessons-{ep.id}", daemon=True).start()
         return self.view(ep)
 
     def _run(self, ep) -> None:

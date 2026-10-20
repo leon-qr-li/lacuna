@@ -21,6 +21,7 @@ import copy
 import string
 from pathlib import Path
 
+from . import habits
 from .i18n import tr
 from .store import atomic_write_json, read_json
 
@@ -29,7 +30,7 @@ VERSION = 1
 MAX_HOSTS = 6
 # colour names, each a light + dark pair in web/src/features/show/show.css (WCAG AA checked there)
 COLORS = ("blue", "purple", "teal", "amber", "green", "pink")
-CUT_LEVELS = ("gentle", "normal", "firm")
+CUT_LEVELS = habits.LEVELS
 LANGUAGES = ("zh", "en")         # what the hosts speak: picks the speech recognisers and the editing brief
 # letters for new hosts' tags; I/O look like digits
 _TAGS = [c for c in string.ascii_uppercase if c not in "IOLP"]
@@ -43,9 +44,9 @@ LEGACY: dict = {
     "about": "两个朋友的电影闲聊",  # i18n-ignore
     "language": "zh",
     "hosts": [
-        {"tag": "L", "name": "Leon", "color": "blue", "cut_level": "firm",
+        {"tag": "L", "name": "Leon", "color": "blue", "cut_adjust": "more",
          "style": "Cut his rambling hard: tangents, restarts, long build-ups."},
-        {"tag": "P", "name": "Pei", "color": "purple", "cut_level": "normal",
+        {"tag": "P", "name": "Pei", "color": "purple", "cut_adjust": "same",
          "style": "Somewhat strict with her clear stumbles, but gentler than with Leon; keep some of her tics."},
     ],
     "footer": "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*",  # i18n-ignore
@@ -142,8 +143,12 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
                 and (before is None or tag in old_tags)):
             tag = ""
         color = h.get("color") if h.get("color") in COLORS else COLORS[len(hosts) % len(COLORS)]
-        level = h.get("cut_level") if h.get("cut_level") in CUT_LEVELS else "normal"
-        hosts.append({"tag": tag, "name": name, "color": color, "cut_level": level,
+        # 更狠 / 一样 / 更松 against the editor's own 剪辑力度 (habits.py); a profile saved before that kept
+        # an absolute level per host, read as its step from "normal"
+        adjust = h.get("cut_adjust")
+        if adjust not in habits.ADJUSTS:
+            adjust = habits.ADJUST_OF_LEVEL.get(h.get("cut_level"), "same")
+        hosts.append({"tag": tag, "name": name, "color": color, "cut_adjust": adjust,
                       "style": str(h.get("style") or "").strip()[:500]})
         used_tags.add(tag)
         used_names.add(name.lower())
@@ -168,7 +173,8 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
 def view(profile: dict) -> dict:
     """What the interface gets (GET /api/show)."""
     return profile | {"needs_setup": not profile.get("setup_done"), "colors": list(COLORS),
-                      "cut_levels": list(CUT_LEVELS), "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES)}
+                      "cut_levels": list(CUT_LEVELS), "cut_adjusts": list(habits.ADJUSTS), "my_level": habits.level(),
+                      "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES)}
 
 
 def tracks(profile: dict) -> list[tuple[str, str]]:
@@ -197,6 +203,16 @@ LEVEL_EN = {
 }
 
 
+def legacy_level_note() -> str:
+    """Leon's show keeps its tuned prompts word for word; an editor whose 剪辑力度 isn't the default gets
+    one line on top ("" at the default, so nothing changes for Leon until he moves it)."""
+    lv = habits.level()
+    if lv == "normal":
+        return ""
+    return ("EDITOR'S OVERALL CUT LEVEL (applies to both hosts, on top of the per-host guidance): "
+            + ("lighter than usual: " if lv == "gentle" else "heavier than usual: ") + LEVEL_EN[lv] + ".")
+
+
 def is_legacy(profile: dict | None) -> bool:
     return profile is None or bool(profile.get("legacy"))
 
@@ -216,10 +232,11 @@ def describe_en(profile: dict) -> str:
 
 
 def style_lines(profile: dict) -> str:
-    """One line per host: how strict to be, plus the show's own notes for them."""
+    """One line per host: how strict to be (the editor's level with this host's adjustment), plus the
+    show's own notes for them."""
     out = []
     for h in profile["hosts"]:
-        line = f"- {h['name']} (track {h['tag']}): {LEVEL_EN[h['cut_level']]}."
+        line = f"- {h['name']} (track {h['tag']}): {LEVEL_EN[habits.host_level(h.get('cut_adjust', 'same'))]}."
         if h.get("style"):
             line += f" {h['style']}"
         out.append(line)

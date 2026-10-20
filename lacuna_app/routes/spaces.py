@@ -15,16 +15,18 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from .. import cloud
+from .. import cloud, habits
 from ..appinfo import current_version
 from ..auth import COOKIE, Auth, AuthError
 from ..i18n import tr
+from ..learning import LEARN_DIR, RULES_FILE
 from ..spaces import MAIN, SPACE_RANK, Spaces
+from ..store import atomic_write_json, read_json
 from .auth import _cookie
 
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
-GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health")
+GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
@@ -46,11 +48,25 @@ def _cookies(scope) -> SimpleCookie:
 class _Dispatch:
     def __init__(self, app, auth: Auth, spaces: Spaces, child):
         self.app, self.auth, self.spaces, self.child = app, auth, spaces, child
+        self.moved = False
 
     async def __call__(self, scope, receive, send):
         path = scope.get("path", "")
-        if scope["type"] != "http" or not path.startswith("/api/") or path.startswith(GLOBAL) \
-                or not self.auth.has_accounts():
+        if scope["type"] != "http" or not path.startswith("/api/"):
+            return await self.app(scope, receive, send)
+        if not self.auth.has_accounts():
+            # no accounts (a fresh or desktop install): habits and approved rules live in the folder itself
+            token = habits.HOME.set(self.spaces.root)
+            try:
+                return await self.app(scope, receive, send)
+            finally:
+                habits.HOME.reset(token)
+        if not self.moved:
+            # at the first request, not at registration: start-up jobs registered after this module (such
+            # as stutter_rule_once) may still approve rules into the project's own file first
+            habits_moved(self.spaces)
+            self.moved = True
+        if path.startswith(GLOBAL):
             return await self.app(scope, receive, send)
         c = _cookies(scope)
         email = self.auth.who(c[COOKIE].value if COOKIE in c else None)
@@ -69,9 +85,48 @@ class _Dispatch:
             return await deny(tr("你在这个项目里只能试听和查看，不能修改。"))
         if role != "admin" and method == "DELETE" and FOR_GOOD.match(path):
             return await deny(tr("只有项目管理员能彻底删除剧集。"))
-        if sid == MAIN:
-            return await self.app(scope, receive, send)
-        return await self.child(sid)(scope, receive, send)
+        # whose learned rules and 剪辑力度 apply: the signed-in person's own, in every project (habits.py)
+        token = habits.HOME.set(habits.home_for(self.spaces.root, email))
+        try:
+            if sid == MAIN:
+                return await self.app(scope, receive, send)
+            return await self.child(sid)(scope, receive, send)
+        finally:
+            habits.HOME.reset(token)
+
+
+def habits_moved(spaces: Spaces) -> None:
+    """Once per project: the learned rules approved in it (learning/rules.json, from before rules followed
+    the editor) become its managers' own. A rule a manager already has stays as theirs; the project's file
+    is left in place."""
+    marker = spaces.root / "auth" / "habits_moved.json"
+    done = set(read_json(marker).get("spaces", [])) if marker.is_file() else set()
+    todo = [sid for sid in spaces.spaces if sid not in done]
+    if not todo:
+        return
+    for sid in todo:
+        src = spaces.path(sid) / LEARN_DIR / RULES_FILE
+        if src.is_file():
+            try:
+                old = read_json(src)
+            except (OSError, ValueError):
+                old = None
+            for email, role in (spaces.spaces[sid]["members"] or {}).items():
+                if role != "admin" or not isinstance(old, dict):
+                    continue
+                dst = habits.home_for(spaces.root, email) / LEARN_DIR / RULES_FILE
+                mine = read_json(dst) if dst.is_file() else {"schema": 1, "rules": {}}
+                mine.setdefault("rules", {})
+                for rid, st in (old.get("rules") or {}).items():
+                    mine["rules"].setdefault(rid, st)
+                eps = set(mine.get("accepted_as_is", [])) | set(old.get("accepted_as_is", []))
+                if eps:
+                    mine["accepted_as_is"] = sorted(eps)
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                atomic_write_json(dst, mine)
+        done.add(sid)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(marker, {"spaces": sorted(done)})
 
 
 class SwitchBody(BaseModel):
@@ -124,7 +179,9 @@ def register(app, ctx) -> None:
                 spaces.set_member(MAIN, email, "admin")
             else:
                 spaces.adopt([auth.users[email]])
+            habits_moved(spaces)
             return
+        habits_moved(spaces)          # an install that just got its first accounts
         sid = invite.get("space")
         if sid and sid != "new" and sid in spaces.spaces:
             spaces.set_member(sid, email, invite.get("space_role") or "editor")
