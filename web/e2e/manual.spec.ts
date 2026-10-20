@@ -102,11 +102,25 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("ml-tx").locator(`s.ml-gone[data-edit="${manualId}"]`)).toHaveCount(0);
   });
 
-  test("a click on a word jumps there", async ({ page }) => {
+  test("a click on one word selects just that word and jumps there; a second click drops it", async ({ page }) => {
     await open(page);
     const w = page.getByTestId("ml-tx").locator(".ml-w").nth(20);
+    const text = (await w.textContent()) ?? "";
+    await w.click();
+    await expect(page.getByTestId("ml-tx").locator(".ml-w.is-sel")).toHaveCount(1);
+    await expect(w).toHaveClass(/is-sel/);
+    await expect(page.getByTestId("ml-bar")).toContainText(`「${text}」`);
+    await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
     await w.click();
     await expect(page.getByTestId("ml-bar")).toHaveCount(0);
-    await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
+  });
+
+  test("a single selected word can be cut", async ({ page }) => {
+    await open(page);
+    const w = page.getByTestId("ml-tx").locator(".ml-w").nth(8);
+    await w.click();
+    await page.getByTestId("transcript-edit").getByTestId("ml-cut").click();
+    await expect(page.locator(".toast")).toContainText("已删掉");
+    await expect(page.getByTestId("ml-tx").locator("s.ml-gone[data-edit^='m']")).not.toHaveCount(0);
   });
 });

@@ -9,7 +9,8 @@ Leon wants to cut by hand ("一定要"), without losing anything the AI does. On
 - **剪辑时间线** (was the two-track lane view): each host's real waveform (rendered on demand per 10 s tile,
   `lacuna_app/manual.py wave`), zoom 10 / 30 / 60 s, drag to select a stretch, a click still jumps there.
 - **文字稿剪辑** (new card under the player, Leon's pick "版本 2"): the transcript around the playhead, one line
-  per host run. Drag across words to select them; words already cut (AI, chat or by hand) stay visible, struck
+  per host run. Drag across words to select them, or click one word to select just it (a single 嗯 or a
+  stutter; it also jumps there, a second click drops it — Leon 2026-10-20); words already cut (AI, chat or by hand) stay visible, struck
   through, and a click restores that edit.
 - The selection bar: 删掉这段 (all tracks, the timeline closes up; key Del), 只静音 <host> (that host only,
   filled with their room tone, the timeline does not move), 听选中, 取消 (Esc).
