@@ -36,45 +36,105 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
   });
 
-  test("Ctrl + wheel over the timeline zooms it, not the page; 暂停时回退 5 秒 starts unticked", async ({ page }) => {
+  const view = async (page: Page) => {
+    const el = page.getByTestId("edit-lanes");
+    return { start: Number(await el.getAttribute("data-start")), span: Number(await el.getAttribute("data-span")) };
+  };
+
+  test("Ctrl + wheel zooms the timeline smoothly around the pointer, not the page; 暂停时回退 5 秒 starts unticked", async ({ page }) => {
     await page.addInitScript(() => localStorage.removeItem("lacuna.rewindOnPause"));
     await open(page);
     await expect(page.getByLabel("暂停时回退 5 秒")).not.toBeChecked();
-    const zoom = page.getByTestId("edit-lanes").getByRole("group", { name: "缩放" });
-    await zoom.getByRole("button", { name: "30 秒" }).click();
+    await expect(page.getByTestId("edit-lanes").getByRole("button", { name: /秒$/ })).toHaveCount(0); // no zoom buttons
+    const before = await view(page);
     const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
     await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
     await page.keyboard.down("Control");
     await page.mouse.wheel(0, -100);
     await page.keyboard.up("Control");
-    await expect(zoom.getByRole("button", { name: "10 秒" })).toHaveAttribute("aria-pressed", "true");
-    await page.waitForTimeout(200);
-    await page.keyboard.down("Control");
-    await page.mouse.wheel(0, 100);
-    await page.keyboard.up("Control");
-    await expect(zoom.getByRole("button", { name: "30 秒" })).toHaveAttribute("aria-pressed", "true");
-    // the page itself must not zoom: the event is cancelled
+    await expect.poll(async () => (await view(page)).span).toBeLessThan(before.span);
+    const z1 = (await view(page)).span;
+    expect(z1).toBeGreaterThan(before.span * 0.6); // one notch is a small step, not a jump to the next preset
+    // the page itself never zooms: the event is cancelled
     const cancelled = await page.getByTestId("lane-Pei").evaluate((el) => {
       const ev = new WheelEvent("wheel", { deltaY: 100, ctrlKey: true, bubbles: true, cancelable: true });
       el.dispatchEvent(ev);
       return ev.defaultPrevented;
     });
     expect(cancelled).toBe(true);
-    // a plain wheel still scrolls the page as before
-    const plain = await page.getByTestId("lane-Pei").evaluate((el) => {
+    const outside = await page.locator("body").evaluate((el) => {
       const ev = new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true });
       el.dispatchEvent(ev);
       return ev.defaultPrevented;
     });
-    expect(plain).toBe(false);
+    expect(outside).toBe(false); // the wheel elsewhere still scrolls the page
+  });
+
+  test("a click on a lane moves the playhead but not the timeline; dragging the ruler pans it", async ({ page }) => {
+    await open(page);
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    const v0 = await view(page);
+    await page.getByTestId("lane-Pei").click({ position: { x: lane.width * 0.9, y: 20 } });
+    await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
+    await page.waitForTimeout(300);
+    expect(await view(page)).toEqual(v0); // not re-centred on the click
+    const ruler = (await page.getByTestId("ml-ruler").boundingBox())!;
+    await page.mouse.move(ruler.x + ruler.width * 0.6, ruler.y + ruler.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(ruler.x + ruler.width * 0.3, ruler.y + ruler.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => (await view(page)).start).toBeGreaterThan(v0.start);
+    await expect(page.getByTestId("ml-bar")).toHaveCount(0); // panning never selects
+  });
+
+  test("holding Space turns the lanes into a hand that pans; a Space tap still plays", async ({ page }) => {
+    await open(page);
+    await page.getByLabel("暂停时回退 5 秒").uncheck();
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    const v0 = await view(page);
+    await page.mouse.move(lane.x + lane.width * 0.3, lane.y + lane.height / 2);
+    await page.keyboard.down(" ");
+    await expect(page.getByTestId("edit-lanes")).toHaveClass(/is-hand/);
+    await page.mouse.down();
+    await page.mouse.move(lane.x + lane.width * 0.7, lane.y + lane.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await page.keyboard.up(" ");
+    await expect(page.getByTestId("edit-lanes")).not.toHaveClass(/is-hand/);
+    expect((await view(page)).start).toBeLessThan(v0.start); // dragged right: earlier audio comes into view
+    await expect(page.getByTestId("ml-bar")).toHaveCount(0);
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "播放"); // a pan is not a play
+    await page.keyboard.press(" ");
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "暂停");
+    await page.keyboard.press(" ");
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "播放");
+  });
+
+  test("playing past the right edge turns the timeline a page", async ({ page }) => {
+    await open(page);
+    await page.getByLabel("暂停时回退 5 秒").uncheck();
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 12; i++) await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    await page.getByTestId("lane-Leon").click({ position: { x: lane.width * 0.92, y: 20 } });
+    const v0 = await view(page);
+    await page.getByTestId("play").click();
+    await expect.poll(async () => (await view(page)).start, { timeout: 15_000 }).toBeGreaterThan(v0.start + v0.span * 0.5);
+    await page.getByTestId("play").click();
   });
 
   test("cut from both tracks, shows as 手动剪辑, undo brings it back", async ({ page }) => {
     await open(page);
     const before = await duration(page);
-    await page.getByRole("button", { name: "10 秒" }).click();
-    await expect(page.getByRole("button", { name: "10 秒" })).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("button", { name: "30 秒" }).click();
     await dragLane(page, "Leon", 0.55, 0.62);
     await page.getByTestId("ml-cut").click();
     await expect(page.locator(".toast")).toContainText("已删掉");

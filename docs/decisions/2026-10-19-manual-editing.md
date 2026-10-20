@@ -7,7 +7,10 @@
 Leon wants to cut by hand ("一定要"), without losing anything the AI does. On 整集试听:
 
 - **剪辑时间线** (was the two-track lane view): each host's real waveform (rendered on demand per 10 s tile,
-  `lacuna_app/manual.py wave`), zoom 10 / 30 / 60 s (also Ctrl + wheel over the card, which no longer zooms the page — Leon 2026-10-20), drag to select a stretch, a click still jumps there.
+  `lacuna_app/manual.py wave`), drag to select a stretch, a click moves the playhead there. Since Leon 2026-10-20 (his pick
+  "A + C"): no zoom buttons; Ctrl + wheel zooms smoothly (3 s – 10 min) around the pointer and never the page; the
+  window does NOT re-centre on a click; pan by dragging the time ruler, holding Space (or the middle button) and
+  dragging a lane, or the wheel; playback turns a page at the right edge, a jump elsewhere shows the new spot.
 - **文字稿剪辑** (new card under the player, Leon's pick "版本 2"): the transcript around the playhead, one line
   per host run. Drag across words to select them, or click one word to select just it (a single 嗯 or a
   stutter; it also jumps there, a second click drops it — Leon 2026-10-20); words already cut (AI, chat or by hand) stay visible, struck

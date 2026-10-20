@@ -2,9 +2,6 @@ import type { Dict } from "../../i18n";
 
 export const en: Dict = {
   "剪辑时间线": "Editing timeline",
-  "拖动选一段来剪 · 点一下跳到那里": "Drag to select a stretch · click to jump there",
-  "缩放": "Zoom",
-  "{n} 秒": "{n} s",
   "{s} 秒": "{s} s",
   "选中的这一段": "Selected stretch",
   "已选": "Selected",

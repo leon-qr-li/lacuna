@@ -18,5 +18,8 @@ for small follow-up features. Decision `manual-editing`.
 - One-word select: a click on a transcript word used to drop the selection and only seek, so a single 嗯 or a
   stutter could not be selected. Now a click selects that word and seeks; clicking it again drops it.
 - 「暂停时回退 5 秒」 starts unticked (`usePlayer.ts` readPref: only a stored "1" turns it on).
-- Ctrl + wheel over the 剪辑时间线 card steps the zoom 10 / 30 / 60 s and cancels the browser's page zoom
-  (non-passive wheel listener in `EditLanes.tsx`; steps at least 150 ms apart for trackpad pinch bursts).
+- 剪辑时间线 (Leon 03:42Z picked "A + C" from the mock-up https://claude.ai/artifact/9iKfWjEn5kwgo7ZizP2SYV):
+  zoom buttons and the hint line gone; Ctrl + wheel zooms smoothly around the pointer (span 3 s – 10 min,
+  `lacuna.manual.span`) and never the page; a click no longer re-centres the window; pan = drag the ruler
+  (`ml-ruler`), Space + drag / middle-drag on a lane, or the wheel; a Space tap without a drag still plays.
+  Playback turns a page at the right edge. All in `EditLanes.tsx` (non-passive wheel + capture-phase Space listeners).
