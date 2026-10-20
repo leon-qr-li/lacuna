@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Iterable
 
 from .words import join_words
-from . import show
+from . import habits, show
 from .review import REVIEW_CONFIDENCE, ReviewPolicy
 from .store import Workspace, atomic_write_json, check_id, read_json, now_iso as _now
 from .i18n import N_, lang, tr
@@ -498,10 +498,18 @@ def hand_edit_decisions(ep, removed: dict[str, list], ambiguous: dict[str, list]
 # ============================================================================ workspace store
 
 class Learning:
+    """`dir`: this project's evidence (decisions per episode). `path` (rules.json, which rules are approved)
+    is the signed-in editor's own, in their home (habits.py), so approved rules apply in every project;
+    without accounts it stays in the workspace."""
+
     def __init__(self, ws: Workspace):
         self.ws = ws
         self.dir = ws.root / LEARN_DIR
-        self.path = self.dir / RULES_FILE
+
+    @property
+    def path(self) -> Path:
+        home = habits.current()
+        return (home / LEARN_DIR if home is not None else self.dir) / RULES_FILE
 
     # ---- persistence
     def _state(self) -> dict:
@@ -510,8 +518,9 @@ class Learning:
         return read_json(self.path)
 
     def _save(self, st: dict) -> None:
-        self.dir.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(self.path, st)
+        path = self.path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_json(path, st)
 
     def save_decisions(self, episode_id: str, ds: list[Decision]) -> None:
         d = self.dir / "decisions"

@@ -247,10 +247,12 @@ test.describe.serial("manual editing", () => {
   test("a click on one word selects just that word and jumps there; a second click drops it", async ({ page }) => {
     await open(page);
     const w = page.getByTestId("ml-tx").locator(".ml-w").nth(20);
-    const text = (await w.textContent()) ?? "";
     await w.click();
-    await expect(page.getByTestId("ml-tx").locator(".ml-w.is-sel")).toHaveCount(1);
+    const sel = page.getByTestId("ml-tx").locator(".ml-w.is-sel");
+    await expect(sel).toHaveCount(1);
     await expect(w).toHaveClass(/is-sel/);
+    // read the word once it is selected: the transcript can re-render while the page settles (Windows CI)
+    const text = ((await sel.textContent()) ?? "").trim();
     await expect(page.getByTestId("ml-bar")).toContainText(`「${text}」`);
     await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
     await w.click();

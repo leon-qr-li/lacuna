@@ -5,8 +5,31 @@ export type SpaceRole = "admin" | "editor" | "viewer";
 
 export interface MySpace {
   id: string;
+  /** the project's name (its show name once set) */
   name: string;
   role: SpaceRole;
+  /** who brought you in (null: you made it, or it was set up for you) */
+  by?: string | null;
+  episodes?: number;
+  albums?: number;
+  people?: number;
+  /** last change, seconds since 1970 */
+  updated?: number;
+}
+
+/** 邀请协作: a project's collaborators and the invites waiting for them */
+export interface ProjectPeople {
+  id: string;
+  name: string;
+  members: { email: string; role: SpaceRole }[];
+  invites: { id: string; email: string; role: SpaceRole; exp: number }[];
+  /** only LACUNA admins may invite someone without an account */
+  can_invite_new: boolean;
+  joined?: string;
+  invited?: string;
+  link?: string;
+  mailed?: boolean;
+  mail_error?: string | null;
 }
 
 export interface SpaceInfo {
@@ -30,8 +53,14 @@ export const spacesApi = {
     return r.ok ? ((await r.json()) as Spaces) : null;
   },
   switchTo: (id: string) => req<Spaces>("POST", "/api/spaces/switch", { id }),
-  create: (name: string) => req<Spaces>("POST", "/api/spaces", { name }),
+  /** a new project of your own; you are moved into it */
+  create: (name: string) => req<Spaces & { created: string }>("POST", "/api/spaces", { name }),
   rename: (id: string, name: string) => req<Spaces>("POST", `/api/spaces/${encodeURIComponent(id)}`, { name }),
   member: (id: string, email: string, role: SpaceRole | null) =>
     req<Spaces>("POST", `/api/spaces/${encodeURIComponent(id)}/members`, { email, role }),
+  people: (id: string) => req<ProjectPeople>("GET", `/api/spaces/${encodeURIComponent(id)}/people`),
+  invite: (id: string, email: string, role: SpaceRole) =>
+    req<ProjectPeople>("POST", `/api/spaces/${encodeURIComponent(id)}/invite`, { email, role }),
+  withdraw: (id: string, invite: string) =>
+    req<ProjectPeople>("DELETE", `/api/spaces/${encodeURIComponent(id)}/invites/${encodeURIComponent(invite)}`),
 };

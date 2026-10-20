@@ -1,8 +1,10 @@
 import { expect, test, type Browser } from "@playwright/test";
 
-// workspaces on the default server: an invited beta user gets an empty private workspace; Leon adds them
-// to his workspace as a listener, they switch with the top-bar menu and can listen but not change.
+// projects (decision projects-albums) on the default server: an invited beta user starts in an empty
+// project of their own; Leon brings them into his project as a listener with 邀请协作; with two projects
+// they land on 所有项目, open Leon's, and can listen but not change. They can also start a project.
 const PW = "correct horse battery";
+const SHOTS = process.env.PROJECT_SHOTS; // folder for review screenshots (optional)
 
 test.describe.configure({ mode: "serial" });
 test.beforeAll(async ({ request }) => {
@@ -23,8 +25,7 @@ async function browserAs(browser: Browser, email: string) {
   return page;
 }
 
-test("beta user sees only their own workspace until added to Leon's", async ({ browser }) => {
-  // Leon's account (the first one) and an invite with a workspace of their own (the default)
+test("beta user sees only their own project until invited to Leon's", async ({ browser }) => {
   const leon = await browser.newContext();
   const lp = await leon.newPage();
   expect((await lp.request.post("/api/auth/register", { data: { email: "leon@example.com", password: PW } })).ok()).toBeTruthy();
@@ -34,27 +35,49 @@ test("beta user sees only their own workspace until added to Leon's", async ({ b
 
   const beta = await browserAs(browser, "beta@example.com");
   await expect(beta.getByText("合成测试集")).toHaveCount(0); // Leon's episode is not theirs
-  await expect(beta.getByTestId("space-switch")).toHaveCount(0); // one workspace: no menu
+  await expect(beta.getByTestId("show-setup")).toContainText("建你的第一个项目");
+  await expect(beta.getByTestId("invite-link")).toBeVisible(); // they manage their own project
 
-  // Leon adds them to his workspace as a listener, in 设置 → 工作区
-  await lp.goto("/#/settings");
-  const card = lp.getByRole("region", { name: "工作区" });
-  await expect(card.getByTestId("space-current")).toContainText("（管理）");
-  const main = card.getByTestId("space-main");
-  await main.getByLabel("加成员的邮箱").fill("beta@example.com");
-  await main.getByLabel("角色", { exact: true }).selectOption({ label: "只听" });
-  await main.getByRole("button", { name: "加进来" }).click();
-  await expect(main.getByText("beta@example.com")).toBeVisible();
+  // Leon invites them from the top bar's 邀请协作, as a listener; they have an account, so they join at once
+  await lp.goto("/#/");
+  await lp.getByTestId("invite-link").click();
+  await expect(lp.getByRole("heading", { name: /邀请协作「洛城二三事」/ })).toBeVisible();
+  await lp.getByTestId("invite-email").fill("beta@example.com");
+  await lp.getByTestId("invite-role").selectOption({ label: "只听" });
+  await lp.getByTestId("invite-send").click();
+  await expect(lp.getByText("beta@example.com 已经加进来了")).toBeVisible();
+  const row = lp.getByTestId("collaborator").filter({ hasText: "beta@example.com" });
+  await expect(row.getByRole("combobox")).toHaveValue("viewer");
+  // someone without an account: Leon (LACUNA's owner) sends a sign-up invite that waits as 待接受
+  await lp.getByTestId("invite-email").fill("pei@example.com");
+  await lp.getByTestId("invite-role").selectOption({ label: "剪辑" });
+  await lp.getByTestId("invite-send").click();
+  const pending = lp.getByTestId("pending-invite").filter({ hasText: "pei@example.com" });
+  await expect(pending).toContainText("剪辑 · 待接受");
+  await pending.getByRole("button", { name: "撤回" }).click();
+  if (SHOTS) await lp.screenshot({ path: `${SHOTS}/invite.png`, fullPage: true });
+  await expect(lp.getByTestId("pending-invite")).toHaveCount(0);
 
-  // the beta user switches to it from the top bar and can listen, not change
-  await beta.reload();
-  const menu = beta.getByTestId("space-switch");
-  await expect(menu).toBeVisible();
-  await menu.selectOption({ label: "leon" });
-  await expect(beta.getByText("合成测试集")).toBeVisible();
-  const r = await beta.request.post("/api/episodes/EP_TEST_合成/undo");
+  // with two projects the beta user lands on 所有项目 and opens Leon's
+  const fresh = await browserAs(browser, "beta@example.com");
+  await expect(fresh).toHaveURL(/#\/projects$/);
+  const card = fresh.getByTestId("project-card").filter({ hasText: "洛城二三事" });
+  await expect(card).toContainText("leon@example.com 邀请你 · 只听");
+  if (SHOTS) await fresh.screenshot({ path: `${SHOTS}/projects.png`, fullPage: true });
+  await card.click();
+  await expect(fresh.getByText("合成测试集")).toBeVisible();
+  await expect(fresh.getByTestId("project-menu")).toHaveText(/洛城二三事/);
+  await expect(fresh.getByTestId("invite-link")).toHaveCount(0); // not a manager here
+  const r = await fresh.request.post("/api/episodes/EP_TEST_合成/undo");
   expect(r.status()).toBe(403);
-  await beta.getByRole("link", { name: "设置" }).click();
-  await expect(beta.getByRole("region", { name: "工作区" }).getByTestId("space-current")).toContainText("（只听）");
+
+  // the project menu switches back, and starts a new project
+  await fresh.getByTestId("project-menu").click();
+  if (SHOTS) await fresh.screenshot({ path: `${SHOTS}/menu.png` });
+  await fresh.getByTestId("project-new").click();
+  await fresh.getByTestId("project-name").fill("片场夜谈");
+  await fresh.getByTestId("project-create").click();
+  await expect(fresh.getByTestId("project-menu")).toHaveText(/片场夜谈/);
+  await expect(fresh.getByTestId("show-setup")).toContainText("介绍一下「片场夜谈」");
   await leon.close();
 });

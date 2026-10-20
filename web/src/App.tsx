@@ -19,6 +19,7 @@ import { MusicListenToggle, useMusicListen } from "./features/library/useMusicLi
 import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
 import { Home } from "./features/episodes/Home";
+import { ProjectCrumb } from "./features/projects/ProjectMenu";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -88,6 +89,7 @@ function PageScreen({ path }: { path: string }) {
         <a className="brand" href="#/">
           LACUNA
         </a>
+        <ProjectCrumb />
         <span className="crumb-sep" aria-hidden="true">
           /
         </span>
@@ -201,6 +203,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         <a className="brand" href="#/">
           LACUNA
         </a>
+        <ProjectCrumb />
         <span className="crumb-sep" aria-hidden="true">
           /
         </span>

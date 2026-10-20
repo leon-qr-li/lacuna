@@ -371,8 +371,8 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
           ))}
         </select>
         {spaces.length > 0 && (
-          <select aria-label={t("加入哪个工作区")} value={space} onChange={(e) => setSpace(e.target.value)} data-testid="invite-space">
-            <option value="new">{t("给对方新建一个工作区")}</option>
+          <select aria-label={t("加入哪个项目")} value={space} onChange={(e) => setSpace(e.target.value)} data-testid="invite-space">
+            <option value="new">{t("给对方新建一个项目")}</option>
             {spaces.map((s) => (
               <option key={s.id} value={s.id}>
                 {t("加入「{name}」", { name: s.name })}
@@ -381,7 +381,7 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
           </select>
         )}
         {space !== "new" && (
-          <select aria-label={t("在工作区里的角色")} value={spaceRole} onChange={(e) => setSpaceRole(e.target.value as SpaceRole)}>
+          <select aria-label={t("在项目里的角色")} value={spaceRole} onChange={(e) => setSpaceRole(e.target.value as SpaceRole)}>
             {(["admin", "editor", "viewer"] as SpaceRole[]).map((r) => (
               <option key={r} value={r}>
                 {SPACE_ROLE[r]}

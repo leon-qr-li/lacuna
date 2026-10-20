@@ -11,7 +11,8 @@ class HostBody(BaseModel):
     tag: str | None = Field(None, max_length=2)
     name: str = Field("", max_length=80)
     color: str | None = Field(None, max_length=20)
-    cut_level: str | None = Field(None, max_length=20)
+    cut_level: str | None = Field(None, max_length=20)      # before per-editor levels; read as an adjust
+    cut_adjust: str | None = Field(None, max_length=10)     # 更狠 / 一样 / 更松 (habits.py)
     style: str = Field("", max_length=1000)
 
 
