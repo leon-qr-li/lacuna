@@ -107,6 +107,8 @@ class Importer:
         # English: listens again to short sounds without words (dropped um/uh); None = real recogniser
         # with the real ASR, nothing with a fake one (tests inject a fake: audio -> [(tag, a, b)] -> [text])
         self.hear_backend: Callable[[dict], Callable] | None = None
+        # proofreads the show's names in the recognised text (transcript_fix.py); None = the real one
+        self.term_fixer: Any = None
         self._lock = threading.Lock()
         self._usage_lock = threading.Lock()
         self._running: str | None = None
@@ -363,6 +365,7 @@ class Importer:
                 if tag not in audio16:
                     audio16[tag] = asr_mod.decode_16k(job["tracks"][tag]["path"])
             profile = show_mod.load(self.ws.root)
+            self._fix_terms(job, d, asr, hosts)
             hear = None
             if lang == "en":
                 if self.hear_backend is not None:
@@ -441,6 +444,25 @@ class Importer:
                              "skipped": sum(report.skipped.values()), "engine": engine}
         self._done_step(job, "episode")
 
+    def _fix_terms(self, job: dict, d: Path, asr: dict[str, dict], hosts: list[tuple[str, str]]) -> None:
+        """The show's names mis-heard by the recognisers, fixed in `asr` in place (transcript_fix.py).
+        The checked answer is kept in ``term_fixes.json`` so a resumed import asks only once."""
+        from . import transcript_fix as tf
+        p = d / "term_fixes.json"
+        lines = tf.lines_from_asr(asr, dict(hosts))
+        if p.is_file():
+            fixes = read_json(p).get("fixes", [])
+        else:
+            self._progress(job, "features", 0.0, tr("按项目设置校对专有名词"))
+            fixer = self.term_fixer if self.term_fixer is not None else tf.TranscriptFixer()
+            g = tf.glossary_for(self.ws.root, job.get("title") or "", [name for _, name in hosts])
+            fixes = fixer.propose(lines, g, on_usage=lambda u: self._log_usage(job["id"], u))
+            atomic_write_json(p, {"fixes": fixes, "terms": g.terms})
+        done = tf.apply(lines, fixes)
+        tf.write_back(asr, lines, done)
+        if done:
+            self._done_step(job, "terms", {"fixes": tf.summary(done)})
+
     def _media(self, job: dict, d: Path) -> dict[str, MediaRef]:
         """Raw tracks as MediaRefs (read in place); conformed to WAV only if they can't be."""
         refs: dict[str, MediaRef] = {}
@@ -490,7 +512,7 @@ class Importer:
             traceback.print_exc()
 
     def _log_usage(self, episode_id: str, usage: dict) -> None:
-        line = {"at": now(), "episode": episode_id, "kind": "first_cut", **usage}
+        line = {"at": now(), "episode": episode_id, "kind": "first_cut", **usage}     # usage may set its own kind
         try:
             with self._usage_lock, open(self.ws.root / "ai_usage.jsonl", "a", encoding="utf-8") as f:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")

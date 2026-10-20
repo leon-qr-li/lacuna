@@ -27,7 +27,7 @@ from .episode import APPLIED, ONE_TRACK, ConflictError, Episode, subtract, to_ba
 from .features import is_filler
 from .i18n import tr
 from .manual import _snap
-from .store import atomic_write_json, read_json
+from .store import read_json
 
 CATEGORY = "filler"
 PAD_S = 0.02            # a detected filler's edges come from 10 ms energy frames: a little either side ...
@@ -70,11 +70,7 @@ def backfill(ep: Episode) -> bool:
     except (OSError, ValueError):
         return False
     with ep.lock:
-        merged = merge(t, sounds, {tag: name for tag, name in hosts})
-        name = ep.meta.get("transcript") or "transcript.json"
-        atomic_write_json(ep.dir / name.split("/")[-1], merged)
-        ep.transcript = merged
-        ep._words_ix = None
+        ep.set_transcript(merge(t, sounds, {tag: name for tag, name in hosts}))
     return True
 
 
