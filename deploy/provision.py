@@ -4,6 +4,8 @@
     python deploy/provision.py apply       # create what is missing; never deletes data
     python deploy/provision.py recreate    # also replace the server (data volume kept): new host config, rotated keys
     python deploy/provision.py version-door  # only the public /api/version address (Cloudflare Access), patiently
+    python deploy/provision.py mail-plan     # the email sending domain in Resend + its DNS: show only
+    python deploy/provision.py mail-domain   # add the domain to Resend, its DNS records to Cloudflare, verify
 
 Run by .github/workflows/provision.yml with the repo's secrets in the environment:
 DIGITALOCEAN_TOKEN, CLOUDFLARE_API_TOKEN, ACCESS_EMAILS, BACKUP_PASSWORD, ANTHROPIC_API_KEY, RESEND_API_KEY.
@@ -473,6 +475,111 @@ class DigitalOcean:
         log("created the server; it finishes setting itself up in a few minutes")
 
 
+# ------------------------------------------------------------------------------------------ Resend (email)
+MAIL_COMMENT = "LACUNA email (deploy/provision.py mail-domain)"
+DMARC = "v=DMARC1; p=none;"
+
+
+class Resend:
+    """The sending domain in Resend (https://resend.com/docs/api-reference/domains), so invites and sign-in
+    codes reach any address instead of only the Resend sign-up email (test mode)."""
+
+    def __init__(self, http: Http, domain: str = DOMAIN):
+        self.http, self.domain = http, domain
+
+    def r(self, method: str, path: str, body: dict | None = None):
+        try:
+            return self.http(method, path, body)
+        except ProvisionError as e:
+            if "restricted_api_key" in str(e):
+                raise ProvisionError("the RESEND_API_KEY secret can only send email; adding a domain needs a "
+                                     "Full access key (resend.com/api-keys)") from e
+            raise
+
+    def find(self) -> dict | None:
+        out = self.r("GET", "/domains")
+        return next((d for d in out.get("data", []) if d.get("name") == self.domain), None)
+
+    def ensure(self, apply: bool) -> dict | None:
+        d = self.find()
+        if not d:
+            if not apply:
+                log(f"Resend domain {self.domain}: would be added")
+                return None
+            self.r("POST", "/domains", {"name": self.domain})
+            log(f"added Resend domain {self.domain}")
+            d = self.find()
+            if not d:
+                raise ProvisionError(f"Resend did not list {self.domain} after adding it")
+        return self.r("GET", f"/domains/{d['id']}")
+
+    def verify(self, domain_id: str, sleep=time.sleep, timeout: float = 900) -> str:
+        self.r("POST", f"/domains/{domain_id}/verify")
+        waited, status = 0.0, ""
+        while True:
+            status = self.r("GET", f"/domains/{domain_id}").get("status", "")
+            log(f"Resend domain status: {status}")
+            if status == "verified" or status == "failed" or waited >= timeout:
+                return status
+            sleep(30)
+            waited += 30
+
+
+def _txt(v: str) -> str:
+    return (v or "").strip().strip('"')
+
+
+def mail_records(cf: Cloudflare, records: list[dict], apply: bool) -> None:
+    """Puts Resend's sending records (DKIM, SPF and its MX on the send. subdomain) into the zone, plus a
+    reporting-only DMARC record when the domain has none. Never touches the site's own records: anything
+    for the bare domain (receiving MX) is skipped."""
+    want = []
+    for rec in records:
+        name = (rec.get("name") or "").strip(".")
+        if name in ("", "@", cf.domain):
+            continue
+        fqdn = name if name == cf.domain or name.endswith("." + cf.domain) else f"{name}.{cf.domain}"
+        want.append({"type": rec["type"], "name": fqdn, "content": rec["value"], "priority": rec.get("priority")})
+    want.append({"type": "TXT", "name": f"_dmarc.{cf.domain}", "content": DMARC, "keep": True})
+    for w in want:
+        have = cf.r("GET", f"/zones/{cf.zone}/dns_records?type={w['type']}&name={urllib.parse.quote(w['name'])}") or []
+        same = [x for x in have if _txt(x.get("content")) == _txt(w["content"])
+                and (w["type"] != "MX" or x.get("priority") == w["priority"])]
+        label = f"{w['type']} {w['name']}"
+        if same or (w.get("keep") and have):
+            log(f"DNS {label}: ok")
+            continue
+        if not apply:
+            log(f"DNS {label}: would be set")
+            continue
+        body = {"type": w["type"], "name": w["name"], "content": w["content"], "ttl": 1, "comment": MAIL_COMMENT}
+        if w["type"] == "MX":
+            body["priority"] = w["priority"]
+        # a DKIM key from an earlier Resend domain under the same name is replaced; SPF/MX are added beside
+        stale = [x for x in have if w["type"] == "TXT" and "_domainkey" in w["name"]]
+        if stale:
+            cf.r("PUT", f"/zones/{cf.zone}/dns_records/{stale[0]['id']}", body)
+            log(f"updated DNS {label}")
+        else:
+            cf.r("POST", f"/zones/{cf.zone}/dns_records", body)
+            log(f"created DNS {label}")
+
+
+def mail_domain(cf: Cloudflare, resend: Resend, apply: bool, sleep=time.sleep) -> str:
+    d = resend.ensure(apply)
+    if d is None:
+        return "missing"
+    mail_records(cf, d.get("records") or [], apply)
+    if not apply or d.get("status") == "verified":
+        log(f"Resend domain status: {d.get('status')}")
+        return d.get("status", "")
+    status = resend.verify(d["id"], sleep)
+    if status != "verified":
+        raise ProvisionError(f"Resend has not verified {resend.domain} yet (status {status}); DNS can take a "
+                             "while, run mail-domain again later")
+    return status
+
+
 # ------------------------------------------------------------------------------------------ cloud-init
 def env_file(values: dict) -> str:
     out = []
@@ -583,7 +690,7 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     mode = argv[0] if argv else "plan"
-    if mode not in ("plan", "apply", "recreate", "version-door"):
+    if mode not in ("plan", "apply", "recreate", "version-door", "mail-domain", "mail-plan"):
         print(__doc__)
         return 2
     try:
@@ -593,6 +700,11 @@ def main(argv: list[str] | None = None) -> int:
             cf.http.RETRY_WAITS = (5, 15, 45, 90, 180, 300)
             cf.version_door(True)
             cf.version_door(True, cf.preview, PREVIEW_APP)
+            log("done")
+            return 0
+        if mode in ("mail-domain", "mail-plan"):
+            # only the email sending domain (decision mail-domain); touches no site, Access or server setting
+            mail_domain(cf, Resend(Http("https://api.resend.com", need("RESEND_API_KEY"))), mode == "mail-domain")
             log("done")
             return 0
         do = DigitalOcean(Http("https://api.digitalocean.com", need("DIGITALOCEAN_TOKEN")))
