@@ -3,6 +3,7 @@
     python deploy/provision.py plan        # show what exists / would be created, change nothing
     python deploy/provision.py apply       # create what is missing; never deletes data
     python deploy/provision.py recreate    # also replace the server (data volume kept): new host config, rotated keys
+    python deploy/provision.py version-door  # only the public /api/version address (Cloudflare Access), patiently
 
 Run by .github/workflows/provision.yml with the repo's secrets in the environment:
 DIGITALOCEAN_TOKEN, CLOUDFLARE_API_TOKEN, ACCESS_EMAILS, BACKUP_PASSWORD, ANTHROPIC_API_KEY, RESEND_API_KEY.
@@ -279,7 +280,14 @@ class Cloudflare:
         Leon's call, to be withdrawn before public launch (docs/decisions/2026-10-20-public-version-check.md)."""
         target = f"{domain or self.domain}{VERSION_PATH}"
         a = self.account
-        pol = self.policy(VERSION_POLICY, {"decision": "bypass", "include": [{"everyone": {}}]}, apply)
+        want = {"decision": "bypass", "include": [{"everyone": {}}]}
+        pols = self.r("GET", f"/accounts/{a}/access/policies") or []
+        have = next((x for x in pols if x.get("name") == VERSION_POLICY), None)
+        # only write what is missing or different: Cloudflare's Access API often answered 504 to writes
+        if have and all(have.get(k) == v for k, v in want.items()):
+            pol = have["id"]
+        else:
+            pol = self.policy(VERSION_POLICY, want, apply)
         apps = self.r("GET", f"/accounts/{a}/access/apps") or []
         app = next((x for x in apps if x.get("domain") == target), None)
         body = {"name": f"{name} version", "type": "self_hosted", "domain": target, "app_launcher_visible": False,
@@ -287,7 +295,8 @@ class Cloudflare:
         if not apply:
             log(f"Access application {name} version: " + ("ok" if app else "would be created"))
         elif app:
-            self.r("PUT", f"/accounts/{a}/access/apps/{app['id']}", body)
+            if [x.get("id") for x in app.get("policies") or []] != [pol]:
+                self.r("PUT", f"/accounts/{a}/access/apps/{app['id']}", body)
         else:
             self.r("POST", f"/accounts/{a}/access/apps", body)
             log(f"created the Access application {name} version")
@@ -574,11 +583,18 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     mode = argv[0] if argv else "plan"
-    if mode not in ("plan", "apply", "recreate"):
+    if mode not in ("plan", "apply", "recreate", "version-door"):
         print(__doc__)
         return 2
     try:
         cf = Cloudflare(Http("https://api.cloudflare.com/client/v4", need("CLOUDFLARE_API_TOKEN")))
+        if mode == "version-door":
+            # only the public version address (decision public-version-check), patient with Cloudflare's API
+            cf.http.RETRY_WAITS = (5, 15, 45, 90, 180, 300)
+            cf.version_door(True)
+            cf.version_door(True, cf.preview, PREVIEW_APP)
+            log("done")
+            return 0
         do = DigitalOcean(Http("https://api.digitalocean.com", need("DIGITALOCEAN_TOKEN")))
         out = run(mode, cf, do)
     except ProvisionError as e:
