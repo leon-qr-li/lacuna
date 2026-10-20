@@ -119,13 +119,14 @@ def test_episode_music_and_mix_stream(client, tmp_path):
     full = client.get(m["mix_url"])
     x, sr = sf.read(__import__("io").BytesIO(full.content))
     assert len(x) / sr == pytest.approx(m["duration"], abs=0.01)
-    # series rule: save, then a fresh episode state is offered it
-    m = client.post(f"{EP}/music/series/save", json={"name": "洛城二三事"}).json()
-    assert m["series"] == "洛城二三事"
+    # the project's default opener: save, then a fresh episode state is offered it
+    assert client.post(f"{EP}/music/series/save", json={"target": "album"}).status_code == 409    # in no album
+    m = client.post(f"{EP}/music/series/save", json={"target": "project"}).json()
+    assert client.get("/api/albums").json()["project"]["intro"]["asset_id"] == jingle
     for p in m["placements"]:
         m = client.delete(f"{EP}/music/{p['id']}").json()
-    assert m["series_suggestion"]["name"] == "洛城二三事"
-    m = client.post(f"{EP}/music/series/apply", json={"name": "洛城二三事"}).json()
+    assert m["series_suggestion"]["from"] == "project" and m["series_suggestion"]["name"] is None
+    m = client.post(f"{EP}/music/series/apply", json={}).json()
     assert [p["role"] for p in m["placements"]] == ["intro"] and m["series_suggestion"] is None
     assert client.delete(f"{EP}/music/mu_nope").status_code == 404
 

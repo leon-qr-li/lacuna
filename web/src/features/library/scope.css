@@ -1,7 +1,9 @@
-/* library scopes: 公共 / 本集 */
-.scope-badge.scope-shared { background: var(--accent-soft); color: var(--accent); }
-.scope-badge.scope-episode { background: var(--warn-soft); color: var(--warn); }
+/* library scopes: 整个项目 (blue) / 某个专辑 (purple) / 只这一集 (orange), as in the projects-albums design */
+.scope-badge.scope-shared { background: color-mix(in srgb, var(--leon) 14%, transparent); color: var(--leon); }
+.scope-badge.scope-album { background: color-mix(in srgb, var(--pei) 16%, transparent); color: var(--pei-ink); }
+.scope-badge.scope-episode { background: var(--accent-soft); color: var(--accent-ink); }
 .scope-select { max-width: 100%; font-size: 12px; padding: 3px 8px; border-radius: 999px; }
 .scope-actions { align-items: center; }
 .scope-upload { align-items: center; }
 .scope-filter select { max-width: 60vw; }
+.series-files { display: block; margin-top: 2px; }

@@ -556,27 +556,40 @@ class EpisodeMusic:
                 "placements": self.items_json(lay, include_proposed=False), "duration": round(lay.length / sr, 3),
                 "alternatives": alts, "stale": d["base"] != self.digest()}
 
-    # ------------------------------------------------------------------ series rule
+    # ------------------------------------------------------------------ default opener / ending (albums.py)
+    def defaults(self) -> dict:
+        from .albums import Albums
+        return Albums(self.ws).defaults_for(self.ep.id)
+
     def series_suggestion(self) -> dict | None:
-        """The default series intro/outro, offered while this episode has neither."""
+        """The album's / project's default opener and ending, offered while this episode has neither:
+        {"name": album name or None, "from": "album" / "project", "intro", "outro"} (asset names)."""
         doc = self.load()
         if doc.get("series_dismissed") or any(p["role"] in ("intro", "outro") for p in doc["placements"]):
             return None
-        return self.lib.series_rule(doc.get("series"))
+        d = self.defaults()
+        names = {r: (self._asset_or_none(d[r]["asset_id"]) or {}).get("name") if d[r] else None for r in ("intro", "outro")}
+        if not any(names.values()):
+            return None
+        album = d["album"]
+        return {"name": album["name"] if album else None, "from": "album" if album else "project",
+                "intro": names["intro"], "outro": names["outro"],
+                "intro_from": d["intro_from"], "outro_from": d["outro_from"]}
 
     def apply_series(self, name: str | None = None) -> list[dict]:
-        rule = self.lib.series_rule(name)
-        if rule is None:
-            raise ConflictError(tr("还没有这个系列的片头规则"))
+        """Put the default opener / ending in (`name` is ignored: an episode has one album)."""
+        d = self.defaults()
         added = []
         for role in ("intro", "outro"):
-            t = rule.get(role)
+            t = d.get(role)
             if t and self._asset_or_none(t["asset_id"]):
                 t = upgrade_v1(dict(t, role=role), self._asset_or_none(t["asset_id"]))
                 added.append(self.add(t["asset_id"], role, source="series", **{k: t.get(k) for k in TUNING}))
+        if not added:
+            raise ConflictError(tr("还没有默认的片头片尾"))
         with self.lock:
             doc = self.load()
-            doc["series"] = rule["name"]
+            doc["series"] = (d["album"] or {}).get("name")
             self.save(doc)
         return added
 
@@ -586,16 +599,21 @@ class EpisodeMusic:
             doc["series_dismissed"] = True
             self.save(doc)
 
-    def save_as_series(self, name: str) -> dict:
+    def save_as_series(self, target: str) -> dict:
+        """「设为专辑 / 项目的默认片头片尾」: this episode's opener and ending (with their tuning) become
+        the default of its album (`target` "album") or of the whole project ("project")."""
+        from .albums import Albums
         ps = {p["role"]: p for p in self.placements() if p.get("status", APPLIED) == APPLIED}
         if "intro" not in ps and "outro" not in ps:
             raise ConflictError(tr("这一集还没有片头或片尾"))
-        rule = self.lib.save_series(name, ps.get("intro"), ps.get("outro"))
-        with self.lock:
-            doc = self.load()
-            doc["series"] = rule["name"]
-            self.save(doc)
-        return rule
+        albums = Albums(self.ws)
+        pair = {r: ps[r] for r in ("intro", "outro") if r in ps}
+        if target == "album":
+            aid = albums.album_of(self.ep.id)
+            if not aid:
+                raise ConflictError(tr("这一集不在专辑里"))
+            return albums.update(aid, **pair)
+        return albums.set_project(**pair)
 
     def _asset_or_none(self, aid: str) -> dict | None:
         try:

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { GrowText } from "../../components/GrowText";
-import type { Asset, Credit, CreditStatus, EpisodeRef, LibraryView as Lib } from "./api";
+import type { AlbumRef, Asset, Credit, CreditStatus, EpisodeRef, LibraryView as Lib } from "./api";
 import { fmt } from "../../api";
 import { libraryApi } from "./api";
 import { t } from "../../i18n";
@@ -29,14 +29,15 @@ const ACCEPT = ".mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff,.wma,audio/*";
 
 /** Drag files onto the page, or pick them with the system file dialog. The browser sends the
  * bytes to the local app, which keeps them in the library folder. */
-function DropZone({ kinds, eps, dragging, onFiles }: {
+function DropZone({ kinds, eps, albums, dragging, onFiles }: {
   kinds: Record<string, string>;
   eps: EpisodeRef[];
+  albums: AlbumRef[];
   dragging: boolean;
   onFiles: (files: File[], kind: string, episode: string) => void;
 }) {
   const [kind, setKind] = useState("other");
-  const [target, setTarget] = useState(""); // "" = 公共, else the episode the files belong to
+  const [target, setTarget] = useState(""); // "" = the whole project, "al:<id>" an album, else one episode
   const input = useRef<HTMLInputElement>(null);
   return (
     <div
@@ -60,7 +61,7 @@ function DropZone({ kinds, eps, dragging, onFiles }: {
             ))}
           </select>
         </label>
-        <ScopeTarget eps={eps} value={target} onChange={setTarget} />
+        <ScopeTarget eps={eps} albums={albums} value={target} onChange={setTarget} />
       </div>
       <p className="small muted">{t("mp3、wav、flac、m4a 等都可以，一次可以拖好几个。")}</p>
       <input
@@ -80,7 +81,7 @@ function DropZone({ kinds, eps, dragging, onFiles }: {
   );
 }
 
-function AssetRow({ a, kinds, eps, onChange, onRemoved, claude }: { a: Asset; kinds: Record<string, string>; eps: EpisodeRef[]; onChange: (a: Asset) => void; onRemoved: () => void; claude: boolean }) {
+function AssetRow({ a, kinds, eps, albums, onChange, onRemoved, claude }: { a: Asset; kinds: Record<string, string>; eps: EpisodeRef[]; albums: AlbumRef[]; onChange: (a: Asset) => void; onRemoved: () => void; claude: boolean }) {
   const [note, setNote] = useState(a.note);
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState<Partial<Credit>>({});
@@ -127,8 +128,8 @@ function AssetRow({ a, kinds, eps, onChange, onRemoved, claude }: { a: Asset; ki
         </span>
       </div>
       <div className="row gap8 wrap">
-        <ScopeBadge a={a} eps={eps} />
-        <ScopeActions a={a} eps={eps} disabled={!!busy} onChange={(p) => void run("scope", p)} />
+        <ScopeBadge a={a} eps={eps} albums={albums} />
+        <ScopeActions a={a} eps={eps} albums={albums} disabled={!!busy} onChange={(p) => void run("scope", p)} />
       </div>
       <audio controls preload="none" src={`/api/library/assets/${a.id}/audio`} className="lib-audio" />
       <div className="row gap8 align-end">
@@ -260,13 +261,16 @@ export function LibraryView() {
   }, []);
   useEffect(load, [load]);
 
-  const addFiles = async (files: File[], kind: string, episode = "") => {
+  /** `target`: "" the whole project, "al:<id>" an album, else one episode */
+  const addFiles = async (files: File[], kind: string, target = "") => {
+    const album = target.startsWith("al:") ? target.slice(3) : "";
+    const episode = album ? "" : target;
     setNote(null);
     setUploads(files.map((f) => ({ name: f.name, state: "busy" })));
     for (const [i, f] of files.entries()) {
       let u: Upload;
       try {
-        const r = await libraryApi.uploadAsset(f, kind, "", episode);
+        const r = await libraryApi.uploadAsset(f, kind, "", episode, album);
         u = r.duplicate
           ? { name: f.name, state: "dup", msg: t("素材库里已经有这首（{name}）", { name: r.asset.name }) }
           : { name: f.name, state: "done" };
@@ -323,7 +327,7 @@ export function LibraryView() {
           {t("打开文件夹")}
         </button>
       </div>
-      <DropZone kinds={lib.kinds} eps={lib.episodes} dragging={dragging} onFiles={(f, k, e) => void addFiles(f, k, e)} />
+      <DropZone kinds={lib.kinds} eps={lib.episodes} albums={lib.albums} dragging={dragging} onFiles={(f, k, e) => void addFiles(f, k, e)} />
       {uploads.length > 0 && (
         <ul className="lib-uploads small" data-testid="uploads">
           {uploads.map((u, i) => (
@@ -345,13 +349,13 @@ export function LibraryView() {
       </p>
       {note && <p className="small">{note}</p>}
       {lib.assets.length === 0 && <p className="muted">{t("素材库还是空的。把片头、配乐或台词片段拖进来就行。")}</p>}
-      {lib.assets.length > 0 && <ScopeFilter eps={lib.episodes} value={filter} onChange={setFilter} />}
+      {lib.assets.length > 0 && <ScopeFilter eps={lib.episodes} albums={lib.albums} value={filter} onChange={setFilter} />}
       {lib.assets.length > 0 && !lib.assets.some((a) => inScope(a, filter)) && <p className="muted">{t("这里还没有素材。")}</p>}
       <ul className="lib-list">
         {lib.assets
           .filter((a) => inScope(a, filter))
           .map((a) => (
-            <AssetRow key={a.id} a={a} kinds={lib.kinds} eps={lib.episodes} onChange={replace} onRemoved={load} claude={lib.lookup} />
+            <AssetRow key={a.id} a={a} kinds={lib.kinds} eps={lib.episodes} albums={lib.albums} onChange={replace} onRemoved={load} claude={lib.lookup} />
           ))}
       </ul>
     </main>
