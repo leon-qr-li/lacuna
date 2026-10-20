@@ -13,3 +13,19 @@ for small follow-up features. Decision `manual-editing`.
 - English transcripts: words are spaced with `join_words` / `needsSpace` (from PR #132).
 - Missing recordings (#138): wave / cut on an episode without its raw tracks get the usual 409 message.
 - Not done (an idea, not asked): moving an existing cut's edges by dragging.
+
+## Next version (Leon 2026-10-20 02:33Z "一到三开做"), PR #143 on staging
+- One-word select: a click on a transcript word used to drop the selection and only seek, so a single 嗯 or a
+  stutter could not be selected. Now a click selects that word and seeks; clicking it again drops it.
+- 「暂停时回退 5 秒」 starts unticked (`usePlayer.ts` readPref: only a stored "1" turns it on).
+- 剪辑时间线 (Leon 03:42Z picked "A + C" from the mock-up https://claude.ai/artifact/9iKfWjEn5kwgo7ZizP2SYV):
+  zoom buttons and the hint line gone; Ctrl + wheel zooms smoothly around the pointer (span 3 s – 10 min,
+  `lacuna.manual.span`) and never the page; a click no longer re-centres the window; pan = drag the ruler
+  (`ml-ruler`), Space + drag / middle-drag on a lane, or the wheel; a Space tap without a drag still plays.
+  Playback turns a page at the right edge. All in `EditLanes.tsx` (non-passive wheel + capture-phase Space listeners).
+- Leon 04:24Z: while something is selected, play (▶, Space, 听选中) plays only the selection and returns the playhead
+  to its start (`useManual.ts`, on the audio element's play event; voice-cut time, so it also works with music on).
+- A "?" next to 剪辑时间线 explains clicking, selecting, zoom / pan, the marks and how AI and manual cuts are undone /
+  restored / approved (`Help` in `EditLanes.tsx`, hover or keyboard focus).
+- Leon 15:08–15:12Z: the "?" lists one line per action (his wording); the selection bar's key is now Ctrl + X
+  (⌘ + X; Delete still works); a col-resize cursor shows on a selection's edges (`is-edge`).

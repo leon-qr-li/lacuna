@@ -2,9 +2,6 @@ import type { Dict } from "../../i18n";
 
 export const en: Dict = {
   "剪辑时间线": "Editing timeline",
-  "拖动选一段来剪 · 点一下跳到那里": "Drag to select a stretch · click to jump there",
-  "缩放": "Zoom",
-  "{n} 秒": "{n} s",
   "{s} 秒": "{s} s",
   "选中的这一段": "Selected stretch",
   "已选": "Selected",
@@ -21,4 +18,18 @@ export const en: Dict = {
   "你选中的": "Your selection",
   "已删掉 {s} 秒，可撤销": "Cut {s} s, you can undo it",
   "已静音 {track} {s} 秒，可撤销": "Silenced {track} for {s} s, you can undo it",
+  "单击轨道": "Click a track",
+  "播放头跳到那里，同时取消选中": "moves the playhead there and drops the selection",
+  "按住鼠标拖动": "Drag",
+  "选一段": "selects a stretch",
+  "拖选区的边": "Drag a selection edge",
+  "调整选区": "adjusts the selection",
+  "删掉选中的一段": "cuts the selection",
+  "播放 / 暂停（有选中时只放选中段）": "play / pause (only the selection, when there is one)",
+  "取消选中": "drops the selection",
+  "Ctrl + 滚轮": "Ctrl + wheel",
+  "放大 / 缩小": "zooms in / out",
+  "拖刻度条，或按住空格拖": "Drag the ruler, or hold Space and drag",
+  "左右移动时间线": "moves the timeline",
+  "怎么用剪辑时间线": "How to use the editing timeline",
 };

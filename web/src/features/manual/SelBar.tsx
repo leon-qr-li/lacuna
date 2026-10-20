@@ -26,7 +26,7 @@ export function SelBar({ ep, m }: { ep: Episode; m: Manual }) {
         {quote && ` · ${quote}`}
       </span>
       <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => void m.cut(null)} data-testid="ml-cut">
-        {t("删掉这段")} <kbd className="ml-kbd">Del</kbd>
+        {t("删掉这段")} <kbd className="ml-kbd">Ctrl X</kbd>
       </button>
       {hosts.map((tr) => (
         <button key={tr.name} type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => void m.cut(tr.name)} data-testid={`ml-mute-${tr.name}`}>
