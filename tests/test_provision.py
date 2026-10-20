@@ -386,3 +386,33 @@ def test_registry_on_the_free_plan_moves_to_basic(api):
     assert a.tier == "starter"
     run("apply")
     assert a.tier == "basic" and ("POST", "/v2/registry/subscription") in a.writes
+
+
+def test_api_calls_retry_a_5xx_or_a_dropped_connection():
+    """Cloudflare's API sometimes answers 504 (Staging for #143 failed three times on it)."""
+    import urllib.error
+
+    answers = [(504, {}), urllib.error.URLError("reset"), (200, {"success": True, "result": {"id": "s1"}})]
+
+    def handler(method, path, body=None):
+        a = answers.pop(0)
+        if isinstance(a, Exception):
+            raise a
+        return a
+
+    waits = []
+    h = FakeHttp(handler)
+    h.sleep = waits.append
+    assert h("POST", "/accounts/a/access/service_tokens", {"name": "x"})["result"]["id"] == "s1"
+    assert waits == [5, 15]
+
+    h = FakeHttp(lambda m, p, b=None: (503, {}))
+    h.sleep = lambda s: None
+    with pytest.raises(provision.ProvisionError, match="503"):
+        h("GET", "/x")
+
+    calls = []
+    h = FakeHttp(lambda m, p, b=None: (calls.append(1), (403, {"errors": ["no"]}))[1])
+    with pytest.raises(provision.ProvisionError, match="403"):
+        h("GET", "/x")
+    assert len(calls) == 1                   # a 4xx is an answer, not a hiccup
