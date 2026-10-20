@@ -10,6 +10,9 @@ Off unless ``LACUNA_CLOUD=1``; a local development checkout never sees any of th
 * Local-only actions answer 404: saving API keys from the browser (keys
   come from the server's environment), opening folders on the server.
 * Before sign-in, ``/api/app`` and ``/api/health`` answer only the version.
+* ``GET /api/version`` answers the version string and nothing else, with no Access token: the deploy check
+  reads it through a path-scoped Access bypass (deploy/provision.py), so a deploy needs no Cloudflare API
+  call (decision ``public-version-check``; withdrawn before public launch).
 
 Settings (environment, set by deploy/provision.py): ``LACUNA_OWNER_EMAIL`` (see ``owner_email``), ``CF_ACCESS_TEAM_DOMAIN`` (``<team>.cloudflareaccess.com``),
 ``CF_ACCESS_AUD`` (the Access application's audience tag). Missing settings stop the server from
@@ -41,6 +44,7 @@ BLOCKED = [
 ]
 # answered with the version only until the visitor has signed in to the app
 PUBLIC_INFO = {"/api/app", "/api/health"}
+VERSION_PATH = "/api/version"        # the version string only; open to anyone (deploy/provision.py VERSION_PATH)
 
 
 class CloudConfigError(RuntimeError):
@@ -120,6 +124,8 @@ class CloudGate:
 
         if scope["type"] not in ("http", "websocket"):
             return await self.app(scope, receive, send)
+        if scope["type"] == "http" and scope["method"] == "GET" and scope["path"] == VERSION_PATH:
+            return await JSONResponse({"version": self.version()})(scope, receive, send)
         client = (scope.get("client") or ("", 0))[0]
         headers = dict(scope.get("headers") or [])
         if client not in LOOPBACK:

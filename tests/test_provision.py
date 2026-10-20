@@ -191,6 +191,11 @@ def test_apply_builds_everything_once(api, capsys):
     assert [r["email"]["email"] for r in a.groups[0]["include"]] == ["leon@example.com", "pei@example.com"]
     assert a.apps[0]["domain"] == provision.DOMAIN and len(a.apps[0]["policies"]) == 2
     assert a.apps[1]["domain"] == provision.PREVIEW_DOMAIN and a.apps[1]["policies"] == a.apps[0]["policies"]
+    # only the version path is open to everyone, on each site
+    assert [x["domain"] for x in a.apps[2:]] == [f"{provision.DOMAIN}/api/version", f"{provision.PREVIEW_DOMAIN}/api/version"]
+    bypass = [p for p in a.policies if p["decision"] == "bypass"]
+    assert len(bypass) == 1 and bypass[0]["include"] == [{"everyone": {}}]
+    assert all(x["policies"] == [{"id": bypass[0]["id"], "precedence": 1}] for x in a.apps[2:])
     assert a.buckets == [provision.BUCKET] and a.registry and len(a.volumes) == 1
     assert a.firewalls[0]["inbound_rules"] == []
     assert len(a.droplets) == 1
@@ -322,48 +327,46 @@ def test_missing_secret_is_named(api, monkeypatch):
         run("apply")
 
 
-def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
+def test_ci_wait_live_reads_the_public_version_without_a_token(monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "deploy"))
     import ci
     sys.path.pop(0)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
-    tokens = []
+    tokens = [{"id": "old1", "name": "lacuna-deploy-check-1"}, {"id": "keep", "name": "someone-else"}]
 
     def cfh(method, path, body=None):
         p = path.split("?")[0]
         if p == "/zones":
             return 200, {"success": True, "result": [{"id": "z", "account": {"id": "acc"}}]}
-        if p.endswith("/service_tokens") and method == "POST":
-            assert not [t for t in tokens if t["name"].startswith("lacuna-deploy-check-")]   # swept first
-            tokens.append({"id": "s1", "name": body["name"]})
-            return 200, {"success": True, "result": {"id": "s1", "client_id": "cid", "client_secret": "csec"}}
-        if p.endswith("/service_tokens"):
+        if p.endswith("/service_tokens") and method == "GET":
             return 200, {"success": True, "result": list(tokens)}
         if "/service_tokens/" in p and method == "DELETE":
             tokens[:] = [t for t in tokens if t["id"] != p.rsplit("/", 1)[1]]
             return 200, {"success": True, "result": {}}
-        raise AssertionError(path)
+        raise AssertionError(f"{method} {path}")       # never creates a token
 
     monkeypatch.setattr(ci, "cf", lambda: provision.Cloudflare(FakeHttp(cfh)))
-    tokens.append({"id": "old1", "name": "lacuna-deploy-check-1"})       # left by a create answered 504
-    tokens.append({"id": "keep", "name": "someone-else"})
-    answers = iter([(530, {}), (200, {"ok": True, "version": "old"}), (200, {"ok": True, "version": "abc"})])
-    seen = []
-    monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append(h), next(answers))[1])
     monkeypatch.setattr(ci.time, "sleep", lambda s: None)
-    urls = []
-    monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append(h), urls.append(url), next(answers))[2])
+    answers = iter([(302, {}), (200, {"version": "old"}), (200, {"version": "abc"})])
+    seen = []
+    monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append((url, h)), next(answers))[1])
     ci.wait_live("abc")
-    assert seen[0] == {"CF-Access-Client-Id": "cid", "CF-Access-Client-Secret": "csec"}
-    assert urls[-1] == f"https://{provision.DOMAIN}/api/health"
+    assert seen[-1] == (f"https://{provision.DOMAIN}/api/version", {})
+    assert tokens == [{"id": "keep", "name": "someone-else"}]           # the old check's leftovers deleted
     answers = iter([(200, {"version": "abc"})])
-    assert ci.main(["wait-live", "abc", "preview"]) == 0 and urls[-1] == f"https://{provision.PREVIEW_DOMAIN}/api/health"
-    assert tokens == [{"id": "keep", "name": "someone-else"}]           # ours deleted, leftovers first
+    assert ci.main(["wait-live", "abc", "preview"]) == 0 and seen[-1][0] == f"https://{provision.PREVIEW_DOMAIN}/api/version"
 
     monkeypatch.setattr(ci, "_get", lambda url, h: (200, {"version": "old"}))
     with pytest.raises(provision.ProvisionError, match="not live"):
         ci.wait_live("abc", timeout=0.01, poll=0)
-    assert tokens == [{"id": "keep", "name": "someone-else"}]           # deleted on failure too
+
+    def down(method, path, body=None):                 # Cloudflare's API failing never fails a live deploy
+        return (200, {"success": True, "result": [{"id": "z", "account": {"id": "acc"}}]}) if path.startswith("/zones") \
+            else (504, {"raw": "error code: 504"})
+    monkeypatch.setattr(ci, "cf", lambda: provision.Cloudflare(FakeHttp(down)))
+    monkeypatch.setattr(provision.Http, "RETRY_WAITS", ())
+    monkeypatch.setattr(ci, "_get", lambda url, h: (200, {"version": "abc"}))
+    ci.wait_live("abc")
 
 
 def test_server_size_falls_back_when_the_region_stops_offering_it(api):

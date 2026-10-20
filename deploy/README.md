@@ -6,7 +6,7 @@ Decision: `docs/decisions/2026-10-19-cloud-deploy.md`. Status: `docs/status/clou
 | What | Where |
 |---|---|
 | App image | `Dockerfile`; smoke test `deploy/smoke_container.sh` (workflow **Cloud image**, on PRs) |
-| Ship on green main | workflow **Deploy** → DO registry `:main` → server updater swaps it in, `deploy/ci.py wait-live` confirms |
+| Ship on green main | workflow **Deploy** → DO registry `:main` → server updater swaps it in, `deploy/ci.py wait-live` confirms via the public `/api/version` (version only; decision `public-version-check`) |
 | Create / change infra | workflow **Provision** (`plan` / `apply` / `recreate`) → `deploy/provision.py` |
 | Server first boot | cloud-init built by `provision.py` from `deploy/host/*` (`lacuna-bootstrap`) |
 | Server updater | `deploy/host/lacuna-update` (timer, every minute; waits for jobs; rolls back) |

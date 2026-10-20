@@ -56,6 +56,8 @@ PREVIEW_APP = "LACUNA preview"
 PREVIEW_NAME = "lacuna-preview"     # the staging container (deploy/host/lacuna-update-preview.service)
 ACCESS_POLICY = "LACUNA invited people"
 DEPLOY_POLICY = "LACUNA deploy checks"
+VERSION_POLICY = "LACUNA version (public)"
+VERSION_PATH = "/api/version"       # answers the version string only (lacuna_app/cloud.py VERSION_PATH)
 APP_PORT = 8765
 TOKEN_BACKUP = "lacuna-server-backup"
 TOKEN_INVITES = "lacuna-server-invites"
@@ -269,6 +271,26 @@ class Cloudflare:
             app = self.r("POST", f"/accounts/{a}/access/apps", body)
             log(f"created the Access application {name}")
         return app["aud"]
+
+    def version_door(self, apply: bool, domain: str | None = None, name: str = ACCESS_APP) -> None:
+        """A path-scoped Access application that lets anyone read <domain>/api/version, so the deploy check
+        needs no Cloudflare API call or service token at deploy time (Cloudflare's service-token API answered
+        504 for hours on 2026-10-20). The app answers that path with the version string and nothing else.
+        Leon's call, to be withdrawn before public launch (docs/decisions/2026-10-20-public-version-check.md)."""
+        target = f"{domain or self.domain}{VERSION_PATH}"
+        a = self.account
+        pol = self.policy(VERSION_POLICY, {"decision": "bypass", "include": [{"everyone": {}}]}, apply)
+        apps = self.r("GET", f"/accounts/{a}/access/apps") or []
+        app = next((x for x in apps if x.get("domain") == target), None)
+        body = {"name": f"{name} version", "type": "self_hosted", "domain": target, "app_launcher_visible": False,
+                "policies": [{"id": pol, "precedence": 1}]}
+        if not apply:
+            log(f"Access application {name} version: " + ("ok" if app else "would be created"))
+        elif app:
+            self.r("PUT", f"/accounts/{a}/access/apps/{app['id']}", body)
+        else:
+            self.r("POST", f"/accounts/{a}/access/apps", body)
+            log(f"created the Access application {name} version")
 
     # ---- R2 + scoped tokens for the server
     def bucket(self, apply: bool) -> None:
@@ -506,6 +528,8 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
     group = cf.group(emails, apply)
     aud = cf.application(group, idp, apply)
     preview_aud = cf.application(group, idp, apply, cf.preview, PREVIEW_APP)
+    cf.version_door(apply)
+    cf.version_door(apply, cf.preview, PREVIEW_APP)
     cf.bucket(apply)
     registry = do.registry(apply)
     volume = do.volume(apply)
