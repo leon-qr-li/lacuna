@@ -190,6 +190,10 @@ def register(app, ctx) -> None:
         except Exception as e:      # network, Cloudflare API
             print(f"LACUNA: Cloudflare Access update for {email} failed: {e}", flush=True)
 
+    # 邀请协作 (routes/spaces.py) sends project invites with the same link and Access list
+    app.state.invite_origin = origin
+    app.state.grant_access = access
+
     @app.get("/api/auth/status")
     def status(request: Request):
         out = auth.status(token(request))

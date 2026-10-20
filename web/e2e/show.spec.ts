@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// 节目设置: Leon's workspace stays 《洛城二三事》 with Leon + Pei; a new workspace starts generic and asks
+// 项目设置 (was 节目设置): Leon's project stays 《洛城二三事》 with Leon + Pei; a new project starts generic and asks
 // for its show (name + hosts) before the first import.
 const PW = "correct horse battery";
 
@@ -21,8 +21,11 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   await leon.goto("/#/");
   await expect(leon.getByTestId("show-setup")).toHaveCount(0);
   await expect(leon.getByText("导入 Leon 和 Pei 的分轨")).toBeVisible();
-  await leon.getByTestId("show-link").click();
+  await leon.getByTestId("project-menu").click();
+  await leon.getByTestId("project-settings-link").click();
   await expect(leon.getByTestId("show-name")).toHaveValue("洛城二三事");
+  if (process.env.PROJECT_SHOTS) await leon.screenshot({ path: `${process.env.PROJECT_SHOTS}/settings.png`, fullPage: true });
+  await leon.getByTestId("project-tab-hosts").click();
   await expect(leon.getByTestId("show-host")).toHaveCount(2);
   await expect(leon.getByLabel("第 1 位主持人的名字")).toHaveValue("Leon");
   await expect(leon.getByLabel("第 2 位主持人的名字")).toHaveValue("Pei");
@@ -34,6 +37,7 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   await p.goto("/");
   const setup = p.getByTestId("show-setup");
   await expect(setup).toBeVisible();
+  await expect(setup.getByRole("heading")).toHaveText("建你的第一个项目");
   await expect(p.getByText("导入新一集")).toHaveCount(0);
   await expect(p.locator("body")).not.toContainText("Leon");
   await expect(p.locator("body")).not.toContainText("洛城");
@@ -54,8 +58,11 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   await p.getByRole("button", { name: "取消" }).click();
 
   // and it is kept, with its own colours
-  await p.getByTestId("show-link").click();
+  await expect(p.getByTestId("project-menu")).toHaveText(/周末电影院/);
+  await p.getByTestId("project-menu").click();
+  await p.getByTestId("project-settings-link").click();
   await expect(p.getByTestId("show-name")).toHaveValue("周末电影院");
+  await p.getByTestId("project-tab-hosts").click();
   await p.getByRole("group", { name: "颜色" }).nth(2).getByRole("button", { name: "粉" }).click();
   await p.getByTestId("show-save").click();
   await expect(p.getByText("已保存")).toBeVisible();

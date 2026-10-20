@@ -10,6 +10,8 @@ import { AlbumDialog } from "../albums/AlbumDialog";
 import { AlbumStrip } from "../albums/AlbumPage";
 import { AlbumRow } from "../albums/AlbumRow";
 import { MoveToAlbum } from "../albums/MoveToAlbum";
+import { ProjectCrumb } from "../projects/ProjectMenu";
+import { loadProjects } from "../projects/api";
 import { albumHref, useAlbums, type Album } from "../albums/api";
 import { EpisodeCard } from "./EpisodeCard";
 import { episodesApi } from "./api";
@@ -43,6 +45,21 @@ export function Home({ nav }: { nav: ReactNode }) {
       .catch((e) => setErr(String(e)));
   }, []);
   useEffect(() => load(true), [load]);
+  // signing in with two or more projects: pick one on 所有项目 first (once per visit)
+  useEffect(() => {
+    if (window.location.hash) return;
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem("lacuna.projects-seen") === "1";
+      sessionStorage.setItem("lacuna.projects-seen", "1");
+    } catch {
+      /* private mode */
+    }
+    if (seen) return;
+    void loadProjects().then((sp) => {
+      if ((sp?.mine.length ?? 0) > 1 && !window.location.hash) window.location.hash = "#/projects";
+    });
+  }, []);
   useEffect(() => {
     if (!undo) return;
     const timer = window.setTimeout(() => setUndo(null), 8000);
@@ -102,6 +119,7 @@ export function Home({ nav }: { nav: ReactNode }) {
     <div className="app">
       <header className="topbar">
         <strong className="brand">LACUNA</strong>
+        <ProjectCrumb />
         <span className="grow" />
         {nav}
       </header>
@@ -126,7 +144,7 @@ export function Home({ nav }: { nav: ReactNode }) {
         )}
         {err && <p className="error">{err}</p>}
         {list?.length === 0 && !show?.needs_setup && (
-          <p className="muted">{t("工作区里还没有剧集。点「导入新一集」，选每位主持人的分轨。")}</p>
+          <p className="muted">{t("这个项目里还没有剧集。点「导入新一集」，选每位主持人的分轨。")}</p>
         )}
         {!list && !err && <EpisodeListSkeleton />}
         {(() => {

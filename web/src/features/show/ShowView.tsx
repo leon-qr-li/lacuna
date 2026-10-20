@@ -1,34 +1,26 @@
+import { useEffect } from "react";
 import { t } from "../../i18n";
-import { PageLoading } from "../loading/Loading";
+import { loadProjects } from "../projects/api";
 import { useShow } from "./api";
 import { ShowForm } from "./ShowForm";
 
-/** 节目 (#/show): the workspace's show name, hosts and how LACUNA edits and presents it. */
+/** #/show, the old 节目设置: it is 项目设置 now (features/projects). */
 export function ShowView() {
-  const show = useShow();
-  if (!show) return <PageLoading label={t("正在打开节目设置…")} shape="list" />;
-  return (
-    <main className="show-page">
-      <div className="home-hero">
-        <h1>{t("节目设置")}</h1>
-        <p className="muted">{t("这个工作区做的节目。导入、AI 剪辑、show notes 和海报都按这里来。")}</p>
-      </div>
-      <section className="card">
-        <ShowForm show={show} />
-      </section>
-    </main>
-  );
+  useEffect(() => {
+    window.location.replace("#/project");
+  }, []);
+  return null;
 }
 
-/** First visit to a new workspace (首页): the show's name and hosts before the first import. */
+/** First visit to a new project (首页): its name, language and hosts before the first import. */
 export function ShowSetup() {
   const show = useShow();
   if (!show?.needs_setup) return null;
   return (
     <section className="card show-setup" data-testid="show-setup">
-      <h2>{t("先介绍一下你的节目")}</h2>
-      <p className="muted">{t("填节目名和主持人，每位主持人一条分轨。以后可以在「节目」里改，也能设剪辑风格。")}</p>
-      <ShowForm show={show} compact />
+      <h2>{show.show_name ? t("介绍一下「{name}」", { name: show.show_name }) : t("建你的第一个项目")}</h2>
+      <p className="muted">{t("一档播客、一个客户、一个栏目都可以是一个项目。填名字和主持人，每位主持人一条分轨；这些以后都能在项目设置里改。")}</p>
+      <ShowForm show={show} compact onSaved={() => void loadProjects(true)} />
     </section>
   );
 }

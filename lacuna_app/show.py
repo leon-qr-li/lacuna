@@ -99,11 +99,11 @@ def save(root: str | Path, data: dict) -> dict:
     return clean
 
 
-def write_new(root: str | Path) -> None:
-    """A workspace just created: no show yet, so the first visit asks for one."""
+def write_new(root: str | Path, name: str = "") -> None:
+    """A workspace (project) just created: only its name so far, so the first visit asks for the hosts."""
     root = Path(root)
     if not (root / FILE).exists():
-        atomic_write_json(root / FILE, copy.deepcopy(NEW))
+        atomic_write_json(root / FILE, copy.deepcopy(NEW) | {"show_name": _text(name, 80)})
 
 
 def _text(v, limit: int) -> str:

@@ -35,7 +35,8 @@ def ids(c):
 def test_existing_data_is_the_owners_main_workspace(tmp_path):
     ws, leon = setup(tmp_path)
     sp = leon.get("/api/spaces").json()
-    assert sp["current"] == {"id": "main", "name": "leon", "role": "admin"}
+    assert {k: sp["current"][k] for k in ("id", "name", "role")} == {"id": "main", "name": "洛城二三事", "role": "admin"}
+    assert sp["current"]["episodes"] == 1
     assert ids(leon) == [EPISODE]
     assert (ws / "episodes" / EPISODE).is_dir()           # nothing moved
 
@@ -60,7 +61,8 @@ def test_beta_user_gets_an_empty_private_workspace(tmp_path):
 def test_co_host_shares_the_main_workspace(tmp_path):
     ws, leon = setup(tmp_path)
     pei = join(leon, "pei@example.com", space="main", space_role="editor")
-    assert pei.get("/api/spaces").json()["current"] == {"id": "main", "name": "leon", "role": "editor"}
+    cur = pei.get("/api/spaces").json()["current"]
+    assert (cur["id"], cur["role"], cur["by"]) == ("main", "editor", None)
     assert ids(pei) == [EPISODE]
     # editors work, but only workspace admins delete episodes for good
     assert pei.delete(f"/api/episodes/{EPISODE}").status_code == 403
@@ -184,3 +186,35 @@ def test_cloud_access_check_comes_first_on_every_path(tmp_path, monkeypatch):
         assert c.get(path).status_code == 403, path
     assert c.post("/api/spaces/switch", json={"id": "main"}).status_code == 403
     assert app.user_middleware[0].cls.__name__ == "CloudGate"       # outermost
+
+
+def test_anyone_starts_a_project_and_invites_collaborators(tmp_path):
+    """邀请协作 (decision projects-albums): projects are workspaces; any account may start one and manage it;
+    existing accounts join at once, new people only through a site admin's invite."""
+    ws, leon = setup(tmp_path)
+    beta = join(leon, "beta@example.com")
+    made = beta.post("/api/spaces", json={"name": "片场夜谈"})
+    assert made.status_code == 200
+    sid = made.json()["created"]
+    assert made.json()["current"]["id"] == sid               # moved straight into it
+    assert made.json()["current"]["name"] == "片场夜谈"        # the name is the new show's name
+    assert beta.get("/api/show").json()["show_name"] == "片场夜谈"
+    assert beta.get("/api/show").json()["needs_setup"] is True
+    # beta brings Leon (who has an account) in as an editor; Leon sees who invited him
+    r = beta.post(f"/api/spaces/{sid}/invite", json={"email": "leon@example.com", "role": "editor"})
+    assert r.status_code == 200 and r.json()["joined"] == "leon@example.com"
+    row = next(s for s in leon.get("/api/spaces").json()["mine"] if s["id"] == sid)
+    assert (row["role"], row["by"], row["people"]) == ("editor", "beta@example.com", 2)
+    # beta can't sign up strangers; the site owner can, and the invite waits in the project's list
+    assert beta.post(f"/api/spaces/{sid}/invite", json={"email": "new@example.com"}).status_code == 403
+    out = leon.post("/api/spaces/main/invite", json={"email": "pei@example.com", "role": "viewer"}).json()
+    assert out["invited"] == "pei@example.com" and out["link"]
+    people = leon.get("/api/spaces/main/people").json()
+    assert [(i["email"], i["role"]) for i in people["invites"]] == [("pei@example.com", "viewer")]
+    assert people["can_invite_new"] is True
+    assert beta.get(f"/api/spaces/{sid}/people").json()["can_invite_new"] is False
+    # beta can't see or withdraw main's invites; Leon withdraws it
+    assert beta.get("/api/spaces/main/people").status_code == 403
+    iid = people["invites"][0]["id"]
+    assert beta.delete(f"/api/spaces/main/invites/{iid}").status_code == 403
+    assert leon.delete(f"/api/spaces/main/invites/{iid}").json()["invites"] == []

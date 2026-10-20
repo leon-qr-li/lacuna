@@ -62,13 +62,13 @@ class _Dispatch:
             return JSONResponse({"detail": msg}, status_code=403)(scope, receive, send)
 
         if sid is None:
-            return await deny(tr("你还没有加入任何工作区，请联系 LACUNA 的管理员。"))
+            return await deny(tr("你还没有项目。先建一个项目，或者请别人邀请你协作。"))
         role = self.spaces.role(sid, email)
         method = scope["method"]
         if role == "viewer" and method not in ("GET", "HEAD"):
-            return await deny(tr("你在这个工作区只能试听和查看，不能修改。"))
+            return await deny(tr("你在这个项目里只能试听和查看，不能修改。"))
         if role != "admin" and method == "DELETE" and FOR_GOOD.match(path):
-            return await deny(tr("只有工作区管理员能彻底删除剧集。"))
+            return await deny(tr("只有项目管理员能彻底删除剧集。"))
         if sid == MAIN:
             return await self.app(scope, receive, send)
         return await self.child(sid)(scope, receive, send)
@@ -129,7 +129,7 @@ def register(app, ctx) -> None:
         if sid and sid != "new" and sid in spaces.spaces:
             spaces.set_member(sid, email, invite.get("space_role") or "editor")
         else:
-            spaces.create(email.split("@")[0], email)
+            spaces.create(email.split("@")[0], email, named=False)
 
     auth.on_joined.append(joined)
     auth.on_deleted.append(spaces.forget)
@@ -151,14 +151,14 @@ def register(app, ctx) -> None:
 
     def may_manage(email: str, sid: str) -> None:
         if not (site_admin(email) or spaces.role(sid, email) == "admin"):
-            raise HTTPException(403, tr("只有工作区管理员能改这个工作区"))
+            raise HTTPException(403, tr("只有项目管理员能改这个项目"))
 
     def invite_space(actor: str, space: str | None, role: str | None) -> dict:
         """What an invite (routes/auth.py) puts its new account into."""
         if not space or space == "new":
             return {"space": "new"}
         if space not in spaces.spaces:
-            raise AuthError(tr("没有这个工作区"), 404)
+            raise AuthError(tr("没有这个项目"), 404)
         role = role or "editor"
         if role not in SPACE_RANK:
             raise AuthError(tr("没有这个角色"))
@@ -168,7 +168,8 @@ def register(app, ctx) -> None:
 
     def overview(request: Request, email: str, picked: str | None = None) -> dict:
         cur = spaces.current(email, picked or request.cookies.get(SPACE_COOKIE))
-        out = {"current": next((s for s in spaces.mine(email) if s["id"] == cur), None), "mine": spaces.mine(email)}
+        mine = spaces.mine(email, detail=True)
+        out = {"current": next((s for s in mine if s["id"] == cur), None), "mine": mine}
         if site_admin(email):
             out["all"] = spaces.overview()
         elif cur and spaces.role(cur, email) == "admin":
@@ -183,7 +184,7 @@ def register(app, ctx) -> None:
     def switch(body: SwitchBody, request: Request):
         email = me(request)
         if not spaces.role(body.id, email):
-            raise HTTPException(403, tr("你不在这个工作区里"))
+            raise HTTPException(403, tr("你不在这个项目里"))
         res = JSONResponse(overview(request, email, body.id))
         res.set_cookie(SPACE_COOKIE, body.id, max_age=365 * 86400, httponly=True, samesite="strict", path="/",
                        secure=auth.cloud)
@@ -191,11 +192,13 @@ def register(app, ctx) -> None:
 
     @app.post("/api/spaces")
     def create(body: NameBody, request: Request):
+        """Anyone signed in may start a project of their own (they manage it); they are moved into it."""
         email = me(request)
-        if not site_admin(email):
-            raise HTTPException(403, tr("只有管理员能新建工作区"))
-        run(lambda: spaces.create(body.name, email))
-        return overview(request, email)
+        made = run(lambda: spaces.create(body.name, email))
+        res = JSONResponse(overview(request, email, made["id"]) | {"created": made["id"]})
+        res.set_cookie(SPACE_COOKIE, made["id"], max_age=365 * 86400, httponly=True, samesite="strict", path="/",
+                       secure=auth.cloud)
+        return res
 
     @app.post("/api/spaces/{sid}")
     def rename(sid: str, body: NameBody, request: Request):
@@ -211,5 +214,65 @@ def register(app, ctx) -> None:
         target = body.email.strip().lower()
         if body.role is not None and target not in auth.users:
             raise HTTPException(404, tr("没有这个账号：先在「成员与邀请」里邀请对方"))
-        run(lambda: spaces.set_member(sid, target, body.role))
+        run(lambda: spaces.set_member(sid, target, body.role, by=email))
         return overview(request, email)
+
+    # -- 邀请协作: one project's collaborators and the invites waiting for them
+    def people(sid: str) -> dict:
+        s = spaces.spaces.get(sid)
+        if not s:
+            raise HTTPException(404, tr("没有这个项目"))
+        return {"id": sid, "name": spaces.title(sid),
+                "members": [{"email": e, "role": r} for e, r in sorted(s["members"].items())],
+                "invites": [{"id": i["id"], "email": i["email"], "role": i.get("space_role") or "editor",
+                             "exp": i["exp"]} for i in auth.list_invites() if i.get("space") == sid],
+                "can_invite_new": False}
+
+    def people_for(email: str, sid: str) -> dict:
+        return people(sid) | {"can_invite_new": site_admin(email)}
+
+    @app.get("/api/spaces/{sid}/people")
+    def list_people(sid: str, request: Request):
+        email = me(request)
+        if not spaces.role(sid, email) and not site_admin(email):
+            raise HTTPException(403, tr("你不在这个项目里"))
+        return people_for(email, sid)
+
+    @app.post("/api/spaces/{sid}/invite")
+    def invite(sid: str, body: MemberBody, request: Request):
+        """By email: someone with an account joins at once; anyone else gets a sign-up link for this project,
+        which only the site's owner and admins may send (the site stays invite-only)."""
+        email = me(request)
+        may_manage(email, sid)
+        target = body.email.strip().lower()
+        role = body.role or "editor"
+        if role not in SPACE_RANK:
+            raise HTTPException(422, tr("没有这个角色"))
+        out: dict = {}
+        if target in auth.users:
+            run(lambda: spaces.set_member(sid, target, role, by=email))
+            out = {"joined": target}
+        elif site_admin(email):
+            sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request), {"space": sid, "space_role": role}))
+            grant = getattr(app.state, "grant_access", None)       # routes/auth.py: Cloudflare Access list
+            if grant:
+                grant(sent["email"], True)
+            out = {"invited": sent["email"], "link": sent["link"], "mailed": sent["mailed"],
+                   "mail_error": sent["mail_error"]}
+        else:
+            raise HTTPException(403, tr("这个邮箱还没有 LACUNA 账号。现在只有 LACUNA 管理员能邀请新人注册。"))
+        return people_for(email, sid) | out
+
+    @app.delete("/api/spaces/{sid}/invites/{iid}")
+    def withdraw(sid: str, iid: str, request: Request):
+        email = me(request)
+        may_manage(email, sid)
+        if not any(i["id"] == iid and i.get("space") == sid for i in auth.list_invites()):
+            raise HTTPException(404, tr("这个邀请已经没有了"))
+        gone = auth.revoke_invite(iid)
+        drop = getattr(app.state, "grant_access", None)
+        if drop:
+            for e in gone:
+                if e not in auth.users:
+                    drop(e, False)
+        return people_for(email, sid)

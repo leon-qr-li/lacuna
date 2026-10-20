@@ -119,7 +119,7 @@ export function SettingsView() {
         <h2>{t("这台电脑")}</h2>
         <ul className="plain small">
           <li>{t("系统：")}{info.platform}</li>
-          <li>{t("工作区：")}{info.workspace}</li>
+          <li>{t("项目：")}{info.workspace}</li>
           <li data-testid="ffmpeg-state">ffmpeg：{info.ffmpeg && info.ffprobe ? t("已就绪") : t("没找到（导入和导出会失败）")}</li>
           <li>{t("语音识别模型：")}{info.models ? t("已下载") : t("第一次导入时自动下载（约 400 MB）")}</li>
         </ul>
