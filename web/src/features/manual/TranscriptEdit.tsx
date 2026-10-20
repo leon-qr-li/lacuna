@@ -38,8 +38,8 @@ function pieces(words: W[]): { gone: string | null; words: W[] }[] {
 }
 
 /**
- * 文字稿剪辑 (decision manual-editing): the transcript around the playhead. Drag across words to select them
- * and cut; words already cut (by the AI, the chat or by hand) stay visible struck through, a click restores them.
+ * 文字稿剪辑 (decision manual-editing): the transcript around the playhead. Click a word or drag across words to
+ * select them and cut; words already cut (by the AI, the chat or by hand) stay visible struck through, a click restores them.
  */
 export function TranscriptEdit({
   ep,
@@ -55,7 +55,7 @@ export function TranscriptEdit({
   run: (p: Promise<Episode>, msg?: string | ((next: Episode) => string)) => Promise<boolean>;
 }) {
   const { sel, setSel } = m;
-  const drag = useRef<{ a: W; moved: boolean } | null>(null);
+  const drag = useRef<{ a: W; moved: boolean; again: boolean } | null>(null);
   const box = useRef<HTMLDivElement | null>(null);
   const p0 = Math.max(0, Math.floor((time - BEFORE_S) / TEXT_S) * TEXT_S);
   const chunks = useChunks<Line[]>(
@@ -89,7 +89,9 @@ export function TranscriptEdit({
   const wordDown = (w: W) => (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     e.preventDefault();
-    drag.current = { a: w, moved: false };
+    // a click on the one word already selected drops the selection again
+    const again = !!sel && picked(w) && audible.filter(picked).length === 1;
+    drag.current = { a: w, moved: false, again };
     select(w, w);
   };
   const wordEnter = (w: W) => () => {
@@ -103,8 +105,9 @@ export function TranscriptEdit({
       const g = drag.current;
       if (!g) return;
       drag.current = null;
+      // a click selects that one word (so a single 嗯 or a stutter can be cut) and jumps there
       if (!g.moved) {
-        setSel(null);
+        if (g.again) setSel(null);
         player.seek(g.a.a);
       }
     };

@@ -2,9 +2,26 @@
 .ml { gap: 12px; }
 .ml-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .ml-head h2 { margin: 0; }
-.ml-zoom { display: inline-flex; border: 1px solid var(--line-2); border-radius: 10px; overflow: hidden; }
-.ml-zoom button { border: 0; background: none; padding: 3px 10px; font-size: 12px; color: var(--ink-2); cursor: pointer; white-space: nowrap; }
-.ml-zoom button[aria-pressed="true"] { background: var(--primary); color: var(--on-primary); font-weight: 600; }
+/* the "?" next to the title: a tip on hover / focus */
+.ml-help { position: relative; display: inline-flex; }
+.ml-help-btn { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-2); background: none; color: var(--ink-3);
+  font: 700 12px/1 var(--sans); cursor: help; padding: 0; }
+.ml-help-btn:hover, .ml-help-btn:focus-visible { color: var(--accent-ink); border-color: var(--accent); }
+.ml-help-tip { position: absolute; top: calc(100% + 8px); left: -8px; z-index: 30; width: min(400px, 80vw); display: none; flex-direction: column;
+  gap: 4px; padding: 14px 16px; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop);
+  font-size: 13px; line-height: 1.55; color: var(--ink-2); }
+.ml-help:hover .ml-help-tip, .ml-help:focus-within .ml-help-tip { display: flex; }
+.ml-help-row { display: grid; grid-template-columns: 9.5em 1fr; gap: 12px; }
+.ml-help-k { color: var(--ink); font-weight: 600; }
+/* the time ruler: drag it to pan; labels sit on the lanes' time scale */
+.ml-ruler { position: relative; flex: 1; height: 22px; border-radius: 8px; background: var(--hover); overflow: hidden; cursor: grab;
+  touch-action: none; user-select: none; font-size: 11px; color: var(--ink-3); }
+.ml-ruler:active { cursor: grabbing; }
+.ml-ruler span { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; padding-left: 4px; border-left: 1px solid var(--line-2);
+  white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
+.ml-body.is-edge { cursor: col-resize; } /* on a selection edge: drag to widen or narrow it */
+.ml.is-hand .ml-body { cursor: grab; }
+.ml.is-hand .ml-body:active { cursor: grabbing; }
 .ml-body { height: 60px; cursor: text; touch-action: none; user-select: none; }
 .ml-wave { position: absolute; inset: 0; width: 100%; height: 100%; }
 .ml-clip { opacity: 0.25; }
@@ -39,3 +56,5 @@
   .ml-line { grid-template-columns: 52px 1fr; }
   .ml-line .ml-who { display: none; }
 }
+/* the card is its own stacking context (backdrop blur): lift it while its tip is open so the cards below don't cover it */
+.ml:has(.ml-help:hover), .ml:has(.ml-help:focus-within) { position: relative; z-index: 25; } /* above the sticky player (20) */

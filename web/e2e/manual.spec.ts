@@ -36,12 +36,153 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
   });
 
+  const view = async (page: Page) => {
+    const el = page.getByTestId("edit-lanes");
+    return { start: Number(await el.getAttribute("data-start")), span: Number(await el.getAttribute("data-span")) };
+  };
+
+  test("Ctrl + wheel zooms the timeline smoothly around the pointer, not the page; 暂停时回退 5 秒 starts unticked", async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem("lacuna.rewindOnPause"));
+    await open(page);
+    await expect(page.getByLabel("暂停时回退 5 秒")).not.toBeChecked();
+    await expect(page.getByTestId("edit-lanes").getByRole("button", { name: /秒$/ })).toHaveCount(0); // no zoom buttons
+    const before = await view(page);
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    await expect.poll(async () => (await view(page)).span).toBeLessThan(before.span);
+    const z1 = (await view(page)).span;
+    expect(z1).toBeGreaterThan(before.span * 0.6); // one notch is a small step, not a jump to the next preset
+    // the page itself never zooms: the event is cancelled
+    const cancelled = await page.getByTestId("lane-Pei").evaluate((el) => {
+      const ev = new WheelEvent("wheel", { deltaY: 100, ctrlKey: true, bubbles: true, cancelable: true });
+      el.dispatchEvent(ev);
+      return ev.defaultPrevented;
+    });
+    expect(cancelled).toBe(true);
+    const outside = await page.locator("body").evaluate((el) => {
+      const ev = new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true });
+      el.dispatchEvent(ev);
+      return ev.defaultPrevented;
+    });
+    expect(outside).toBe(false); // the wheel elsewhere still scrolls the page
+  });
+
+  test("a click on a lane moves the playhead but not the timeline; dragging the ruler pans it", async ({ page }) => {
+    await open(page);
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    const v0 = await view(page);
+    await page.getByTestId("lane-Pei").click({ position: { x: lane.width * 0.9, y: 20 } });
+    await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
+    await page.waitForTimeout(300);
+    expect(await view(page)).toEqual(v0); // not re-centred on the click
+    const ruler = (await page.getByTestId("ml-ruler").boundingBox())!;
+    await page.mouse.move(ruler.x + ruler.width * 0.6, ruler.y + ruler.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(ruler.x + ruler.width * 0.3, ruler.y + ruler.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await expect.poll(async () => (await view(page)).start).toBeGreaterThan(v0.start);
+    await expect(page.getByTestId("ml-bar")).toHaveCount(0); // panning never selects
+  });
+
+  test("holding Space turns the lanes into a hand that pans; a Space tap still plays", async ({ page }) => {
+    await open(page);
+    await page.getByLabel("暂停时回退 5 秒").uncheck();
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 6; i++) await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    const v0 = await view(page);
+    await page.mouse.move(lane.x + lane.width * 0.3, lane.y + lane.height / 2);
+    await page.keyboard.down(" ");
+    await expect(page.getByTestId("edit-lanes")).toHaveClass(/is-hand/);
+    await page.mouse.down();
+    await page.mouse.move(lane.x + lane.width * 0.7, lane.y + lane.height / 2, { steps: 6 });
+    await page.mouse.up();
+    await page.keyboard.up(" ");
+    await expect(page.getByTestId("edit-lanes")).not.toHaveClass(/is-hand/);
+    expect((await view(page)).start).toBeLessThan(v0.start); // dragged right: earlier audio comes into view
+    await expect(page.getByTestId("ml-bar")).toHaveCount(0);
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "播放"); // a pan is not a play
+    await page.keyboard.press(" ");
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "暂停");
+    await page.keyboard.press(" ");
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "播放");
+  });
+
+  test("playing past the right edge turns the timeline a page", async ({ page }) => {
+    await open(page);
+    await page.getByLabel("暂停时回退 5 秒").uncheck();
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    for (let i = 0; i < 12; i++) await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    await page.getByTestId("lane-Leon").click({ position: { x: lane.width * 0.92, y: 20 } });
+    const v0 = await view(page);
+    await page.getByTestId("play").click();
+    await expect.poll(async () => (await view(page)).start, { timeout: 15_000 }).toBeGreaterThan(v0.start + v0.span * 0.5);
+    await page.getByTestId("play").click();
+  });
+
+  test("with a selection, play plays just the selection and comes back to its start", async ({ page }) => {
+    await open(page);
+    await page.getByLabel("暂停时回退 5 秒").uncheck();
+    await dragLane(page, "Leon", 0.3, 0.36);
+    await expect(page.getByTestId("ml-bar")).toBeVisible();
+    const text = (await page.getByTestId("ml-bar").locator(".ml-what b").textContent()) ?? "";
+    const [a, b] = text.split("–").map((x) => {
+      const [m, s] = x.trim().split(":");
+      return Number(m) * 60 + Number(s);
+    });
+    const audio = page.getByTestId("main-audio");
+    await page.getByTestId("play").click();
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "暂停");
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "播放", { timeout: 15_000 }); // stops by itself
+    const at = await audio.evaluate((el: HTMLAudioElement) => el.currentTime);
+    expect(at).toBeCloseTo(a, 0); // back at the start of the selection
+    expect(b).toBeGreaterThan(a);
+    await expect(page.getByTestId("ml-bar")).toBeVisible(); // the selection stays
+  });
+
+  test("on a selection edge the pointer turns into a resize cursor, and dragging it resizes", async ({ page }) => {
+    await open(page);
+    await dragLane(page, "Leon", 0.3, 0.4);
+    const lane = page.getByTestId("lane-Leon");
+    const box = (await lane.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
+    await expect(lane).not.toHaveClass(/is-edge/);
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2);
+    await expect(lane).toHaveClass(/is-edge/);
+    expect(await lane.evaluate((el) => getComputedStyle(el).cursor)).toBe("col-resize");
+    const before = await page.getByTestId("ml-bar").locator(".ml-what b").textContent();
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect(page.getByTestId("ml-bar").locator(".ml-what b")).not.toHaveText(before ?? "");
+    await expect(lane).not.toHaveClass(/is-edge/);
+  });
+
+  test("the ? next to the title explains the timeline on hover", async ({ page }) => {
+    await open(page);
+    const tip = page.locator("#ml-help-tip");
+    await expect(tip).toBeHidden();
+    await page.getByTestId("ml-help").hover();
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText("按住空格拖");
+    await expect(tip).toContainText("Ctrl + X");
+  });
+
   test("cut from both tracks, shows as 手动剪辑, undo brings it back", async ({ page }) => {
     await open(page);
     const before = await duration(page);
-    await page.getByRole("button", { name: "10 秒" }).click();
-    await expect(page.getByRole("button", { name: "10 秒" })).toHaveAttribute("aria-pressed", "true");
-    await page.getByRole("button", { name: "30 秒" }).click();
     await dragLane(page, "Leon", 0.55, 0.62);
     await page.getByTestId("ml-cut").click();
     await expect(page.locator(".toast")).toContainText("已删掉");
@@ -66,9 +207,9 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("lane-Pei").locator('.mark-span[title^="Pei 单轨静音"]')).toHaveCount(1);
     await expect(page.getByTestId("lane-Leon").locator('.mark-span[title^="Pei 单轨静音"]')).toHaveCount(0);
     expect(await duration(page)).toBeCloseTo(before, 2);
-    // Del on a new selection cuts it from every track
+    // Ctrl + X on a new selection cuts it from every track
     await dragLane(page, "Leon", 0.7, 0.75);
-    await page.keyboard.press("Delete");
+    await page.keyboard.press("Control+x");
     await expect(page.locator(".toast")).toContainText("已删掉");
     await page.getByRole("button", { name: "撤销" }).click();
     await page.getByRole("button", { name: "撤销" }).click();
@@ -103,11 +244,25 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("ml-tx").locator(`s.ml-gone[data-edit="${manualId}"]`)).toHaveCount(0);
   });
 
-  test("a click on a word jumps there", async ({ page }) => {
+  test("a click on one word selects just that word and jumps there; a second click drops it", async ({ page }) => {
     await open(page);
     const w = page.getByTestId("ml-tx").locator(".ml-w").nth(20);
+    const text = (await w.textContent()) ?? "";
+    await w.click();
+    await expect(page.getByTestId("ml-tx").locator(".ml-w.is-sel")).toHaveCount(1);
+    await expect(w).toHaveClass(/is-sel/);
+    await expect(page.getByTestId("ml-bar")).toContainText(`「${text}」`);
+    await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
     await w.click();
     await expect(page.getByTestId("ml-bar")).toHaveCount(0);
-    await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
+  });
+
+  test("a single selected word can be cut", async ({ page }) => {
+    await open(page);
+    const w = page.getByTestId("ml-tx").locator(".ml-w").nth(8);
+    await w.click();
+    await page.getByTestId("transcript-edit").getByTestId("ml-cut").click();
+    await expect(page.locator(".toast")).toContainText("已删掉");
+    await expect(page.getByTestId("ml-tx").locator("s.ml-gone[data-edit^='m']")).not.toHaveCount(0);
   });
 });
