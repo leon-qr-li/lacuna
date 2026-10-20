@@ -152,6 +152,24 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("ml-bar")).toBeVisible(); // the selection stays
   });
 
+  test("on a selection edge the pointer turns into a resize cursor, and dragging it resizes", async ({ page }) => {
+    await open(page);
+    await dragLane(page, "Leon", 0.3, 0.4);
+    const lane = page.getByTestId("lane-Leon");
+    const box = (await lane.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
+    await expect(lane).not.toHaveClass(/is-edge/);
+    await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2);
+    await expect(lane).toHaveClass(/is-edge/);
+    expect(await lane.evaluate((el) => getComputedStyle(el).cursor)).toBe("col-resize");
+    const before = await page.getByTestId("ml-bar").locator(".ml-what b").textContent();
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await expect(page.getByTestId("ml-bar").locator(".ml-what b")).not.toHaveText(before ?? "");
+    await expect(lane).not.toHaveClass(/is-edge/);
+  });
+
   test("the ? next to the title explains the timeline on hover", async ({ page }) => {
     await open(page);
     const tip = page.locator("#ml-help-tip");

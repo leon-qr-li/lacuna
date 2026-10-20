@@ -158,6 +158,7 @@ export function EditLanes({
   const hover = useRef(false);
   const space = useRef<{ panned: boolean } | null>(null);
   const [hand, setHand] = useState(false); // Space held over the timeline: the lanes pan instead of select
+  const [edge, setEdge] = useState(false); // pointer on a selection edge (or dragging one): a resize cursor shows it
   const t1 = t0 + span;
 
   // follow the playhead only when it leaves the window by itself: playing past the right edge turns a page, and a
@@ -257,17 +258,22 @@ export function EditLanes({
     if (space.current) space.current.panned = true;
     e.currentTarget.setPointerCapture(e.pointerId);
   };
+  /** "a" / "b" when clientX is on that edge of the selection */
+  const onEdge = (clientX: number, r: DOMRect): "a" | "b" | null => {
+    if (!sel) return null;
+    const px = (s: number) => r.left + ((s - t0) / span) * r.width;
+    if (Math.abs(clientX - px(sel.a)) <= EDGE_PX) return "a";
+    if (Math.abs(clientX - px(sel.b)) <= EDGE_PX) return "b";
+    return null;
+  };
   const down = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button === 1 || (e.button === 0 && space.current)) return panFrom(e);
     if (e.button !== 0) return;
     const r = e.currentTarget.getBoundingClientRect();
     let anchor = at(e.clientX, r);
     let moved = false;
-    if (sel) {
-      const px = (s: number) => r.left + ((s - t0) / span) * r.width;
-      if (Math.abs(e.clientX - px(sel.a)) <= EDGE_PX) [anchor, moved] = [sel.b, true];
-      else if (Math.abs(e.clientX - px(sel.b)) <= EDGE_PX) [anchor, moved] = [sel.a, true];
-    }
+    const side = onEdge(e.clientX, r);
+    if (sel && side) [anchor, moved] = [side === "a" ? sel.b : sel.a, true];
     drag.current = { kind: "sel", x0: e.clientX, anchor, moved, r };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -276,7 +282,10 @@ export function EditLanes({
   };
   const move = (e: React.PointerEvent<HTMLDivElement>) => {
     const g = drag.current;
-    if (!g) return;
+    if (!g) {
+      if (e.currentTarget.classList.contains("ml-body")) setEdge(!space.current && !!onEdge(e.clientX, e.currentTarget.getBoundingClientRect()));
+      return;
+    }
     if (g.kind === "pan") return place(g.t0 - ((e.clientX - g.x0) / g.w) * span);
     if (!g.moved && Math.abs(e.clientX - g.x0) < 4) return;
     g.moved = true;
@@ -286,6 +295,7 @@ export function EditLanes({
   const up = (e: React.PointerEvent<HTMLDivElement>) => {
     const g = drag.current;
     drag.current = null;
+    setEdge(false);
     if (!g || g.kind === "pan") return;
     if (!g.moved) {
       setSel(null);
@@ -326,9 +336,10 @@ export function EditLanes({
         <div className="lane" key={tr.name}>
           <span className="lane-name">{tr.name}</span>
           <div
-            className="lane-body ml-body"
+            className={`lane-body ml-body ${edge ? "is-edge" : ""}`}
             onPointerDown={down}
             onPointerMove={move}
+            onPointerLeave={() => !drag.current && setEdge(false)}
             onPointerUp={up}
             onPointerCancel={up}
             role="presentation"
