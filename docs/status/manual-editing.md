@@ -14,8 +14,9 @@ for small follow-up features. Decision `manual-editing`.
 - Missing recordings (#138): wave / cut on an episode without its raw tracks get the usual 409 message.
 - Not done (an idea, not asked): moving an existing cut's edges by dragging.
 
-## Next version (Leon 2026-10-20, queued, not shipped)
-- One-word select (draft PR, branch `claude/project-thread-wa7u5a`): a click on a transcript word used to drop the
-  selection and only seek, so a single 嗯 or stutter could not be selected. Now a click selects that word and seeks;
-  clicking it again drops it. Waits for Leon to start the next version before the `staging` label.
-- Also queued (not built): 「暂停时回退五秒」 default off; Ctrl+wheel over the 剪辑时间线 zooms the lanes, not the page.
+## Next version (Leon 2026-10-20 02:33Z "一到三开做"), PR #143 on staging
+- One-word select: a click on a transcript word used to drop the selection and only seek, so a single 嗯 or a
+  stutter could not be selected. Now a click selects that word and seeks; clicking it again drops it.
+- 「暂停时回退 5 秒」 starts unticked (`usePlayer.ts` readPref: only a stored "1" turns it on).
+- Ctrl + wheel over the 剪辑时间线 card steps the zoom 10 / 30 / 60 s and cancels the browser's page zoom
+  (non-passive wheel listener in `EditLanes.tsx`; steps at least 150 ms apart for trackpad pinch bursts).

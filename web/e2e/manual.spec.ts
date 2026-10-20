@@ -36,6 +36,39 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
   });
 
+  test("Ctrl + wheel over the timeline zooms it, not the page; 暂停时回退 5 秒 starts unticked", async ({ page }) => {
+    await page.addInitScript(() => localStorage.removeItem("lacuna.rewindOnPause"));
+    await open(page);
+    await expect(page.getByLabel("暂停时回退 5 秒")).not.toBeChecked();
+    const zoom = page.getByTestId("edit-lanes").getByRole("group", { name: "缩放" });
+    await zoom.getByRole("button", { name: "30 秒" }).click();
+    const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
+    await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
+    await page.keyboard.down("Control");
+    await page.mouse.wheel(0, -100);
+    await page.keyboard.up("Control");
+    await expect(zoom.getByRole("button", { name: "10 秒" })).toHaveAttribute("aria-pressed", "true");
+    await page.waitForTimeout(200);
+    await page.keyboard.down("Control");
+    await page.mouse.wheel(0, 100);
+    await page.keyboard.up("Control");
+    await expect(zoom.getByRole("button", { name: "30 秒" })).toHaveAttribute("aria-pressed", "true");
+    // the page itself must not zoom: the event is cancelled
+    const cancelled = await page.getByTestId("lane-Pei").evaluate((el) => {
+      const ev = new WheelEvent("wheel", { deltaY: 100, ctrlKey: true, bubbles: true, cancelable: true });
+      el.dispatchEvent(ev);
+      return ev.defaultPrevented;
+    });
+    expect(cancelled).toBe(true);
+    // a plain wheel still scrolls the page as before
+    const plain = await page.getByTestId("lane-Pei").evaluate((el) => {
+      const ev = new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true });
+      el.dispatchEvent(ev);
+      return ev.defaultPrevented;
+    });
+    expect(plain).toBe(false);
+  });
+
   test("cut from both tracks, shows as 手动剪辑, undo brings it back", async ({ page }) => {
     await open(page);
     const before = await duration(page);

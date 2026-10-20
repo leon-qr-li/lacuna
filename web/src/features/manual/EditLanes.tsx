@@ -13,6 +13,7 @@ import "./manual.css";
 
 const ZOOMS = [10, 30, 60] as const;
 const ZOOM_KEY = "lacuna.manual.zoom";
+const WHEEL_GAP_MS = 150;
 const EDGE_PX = 7; // grab a selection edge within this many pixels
 
 const readZoom = (): number => {
@@ -102,6 +103,28 @@ export function EditLanes({
   const t0 = frozen ?? Math.max(0, Math.min(time - span / 2, d - span));
   const t1 = t0 + span;
 
+  // Ctrl + wheel over this card zooms the timeline, not the page (Leon 2026-10-20). React's onWheel is
+  // passive, so the page zoom can only be stopped from a listener added by hand. One step per notch;
+  // a trackpad pinch sends a burst of small events, so steps are at least WHEEL_GAP_MS apart.
+  const card = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = card.current;
+    if (!el) return;
+    let last = 0;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey || e.deltaY === 0) return;
+      e.preventDefault();
+      if (e.timeStamp - last < WHEEL_GAP_MS) return;
+      last = e.timeStamp;
+      setZoom((z) => {
+        const i = ZOOMS.indexOf(z as (typeof ZOOMS)[number]) + (e.deltaY < 0 ? -1 : 1);
+        return ZOOMS[Math.max(0, Math.min(ZOOMS.length - 1, i))];
+      });
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(ZOOM_KEY, String(zoom));
@@ -155,7 +178,7 @@ export function EditLanes({
   const ticks = [0, 1, 2, 3].map((i) => t0 + (i * span) / 3);
   const showSel = sel && sel.b > t0 && sel.a < t1;
   return (
-    <section className="card lanes ml" aria-label={t("剪辑时间线")} data-testid="edit-lanes">
+    <section ref={card} className="card lanes ml" aria-label={t("剪辑时间线")} data-testid="edit-lanes">
       <div className="ml-head">
         <h2>{t("剪辑时间线")}</h2>
         <span className="grow" />
