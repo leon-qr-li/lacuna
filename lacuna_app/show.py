@@ -27,6 +27,7 @@ from .store import atomic_write_json, read_json
 FILE = "show.json"
 VERSION = 1
 MAX_HOSTS = 6
+MAX_TERMS = 60          # 专有名词: names the transcript must spell right (transcript_fix.py)
 # colour names, each a light + dark pair in web/src/features/show/show.css (WCAG AA checked there)
 COLORS = ("blue", "purple", "teal", "amber", "green", "pink")
 CUT_LEVELS = ("gentle", "normal", "firm")
@@ -121,6 +122,15 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
            "footer": str(data.get("footer") or "").strip()[:600]}
     pub = data.get("publish") if isinstance(data.get("publish"), dict) else {}
     out["publish"] = {"ximalaya": bool(pub.get("ximalaya")), "album": _text(pub.get("album"), 80)}
+    # a form that doesn't send the terms (yet) keeps the stored ones
+    raw = data.get("terms") if "terms" in data else (before or {}).get("terms")
+    terms, seen = [], set()
+    for t in raw if isinstance(raw, list) else []:
+        t = _text(t, 40)
+        if t and t.lower() not in seen:
+            seen.add(t.lower())
+            terms.append(t)
+    out["terms"] = terms[:MAX_TERMS]
 
     old_tags = {h["tag"]: h for h in (before or {}).get("hosts", [])}
     hosts, used_tags, used_names = [], set(), set()

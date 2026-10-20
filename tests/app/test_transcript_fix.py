@@ -98,13 +98,15 @@ def test_only_reference_terms_quoted_from_the_line_survive():
 def test_glossary_from_project_settings_names_and_title(tmp_path):
     root = tmp_path / "ws"
     Workspace(root).ensure()
-    p = dict(show.LEGACY, legacy=False, show_name="洛城二三事")
-    show.save(root, p)
+    p = dict(show.LEGACY, legacy=False, show_name="洛城二三事", terms=["王家卫", " 花样年华 ", "王家卫", ""])
+    assert show.save(root, p)["terms"] == ["王家卫", "花样年华"]
+    p.pop("terms")
+    assert show.save(root, p)["terms"] == ["王家卫", "花样年华"]       # a form without the field keeps them
     add_name(Workspace(root), "王家位", "王家卫")
     (root / "albums.json").write_text(json.dumps({"schema": 1, "albums": [{"id": "a1", "name": "脉动"}]}), encoding="utf-8")
     g = tf.glossary_for(root, "PULSE-013 · 花样年华", ["Pei"])
     assert g.terms[:3] == ["洛城二三事", "Leon", "Pei"]
-    assert "PULSE" in g.terms and "脉动" in g.terms and "王家卫" in g.allowed().values()
+    assert {"PULSE", "脉动", "王家卫", "花样年华"} <= set(g.terms)
     assert g.corrections == [{"wrong": "王家位", "right": "王家卫"}] and g.title == "PULSE-013 · 花样年华"
 
 
