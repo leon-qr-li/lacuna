@@ -435,6 +435,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "不支持这种语言：{language}": "This language is not supported: {language}",
     "找识别漏掉的 um / uh": "Finding the um / uh the transcript missed",
     "按项目设置校对专有名词": "Checking the show's names against the project settings",
+    "只有管理员能改系统专有名词": "Only admins can change the system terms",
     # missing recordings (sources.py)
     "这一集的原始音轨不在服务器上，现在放不了声音。请在这一集页面顶上重新上传原始音轨。":
         "This episode's original tracks are not on the server, so nothing can play yet. Upload them again at the top of the episode page.",

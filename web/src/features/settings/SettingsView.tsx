@@ -6,6 +6,7 @@ import { ThemeSetting } from "../theme/ThemeSetting";
 import { AccountCard } from "../auth/AccountCard";
 import { SpacesCard } from "../spaces/SpacesCard";
 import { HabitsCard } from "../habits/HabitsCard";
+import { SystemTermsCard } from "../transcript-fix/SystemTermsCard";
 import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 
@@ -115,6 +116,7 @@ export function SettingsView() {
 
       <AccountCard />
       <SpacesCard />
+      <SystemTermsCard />
 
       {!info.cloud && (
       <section className="card" aria-label={t("这台电脑")}>
