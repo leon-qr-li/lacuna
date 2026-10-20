@@ -117,13 +117,13 @@ def auto_place(m: EpisodeMusic) -> dict:
     current = [p for p in m.placements() if p.get("status", APPLIED) == APPLIED]
     have = {p["role"] for p in current}
     assets = sorted(m.lib.for_episode(m.ep.id), key=lambda a: a.get("added_at") or "", reverse=True)
-    rule = m.lib.series_rule(m.load().get("series"))
+    rule = m.defaults()           # the album's opener / ending, else the project's (albums.py)
     ps = copy.deepcopy(current)
     changes, alternatives, left = [], {}, []
 
     def pick(kind: str) -> dict | None:
         if kind in ("intro", "outro") and (rule or {}).get(kind):
-            # the series rule holds wherever its file now belongs (applying the series does too)
+            # the default holds wherever its file now belongs (applying the defaults does too)
             a = next((x for x in m.lib.assets() if x["id"] == rule[kind]["asset_id"]), None)
             if a:
                 return a

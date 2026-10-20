@@ -426,6 +426,7 @@ class Importer:
                 "imported_at": now(), "language": lang, "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in hosts}}
         create_episode(self.ws, job["id"], meta, project, edits, transcript)
         self._level(job["id"])          # not cancellable: the episode exists now
+        self._default_music(job["id"])
         cons = sum(e.consequential for e in edits)
         dur = project.base.length / project.base.sample_rate
         with self._lock:
@@ -464,6 +465,22 @@ class Importer:
             finally:
                 ep.close()
         except Exception:      # noqa: BLE001 - the episode is usable without it; 「声音」 can level it later
+            traceback.print_exc()
+
+    def _default_music(self, episode_id: str) -> None:
+        """The album's (else the project's) opener and ending go in from the start (albums.py); a
+        failure only skips it (the music page still offers them)."""
+        from .episode import Episode
+        from .music import EpisodeMusic
+        try:
+            ep = Episode(self.ws, episode_id)
+            try:
+                m = EpisodeMusic(self.ws, ep)
+                if m.series_suggestion():
+                    m.apply_series()
+            finally:
+                ep.close()
+        except Exception:      # noqa: BLE001 - the episode is usable without it
             traceback.print_exc()
 
     def _log_usage(self, episode_id: str, usage: dict) -> None:

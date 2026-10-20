@@ -250,7 +250,7 @@ export const api = {
   startExport: (id: string, formats: string[]) => req<{ job: ExportJob }>("POST", `${ep(id)}/export`, { formats }),
   exportStatus: (id: string) => req<{ job: ExportJob | null }>("GET", `${ep(id)}/export`),
   imports: () => req<{ jobs: ImportJob[]; next_id: string }>("GET", "/api/imports"),
-  startImport: (body: { id: string; title: string; tracks: string[]; language?: string }) =>
+  startImport: (body: { id: string; title: string; tracks: string[]; language?: string; album?: string }) =>
     req<{ job: ImportJob }>("POST", "/api/imports", body),
   resumeImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/resume`),
   cancelImport: (id: string) => req<{ job: ImportJob }>("POST", `/api/imports/${encodeURIComponent(id)}/cancel`),

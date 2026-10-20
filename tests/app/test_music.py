@@ -257,13 +257,13 @@ def test_preview_series_rule_and_stream(ws, lib, ep, tmp_path):
     p = m.add(jingle["id"], "intro", solo_s=4.0)
     wav, start = m.preview(p["id"])
     assert start == 0.0 and wav[:4] == b"RIFF" and len(wav) > SR * 2 * 10
-    rule = m.save_as_series("洛城二三事")
-    assert rule["intro"]["asset_id"] == jingle["id"] and rule["default"]
-    # a fresh episode (no music yet) is offered the series rule; applying it places the intro
+    project = m.save_as_series("project")
+    assert project["intro"]["asset_id"] == jingle["id"] and project["intro"]["solo_s"] == 4.0
+    # a fresh episode (no music yet) is offered the project's opener; applying it places the intro
     other = EpisodeMusic(ws, ep, lib)
     other.remove(p["id"])
     sug = other.series_suggestion()
-    assert sug and sug["name"] == "洛城二三事"
+    assert sug and sug["from"] == "project" and sug["intro"] == "theme.wav"
     added = other.apply_series()
     assert [x["role"] for x in added] == ["intro"] and other.series_suggestion() is None
     # streamed mix: header + data in byte ranges

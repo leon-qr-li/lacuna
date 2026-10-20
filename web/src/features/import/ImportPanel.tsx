@@ -94,10 +94,14 @@ function NewImport({
   hosts,
   showLanguage,
   dropped,
+  albums,
+  album: albumAtStart,
   onStarted,
   onCancel,
 }: {
   nextId: string;
+  albums: { id: string; name: string }[];
+  album: string;
   hosts: Host[];
   showLanguage: Language;
   dropped: File[] | null;
@@ -107,6 +111,7 @@ function NewImport({
   const [id, setId] = useState(nextId);
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState<Language>(showLanguage);
+  const [album, setAlbum] = useState(albumAtStart);
   const [slots, setSlots] = useState<Record<Who, Slot | null>>(() => Object.fromEntries(hosts.map((h) => [h.tag, null])));
   const [over, setOver] = useState<Who | "all" | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -165,7 +170,7 @@ function NewImport({
     setBusy(true);
     setErr(null);
     try {
-      await api.startImport({ id: id.trim(), title: title.trim(), tracks: paths, language });
+      await api.startImport({ id: id.trim(), title: title.trim(), tracks: paths, language, ...(album ? { album } : {}) });
       started.current = true;
       onStarted();
     } catch (e) {
@@ -244,6 +249,19 @@ function NewImport({
             ))}
           </select>
         </label>
+        {albums.length > 0 && (
+          <label>
+            {t("放进专辑")}
+            <select value={album} onChange={(e) => setAlbum(e.target.value)} data-testid="import-album">
+              <option value="">{t("不放进专辑")}</option>
+              {albums.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       <div className={`lib-drop import-drop${over === "all" ? " lib-drop-active" : ""}`} data-testid="import-drop">
         <p className="lib-drop-title">{t("把 {names} 的分轨拖到这里", { names })}</p>
@@ -401,9 +419,14 @@ export function ImportPanel({
   episodes,
   onEpisodesChanged,
   onOpen,
+  albums = [],
+  album = "",
 }: {
   /** the 剧集 list, for each finished import's review progress */
   episodes: EpisodeListItem[] | null;
+  /** the project's albums: the form offers to put the new episode in one (`album`: picked at first) */
+  albums?: { id: string; name: string }[];
+  album?: string;
   onEpisodesChanged: () => void;
   onOpen: (id: string) => void;
 }) {
@@ -484,6 +507,8 @@ export function ImportPanel({
           hosts={hosts}
           showLanguage={show?.language ?? "zh"}
           dropped={dropped}
+          albums={albums}
+          album={album}
           onCancel={() => {
             setForm(false);
             setDropped(null);

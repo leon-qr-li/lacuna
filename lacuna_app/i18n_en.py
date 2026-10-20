@@ -437,4 +437,11 @@ EN: dict[str, str | tuple[str, str]] = {
     "这一集的原始音轨都在，不用再上传。": "All of this episode's original tracks are here; nothing to upload.",
     "{name} 不是这一集缺的原始音轨（内容对不上）。请选当初导入这一集用的那个文件。":
         "{name} is not one of this episode's missing tracks (the content differs). Pick the file this episode was imported from.",
+    # albums (albums.py, routes/albums.py)
+    "给专辑起个名字": "Give the album a name",
+    "没有这个专辑": "There's no such album",
+    "封面要是 PNG、JPG 或 WebP 图片": "The cover must be a PNG, JPG or WebP image",
+    "封面图片太大（最多 10 MB）": "The cover image is too big (10 MB at most)",
+    "还没有默认的片头片尾": "There's no default intro or outro yet",
+    "这一集不在专辑里": "This episode isn't in an album",
 }

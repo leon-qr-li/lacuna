@@ -195,13 +195,13 @@ def test_delete_keeps_an_asset_another_episode_still_plays(ws, c, tmp_path):
     pid = c.get(f"/api/episodes/{EPISODE}/music").json()["placements"][0]["id"]
     assert c.patch(f"/api/episodes/{EPISODE}/music/{pid}", json={"asset_id": a["id"], "gain_db": -2}).status_code == 200
     rule = upload(c, write_music(tmp_path / "in" / "series.wav", 3.5), kind="intro", episode=AI_EPISODE)
-    Library(Workspace(ws)).save_series("洛城二三事", {"asset_id": rule["id"]}, None)
+    assert c.patch("/api/albums/project", json={"intro": rule["id"]}).status_code == 200
 
     out = delete_episode(c, AI_EPISODE)
     assert out["assets"] == []
     left = {x["id"]: x for x in c.get("/api/library").json()["assets"]}
     assert left[a["id"]]["episodes"] == [EPISODE] and not left[a["id"]]["shared"]   # placement never breaks
-    assert left[rule["id"]]["shared"] is True                                       # the series rule's intro
+    assert left[rule["id"]]["shared"] is True                                       # the project's opener
     m = c.get(f"/api/episodes/{EPISODE}/music").json()
     assert len(m["placements"]) == 1 and not m["placements"][0]["missing"]
 

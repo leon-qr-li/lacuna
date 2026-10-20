@@ -22,8 +22,10 @@ class AssetBody(BaseModel):
 
 
 class ScopeBody(BaseModel):
-    action: str = Field(pattern="^(move|share|add)$", description="move: this episode only; share: every episode; add: one more episode")
+    action: str = Field(pattern="^(move|share|add|album)$",
+                        description="move: this episode only; share: the whole project; add: one more episode; album: one album")
     episode: str | None = Field(None, max_length=120)
+    album: str | None = Field(None, max_length=40)
 
 
 def library_of(ctx) -> Library:
@@ -52,13 +54,22 @@ def register(app, ctx) -> None:
             raise HTTPException(404, "no such episode")
         return episode_id
 
+    def album_or_404(album_id: str | None) -> str:
+        from ..albums import Albums
+        if not album_id or not any(a["id"] == album_id for a in Albums(ctx.ws).albums()):
+            raise HTTPException(404, tr("没有这个专辑"))
+        return album_id
+
     def episodes() -> list[dict]:
         """The episodes an asset can belong to (titles for the scope labels and pickers)."""
         from .archive import archive_of
         index = ctx.provide("episode_index")
         rows = index.rows() if index is not None else [{"id": e, "title": e} for e in ctx.ws.episode_ids()]
+        from ..albums import Albums
         archived = archive_of(ctx).archived()
-        return [{"id": r["id"], "title": r.get("title") or r["id"], "archived": r["id"] in archived} for r in rows]
+        in_album = Albums(ctx.ws).load()["episodes"]
+        return [{"id": r["id"], "title": r.get("title") or r["id"], "archived": r["id"] in archived,
+                 "album": in_album.get(r["id"])} for r in rows]
 
     @app.get("/api/library")
     def library_view(episode: str | None = None):
@@ -71,9 +82,11 @@ def register(app, ctx) -> None:
 
     @app.post("/api/library/assets/{asset_id}/scope")
     def library_scope(asset_id: str, body: ScopeBody):
-        """「挪到某一集」 (move) / 「设为公共」 (share) / 「也加到另一集」 (add)."""
+        """「挪到某一集」 (move) / 「设为整个项目」 (share) / 「也加到另一集」 (add) / 「放进专辑」 (album)."""
         asset_or_404(library, asset_id)
-        if body.action != "share":
+        if body.action == "album":
+            album_or_404(body.album)
+        elif body.action != "share":
             if not body.episode:
                 raise HTTPException(422, "episode is required")
             episode_or_404(body.episode)
@@ -82,20 +95,23 @@ def register(app, ctx) -> None:
                 a = library.move_to(asset_id, body.episode)
             elif body.action == "add":
                 a = library.add_to_episode(asset_id, body.episode)
+            elif body.action == "album":
+                a = library.move_to_album(asset_id, body.album)
             else:
                 a = library.make_shared(asset_id)
         except KeyError:
             raise HTTPException(404, "no such asset")
         message = None
-        if body.action == "move" and len(a["episodes"]) > 1:
+        others = a["episodes"][1:] if body.action == "move" else a["episodes"] if body.action == "album" else []
+        if others:
             titles = {e["id"]: e["title"] for e in episodes()}
             message = tr("{episodes} 的配乐已经用了它，所以那边也留着。",
-                         episodes="、".join(titles.get(e, e) for e in a["episodes"][1:]))
+                         episodes="、".join(titles.get(e, e) for e in others))
         return {"asset": library.asset_view(a), "message": message}
 
     @app.post("/api/library/upload")
     async def library_upload(request: Request, name: str, kind: str = "other", note: str = "", episode: str = "",
-                             part: str = ""):
+                             part: str = "", album: str = ""):
         """A file dragged into (or picked in) the browser, raw bytes in the body. It is written
         straight into the library folder; nothing leaves this machine. The octet-stream type is
         required so another web page can't post here without the browser's CORS preflight."""
@@ -105,6 +121,8 @@ def register(app, ctx) -> None:
             raise HTTPException(422, "note too long")
         if episode:          # added on an episode's music page, or into an episode on the library page
             episode_or_404(episode)
+        elif album:          # added on an album's page, or into an album on the library page
+            album_or_404(album)
         try:
             target = library.upload_target(name, kind)
         except LibraryError as e:
@@ -120,7 +138,7 @@ def register(app, ctx) -> None:
             if not size:
                 raise HTTPException(422, tr("文件是空的"))
             asset, duplicate = await run_in_threadpool(library.add_upload, target, kind, note.strip(),
-                                                       episode or None)
+                                                       episode or None, (album or None) if not episode else None)
         except HTTPException:
             target.unlink(missing_ok=True)
             raise
