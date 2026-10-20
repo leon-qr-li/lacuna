@@ -179,6 +179,9 @@ def test_import_fixes_the_names_before_the_first_cut(tmp_path):
     usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
     assert any(u["kind"] == "transcript_fix" and u["episode"] == "EP002" for u in usage)
     assert "利奥" not in first.requests[0]["system"][1]["text"]
+    # the new episode counts as proofread with today's terms: opening it asks nothing more
+    g = tf.glossary_for(ws.root, "EP002 · 测试", ["Leon", "Pei"])
+    assert tf.checked(ws.episode_dir("EP002")) == tf.signature(g)
 
 
 @ffmpeg
@@ -222,3 +225,48 @@ def test_proofread_an_existing_episode_again(tmp_path):
     assert again["changed"] == 0 and again["transcript_rev"] == out["transcript_rev"]
     kept = json.loads((d / "transcript.before_fix.json").read_text(encoding="utf-8"))
     assert sorted(kept["tracks"]["Leon"])[0][2] == "利"
+
+
+# ---------------------------------------------------------------------------- system terms, automatic pass
+
+def test_system_terms_apply_to_every_project_and_only_admins_change_them(tmp_path):
+    from lacuna_app import system_terms
+    from tests.app.e2e.auth import FakeMailer
+    PW = "correct horse battery"
+    root = make_workspace(tmp_path / "ws")
+    leon = TestClient(create_app(root, MockEditorAdapter(), web_dist=tmp_path / "none", mailer=FakeMailer()))
+    leon.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
+    link = leon.post("/api/auth/invites", json={"email": "beta@example.com"}).json()["link"]
+    beta = TestClient(leon.app)
+    assert beta.post("/api/auth/register", json={"invite": link.rsplit("/", 1)[1], "password": PW}).status_code == 200
+    # the two Leon asked for are there from the start; a creator sees them but can't change them
+    assert beta.get("/api/app/terms").json() == {"terms": ["ChatGPT", "Claude Code"], "can_edit": False}
+    assert beta.put("/api/app/terms", json={"terms": ["x"]}).status_code == 403
+    r = leon.put("/api/app/terms", json={"terms": ["ChatGPT", " Claude  Code ", "chatgpt", "", "Sora"]})
+    assert r.json() == {"terms": ["ChatGPT", "Claude Code", "Sora"], "can_edit": True}
+    # beta's own project (another workspace folder) proofreads with them too
+    space = next((root / "spaces").iterdir())
+    assert system_terms.installation_root(space) == root
+    assert {"ChatGPT", "Claude Code", "Sora"} <= set(tf.glossary_for(space).terms)
+
+
+@ffmpeg
+def test_an_episode_is_proofread_again_by_itself_when_the_terms_change(tmp_path):
+    from lacuna_app import system_terms
+    root = make_workspace(tmp_path / "ws")
+    fx, m = fixer()
+    c = TestClient(create_app(root, MockEditorAdapter(), web_dist=Path("/nonexistent"), transcript_fixer=fx))
+    url = f"/api/episodes/{EPISODE}/transcript/fix"
+    assert c.get(url).json() == {"due": True}               # imported before: due once
+    c.post(url, json={})
+    assert c.get(url).json() == {"due": False} and len(m.calls) == 1
+    system_terms.save(root, ["ChatGPT", "Claude Code", "Sora"])
+    assert c.get(url).json() == {"due": True}               # new system term: due again
+    # a request that failed is asked again next time
+    m.error = TimeoutError()
+    c.post(url, json={})
+    assert c.get(url).json() == {"due": True}
+    # without the AI nothing is due (the page doesn't ask)
+    off = TestClient(create_app(root, MockEditorAdapter(), web_dist=Path("/nonexistent"),
+                                transcript_fixer=tf.TranscriptFixer(api_key="")))
+    assert off.get(url).json() == {"due": False}

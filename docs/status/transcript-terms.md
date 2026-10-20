@@ -14,6 +14,12 @@ Thread 文字稿按项目设置自动纠错 (2026-10-20). Leon: the transcript i
   `Episode.set_transcript` + summary `transcript_rev` so the transcript card reloads.
 - Tests: `tests/app/test_transcript_fix.py`, `web/e2e/transcript_fix.spec.ts`.
 
+## Done (PR 2, Leon 20:11Z)
+- System terms (`system_terms.py`, `routes/system_terms.py` at /api/app/terms; card 系统专有名词 on 设置, admins only;
+  default ChatGPT + Claude Code). Decision `system-terms-auto-proofread`.
+- Automatic: GET /api/episodes/{id}/transcript/fix says whether it is due (`term_check.json` hash); the 文字稿剪辑
+  card proofreads by itself when due (chip 正在校对专有名词… while it runs). Imports write the hash. Button removed.
+
 ## Next
 - 项目设置: a 「专有名词 / Terms」 list (show.json `terms`, read already). Coordinate with the projects /
   albums thread (it is reshaping 项目设置).

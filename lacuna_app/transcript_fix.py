@@ -20,6 +20,7 @@ Off with ``LACUNA_TRANSCRIPT_FIX=off``.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -37,7 +38,8 @@ MODEL = "claude-sonnet-5-5"
 TIMEOUT_S = 90.0
 CHUNK_CHARS = 6000           # transcript text per request (~1 h of Chinese talk = 3-4 requests)
 WORKERS = 4
-MAX_TERMS = 80
+MAX_TERMS = 300
+CHECK_FILE = "term_check.json"     # <episode>/: the glossary its transcript was last proofread with
 LINE_GAP_S = 0.6             # same speaker, shorter pause -> same line (as manual.transcript)
 
 SYSTEM = (Path(__file__).resolve().parent / "prompts" / "transcript_fix.txt").read_text(encoding="utf-8").strip()
@@ -87,7 +89,7 @@ def _key(s: str) -> str:
 
 def glossary_for(root: str | Path, title: str = "", extra: list[str] = ()) -> Glossary:
     """The workspace's reference terms: show name, hosts and 项目设置 terms (show.json), album names,
-    names corrected before (names.json), Latin names in the episode title, and `extra`."""
+    names corrected before (names.json), Latin names in the episode title, `extra` and the system terms."""
     from .publish import NAMES_FILE
     from .store import read_json
     root = Path(root)
@@ -105,6 +107,8 @@ def glossary_for(root: str | Path, title: str = "", extra: list[str] = ()) -> Gl
         terms.append(album)
     terms += _TITLE_WORD.findall(title or "")
     terms += list(extra)
+    from . import system_terms         # the installation's own list (设置, admins), for every project
+    terms += system_terms.load(root)
     corrections: list[dict] = []
     try:
         if (root / NAMES_FILE).is_file():
@@ -119,6 +123,24 @@ def glossary_for(root: str | Path, title: str = "", extra: list[str] = ()) -> Gl
             seen[_key(t)] = t
     return Glossary(list(seen.values())[:MAX_TERMS], corrections, str(profile.get("show_name") or ""),
                     str(profile.get("about") or ""), str(title or ""))
+
+
+def signature(g: Glossary) -> str:
+    """Changes when the terms or corrections change: an episode proofread with another one is due again."""
+    doc = [sorted(g.allowed()), sorted((c["wrong"], c["right"]) for c in g.corrections)]
+    return hashlib.sha1(json.dumps(doc, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
+
+
+def checked(ep_dir: Path) -> str | None:
+    try:
+        return str(json.loads((Path(ep_dir) / CHECK_FILE).read_text(encoding="utf-8")).get("sig") or "") or None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+def mark_checked(ep_dir: Path, g: Glossary) -> None:
+    from .store import atomic_write_json
+    atomic_write_json(Path(ep_dir) / CHECK_FILE, {"sig": signature(g), "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
 
 
 # ---------------------------------------------------------------------------- lines and fixes
@@ -354,12 +376,13 @@ class TranscriptFixer:
                     output_config={"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
                     messages=[{"role": "user", "content": json.dumps(doc, ensure_ascii=False)}])
 
-    def _ask(self, part: list[Line], g: Glossary, on_usage: Callable[[dict], None]) -> list[dict]:
+    def _ask(self, part: list[Line], g: Glossary, on_usage: Callable[[dict], None]) -> list[dict] | None:
+        """The model's fixes for one chunk; None when it could not answer (asked again next time)."""
         t0 = time.monotonic()
         try:
             resp = self.client.messages.create(**self.request(part, g))
         except Exception:          # noqa: BLE001 - proofreading must never break an import
-            return []
+            return None
         try:
             on_usage(usage_of(resp, time.monotonic() - t0))
         except Exception:          # noqa: BLE001
@@ -370,15 +393,24 @@ class TranscriptFixer:
             text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
             return list(json.loads(text).get("fixes") or [])
         except (ValueError, AttributeError, TypeError):
-            return []
+            return None
 
     def propose(self, lines: list[Line], g: Glossary, on_usage: Callable[[dict], None] = lambda u: None) -> list[dict]:
-        """Checked fixes for `lines`: names.json corrections plus what the model found (if available)."""
+        return self.propose_all(lines, g, on_usage)[0]
+
+    def propose_all(self, lines: list[Line], g: Glossary,
+                    on_usage: Callable[[dict], None] = lambda u: None) -> tuple[list[dict], bool]:
+        """(checked fixes for `lines`, whether the model answered for every line): names.json corrections
+        plus what the model found (if available)."""
         fixes = known(lines, g)
+        complete = self.available
         if self.available and g.terms and lines:
             parts = chunks(lines)
             with ThreadPoolExecutor(min(WORKERS, len(parts)), thread_name_prefix="transcript-fix") as pool:
                 for answer in pool.map(lambda p: self._ask(p, g, on_usage), parts):
+                    if answer is None:
+                        complete = False
+                        continue
                     fixes += check(answer, lines, g)
         seen, out = set(), []
         for f in fixes:
@@ -386,7 +418,7 @@ class TranscriptFixer:
             if k not in seen:
                 seen.add(k)
                 out.append(f)
-        return out
+        return out, complete
 
     def fix(self, lines: list[Line], g: Glossary, on_usage: Callable[[dict], None] = lambda u: None) -> list[dict]:
         """Propose and apply; returns the fixes that changed something."""

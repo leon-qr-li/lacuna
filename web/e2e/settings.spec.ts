@@ -12,7 +12,7 @@ test("设置: version, key and machine status; no update controls", async ({ pag
   await expect(page.getByTestId("update-available")).toHaveCount(0);
 
   await expect(page.getByTestId("key-state")).toHaveText("没有设置");
-  const save = page.getByRole("button", { name: "保存" });
+  const save = page.getByRole("button", { name: "保存", exact: true });
   await expect(save).toBeDisabled();
   await page.getByLabel("API key", { exact: true }).fill("sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxx");
   await expect(save).toBeEnabled();
