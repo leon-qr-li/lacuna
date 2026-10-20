@@ -4,10 +4,9 @@ import { api } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
 import { ChatFab } from "./features/chat-dock/ChatDock";
 import { Icon } from "./components/Icon";
-import { NearbyEdits } from "./components/NearbyEdits";
+import { NearbyEdits, nearEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
-import { Overview } from "./components/Timeline";
 import { EditLanes } from "./features/manual/EditLanes";
 import { TranscriptEdit } from "./features/manual/TranscriptEdit";
 import { useManual } from "./features/manual/useManual";
@@ -20,6 +19,8 @@ import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
 import { Home } from "./features/episodes/Home";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
+import { CutPop, Minimap, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
+import type { SideTab } from "./features/workbench/Workbench";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -112,6 +113,8 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const player = listen.player; // voice-cut time, also while listening with music
   const [chatOpen, setChatOpen] = useState(() => readPref("lacuna.chat") !== "closed");
   useEffect(() => writePref("lacuna.chat", chatOpen ? "open" : "closed"), [chatOpen]);
+  const [sideTab, setSideTab] = useState<SideTab>(readSideTab);
+  useEffect(() => writeSideTab(sideTab), [sideTab]);
 
   useEffect(() => {
     api.episode(id).then(setEp).catch((e) => setErr(String(e.message ?? e)));
@@ -192,13 +195,13 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       steps.push({ mode: t.group, label: GROUPS[t.group] ?? t.group, on: curGroup === t.group });
   }
   const stepHref = (m: Mode) => href(tabs.find((t) => t.group === m)?.mode ?? m);
-  // every page in flow order (groups expanded), for the "下一步" button at the bottom
+  // every page in flow order (groups expanded), for the "下一步" button at the top right
   const flow = steps.flatMap((x) =>
     GROUPS[x.mode] ? tabs.filter((t) => t.group === x.mode).map((t) => ({ mode: t.mode, label: t.label })) : [x],
   );
   const next = flow[flow.findIndex((x) => x.mode === mode) + 1];
   return (
-    <div className="app">
+    <div className={`app ${ep && mode === "listen" ? "wb-fit" : ""}`}>
       <header className="topbar">
         <a className="brand" href="#/">
           LACUNA
@@ -230,6 +233,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
               {t("导出")}
             </a>
           )}
+          {next && <NextStep href={href(next.mode)} label={next.label} />}
         </div>
         <nav aria-label={t("制作流程")} className="modes">
           {steps.map((s, i) => (
@@ -272,16 +276,50 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       ) : (
         <>
           {/* Full Listen stays mounted in review mode so the conversation is kept */}
-          <div className={`workspace ${chatOpen ? "" : "chat-closed"}`} hidden={mode !== "listen"}>
-            <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} onCollapse={() => setChatOpen(false)} />
+          {/* one screen (features/workbench): timeline + transcript, side panel tabs AI 制作人 / 这附近改了什么 */}
+          <div className={`workspace wb ${chatOpen ? "" : "chat-closed"}`} hidden={mode !== "listen"}>
+            <ChatPanel
+              ep={ep}
+              time={player.time}
+              onEpisode={setEp}
+              onPauseMain={player.pause}
+              onCollapse={() => setChatOpen(false)}
+              tabs={(badge) => <SideTabs tab={sideTab} onTab={setSideTab} near={nearEdits(ep, player.time).length} badge={badge} />}
+              alt={
+                sideTab === "near" ? (
+                  <div className="side-near" role="tabpanel">
+                    <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
+                  </div>
+                ) : null
+              }
+            />
             {!chatOpen && mode === "listen" && <ChatFab onClick={() => setChatOpen(true)} />}
             <main className="center">
-              <Overview ep={ep} time={player.time} onSeek={player.seek} />
-              <EditLanes ep={ep} time={player.time} player={player} highlight={pending} m={manual} />
-              <PlayerBar player={player} duration={ep.duration} />
-              <MusicListenToggle listen={listen} />
+              <EditLanes
+                ep={ep}
+                time={player.time}
+                player={player}
+                highlight={pending}
+                m={manual}
+                top={<Minimap ep={ep} time={player.time} onSeek={player.seek} />}
+                bottom={
+                  <>
+                    <PlayerBar player={player} duration={ep.duration} />
+                    <MusicListenToggle listen={listen} />
+                  </>
+                }
+                popover={(e) => (
+                  <CutPop
+                    e={e}
+                    onListen={() => {
+                      player.seek(Math.max(0, e.t - 3));
+                      player.play();
+                    }}
+                    onReview={review}
+                  />
+                )}
+              />
               <TranscriptEdit ep={ep} time={player.time} player={player} m={manual} run={run} />
-              <NearbyEdits ep={ep} time={player.time} onSeek={player.seek} onReview={review} />
             </main>
           </div>
           {mode === "review" && (
@@ -302,14 +340,6 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             .map((t) => (
               <Fragment key={t.mode}>{t.render({ id, ep, flash, pauseMain: player.pause, onEpisode: setEp })}</Fragment>
             ))}
-          {next && (
-            <div className="next-step">
-              <span className="muted small">{t("这一步做完了？")}</span>
-              <a className="btn linkbtn" href={href(next.mode)}>
-                {t("下一步：")}{next.label} <Icon name="chev" />
-              </a>
-            </div>
-          )}
         </>
       )}
     </div>

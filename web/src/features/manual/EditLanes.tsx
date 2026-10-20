@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import type { EditInfo, Episode } from "../../api";
 import type { Player } from "../../usePlayer";
 import { t } from "../../i18n";
@@ -14,6 +15,7 @@ const ZOOM_KEY = "lacuna.manual.span";
 const MIN_SPAN = 3; // seconds across the lanes at the closest zoom ...
 const MAX_SPAN = 600; // ... and the widest
 const EDGE_PX = 7; // grab a selection edge within this many pixels
+const POP_PX = 6; // an edit's card opens with the pointer this close to its mark
 const TICK_STEPS = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300]; // ruler label spacing: the first that leaves room
 
 const clampSpan = (s: number) => Math.max(MIN_SPAN, Math.min(MAX_SPAN, s));
@@ -124,12 +126,21 @@ export function EditLanes({
   player,
   highlight,
   m,
+  top,
+  bottom,
+  popover,
 }: {
   ep: Episode;
   time: number;
   player: Player;
   highlight?: EditInfo | null;
   m: Manual;
+  /** shown under the title, above the ruler (the whole-episode minimap) */
+  top?: ReactNode;
+  /** shown under the legend (the player) */
+  bottom?: ReactNode;
+  /** a card for the edit under the pointer (listen / restore it from the timeline) */
+  popover?: (e: EditInfo) => ReactNode;
 }) {
   const { sel, setSel } = m;
   const d = ep.duration;
@@ -152,6 +163,13 @@ export function EditLanes({
   const space = useRef<{ panned: boolean } | null>(null);
   const [hand, setHand] = useState(false); // Space held over the timeline: the lanes pan instead of select
   const [edge, setEdge] = useState(false); // pointer on a selection edge (or dragging one): a resize cursor shows it
+  const [pop, setPop] = useState<{ id: string; left: number; top: number } | null>(null); // the edit card under the pointer
+  const popTimer = useRef(0);
+  const keepPop = () => window.clearTimeout(popTimer.current);
+  const dropPop = (ms = 250) => {
+    window.clearTimeout(popTimer.current);
+    popTimer.current = window.setTimeout(() => setPop(null), ms);
+  };
   const t1 = t0 + span;
 
   // follow the playhead only when it leaves the window by itself: playing past the right edge turns a page, and a
@@ -268,7 +286,26 @@ export function EditLanes({
     const side = onEdge(e.clientX, r);
     if (sel && side) [anchor, moved] = [side === "a" ? sel.b : sel.a, true];
     drag.current = { kind: "sel", x0: e.clientX, anchor, moved, r };
+    setPop(null);
     e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  /** the card for the edit within a few pixels of the pointer on this lane, below the lane */
+  const hoverEdit = (e: React.PointerEvent<HTMLDivElement>, track: string) => {
+    if (!popover || !card.current || space.current) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = (s: number) => r.left + ((s - t0) / span) * r.width;
+    let best: { id: string; x: number; dist: number } | null = null;
+    for (const ed of visible) {
+      if (ed.tracks && !ed.tracks.includes(track)) continue;
+      const a = px(Math.max(ed.t, t0));
+      const b = ed.tracks || ed.status === "restored" ? px(Math.min(ed.t + ed.len, t1)) : a;
+      const dist = e.clientX < a ? a - e.clientX : e.clientX > b ? e.clientX - b : 0;
+      if (dist <= POP_PX && (!best || dist < best.dist)) best = { id: ed.id, x: Math.max(a, Math.min(e.clientX, b)), dist };
+    }
+    if (!best) return pop && dropPop();
+    keepPop();
+    const c = card.current.getBoundingClientRect();
+    if (pop?.id !== best.id) setPop({ id: best.id, left: Math.max(150, Math.min(c.width - 150, best.x - c.left)), top: r.bottom - c.top + 6 });
   };
   const rulerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.button === 0 || e.button === 1) panFrom(e);
@@ -276,7 +313,10 @@ export function EditLanes({
   const move = (e: React.PointerEvent<HTMLDivElement>) => {
     const g = drag.current;
     if (!g) {
-      if (e.currentTarget.classList.contains("ml-body")) setEdge(!space.current && !!onEdge(e.clientX, e.currentTarget.getBoundingClientRect()));
+      if (e.currentTarget.classList.contains("ml-body")) {
+        setEdge(!space.current && !!onEdge(e.clientX, e.currentTarget.getBoundingClientRect()));
+        hoverEdit(e, e.currentTarget.dataset.track ?? "");
+      }
       return;
     }
     if (g.kind === "pan") return place(g.t0 - ((e.clientX - g.x0) / g.w) * span);
@@ -315,6 +355,7 @@ export function EditLanes({
         <h2>{t("剪辑时间线")}</h2>
         <Help />
       </div>
+      {top}
       <div className="lane">
         <span className="lane-name" />
         <div className="ml-ruler mono" onPointerDown={rulerDown} onPointerMove={move} onPointerUp={up} onPointerCancel={up} role="presentation" data-testid="ml-ruler">
@@ -332,11 +373,15 @@ export function EditLanes({
             className={`lane-body ml-body ${edge ? "is-edge" : ""}`}
             onPointerDown={down}
             onPointerMove={move}
-            onPointerLeave={() => !drag.current && setEdge(false)}
+            onPointerLeave={() => {
+              if (!drag.current) setEdge(false);
+              dropPop();
+            }}
             onPointerUp={up}
             onPointerCancel={up}
             role="presentation"
             data-testid={`lane-${tr.name}`}
+            data-track={tr.name}
           >
             {!tiles.size &&
               tr.clips
@@ -346,8 +391,8 @@ export function EditLanes({
             {visible.map((e) => {
               if (e.tracks && !e.tracks.includes(tr.name)) return null;
               if (e.status === "restored" || (e.tracks && e.status === "applied"))
-                return <div key={e.id} className={`mark-span ${e.status}`} style={{ left: x(Math.max(e.t, t0)), width: w(e.t, e.t + e.len) }} title={e.title} />;
-              return <div key={e.id} className="mark-cut" style={{ left: x(e.t) }} title={e.title} />;
+                return <div key={e.id} className={`mark-span ${e.status}`} style={{ left: x(Math.max(e.t, t0)), width: w(e.t, e.t + e.len) }} title={popover ? undefined : e.title} data-title={e.title} />;
+              return <div key={e.id} className={`mark-cut ${pop?.id === e.id ? "is-hot" : ""}`} style={{ left: x(e.t) }} title={popover ? undefined : e.title} data-title={e.title} />;
             })}
             {highlight && highlight.t + highlight.len >= t0 && highlight.t <= t1 && (
               <div
@@ -366,6 +411,15 @@ export function EditLanes({
         <span className="lg lg-cut" /> {t("剪切点")}　<span className="lg lg-lift" /> {t("单轨删减")}
         <span className="lg lg-restored" /> {t("已恢复")}　<span className="lg lg-pending" /> {t("待批准")}　<span className="lg ml-lg-sel" /> {t("你选中的")}
       </p>
+      {bottom}
+      {pop && popover && (() => {
+        const ed = ep.edits.find((x) => x.id === pop.id);
+        return ed ? (
+          <div className="ml-pop" style={{ left: pop.left, top: pop.top }} onPointerEnter={keepPop} onPointerLeave={() => dropPop()} data-testid="ml-pop">
+            {popover(ed)}
+          </div>
+        ) : null;
+      })()}
     </section>
   );
 }

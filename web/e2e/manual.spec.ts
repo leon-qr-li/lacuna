@@ -45,7 +45,7 @@ test.describe.serial("manual editing", () => {
     await page.addInitScript(() => localStorage.removeItem("lacuna.rewindOnPause"));
     await open(page);
     await expect(page.getByLabel("暂停时回退 5 秒")).not.toBeChecked();
-    await expect(page.getByTestId("edit-lanes").getByRole("button", { name: /秒$/ })).toHaveCount(0); // no zoom buttons
+    await expect(page.getByTestId("edit-lanes").getByRole("button", { name: /^\d+\s*秒$/ })).toHaveCount(0); // no zoom buttons
     const before = await view(page);
     const lane = (await page.getByTestId("lane-Leon").boundingBox())!;
     await page.mouse.move(lane.x + lane.width / 2, lane.y + lane.height / 2);
@@ -187,6 +187,7 @@ test.describe.serial("manual editing", () => {
     await page.getByTestId("ml-cut").click();
     await expect(page.locator(".toast")).toContainText("已删掉");
     await expect(page.getByTestId("ml-bar")).toBeHidden();
+    await page.getByTestId("tab-near").click();
     const row = page.locator('[data-testid="nearby"] li[data-source="manual"]');
     await expect(row).toHaveCount(1);
     await expect(row).toContainText("手动删除");
@@ -204,8 +205,8 @@ test.describe.serial("manual editing", () => {
     await dragLane(page, "Pei", 0.2, 0.3);
     await page.getByTestId("ml-mute-Pei").click();
     await expect(page.locator(".toast")).toContainText("已静音 Pei");
-    await expect(page.getByTestId("lane-Pei").locator('.mark-span[title^="Pei 单轨静音"]')).toHaveCount(1);
-    await expect(page.getByTestId("lane-Leon").locator('.mark-span[title^="Pei 单轨静音"]')).toHaveCount(0);
+    await expect(page.getByTestId("lane-Pei").locator('.mark-span[data-title^="Pei 单轨静音"]')).toHaveCount(1);
+    await expect(page.getByTestId("lane-Leon").locator('.mark-span[data-title^="Pei 单轨静音"]')).toHaveCount(0);
     expect(await duration(page)).toBeCloseTo(before, 2);
     // Ctrl + X on a new selection cuts it from every track
     await dragLane(page, "Leon", 0.7, 0.75);
@@ -213,6 +214,8 @@ test.describe.serial("manual editing", () => {
     await expect(page.locator(".toast")).toContainText("已删掉");
     await page.getByRole("button", { name: "撤销" }).click();
     await page.getByRole("button", { name: "撤销" }).click();
+    await page.getByTestId("tab-near").click();
+    await expect(page.locator(".side-near")).toBeVisible();
     await expect(page.locator('[data-testid="nearby"] li[data-source="manual"]')).toHaveCount(0);
   });
 
