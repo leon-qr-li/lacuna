@@ -57,7 +57,8 @@ TICKET_S = 300
 SEEN_SAVE_S = 300
 MIN_PASSWORD = 10
 RESEND_KEY = "RESEND_API_KEY"
-DEFAULT_SENDER = "LACUNA <onboarding@resend.dev>"
+DEFAULT_SENDER = "LACUNA <noreply@lacunastudio.app>"   # domain verified in Resend (provision.py mail-domain)
+TEST_SENDER_DOMAIN = "@resend.dev"   # Resend's test sender: only reaches the Resend sign-up email
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _SCRYPT = dict(n=2 ** 14, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
 RANK = {"member": 1, "admin": 2, "owner": 3}
@@ -170,6 +171,8 @@ class Auth:
             u.setdefault("role", "owner" if u.pop("owner", False) else "member")
             u.pop("owner", None)
         self.config: dict = {"sender": DEFAULT_SENDER, **data.get("config", {})}
+        if TEST_SENDER_DOMAIN in self.config["sender"]:   # saved before the domain was verified
+            self.config["sender"] = DEFAULT_SENDER
         self.config.pop("allow_register", None)  # sign-up is by invite only now
         now = self.now()
         self.invites: dict[str, dict] = {i["hash"]: i for i in data.get("invites", []) if i["exp"] > now}

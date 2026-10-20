@@ -30,3 +30,8 @@ desktop (设置 → 账号与安全). The 设置 card 账号与邮件 is now spl
 
 ## Validated
 - 2026-10-17 20:23Z: Leon validated sign-in on his PC (「没问题，验收通过」).
+
+## 2026-10-20: email from lacunastudio.app (thread「邀请邮件发件域名」)
+- Decision `docs/decisions/2026-10-20-mail-domain.md`. Provision mode `mail-domain` verifies the domain in Resend
+  and writes its DNS records to Cloudflare; default sender `LACUNA <noreply@lacunastudio.app>`, old `@resend.dev`
+  senders move to it. Tests: `tests/test_provision.py` (mail_domain), `tests/app/test_auth_invites_2fa.py`.

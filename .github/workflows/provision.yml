@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: plan | apply | recreate | version-door (only the public /api/version address)
+        description: plan | apply | recreate | version-door (only the public /api/version address) | mail-plan / mail-domain (email sending domain in Resend)
         required: true
         default: plan
         type: choice
-        options: [plan, apply, recreate, version-door]
+        options: [plan, apply, recreate, version-door, mail-plan, mail-domain]
 
 concurrency:
   group: deploy

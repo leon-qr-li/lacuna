@@ -354,3 +354,13 @@ def test_invites_follow_cloudflare_access(tmp_path, mailer, monkeypatch):
     c.delete("/api/auth/users/bob@example.com")
     assert calls == [("allow", "pei@example.com"), ("revoke", "pei@example.com"), ("allow", "bob@example.com"),
                      ("revoke", "bob@example.com")]
+
+
+def test_resend_test_sender_moves_to_the_verified_domain(tmp_path, mailer):
+    from lacuna_app.auth import DEFAULT_SENDER
+    d = tmp_path / "auth"
+    d.mkdir()
+    (d / "users.json").write_text(json.dumps({"users": [], "config": {"sender": "LACUNA <onboarding@resend.dev>"}}))
+    assert Auth(tmp_path, mailer).config["sender"] == DEFAULT_SENDER == "LACUNA <noreply@lacunastudio.app>"
+    (d / "users.json").write_text(json.dumps({"users": [], "config": {"sender": "Pod <hi@example.com>"}}))
+    assert Auth(tmp_path, mailer).config["sender"] == "Pod <hi@example.com>"     # a chosen address stays
