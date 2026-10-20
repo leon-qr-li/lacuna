@@ -334,6 +334,7 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
         if p == "/zones":
             return 200, {"success": True, "result": [{"id": "z", "account": {"id": "acc"}}]}
         if p.endswith("/service_tokens") and method == "POST":
+            assert not [t for t in tokens if t["name"].startswith("lacuna-deploy-check-")]   # swept first
             tokens.append({"id": "s1", "name": body["name"]})
             return 200, {"success": True, "result": {"id": "s1", "client_id": "cid", "client_secret": "csec"}}
         if p.endswith("/service_tokens"):
@@ -344,6 +345,8 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
         raise AssertionError(path)
 
     monkeypatch.setattr(ci, "cf", lambda: provision.Cloudflare(FakeHttp(cfh)))
+    tokens.append({"id": "old1", "name": "lacuna-deploy-check-1"})       # left by a create answered 504
+    tokens.append({"id": "keep", "name": "someone-else"})
     answers = iter([(530, {}), (200, {"ok": True, "version": "old"}), (200, {"ok": True, "version": "abc"})])
     seen = []
     monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append(h), next(answers))[1])
@@ -355,12 +358,12 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
     assert urls[-1] == f"https://{provision.DOMAIN}/api/health"
     answers = iter([(200, {"version": "abc"})])
     assert ci.main(["wait-live", "abc", "preview"]) == 0 and urls[-1] == f"https://{provision.PREVIEW_DOMAIN}/api/health"
-    assert tokens == []                      # deleted afterwards
+    assert tokens == [{"id": "keep", "name": "someone-else"}]           # ours deleted, leftovers first
 
     monkeypatch.setattr(ci, "_get", lambda url, h: (200, {"version": "old"}))
     with pytest.raises(provision.ProvisionError, match="not live"):
         ci.wait_live("abc", timeout=0.01, poll=0)
-    assert tokens == []                      # deleted on failure too
+    assert tokens == [{"id": "keep", "name": "someone-else"}]           # deleted on failure too
 
 
 def test_server_size_falls_back_when_the_region_stops_offering_it(api):
