@@ -132,6 +132,36 @@ test.describe.serial("manual editing", () => {
     await page.getByTestId("play").click();
   });
 
+  test("with a selection, play plays just the selection and comes back to its start", async ({ page }) => {
+    await open(page);
+    await page.getByLabel("暂停时回退 5 秒").uncheck();
+    await dragLane(page, "Leon", 0.3, 0.36);
+    await expect(page.getByTestId("ml-bar")).toBeVisible();
+    const text = (await page.getByTestId("ml-bar").locator(".ml-what b").textContent()) ?? "";
+    const [a, b] = text.split("–").map((x) => {
+      const [m, s] = x.trim().split(":");
+      return Number(m) * 60 + Number(s);
+    });
+    const audio = page.getByTestId("main-audio");
+    await page.getByTestId("play").click();
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "暂停");
+    await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "播放", { timeout: 15_000 }); // stops by itself
+    const at = await audio.evaluate((el: HTMLAudioElement) => el.currentTime);
+    expect(at).toBeCloseTo(a, 0); // back at the start of the selection
+    expect(b).toBeGreaterThan(a);
+    await expect(page.getByTestId("ml-bar")).toBeVisible(); // the selection stays
+  });
+
+  test("the ? next to the title explains the timeline on hover", async ({ page }) => {
+    await open(page);
+    const tip = page.locator("#ml-help-tip");
+    await expect(tip).toBeHidden();
+    await page.getByTestId("ml-help").hover();
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText("按住空格拖轨道");
+    await expect(tip).toContainText("等你批准");
+  });
+
   test("cut from both tracks, shows as 手动剪辑, undo brings it back", async ({ page }) => {
     await open(page);
     const before = await duration(page);

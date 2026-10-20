@@ -40,17 +40,41 @@ export function useManual(ep: Episode | null, player: Player, run: (p: Promise<E
     [sel, busy, run, id],
   );
 
-  // ▶ 听选中: stop at the end of the selection (without the rewind-on-pause)
+  // While something is selected, playing (▶, Space, 听选中) plays only the selection, like an audio editor
+  // (Leon 2026-10-20): from its start, or from the playhead when that is already inside it, and at its end the
+  // playhead goes back to the start (no rewind-on-pause), ready to hear it again.
+  const selRef = useRef(sel);
+  selRef.current = sel;
+  const now = useRef(player.time); // voice-cut time (the audio element runs on the music mix's clock when it is on)
+  now.current = player.time;
+  const seekRef = useRef(player.seek);
+  seekRef.current = player.seek;
+  useEffect(() => {
+    if (!sel) stopAt.current = null;
+  }, [sel]);
+  useEffect(() => {
+    const a = player.ref.current;
+    if (!a) return;
+    const onPlay = () => {
+      const s = selRef.current;
+      if (!s) return;
+      stopAt.current = s.b;
+      if (now.current < s.a - 0.02 || now.current >= s.b - 0.05) seekRef.current(s.a);
+    };
+    a.addEventListener("play", onPlay);
+    return () => a.removeEventListener("play", onPlay);
+  }, [player.ref, ep?.id]);
   const listen = useCallback(() => {
     if (!sel) return;
-    stopAt.current = sel.b;
     player.seek(sel.a);
     player.play();
   }, [sel, player]);
   useEffect(() => {
-    if (stopAt.current !== null && player.time >= stopAt.current) {
+    const s = selRef.current;
+    if (stopAt.current !== null && s && player.time >= stopAt.current) {
       stopAt.current = null;
       player.ref.current?.pause();
+      seekRef.current(s.a);
     }
   }, [player.time, player.ref]);
 

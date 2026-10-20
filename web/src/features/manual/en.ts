@@ -18,4 +18,23 @@ export const en: Dict = {
   "你选中的": "Your selection",
   "已删掉 {s} 秒，可撤销": "Cut {s} s, you can undo it",
   "已静音 {track} {s} 秒，可撤销": "Silenced {track} for {s} s, you can undo it",
+  "点一下": "Click",
+  "播放头移到那里，时间线不动": "moves the playhead there; the timeline stays put",
+  "在轨道上拖": "Drag on a track",
+  "选一段；拖选区的边可以调整，Esc 取消": "selects a stretch; drag its edges to adjust, Esc drops it",
+  "选中以后": "With a selection",
+  "删掉这段（Del 键）、只静音某个人，或按播放只听选中的这一段": "cut it (Del), silence one person, or press play to hear just the selection",
+  "Ctrl + 滚轮": "Ctrl + wheel",
+  "以鼠标位置为中心放大、缩小": "zooms in and out around the pointer",
+  "挪时间线": "Move the timeline",
+  "拖上面的时间刻度条，或按住空格拖轨道，或直接滚轮": "drag the time ruler, hold Space and drag a track, or use the wheel",
+  "播放时": "While playing",
+  "播放头走到右边，时间线自动翻到下一页": "the timeline turns a page when the playhead reaches the right edge",
+  "怎么用剪辑时间线": "How to use the editing timeline",
+  "自己动手剪": "Editing by hand",
+  "AI 剪的和你剪的": "Cuts by LACUNA and by you",
+  "橙色竖线是剪切点，斜纹是只删了一个人的地方，紫框是恢复过的，虚线框是 AI 提议、还在等你批准的。":
+    "An orange line is a cut, stripes mark where only one person was removed, a purple frame was restored, and a dashed frame is a LACUNA proposal waiting for your approval.",
+  "AI 初剪、对话里让 AI 改的、你自己剪的，都是一样的改动：Ctrl + Z 撤销，或者在「这附近改了什么」里点恢复；AI 的提议在「审阅改动」或右边对话里批准。":
+    "LACUNA's first cut, changes you ask for in the chat and your own cuts all work the same: Ctrl + Z undoes them, or restore one in \"Edits around here\"; approve LACUNA's proposals in Review edits or in the chat.",
 };

@@ -23,3 +23,7 @@ for small follow-up features. Decision `manual-editing`.
   `lacuna.manual.span`) and never the page; a click no longer re-centres the window; pan = drag the ruler
   (`ml-ruler`), Space + drag / middle-drag on a lane, or the wheel; a Space tap without a drag still plays.
   Playback turns a page at the right edge. All in `EditLanes.tsx` (non-passive wheel + capture-phase Space listeners).
+- Leon 04:24Z: while something is selected, play (▶, Space, 听选中) plays only the selection and returns the playhead
+  to its start (`useManual.ts`, on the audio element's play event; voice-cut time, so it also works with music on).
+- A "?" next to 剪辑时间线 explains clicking, selecting, zoom / pan, the marks and how AI and manual cuts are undone /
+  restored / approved (`Help` in `EditLanes.tsx`, hover or keyboard focus).
