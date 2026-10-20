@@ -4,7 +4,7 @@ Thread 文字稿按项目设置自动纠错 (2026-10-20). Leon: the transcript i
 (洛城二三世, 利奥, 配, pose).
 
 ## Done (PR 1)
-- `lacuna_app/transcript_fix.py`: glossary (show.json show name / hosts / `terms`, albums.json `albums[].name` (#151),
+- `lacuna_app/transcript_fix.py`: glossary (show.json show name / hosts / `terms`, album names (albums.py),
   publish album, names.json, Latin words of the title), lines from ASR segments or an episode
   transcript, model call in chunks (4 in parallel), strict checks, word-text-only replacement.
 - Import: `Importer._fix_terms` before `features.build`; the checked answer is cached in

@@ -93,9 +93,10 @@ def glossary_for(root: str | Path, title: str = "", extra: list[str] = ()) -> Gl
     root = Path(root)
     profile = show.load(root)
     terms = [profile.get("show_name") or ""] + show.host_names(profile)
-    try:            # albums.json (albums.py, decision projects-albums): {"albums": [{"name", ...}]}
-        albums = read_json(root / "albums.json").get("albums", []) if (root / "albums.json").is_file() else []
-        terms += [str(a.get("name") or "") for a in albums if isinstance(a, dict)]
+    try:            # decision projects-albums
+        from .albums import Albums
+        from .store import Workspace
+        terms += [str(a.get("name") or "") for a in Albums(Workspace(root)).albums() if isinstance(a, dict)]
     except (OSError, ValueError, AttributeError, TypeError):
         pass
     terms += [str(t) for t in profile.get("terms") or []]
