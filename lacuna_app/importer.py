@@ -419,6 +419,9 @@ class Importer:
         self._progress(job, "episode", 0.5, tr("生成审阅（精修剪辑点）"))
         project, edits, transcript, report = build_episode(media, ops_doc, tokens,
                                                            policy=learning.review_policy(self.ws), names=dict(hosts))
+        if lang == "en":        # the um / uh the recognisers dropped become words (fillers.py)
+            from . import fillers
+            transcript = fillers.merge(transcript, read_json(feat_p).get("sounds", []), dict(hosts))
         engine = job["steps"].get("first_cut", {}).get("engine", "claude")
         meta = {"title": job["title"], "demo": False, "raw_offset_s": 0.0, "source": "import",
                 "ai_model": ops_doc.get("model", ""), "ai_notes": ops_doc.get("notes", ""),

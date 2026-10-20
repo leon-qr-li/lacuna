@@ -66,14 +66,14 @@ _STEP_LABELS = {"保留": N_("保留：{title}"), "恢复": N_("恢复：{title}
                 "应用": N_("应用：{title}"), "批准": N_("批准：{title}"),
                 "手动剪辑": N_("手动剪辑：{title}")}
 _BATCH_LABELS = {"全部通过": N_("全部通过（{n} 处）"), "全部保留删除": N_("全部保留删除（{n} 处）"),
-                 "全部恢复原话": N_("全部恢复原话（{n} 处）")}
+                 "全部恢复原话": N_("全部恢复原话（{n} 处）"), "去掉 um / uh": N_("去掉 um / uh（{n} 处）")}
 
 
 def history_label(label: str) -> str:
     m = re.match(r"(保留|恢复|重新应用|应用|批准|手动剪辑)：(.*)", label, re.S)
     if m:
         return tr(_STEP_LABELS[m.group(1)], title=m.group(2))
-    m = re.fullmatch(r"(全部通过|全部保留删除|全部恢复原话)（(\d+) 处）", label)
+    m = re.fullmatch(r"(全部通过|全部保留删除|全部恢复原话|去掉 um / uh)（(\d+) 处）", label)
     if m:
         return tr(_BATCH_LABELS[m.group(1)], n=int(m.group(2)))
     return label

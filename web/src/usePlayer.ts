@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const REWIND_KEY = "lacuna.rewindOnPause";
 
+/** 暂停时回退 5 秒 is off until the user ticks it (Leon 2026-10-20). */
 function readPref(): boolean {
   try {
-    return localStorage.getItem(REWIND_KEY) !== "0";
+    return localStorage.getItem(REWIND_KEY) === "1";
   } catch {
-    return true;
+    return false;
   }
 }
 
