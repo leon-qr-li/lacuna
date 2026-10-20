@@ -92,7 +92,8 @@ test.describe.serial("manual editing", () => {
     await expect(bar.getByTestId("ml-mute-Pei")).toHaveCount(0); // only the host whose words are selected
     await bar.getByTestId("ml-cut").click();
     await expect(page.locator(".toast")).toContainText("已删掉");
-    await expect(page.getByTestId("ml-tx").locator("s.ml-gone")).not.toHaveCount(0);
+    // wait for the manual cut itself: the AI's cuts are struck already, before the transcript reloads
+    await expect(page.getByTestId("ml-tx").locator("s.ml-gone[data-edit^='m']")).not.toHaveCount(0);
     const manualId = await page.getByTestId("ml-tx").locator("s.ml-gone").evaluateAll(
       (els) => els.map((e) => e.getAttribute("data-edit")).find((x) => x?.startsWith("m")) ?? "",
     );
