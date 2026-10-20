@@ -9,6 +9,8 @@ import type { Line } from "./api";
 import { range, useChunks } from "./chunks";
 import { fmtTenths, SelBar } from "./SelBar";
 import { FillerButton } from "../fillers/FillerButton";
+import { TermFixButton } from "../transcript-fix/TermFixButton";
+import { transcriptRev } from "../transcript-fix/api";
 import type { Manual } from "./useManual";
 
 const BEFORE_S = 15; // the card shows from a little before the playhead ...
@@ -59,7 +61,7 @@ export function TranscriptEdit({
   const box = useRef<HTMLDivElement | null>(null);
   const p0 = Math.max(0, Math.floor((time - BEFORE_S) / TEXT_S) * TEXT_S);
   const chunks = useChunks<Line[]>(
-    ep.version,
+    `${ep.version}|${transcriptRev(ep)}`,
     ep.has_transcript ? range(p0 / TEXT_S, Math.min(p0 / TEXT_S + SHOW_S / TEXT_S - 1, Math.floor(ep.duration / TEXT_S))) : [],
     (k) => manualApi.transcript(ep.id, ep.version, k * TEXT_S, (k + 1) * TEXT_S).then((r) => r.lines),
   );
@@ -136,6 +138,7 @@ export function TranscriptEdit({
       <div className="card-head">
         <h2>{t("文字稿剪辑")}</h2>
         <span className="muted small">{t("选中文字 → 删掉；删过的显示删除线，点一下可恢复")}</span>
+        <TermFixButton ep={ep} time={time} run={run} />
         <FillerButton ep={ep} time={time} player={player} run={run} />
       </div>
       {!ep.has_transcript ? (

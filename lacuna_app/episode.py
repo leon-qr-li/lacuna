@@ -207,6 +207,7 @@ class Episode:
         self.edits: dict[str, Edit] = {e["id"]: Edit(**e) for e in st["edits"]}
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
         self.proposals: dict[str, dict] = st.get("proposals") or {}
+        self.transcript_rev = ""
         self.transcript = self._load_transcript()
         self._words_ix: list[tuple] | None = None
         self._chat_log: list[dict] = self._load_chat()   # chat turns, saved to chat.json
@@ -783,7 +784,18 @@ class Episode:
         if not name:
             return None
         p = self.dir / Path(name).name
-        return read_json(p) if p.is_file() else None
+        if not p.is_file():
+            return None
+        self.transcript_rev = str(p.stat().st_mtime_ns)
+        return read_json(p)
+
+    def set_transcript(self, transcript: dict) -> None:
+        """Replace the transcript's words (proofreading; times and edits stay). Caller holds the lock."""
+        name = Path(self.meta.get("transcript") or "transcript.json").name
+        atomic_write_json(self.dir / name, transcript)
+        self.transcript = transcript
+        self._words_ix = None
+        self.transcript_rev = str((self.dir / name).stat().st_mtime_ns)
 
     def words(self, a_s: float, b_s: float) -> list[tuple[str, float, float, str]]:
         """(track, start, end, word) of every word overlapping (a_s, b_s), by start time."""
@@ -901,6 +913,7 @@ class Episode:
                 "proposals": [p | {"edit": self.edit_json(self.edits[p["target"]], cuts)}
                               for p in self.proposals.values() if p["state"] == "pending"],
                 "has_transcript": self.transcript is not None,
+                "transcript_rev": self.transcript_rev,      # changes when the words are proofread again
             }
 
     def map_playhead(self, t_s: float, before: frozenset[str], after: frozenset[str]) -> float:
