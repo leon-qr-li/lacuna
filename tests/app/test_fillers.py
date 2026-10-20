@@ -117,6 +117,7 @@ def test_history_label_in_english():
         assert history_label("去掉 um / uh（3 处）") == "Remove um / uh (3 fillers)"
     finally:
         reset_request_lang(tok)
+        reset_request_lang(set_request_lang("zh"))      # the module-wide fallback is back to Chinese too
 
 
 def test_backfill_merges_an_older_english_import(tmp_path):
