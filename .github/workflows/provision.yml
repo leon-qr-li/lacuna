@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: plan | apply | recreate
+        description: plan | apply | recreate | version-door (only the public /api/version address)
         required: true
         default: plan
         type: choice
-        options: [plan, apply, recreate]
+        options: [plan, apply, recreate, version-door]
 
 concurrency:
   group: deploy
