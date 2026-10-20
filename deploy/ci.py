@@ -79,6 +79,10 @@ def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20, domain: 
     """A short-lived Access service token (deleted afterwards) lets this job through the front door."""
     c = cf()
     a = c.account
+    try:
+        _sweep_check_tokens(c, a)
+    except ProvisionError as e:
+        log(f"could not clear old check tokens first: {e}")
     tok = c.r("POST", f"/accounts/{a}/access/service_tokens",
               {"name": f"lacuna-deploy-check-{os.environ.get('GITHUB_RUN_ID', 'local')}", "duration": "8760h"})
     mask(tok["client_secret"])
@@ -100,9 +104,15 @@ def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20, domain: 
                              "went back to the previous one")
     finally:
         c.r("DELETE", f"/accounts/{a}/access/service_tokens/{tok['id']}")
-        for t in c.r("GET", f"/accounts/{a}/access/service_tokens") or []:     # leftovers from cancelled runs
-            if t.get("name", "").startswith("lacuna-deploy-check-"):
-                c.r("DELETE", f"/accounts/{a}/access/service_tokens/{t['id']}")
+        _sweep_check_tokens(c, a)
+
+
+def _sweep_check_tokens(c, a: str) -> None:
+    """Delete check tokens left by cancelled runs, or created by a POST that Cloudflare answered 504 to
+    (it can create the token and still time out; those piled up while every create kept failing)."""
+    for t in c.r("GET", f"/accounts/{a}/access/service_tokens") or []:
+        if t.get("name", "").startswith("lacuna-deploy-check-"):
+            c.r("DELETE", f"/accounts/{a}/access/service_tokens/{t['id']}")
 
 
 def wait_gc(d: DigitalOcean, name: str, timeout: float = GC_WAIT, poll: float = 30) -> None:
