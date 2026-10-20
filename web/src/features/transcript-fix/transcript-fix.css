@@ -1,0 +1,6 @@
+/* 校对专有名词 (decision transcript-terms): the chip on 文字稿剪辑 */
+.tf-chip { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: none; color: var(--ink-2); font: 600 12.5px/1.4 var(--sans); cursor: pointer; white-space: nowrap; }
+.tf-chip:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink); }
+.tf-chip:disabled { cursor: progress; opacity: 0.7; }
+.tf-chip + .fl { margin-left: 0; }
