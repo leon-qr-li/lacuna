@@ -41,3 +41,9 @@ Depends on: Leon's full review of EP001; 3 · Parallel with: 4
 - Chat asks (kind `ask`, now confirmed ones) feed only the AI first cut, not the chat producer itself; if Leon wants an adopted ask to also steer chat answers, pass `learning.prompt_rules` into the chat scene.
 - Content-trim selection is taste: phase 5 turns Leon's cut/kept passages into examples for the first-cut prompt (D39); effect measurable only on a new episode (phase 4).
 - 2026-10-18 perf pass (#106): 学到的规则 page `GET /api/learning` 1689 ms → 145 ms (`Episode.words` bisects a per-track index), output identical (`docs/status/perf.md`).
+
+## 2026-10-20 — stutter rules added directly
+Two rules Leon dictated (character stutters always cut; clean cuts only, above all rules) are put in
+force once at cloud startup by `lacuna_app/stutter_rule_once.py` (decision `2026-10-20-stutter-rule-direct`).
+Asks with source `direct` show 「你直接让 LACUNA 加的」 on 学到的规则. Next: remove the once-module after
+both sites ran it.

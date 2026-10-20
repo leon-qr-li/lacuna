@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import type { EditInfo, Episode } from "./api";
 import { api } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
+import { ChatFab } from "./features/chat-dock/ChatDock";
 import { Icon } from "./components/Icon";
 import { NearbyEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
@@ -209,17 +210,6 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         <span className="ep-title">{ep?.title ?? "…"}</span>
         <span className="grow" />
         <Nav on="episode" />
-        {mode === "listen" && (
-          <button
-            type="button"
-            className={`btn btn-small ${chatOpen ? "btn-outline" : "btn-grad"}`}
-            aria-pressed={chatOpen}
-            onClick={() => setChatOpen((o) => !o)}
-            data-testid="chat-toggle"
-          >
-            <Icon name="chat" /> {chatOpen ? t("收起 AI 制作人") : t("AI 制作人")}
-          </button>
-        )}
       </header>
       <div className="ep-head">
         <div className="ep-head-row">
@@ -283,7 +273,8 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         <>
           {/* Full Listen stays mounted in review mode so the conversation is kept */}
           <div className={`workspace ${chatOpen ? "" : "chat-closed"}`} hidden={mode !== "listen"}>
-            <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} />
+            <ChatPanel ep={ep} time={player.time} onEpisode={setEp} onPauseMain={player.pause} onCollapse={() => setChatOpen(false)} />
+            {!chatOpen && mode === "listen" && <ChatFab onClick={() => setChatOpen(true)} />}
             <main className="center">
               <Overview ep={ep} time={player.time} onSeek={player.seek} />
               <EditLanes ep={ep} time={player.time} player={player} highlight={pending} m={manual} />
