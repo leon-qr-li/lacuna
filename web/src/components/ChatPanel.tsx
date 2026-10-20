@@ -9,6 +9,7 @@ import { Waiting } from "../features/loading/Loading";
 import { RememberButton, type Ask } from "../features/learning/RememberButton";
 import { RememberCard } from "../features/lessons/RememberCard";
 import type { RememberDraft, RememberReply } from "../features/lessons/api";
+import { ChatCollapse } from "../features/chat-dock/ChatDock";
 
 interface Msg {
   id: number;
@@ -27,11 +28,12 @@ interface Props {
   time: number;
   onEpisode: (ep: Episode) => void;
   onPauseMain: () => void;
+  onCollapse?: () => void;
 }
 
 let nextId = 1;
 
-export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
+export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse }: Props) {
   const [msgs, setMsgs] = useState<Msg[]>(() => [
     {
       id: nextId++,
@@ -142,18 +144,21 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
 
   return (
     <section className="chat" aria-label={t("AI 制作人对话")}>
-      <h2 className="chat-title">
-        {t("AI 制作人")}{" "}
-        {health && (
-          <span
-            className={`chip small ${claude ? "chip-ok" : ""}`}
-            data-testid="editor-badge"
-            title={claude ? t("接的是 LACUNA 云端 AI（只发送逐字稿和数字，不发送音频）") : health.editor_note}
-          >
-            {claude ? "LACUNA" : t("演示规则")}
-          </span>
-        )}
-      </h2>
+      <div className="chat-head">
+        <h2 className="chat-title">
+          {t("AI 制作人")}{" "}
+          {health && (
+            <span
+              className={`chip small ${claude ? "chip-ok" : ""}`}
+              data-testid="editor-badge"
+              title={claude ? t("接的是 LACUNA 云端 AI（只发送逐字稿和数字，不发送音频）") : health.editor_note}
+            >
+              {claude ? "LACUNA" : t("演示规则")}
+            </span>
+          )}
+        </h2>
+        {onCollapse && <ChatCollapse onClick={onCollapse} />}
+      </div>
       <div className="chat-log" ref={log} aria-live="polite" data-testid="chat-log">
         {msgs.map((m) => (
           <div key={m.id} className={`msg msg-${m.role}`}>
@@ -189,14 +194,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain }: Props) {
         <label htmlFor="say" className="sr-only">
           {t("对 AI 制作人说（锚定在当前播放位置）")}
         </label>
-        <GrowText
-          id="say"
-          ref={input}
-          value={text}
-          placeholder={hint}
-          onChange={setText}
-          autoComplete="off"
-        />
+        <GrowText id="say" ref={input} value={text} placeholder={hint} onChange={setText} autoComplete="off" />
         <div className="chat-form-row">
           <span className="at-chip mono" title={t("指令锚定在当前播放位置")}>
             @ {fmt(time)}
@@ -258,14 +256,7 @@ function ProposalCard({
           {t("再改")}
         </button>
       </div>
-      {ab && (
-        <ABPlayer
-          ab={ab === "loading" ? null : ab}
-          loading={ab === "loading"}
-          labels={[t("现在"), t("改后")]}
-          onPlay={onPlay}
-        />
-      )}
+      {ab && <ABPlayer ab={ab === "loading" ? null : ab} loading={ab === "loading"} labels={[t("现在"), t("改后")]} onPlay={onPlay} />}
     </div>
   );
 }

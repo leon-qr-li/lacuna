@@ -1,0 +1,12 @@
+/* AI 制作人 open/close: 「收起」 in the panel header, a floating button while closed (ChatDock.tsx) */
+.chat-head { display: flex; align-items: center; gap: 8px; padding-right: 12px; }
+.chat-head .chat-title { flex: 1; min-width: 0; }
+.chat-collapse { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px 0 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.chat-collapse:hover { color: var(--ink); background: var(--hover); }
+.chat-collapse:focus-visible, .chat-fab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chat-fab { position: fixed; right: 28px; bottom: 28px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px 0 16px; border-radius: 999px; border: 0; color: #fff; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; background: var(--grad); box-shadow: var(--shadow-pop); }
+.chat-fab:hover { filter: brightness(1.06); }
+/* narrow windows: the panel slides over the page from the right instead of dropping to the bottom */
+@media (max-width: 1100px) {
+  .workspace > .chat { position: fixed; top: 16px; right: 16px; bottom: 16px; z-index: 40; margin: 0; width: min(460px, calc(100vw - 32px)); height: auto; box-shadow: var(--shadow-pop); }
+}
