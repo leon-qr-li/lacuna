@@ -334,6 +334,7 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
         if p == "/zones":
             return 200, {"success": True, "result": [{"id": "z", "account": {"id": "acc"}}]}
         if p.endswith("/service_tokens") and method == "POST":
+            assert not [t for t in tokens if t["name"].startswith("lacuna-deploy-check-")]   # swept first
             tokens.append({"id": "s1", "name": body["name"]})
             return 200, {"success": True, "result": {"id": "s1", "client_id": "cid", "client_secret": "csec"}}
         if p.endswith("/service_tokens"):
@@ -344,6 +345,8 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
         raise AssertionError(path)
 
     monkeypatch.setattr(ci, "cf", lambda: provision.Cloudflare(FakeHttp(cfh)))
+    tokens.append({"id": "old1", "name": "lacuna-deploy-check-1"})       # left by a create answered 504
+    tokens.append({"id": "keep", "name": "someone-else"})
     answers = iter([(530, {}), (200, {"ok": True, "version": "old"}), (200, {"ok": True, "version": "abc"})])
     seen = []
     monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append(h), next(answers))[1])
@@ -355,12 +358,12 @@ def test_ci_wait_live_uses_a_throwaway_access_token(monkeypatch):
     assert urls[-1] == f"https://{provision.DOMAIN}/api/health"
     answers = iter([(200, {"version": "abc"})])
     assert ci.main(["wait-live", "abc", "preview"]) == 0 and urls[-1] == f"https://{provision.PREVIEW_DOMAIN}/api/health"
-    assert tokens == []                      # deleted afterwards
+    assert tokens == [{"id": "keep", "name": "someone-else"}]           # ours deleted, leftovers first
 
     monkeypatch.setattr(ci, "_get", lambda url, h: (200, {"version": "old"}))
     with pytest.raises(provision.ProvisionError, match="not live"):
         ci.wait_live("abc", timeout=0.01, poll=0)
-    assert tokens == []                      # deleted on failure too
+    assert tokens == [{"id": "keep", "name": "someone-else"}]           # deleted on failure too
 
 
 def test_server_size_falls_back_when_the_region_stops_offering_it(api):
@@ -386,3 +389,33 @@ def test_registry_on_the_free_plan_moves_to_basic(api):
     assert a.tier == "starter"
     run("apply")
     assert a.tier == "basic" and ("POST", "/v2/registry/subscription") in a.writes
+
+
+def test_api_calls_retry_a_5xx_or_a_dropped_connection():
+    """Cloudflare's API sometimes answers 504 (Staging for #143 failed three times on it)."""
+    import urllib.error
+
+    answers = [(504, {}), urllib.error.URLError("reset"), (200, {"success": True, "result": {"id": "s1"}})]
+
+    def handler(method, path, body=None):
+        a = answers.pop(0)
+        if isinstance(a, Exception):
+            raise a
+        return a
+
+    waits = []
+    h = FakeHttp(handler)
+    h.sleep = waits.append
+    assert h("POST", "/accounts/a/access/service_tokens", {"name": "x"})["result"]["id"] == "s1"
+    assert waits == [5, 15]
+
+    h = FakeHttp(lambda m, p, b=None: (503, {}))
+    h.sleep = lambda s: None
+    with pytest.raises(provision.ProvisionError, match="503"):
+        h("GET", "/x")
+
+    calls = []
+    h = FakeHttp(lambda m, p, b=None: (calls.append(1), (403, {"errors": ["no"]}))[1])
+    with pytest.raises(provision.ProvisionError, match="403"):
+        h("GET", "/x")
+    assert len(calls) == 1                   # a 4xx is an answer, not a hiccup
