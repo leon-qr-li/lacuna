@@ -1,4 +1,4 @@
-"""Music on an episode (phase 6a, D45): placements, ducking, series intro, final-mix stream."""
+"""Music on an episode (phase 6a, D45): placements, ducking, default opener / ending (albums.py), final-mix stream."""
 from __future__ import annotations
 
 from fastapi import HTTPException, Request
@@ -44,7 +44,11 @@ class DraftMoveBody(BaseModel):
 
 
 class SeriesBody(BaseModel):
-    name: str = Field(min_length=1, max_length=80)    # the series: the show name by default (web)
+    name: str | None = Field(None, max_length=80)     # unused: the episode's album (or the project) decides
+
+
+class DefaultBody(BaseModel):
+    target: str = Field(pattern="^(album|project)$", description="whose default opener / ending this episode's become")
 
 
 def register(app, ctx) -> None:
@@ -179,9 +183,9 @@ def register(app, ctx) -> None:
         return m.summary()
 
     @app.post("/api/episodes/{episode_id}/music/series/save")
-    def music_series_save(episode_id: str, body: SeriesBody):
+    def music_series_save(episode_id: str, body: DefaultBody):
         m = music(episode_id)
-        m.save_as_series(body.name)
+        m.save_as_series(body.target)
         return m.summary()
 
     @app.post("/api/episodes/{episode_id}/music/series/dismiss")

@@ -24,6 +24,7 @@ class ImportBody(BaseModel):
     tracks: list[Annotated[str, Field(min_length=1, max_length=2000)]] = Field(
         min_length=1, max_length=6, description="path of each host's raw track, in the show's host order")
     language: str | None = Field(None, max_length=8, description="what the hosts speak (zh / en); default: the show's")
+    album: str | None = Field(None, max_length=40, description="the album the new episode goes into (albums.py); none by default")
 
 
 def register(app, ctx) -> None:
@@ -92,9 +93,17 @@ def register(app, ctx) -> None:
         # on the shared server a track is always an upload: never read a path on the server itself
         if cloud_enabled() and not all(import_tracks.owned(ws, p) for p in body.tracks):
             raise HTTPException(422, tr("请先上传音轨"))
+        from ..albums import AlbumError, Albums
+        albums = Albums(ws)
+        if body.album and not any(a["id"] == body.album for a in albums.albums()):
+            raise HTTPException(422, tr("没有这个专辑"))
         try:
-            return {"job": importer.start(body.id.strip(), body.title, body.tracks,
-                                               language=body.language)}
+            job = importer.start(body.id.strip(), body.title, body.tracks, language=body.language)
+            try:
+                albums.assign(body.id.strip(), body.album or None)
+            except (AlbumError, PathError, OSError):
+                pass        # the episode just lands in no album
+            return {"job": job}
         except ImportBusy as e:
             raise HTTPException(409, str(e))
         except ImportError_ as e:

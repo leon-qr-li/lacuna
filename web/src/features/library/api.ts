@@ -33,8 +33,11 @@ export interface Asset {
   credit: Credit;
   credit_line: string;
   added_at: string;
-  shared: boolean; // 公共: offered on every episode's music page
-  episodes: string[]; // 本集: the episodes it belongs to (when not shared)
+  shared: boolean; // 整个项目: offered on every episode's music page
+  episodes: string[]; // 只这一集: the episodes it belongs to (when not shared)
+  albums: string[]; // 某个专辑: every episode of these albums may use it (when not shared)
+  /** on an episode's music page: which group it is listed in, nearest first */
+  group?: "episode" | "album" | "project";
 }
 
 /** An episode an asset can belong to (library scopes). */
@@ -42,9 +45,17 @@ export interface EpisodeRef {
   id: string;
   title: string;
   archived: boolean;
+  /** the album the episode is in, if any */
+  album?: string | null;
 }
 
-export type ScopeAction = "move" | "share" | "add";
+/** An album media can belong to. */
+export interface AlbumRef {
+  id: string;
+  name: string;
+}
+
+export type ScopeAction = "move" | "share" | "add" | "album";
 
 export interface LibraryView {
   assets: Asset[];
@@ -54,6 +65,9 @@ export interface LibraryView {
   kind_roles: Record<Kind, Role>; // where the music page puts an asset of that use
   lookup: boolean; // Claude credit lookup available (API key found)
   episodes: EpisodeRef[];
+  albums: AlbumRef[];
+  /** with `episode`: the album that episode is in */
+  album?: string | null;
 }
 
 export type Role = "intro" | "interlude" | "outro" | "bed" | "clip";
@@ -110,7 +124,15 @@ export interface MusicView {
   mix_url: string;
   credits: BgmCredit[];
   series: string | null;
-  series_suggestion: { name: string } | null;
+  /** the album's (else the project's) default opener / ending, offered while the episode has neither */
+  series_suggestion: {
+    name: string | null; // the album, or null for the project
+    from: "album" | "project";
+    intro: string | null; // file names
+    outro: string | null;
+    intro_from: "album" | "project" | null;
+    outro_from: "album" | "project" | null;
+  } | null;
   roles: Record<Role, string>;
   draft: MusicDraft | null;
   inserts: [number, number][]; // time added to the conversation: (voice seconds, seconds)
@@ -151,9 +173,11 @@ export type PlacementPatch = Partial<{
 }>;
 
 /** `episode`: the upload belongs to that episode (本集); without it, it is shared (公共). */
-async function uploadAsset(file: File, kind: string, note = "", episode = ""): Promise<{ asset: Asset; duplicate: boolean }> {
+/** `episode`: only that episode may use it; else `album`: that album's episodes; else the whole project. */
+async function uploadAsset(file: File, kind: string, note = "", episode = "", album = ""): Promise<{ asset: Asset; duplicate: boolean }> {
   const q = new URLSearchParams({ name: file.name, kind, note });
   if (episode) q.set("episode", episode);
+  else if (album) q.set("album", album);
   // a big file goes in pieces first (upload-parts); this request then names them instead of a body
   const part = file.size > PIECES_ABOVE ? await sendPieces(file, () => undefined).done : "";
   if (part) q.set("part", part);
@@ -171,8 +195,8 @@ export const libraryApi = {
   /** With `episode`: only what that episode's music page offers (shared + its own). */
   library: (episode?: string) =>
     req<LibraryView>("GET", episode ? `/api/library?${new URLSearchParams({ episode })}` : "/api/library"),
-  setScope: (aid: string, action: ScopeAction, episode?: string) =>
-    req<{ asset: Asset; message?: string | null }>("POST", `/api/library/assets/${aid}/scope`, { action, episode }),
+  setScope: (aid: string, action: ScopeAction, episode?: string, album?: string) =>
+    req<{ asset: Asset; message?: string | null }>("POST", `/api/library/assets/${aid}/scope`, { action, episode, album }),
   uploadAsset,
   scanLibrary: () => req<LibraryView & { added: Asset[] }>("POST", "/api/library/scan"),
   openLibrary: () => req<{ folder: string }>("POST", "/api/library/open"),
@@ -187,8 +211,10 @@ export const libraryApi = {
   updatePlacement: (id: string, pid: string, body: PlacementPatch) =>
     req<MusicView>("PATCH", `${ep(id)}/music/${pid}`, body),
   removePlacement: (id: string, pid: string) => req<MusicView>("DELETE", `${ep(id)}/music/${pid}`),
-  applySeries: (id: string, name: string) => req<MusicView>("POST", `${ep(id)}/music/series/apply`, { name }),
-  saveSeries: (id: string, name: string) => req<MusicView>("POST", `${ep(id)}/music/series/save`, { name }),
+  /** put the album's (else the project's) default opener / ending in */
+  applySeries: (id: string) => req<MusicView>("POST", `${ep(id)}/music/series/apply`, {}),
+  /** this episode's opener / ending become its album's or the whole project's default */
+  saveSeries: (id: string, target: "album" | "project") => req<MusicView>("POST", `${ep(id)}/music/series/save`, { target }),
   dismissSeries: (id: string) => req<MusicView>("POST", `${ep(id)}/music/series/dismiss`),
   autoPlace: (id: string) => req<MusicView>("POST", `${ep(id)}/music/auto`),
   musicChat: (id: string, text: string) => req<MusicView>("POST", `${ep(id)}/music/chat`, { text }),

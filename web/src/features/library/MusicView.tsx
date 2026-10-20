@@ -9,7 +9,6 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { SpeedButton } from "../review-speed/SpeedButton";
 import { useRate } from "../review-speed/speed";
-import { useShow } from "../show/api";
 
 const ROLE_HELP: Record<Role, string> = {
   intro: t("整首从头放：先只有音乐，然后压低当背景，人声进来，歌在背景里放完"),
@@ -284,8 +283,16 @@ function PlacementRow({ p, taken, onSave, onRemove, onPreview, previewing }: {
   );
 }
 
-function AddPlacement({ assets, kindRoles, pick, onAdd }: {
+const GROUPS: ["episode" | "album" | "project", (album: string | null) => string][] = [
+  ["episode", () => t("只这一集")],
+  ["album", (album) => (album ? t("专辑「{name}」", { name: album }) : t("本专辑"))],
+  ["project", () => t("整个项目")],
+];
+
+function AddPlacement({ assets, albumName, kindRoles, pick, onAdd }: {
   assets: Asset[];
+  /** the album this episode is in, for the 「专辑」 group's label */
+  albumName: string | null;
   kindRoles: Partial<Record<Kind, Role>>;
   /** a file just added on this page: picked, ready to 放进去 */
   pick?: string;
@@ -346,11 +353,21 @@ function AddPlacement({ assets, kindRoles, pick, onAdd }: {
           aria-label={t("选择素材")}
           className="music-pick"
         >
-          {assets.map((a) => (
-            <option key={a.id} value={a.id}>
-              {assetLabel(a)}
-            </option>
-          ))}
+          {/* nearest first: this episode's own, its album's, the whole project's */}
+          {GROUPS.map(([g, label]) => {
+            const mine = assets.filter((a) => (a.group ?? "project") === g);
+            return (
+              mine.length > 0 && (
+                <optgroup key={g} label={label(albumName)}>
+                  {mine.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {assetLabel(a)}
+                    </option>
+                  ))}
+                </optgroup>
+              )
+            );
+          })}
         </select>
         <select value={role} onChange={(e) => setRole(e.target.value as Role)} aria-label={t("用途")}>
           {ROLES.map((r) => (
@@ -447,11 +464,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const show = useShow();
-  const [series, setSeries] = useState("");
-  useEffect(() => {
-    if (show?.show_name) setSeries((x) => x || show.show_name); // the show is its own series by default
-  }, [show?.show_name]);
+  const [albumName, setAlbumName] = useState<string | null>(null); // the album this episode is in
   const clipRef = useRef<HTMLAudioElement | null>(null); // a suggestion's preview (not in the mix yet)
   const mixRef = useRef<HTMLAudioElement | null>(null); // the one player for the episode's music
   const [now, setNow] = useState(0);
@@ -460,14 +473,14 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   const shownMix = useRef<string | null>(null);
 
   const load = useCallback(() => {
-    // only what this episode may use: shared (公共) assets and its own (本集)
+    // only what this episode may use: the whole project's, its album's and its own
     Promise.all([libraryApi.music(id), libraryApi.library(id)])
       .then(([mm, lib]) => {
         setM(mm);
         setAssets(lib.assets);
         setKinds(lib.kinds);
         setKindRoles(lib.kind_roles);
-        if (mm.series) setSeries(mm.series);
+        setAlbumName(lib.albums.find((a) => a.id === lib.album)?.name ?? null);
       })
       .catch((e) => setErr(String(e.message ?? e)));
   }, [id]);
@@ -583,9 +596,23 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
       )}
       {m.series_suggestion && (
         <div className="card banner-card row gap8 wrap" data-testid="series-suggestion">
-          <span className="grow">{t("系列「{name}」有固定的片头片尾，要用在这一集吗？", { name: m.series_suggestion.name })}</span>
-          <button type="button" className="btn btn-primary" onClick={() => void run(libraryApi.applySeries(id, m.series_suggestion!.name), t("已放好系列片头片尾"))}>
-            {t("用系列片头片尾")}
+          <span className="grow">
+            {m.series_suggestion.name
+              ? t("专辑「{name}」有默认的片头片尾，要用在这一集吗？", { name: m.series_suggestion.name })
+              : t("这个项目有默认的片头片尾，要用在这一集吗？")}
+            {(m.series_suggestion.intro || m.series_suggestion.outro) && (
+              <span className="small muted series-files">
+                {[
+                  m.series_suggestion.intro && t("片头：{name}", { name: m.series_suggestion.intro }),
+                  m.series_suggestion.outro && t("片尾：{name}", { name: m.series_suggestion.outro }),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            )}
+          </span>
+          <button type="button" className="btn btn-primary" onClick={() => void run(libraryApi.applySeries(id), t("已放好默认片头片尾"))}>
+            {t("用默认片头片尾")}
           </button>
           <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.dismissSeries(id))}>
             {t("这一集不用")}
@@ -657,7 +684,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
       </ul>
       {m.placements.length === 0 && <p className="muted">{t("这一集还没有配乐。")}</p>}
       <MusicChatBox onSend={(text) => run(libraryApi.musicChat(id, text))} />
-      <AddPlacement assets={assets} kindRoles={kindRoles} pick={picked} onAdd={(body) => run(libraryApi.addPlacement(id, body), t("已放进去，可以点「试听这一处」"))} />
+      <AddPlacement assets={assets} albumName={albumName} kindRoles={kindRoles} pick={picked} onAdd={(body) => run(libraryApi.addPlacement(id, body), t("已放进去，可以点「试听这一处」"))} />
       <EpisodeUpload
         id={id}
         kinds={kinds}
@@ -673,10 +700,14 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
         }}
       />
       {m.placements.some((p) => p.role === "intro" || p.role === "outro") && (
-        <div className="row gap8 wrap">
-          <input value={series} onChange={(e) => setSeries(e.target.value)} aria-label={t("系列名")} className="time" />
-          <button type="button" className="btn btn-outline" disabled={!series.trim()} onClick={() => void run(libraryApi.saveSeries(id, series), t("已记住：以后「{series}」都用这个片头片尾", { series }))}>
-            {t("记成系列片头片尾")}
+        <div className="row gap8 wrap" data-testid="save-defaults">
+          {albumName && (
+            <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.saveSeries(id, "album"), t("已记住：专辑「{name}」以后的新剧集都用这个片头片尾", { name: albumName }))}>
+              {t("设为专辑「{name}」的默认片头片尾", { name: albumName })}
+            </button>
+          )}
+          <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.saveSeries(id, "project"), t("已记住：这个项目以后的新剧集都用这个片头片尾"))}>
+            {t("设为整个项目的默认片头片尾")}
           </button>
         </div>
       )}

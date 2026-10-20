@@ -173,6 +173,11 @@ class Archive:
             assets = list(drop_media(episode_id).get("names") or [])     # file names, for the notice
         except (OSError, ValueError, KeyError):
             pass          # the episode is gone either way; a library hiccup must not undo that
+        try:
+            from .albums import Albums
+            Albums(self.ws).drop_episode(episode_id)
+        except (OSError, ValueError):
+            pass
         self.empty_trash()
         return {"deleted": episode_id, "freed_bytes": freed, "tracks": removed, "assets": assets}
 

@@ -1,0 +1,67 @@
+/* 专辑 (design A「专辑封面 + 散集」): the cover row on 剧集, the album page, its dialog and the move menu */
+.alb-cover { display: inline-flex; flex: none; align-items: center; justify-content: center; object-fit: cover; color: #fff; font-weight: 700; box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+
+.alb-row { list-style: none; margin: 8px 0 20px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.alb-tile { display: flex; align-items: center; gap: 12px; height: 100%; box-sizing: border-box; padding: 12px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; }
+.alb-tile:hover { border-color: var(--line-2); }
+.alb-tile-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.alb-tile-body strong, .alb-music { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alb-music { color: var(--pei-ink); }
+.alb-music::before { content: "♪ "; }
+.alb-tile-new { justify-content: center; min-height: 82px; border-style: dashed; background: transparent; box-shadow: none; color: var(--ink-2); font: inherit; cursor: pointer; }
+.alb-tile-new:hover { color: var(--ink); background: var(--panel); }
+.home-sec { display: flex; align-items: baseline; gap: 10px; margin: 18px 0 8px; }
+.home-sec h2 { margin: 0; }
+.home-new-album { margin: 6px 0 14px; }
+
+/* album page strip: cover | name + count | 默认片头 / 默认片尾 | 专辑设置 — one row, all centred */
+.alb-strip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 20px; padding: 18px 20px; margin-bottom: 18px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.alb-strip h1 { margin: 0 0 4px; font-size: 24px; }
+.alb-strip-main p { margin: 0; }
+.alb-slots { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.alb-slot { display: grid; grid-template-columns: 4.5rem minmax(0, 13rem) 5rem; align-items: center; gap: 10px; }
+.alb-label { font-size: 12px; color: var(--ink-3); }
+.alb-slot-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.alb-from { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: 12px; line-height: 20px; background: color-mix(in srgb, var(--leon) 12%, transparent); color: var(--ink-2); }
+.alb-from-own { background: color-mix(in srgb, var(--pei) 18%, transparent); color: var(--pei-ink); }
+@media (max-width: 760px) {
+  .alb-strip { grid-template-columns: auto minmax(0, 1fr); }
+  .alb-slots, .alb-edit { grid-column: 1 / -1; }
+  .alb-edit { justify-self: start; }
+}
+
+.alb-shelf { margin-top: 28px; }
+.alb-shelf-head h2 { margin: 0; }
+.alb-shelf-list { list-style: none; margin: 10px 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.alb-shelf-list li { display: grid; grid-template-columns: 6rem minmax(0, 1fr); align-items: center; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line); }
+.alb-shelf-kind { color: var(--pei-ink); }
+.alb-shelf-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 新建专辑 / 专辑设置 */
+.alb-dlg { width: min(560px, 100%); max-height: calc(100vh - 40px); overflow: auto; display: flex; flex-direction: column; gap: 14px; }
+.alb-dlg h2 { margin-bottom: 0; }
+.alb-dlg-head { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 16px; }
+.alb-dlg-fields { display: flex; flex-direction: column; gap: 10px; }
+.alb-field { display: flex; flex-direction: column; gap: 4px; margin: 0; min-width: 0; }
+.alb-field input:not([type="checkbox"]), .alb-field select { width: 100%; box-sizing: border-box; }
+.alb-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .alb-two { grid-template-columns: 1fr; } }
+.alb-dlg p.alb-hint { margin-top: -6px; }
+.alb-pick { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; max-height: 180px; overflow: auto; }
+.alb-pick-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.alb-dlg .dlg-actions { margin-top: 4px; }
+.alb-delete { color: var(--danger); }
+
+/* 移到专辑 menu on an episode card */
+.alb-move { position: relative; }
+.alb-menu { position: absolute; top: calc(100% + 4px); right: 0; z-index: 20; min-width: 200px; padding: 6px; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.alb-menu hr { width: 100%; border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+.alb-menu-item { display: grid; grid-template-columns: 1.2em 1fr; align-items: center; gap: 6px; padding: 7px 10px; border: 0; border-radius: 9px; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.alb-menu-item:hover, .alb-menu-item:focus-visible { background: var(--accent-soft); }
+.alb-menu-check { color: var(--accent-ink); }
+
+/* the import form with its 放进专辑 choice: four columns, then stacked on phones */
+.import-grid:has([data-testid="import-album"]) { grid-template-columns: 1fr 2fr minmax(8rem, auto) minmax(8rem, auto); }
+@media (max-width: 760px) { .import-grid:has([data-testid="import-album"]) { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .import-grid:has([data-testid="import-album"]) { grid-template-columns: 1fr; } }
+.ep-list .ep-item:has(.alb-move) .ep-body > strong { padding-right: 150px; }
