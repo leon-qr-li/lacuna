@@ -17,8 +17,8 @@ function Svg({ d, size = 16 }: { d: string; size?: number }) {
 
 export function ChatCollapse({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" className="chat-collapse" onClick={onClick} title={t("收起 AI 制作人")} data-testid="chat-collapse">
-      {t("收起")} <Svg d={CHEVS} size={14} />
+    <button type="button" className="chat-collapse" onClick={onClick} title={t("收起 AI 制作人")} aria-label={t("收起")} data-testid="chat-collapse">
+      <span className="chat-collapse-label">{t("收起")}</span> <Svg d={CHEVS} size={14} />
     </button>
   );
 }
