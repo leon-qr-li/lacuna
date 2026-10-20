@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import lacuna_app.routes.stutter_rule_once as route
-from lacuna_app import stutter_rule_once
+from lacuna_app import i18n, stutter_rule_once
 from lacuna_app.editor import MockEditorAdapter
 from lacuna_app.learning import prompt_rules
 from lacuna_app.server import create_app
@@ -69,7 +69,14 @@ def test_desktop_app_never_adds(ws, monkeypatch):
     assert not stutter_rule_once.done(Workspace(ws))
 
 
-def test_english_detail(ws, monkeypatch):
+@pytest.fixture
+def chinese_afterwards():
+    yield
+    tok = i18n.set_request_lang("zh")      # the English request left "en" as the jobs' language
+    i18n.reset_request_lang(tok)
+
+
+def test_english_detail(ws, monkeypatch, chinese_afterwards):
     monkeypatch.setattr(route, "cloud", SimpleNamespace(enabled=lambda: True))
     c = client(ws)
     c.cookies.set("lacuna_lang", "en")
