@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { t } from "../../i18n";
+import { t, type Lang } from "../../i18n";
+import { MailLang, defaultMailLang } from "../auth/MailLang";
 import { confirmDialog } from "../dialog/Dialog";
 import { BusyLabel } from "../loading/Loading";
 import { SPACE_ROLE } from "../spaces/SpacesCard";
@@ -14,6 +15,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
   const [p, setP] = useState<ProjectPeople | null>(null);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<SpaceRole>("editor");
+  const [mailLang, setMailLang] = useState<Lang>(defaultMailLang);
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -40,7 +42,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
     }
   };
   const invite = async () => {
-    const r = await act("invite", () => spacesApi.invite(id, email.trim(), role));
+    const r = await act("invite", () => spacesApi.invite(id, email.trim(), role, mailLang));
     if (!r) return;
     setEmail("");
     if (r.joined) setNote(t("{email} 已经加进来了", { email: r.joined }));
@@ -76,6 +78,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
               </option>
             ))}
           </select>
+          {p.can_invite_new && <MailLang value={mailLang} onChange={setMailLang} />}
           <button className="btn btn-primary" disabled={!!busy || !email.trim()} data-testid="invite-send">
             <BusyLabel busy={busy === "invite"} label={t("邀请")} />
           </button>

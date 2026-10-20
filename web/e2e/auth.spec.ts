@@ -104,6 +104,18 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   expect(sent.text).toContain(link);
   await expect(members.getByTestId("invites")).toContainText("pei@example.com");
   await shot(page, "settings_members");
+  // an English invite email; a fresh browser opens its sign-up page in English
+  await expect(members.getByTestId("invite-lang")).toHaveValue("zh");
+  await members.getByLabel("对方的邮箱").fill("sam@example.com");
+  await members.getByTestId("invite-lang").selectOption("en");
+  await members.getByRole("button", { name: "发送邀请" }).click();
+  await expect(members.getByTestId("invite-result")).toContainText("邀请邮件已发到 sam@example.com");
+  expect((await mails(request, "sam@example.com")).at(-1)!.subject).toBe("leon@example.com invited you to LACUNA");
+  const samCtx = await page.context().browser()!.newContext();
+  const sam = await samCtx.newPage();
+  await sam.goto((await members.getByTestId("invite-link").textContent())!);
+  await expect(sam.getByRole("heading", { name: "Accept your invite" })).toBeVisible();
+  await samCtx.close();
 
   // Pei opens the link in another browser
   const pei = await page.context().browser()!.newContext();

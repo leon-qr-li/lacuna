@@ -140,6 +140,7 @@ class NameBody(BaseModel):
 class MemberBody(BaseModel):
     email: str
     role: str | None = None        # None: remove from the workspace
+    lang: str | None = None        # invite email's language (zh / en)
 
 
 def register(app, ctx) -> None:
@@ -310,7 +311,7 @@ def register(app, ctx) -> None:
             run(lambda: spaces.set_member(sid, target, role, by=email))
             out = {"joined": target}
         elif site_admin(email):
-            sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request), {"space": sid, "space_role": role}))
+            sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request), {"space": sid, "space_role": role}, body.lang))
             grant = getattr(app.state, "grant_access", None)       # routes/auth.py: Cloudflare Access list
             if grant:
                 grant(sent["email"], True)

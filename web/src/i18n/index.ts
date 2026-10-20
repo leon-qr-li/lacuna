@@ -30,6 +30,8 @@ function readSaved(): Lang | null {
 
 /** Chinese unless English was chosen in 设置 (the show and its hosts are Chinese). */
 export const lang: Lang = readSaved() ?? "zh";
+/** Nobody has picked a language in this browser yet (an invite link may pick it). */
+export const langChosen = readSaved() !== null;
 export const locale = lang === "en" ? "en-US" : "zh-CN";
 
 const mods = import.meta.glob<{ en: Dict }>(["./en.ts", "../features/*/en.ts"], { eager: true });

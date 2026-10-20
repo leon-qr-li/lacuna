@@ -5,7 +5,8 @@ import { confirmDialog } from "../dialog/Dialog";
 import { spacesApi, type SpaceInfo, type SpaceRole } from "../spaces/api";
 import { SPACE_ROLE } from "../spaces/SpacesCard";
 import { BusyLabel } from "../loading/Loading";
-import { t } from "../../i18n";
+import { t, type Lang } from "../../i18n";
+import { MailLang, defaultMailLang } from "./MailLang";
 import "./auth.css";
 
 const KEY_SOURCE: Record<string, string> = {
@@ -333,6 +334,7 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
   const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
   const [space, setSpace] = useState("new");
   const [spaceRole, setSpaceRole] = useState<SpaceRole>("editor");
+  const [mailLang, setMailLang] = useState<Lang>(defaultMailLang);
   const { busy, msg, act } = useAct();
   useEffect(() => {
     authApi.people().then(setPeople, () => setPeople(null));
@@ -354,7 +356,7 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
         onSubmit={(e) => {
           e.preventDefault();
           act("invite", async () => {
-            const r = await authApi.sendInvite(email, newRole, space, space === "new" ? null : spaceRole);
+            const r = await authApi.sendInvite(email, newRole, space, space === "new" ? null : spaceRole, mailLang);
             setPeople(r);
             setLink({ link: r.link, email: r.email, mailed: r.mailed, why: r.mail_error });
             setCopied(false);
@@ -389,6 +391,7 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
             ))}
           </select>
         )}
+        <MailLang value={mailLang} onChange={setMailLang} />
         <button className="btn btn-primary" disabled={!!busy || !email}>
           <BusyLabel busy={busy === "invite"} label={t("发送邀请")} busyLabel={t("发送中…")} />
         </button>

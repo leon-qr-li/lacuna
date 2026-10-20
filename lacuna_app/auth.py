@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import totp
-from .i18n import tr
+from .i18n import lang as ui_lang, normalize as norm_lang, speaking, tr
 from .keystore import find_secret, save_secret
 from .store import atomic_write_json, read_json
 
@@ -605,25 +605,30 @@ class Auth:
                         "space_role": i.get("space_role")} for i in self.invites.values() if i["exp"] > now),
                       key=lambda r: -r["created"])
 
-    def invite(self, actor: str, email: str, role: str, origin: str, extra: dict | None = None) -> dict:
-        """A one-time sign-up link for `email`; emailed when Resend can, always returned for copying."""
+    def invite(self, actor: str, email: str, role: str, origin: str, extra: dict | None = None,
+               lang: str | None = None) -> dict:
+        """A one-time sign-up link for `email`; emailed when Resend can, always returned for copying.
+        `lang` (zh / en) is the email's language, picked by the inviter; default the inviter's interface."""
         email = norm_email(email)
         self._grantable(actor, role)
         if email in self.users:
             raise AuthError(tr("这个邮箱已经有账号了"), 409)
         token = secrets.token_urlsafe(32)
         now = self.now()
+        lang = norm_lang(lang) or ui_lang()
         with self.lock:
             self.invites = {k: v for k, v in self.invites.items() if v["email"] != email}   # the newest link wins
             self.invites[_sha(token)] = {"hash": _sha(token), "email": email, "role": role, "by": actor,
-                                         "created": now, "exp": now + INVITE_S, **(extra or {})}
+                                         "created": now, "exp": now + INVITE_S, "lang": lang, **(extra or {})}
             self._save_users()
         link = f"{origin.rstrip('/')}/#/invite/{token}"
         mailed, why = False, None
         try:
-            self.mailer.send(self.config["sender"], email, tr("{who} 邀请你使用 LACUNA", who=actor),
-                             tr("{who} 邀请你加入 LACUNA Studio。\n\n打开这个链接设置密码（7 天内有效，只能用一次）：\n{link}\n\n如果你不认识邀请人，忽略这封邮件即可。",
-                                who=actor, link=link))
+            with speaking(lang):
+                subject = tr("{who} 邀请你使用 LACUNA", who=actor)
+                text = tr("{who} 邀请你加入 LACUNA Studio。\n\n打开这个链接设置密码（7 天内有效，只能用一次）：\n{link}\n\n如果你不认识邀请人，忽略这封邮件即可。",
+                          who=actor, link=link)
+            self.mailer.send(self.config["sender"], email, subject, text)
             mailed = True
         except MailError as e:
             why = str(e)

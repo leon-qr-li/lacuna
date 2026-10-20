@@ -3,7 +3,7 @@ import { authApi, type AuthStatus, type Step } from "./api";
 import { CodeInput, RecoveryCodes, SecondFactor, TwoStepQR } from "./TwoStep";
 import { BusyLabel } from "../loading/Loading";
 import { currentTheme, setTheme } from "../theme/theme";
-import { lang, setLang, t } from "../../i18n";
+import { lang, langChosen, setLang, t } from "../../i18n";
 
 type View =
   | { v: "login" }
@@ -351,7 +351,11 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
   const [pw2, setPw2] = useState("");
   const { busy, err, setErr, run } = useSubmit();
   useEffect(() => {
-    authApi.invite(token).then(setInfo, (e) => setGone(String(e.message ?? e)));
+    authApi.invite(token).then((i) => {
+      // a fresh browser opens the sign-up in the invite email's language
+      if (!langChosen && i.lang && i.lang !== lang) setLang(i.lang);
+      else setInfo(i);
+    }, (e) => setGone(String(e.message ?? e)));
   }, [token]);
   const submit = (e: FormEvent) => {
     e.preventDefault();

@@ -1,5 +1,6 @@
 // API of workspaces (lacuna_app/routes/spaces.py)
 import { req } from "../../api";
+import { lang as uiLang, type Lang } from "../../i18n";
 
 export type SpaceRole = "admin" | "editor" | "viewer";
 
@@ -59,8 +60,8 @@ export const spacesApi = {
   member: (id: string, email: string, role: SpaceRole | null) =>
     req<Spaces>("POST", `/api/spaces/${encodeURIComponent(id)}/members`, { email, role }),
   people: (id: string) => req<ProjectPeople>("GET", `/api/spaces/${encodeURIComponent(id)}/people`),
-  invite: (id: string, email: string, role: SpaceRole) =>
-    req<ProjectPeople>("POST", `/api/spaces/${encodeURIComponent(id)}/invite`, { email, role }),
+  invite: (id: string, email: string, role: SpaceRole, lang: Lang = uiLang) =>
+    req<ProjectPeople>("POST", `/api/spaces/${encodeURIComponent(id)}/invite`, { email, role, lang }),
   withdraw: (id: string, invite: string) =>
     req<ProjectPeople>("DELETE", `/api/spaces/${encodeURIComponent(id)}/invites/${encodeURIComponent(invite)}`),
 };

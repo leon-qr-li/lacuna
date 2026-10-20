@@ -218,3 +218,6 @@ def test_anyone_starts_a_project_and_invites_collaborators(tmp_path):
     iid = people["invites"][0]["id"]
     assert beta.delete(f"/api/spaces/main/invites/{iid}").status_code == 403
     assert leon.delete(f"/api/spaces/main/invites/{iid}").json()["invites"] == []
+    # the invite email's language is the inviter's pick (the sign-up page opens in it)
+    en = leon.post("/api/spaces/main/invite", json={"email": "sam@example.com", "role": "editor", "lang": "en"}).json()
+    assert leon.post("/api/auth/invite", json={"token": en["link"].rsplit("/", 1)[1]}).json()["lang"] == "en"

@@ -364,3 +364,19 @@ def test_resend_test_sender_moves_to_the_verified_domain(tmp_path, mailer):
     assert Auth(tmp_path, mailer).config["sender"] == DEFAULT_SENDER == "LACUNA <noreply@lacunastudio.app>"
     (d / "users.json").write_text(json.dumps({"users": [], "config": {"sender": "Pod <hi@example.com>"}}))
     assert Auth(tmp_path, mailer).config["sender"] == "Pod <hi@example.com>"     # a chosen address stays
+
+
+def test_invite_email_language_is_the_inviters_pick(tmp_path, mailer):
+    c = make(tmp_path, mailer)
+    c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
+    out = c.post("/api/auth/invites", json={"email": "pei@example.com"}).json()     # default: the inviter's interface
+    assert "邀请你使用 LACUNA" in mailer.outbox[-1]["subject"]
+    assert TestClient(c.app).post("/api/auth/invite", json={"token": invite_token(out["link"])}).json()["lang"] == "zh"
+    out = c.post("/api/auth/invites", json={"email": "sam@example.com", "lang": "en"}).json()
+    mail = mailer.outbox[-1]
+    assert mail["subject"] == "leon@example.com invited you to LACUNA" and "set your password" in mail["text"]
+    assert out["link"] in mail["text"]
+    # the sign-up page learns the email's language
+    assert TestClient(c.app).post("/api/auth/invite", json={"token": invite_token(out["link"])}).json()["lang"] == "en"
+    # the inviter's own interface language is untouched
+    assert c.post("/api/auth/invites", json={"email": "x"}).json()["detail"] == "邮箱格式不对"

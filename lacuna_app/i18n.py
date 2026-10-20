@@ -13,6 +13,7 @@ show is Chinese: transcripts, show notes, prompts to Claude).
 """
 from __future__ import annotations
 
+import contextlib
 import contextvars
 import json
 import re
@@ -38,6 +39,19 @@ def set_request_lang(value: str | None) -> contextvars.Token | None:
         return None
     _last = v
     return _current.set(v)
+
+
+@contextlib.contextmanager
+def speaking(value: str | None):
+    """``tr()`` in ``value`` (zh / en) inside the block, e.g. an email in the reader's language;
+    unchanged when ``value`` is not a language."""
+    v = normalize(value)
+    token = _current.set(v) if v else None
+    try:
+        yield
+    finally:
+        if token is not None:
+            _current.reset(token)
 
 
 def reset_request_lang(token: contextvars.Token | None) -> None:

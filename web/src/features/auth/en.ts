@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "邀请邮件的语言": "Invite email language",
   "《洛城二三事》的剪辑工作台": "The editing studio for 《洛城二三事》",
   "连不上 LACUNA：{err}": "Can't reach LACUNA: {err}",
   "重试": "Retry",
