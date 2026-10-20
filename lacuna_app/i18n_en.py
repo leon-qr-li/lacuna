@@ -60,6 +60,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "全部通过（{n} 处）": ("Approve all ({n} edit)", "Approve all ({n} edits)"),
     "全部保留删除（{n} 处）": ("Keep all cuts ({n} edit)", "Keep all cuts ({n} edits)"),
     "全部恢复原话（{n} 处）": ("Restore all ({n} edit)", "Restore all ({n} edits)"),
+    "去掉 um / uh（{n} 处）": ("Remove um / uh ({n} filler)", "Remove um / uh ({n} fillers)"),
+    "去掉口头禅「{w}」· {track}": "Remove filler \"{w}\" · {track}",
     "这处改动还没有生效": "This edit isn't in effect yet",
     "这个建议已经处理过了": "This suggestion was already handled",
     "两处删除重叠，不能同时应用": "Two cuts overlap and can't both be applied",

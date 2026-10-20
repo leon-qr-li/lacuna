@@ -30,6 +30,14 @@ measurement report `/mnt/project-files/lacuna/docs/英文剪辑实测_2026-10-19
   AI to treat `~filler` like filler words (cut piled-up ones by raw seconds, keep a residue). Cost:
   ~15 s per 15 min track (4 vCPU, batches of 16 clips).
 
+## 去掉 um / uh (2026-10-20, decision `english-fillers`)
+- Detected fillers are written into the transcript at import (`lacuna_app/fillers.py merge`; older English imports
+  backfilled once from `imports/<id>/features.json`), so they show in 文字稿剪辑 and struck through when cut.
+- Chip 「um / uh N」 on 文字稿剪辑 (English episodes): per-host ticks, 听下一个, 去掉 N 个 = one undoable step,
+  one edit per filler (source manual, category filler). Route `lacuna_app/routes/fillers.py`, web
+  `web/src/features/fillers/`. Tests `tests/app/test_fillers.py`, `web/e2e/fillers.spec.ts` (English synthetic
+  episode `tests/app/synth_en.py` on the scopes E2E server).
+
 ## Next
 - Before the beta invitations: full English accuracy + depth test (Leon 2026-10-19), tracked as the last item of `docs/status/beta-launch-todo.md`.
 - Calibrate on a human-edited English episode (cut rate, filler residue) when one is available.
