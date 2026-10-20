@@ -78,10 +78,16 @@ def mask(value: str) -> None:
 
 
 class Http:
-    """JSON over HTTPS with a bearer token. Tests replace `send`."""
+    """JSON over HTTPS with a bearer token. Tests replace `send`.
 
-    def __init__(self, base: str, token: str):
-        self.base, self.token = base, token
+    A 5xx / 429 answer or a dropped connection is tried again a few times: Cloudflare's API sometimes
+    answers 504 (Staging for #143 failed three times on POST /access/service_tokens). The callers'
+    POSTs are safe to repeat (wait_live deletes every leftover check token by name)."""
+
+    RETRY_WAITS = (5, 15, 45)
+
+    def __init__(self, base: str, token: str, sleep=time.sleep):
+        self.base, self.token, self.sleep = base, token, sleep
 
     def send(self, method: str, path: str, body: dict | None = None) -> tuple[int, dict]:
         data = json.dumps(body).encode() if body is not None else None
@@ -99,7 +105,15 @@ class Http:
                 return e.code, {"raw": raw[:300].decode("utf-8", "replace")}
 
     def __call__(self, method: str, path: str, body: dict | None = None, ok=(200, 201, 202, 204)) -> dict:
-        status, out = self.send(method, path, body)
+        for wait in (*self.RETRY_WAITS, None):
+            try:
+                status, out = self.send(method, path, body)
+            except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+                status, out = 0, {"error": type(e).__name__}
+            if status in ok or (status != 0 and status < 500 and status != 429) or wait is None:
+                break
+            log(f"{method} {path.split('?')[0]} -> {status or 'no answer'}; trying again in {wait} s")
+            self.sleep(wait)
         if status not in ok:
             # error bodies name what failed; they carry no secrets
             raise ProvisionError(f"{method} {path.split('?')[0]} -> {status}: {json.dumps(out)[:400]}")
