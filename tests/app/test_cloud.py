@@ -95,6 +95,13 @@ def test_before_sign_in_app_info_is_version_only(client, keys):
         assert set(info) == {"ok", "version", "cloud"}, path
 
 
+def test_the_version_alone_is_open_without_a_token(client, keys):
+    r = client.get("/api/version")
+    assert r.status_code == 200 and set(r.json()) == {"version"}
+    for method, path in (("POST", "/api/version"), ("GET", "/api/version/x"), ("GET", "/api/versions")):
+        assert client.request(method, path).status_code == 403, (method, path)
+
+
 def test_desktop_only_actions_are_gone(client, keys):
     h = hdr(token(keys[0]))
     for path in ("/api/app/update/check", "/api/app/update/prepare", "/api/app/update/apply", "/api/app/api-key",

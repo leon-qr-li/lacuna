@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from provision import (BUCKET, DOMAIN, PREVIEW_DOMAIN, REPO_IMAGE, VOLUME, Cloudflare, DigitalOcean, Http,  # noqa: E402
-                       ProvisionError, log, mask, need)
+                       VERSION_PATH, ProvisionError, log, mask, need)
 
 KEEP_TAGS = 3          # the newest builds by commit (the newest is main)
 ALWAYS_KEEP = {"main", "preview"}     # the real site's and the staging site's current images
@@ -76,43 +76,35 @@ def _get(url: str, headers: dict) -> tuple[int, dict]:
 
 
 def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20, domain: str = DOMAIN) -> None:
-    """A short-lived Access service token (deleted afterwards) lets this job through the front door."""
-    c = cf()
-    a = c.account
-    try:
-        _sweep_check_tokens(c, a)
-    except ProvisionError as e:
-        log(f"could not clear old check tokens first: {e}")
-    tok = c.r("POST", f"/accounts/{a}/access/service_tokens",
-              {"name": f"lacuna-deploy-check-{os.environ.get('GITHUB_RUN_ID', 'local')}", "duration": "8760h"})
-    mask(tok["client_secret"])
-    headers = {"CF-Access-Client-Id": tok["client_id"], "CF-Access-Client-Secret": tok["client_secret"]}
-    try:
-        end, seen = time.time() + timeout, None
-        while time.time() < end:
-            status, body = _get(f"https://{domain}/api/health", headers)
-            live = body.get("version")
-            if live == version:
-                log(f"live: {version}")
-                return
-            if (status, live) != seen:
-                log(f"waiting: site answers {status}, version {live or '-'}")
-                seen = (status, live)
-            time.sleep(poll)
+    """Poll <domain>/api/version (open through a path-scoped Access bypass, deploy/provision.py) until the
+    server runs `version`. No Cloudflare API call: its service-token API answered 504 for hours (2026-10-20)."""
+    end, seen = time.time() + timeout, None
+    while time.time() < end:
+        status, body = _get(f"https://{domain}{VERSION_PATH}", {})
+        live = body.get("version")
+        if live == version:
+            log(f"live: {version}")
+            break
+        if (status, live) != seen:
+            log(f"waiting: site answers {status}, version {live or '-'}")
+            seen = (status, live)
+        time.sleep(poll)
+    else:
         raise ProvisionError(f"{version} not live after {int(timeout / 60)} min: a long job (import/export) may "
                              "still be running on the server, or the new version failed to start and the server "
                              "went back to the previous one")
-    finally:
-        c.r("DELETE", f"/accounts/{a}/access/service_tokens/{tok['id']}")
-        _sweep_check_tokens(c, a)
+    try:
+        _sweep_check_tokens(cf())
+    except ProvisionError as e:
+        log(f"could not delete old check tokens (tried again next deploy): {e}")
 
 
-def _sweep_check_tokens(c, a: str) -> None:
-    """Delete check tokens left by cancelled runs, or created by a POST that Cloudflare answered 504 to
-    (it can create the token and still time out; those piled up while every create kept failing)."""
-    for t in c.r("GET", f"/accounts/{a}/access/service_tokens") or []:
+def _sweep_check_tokens(c) -> None:
+    """Delete the service tokens the old check made per run (lacuna-deploy-check-*): runs cancelled or
+    answered 504 left some behind, and the account caps how many it keeps."""
+    for t in c.r("GET", f"/accounts/{c.account}/access/service_tokens") or []:
         if t.get("name", "").startswith("lacuna-deploy-check-"):
-            c.r("DELETE", f"/accounts/{a}/access/service_tokens/{t['id']}")
+            c.r("DELETE", f"/accounts/{c.account}/access/service_tokens/{t['id']}")
 
 
 def wait_gc(d: DigitalOcean, name: str, timeout: float = GC_WAIT, poll: float = 30) -> None:

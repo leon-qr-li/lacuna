@@ -61,3 +61,9 @@ cookie in cloud mode and call `cloud.access_allow(email)` / `access_revoke(email
   update (`Updater`, `/api/app/update/*`, exit codes 75/76 / restart plumbing) and the 设置 update section
   (already hidden in cloud mode, so no visible change there). `/api/app` keeps version, `busy`, key status;
   `docs/INSTALL.md` is a retired note.
+- 2026-10-20 from 02:39Z Cloudflare's Access service-token API answered 504 for hours, so every deploy check
+  (wait-live) failed while both sites ran fine. #144 retries 5xx / 429 / dropped connections on every cloud API
+  call; #145 swept leftover check tokens. Leon then chose a public version address (decision
+  `docs/decisions/2026-10-20-public-version-check.md`): `GET /api/version` answers the version only, a
+  path-scoped Access bypass lets it through, and wait-live reads it with no Cloudflare API call. Needs
+  Provision apply once to create the two bypass apps. Withdraw before public launch (beta-launch-todo).
