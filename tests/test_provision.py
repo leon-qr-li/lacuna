@@ -327,6 +327,19 @@ def test_missing_secret_is_named(api, monkeypatch):
         run("apply")
 
 
+def test_version_door_mode_writes_only_what_is_missing(api, monkeypatch):
+    a, run = api
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
+    monkeypatch.setattr(provision.Http, "send", lambda self, m, p, b=None: a.cf(m, p, b))
+    monkeypatch.setattr(provision.time, "sleep", lambda s: None)
+    assert provision.main(["version-door"]) == 0
+    assert [x["domain"] for x in a.apps] == [f"{provision.DOMAIN}/api/version", f"{provision.PREVIEW_DOMAIN}/api/version"]
+    assert [p["name"] for p in a.policies] == [provision.VERSION_POLICY]
+    writes = len(a.writes)
+    assert provision.main(["version-door"]) == 0 and len(a.writes) == writes      # nothing to do the second time
+    assert not a.droplets and not a.tunnels                                          # touches nothing else
+
+
 def test_ci_wait_live_reads_the_public_version_without_a_token(monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "deploy"))
     import ci
