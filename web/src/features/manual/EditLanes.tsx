@@ -84,15 +84,18 @@ function Wave({ index, name, tiles, t0, span }: { index: number; name: string; t
   return <canvas ref={ref} className="ml-wave" aria-hidden />;
 }
 
-/** The "?" next to the title: how to work the timeline, on hover or keyboard focus (Leon 2026-10-20). */
+/** The "?" next to the title: what each action does, one line each (Leon 2026-10-20 wording). */
 function Help() {
   const rows: [string, string][] = [
-    [t("点一下"), t("播放头移到那里，时间线不动")],
-    [t("在轨道上拖"), t("选一段；拖选区的边可以调整，Esc 取消")],
-    [t("选中以后"), t("删掉这段（Del 键）、只静音某个人，或按播放只听选中的这一段")],
-    [t("Ctrl + 滚轮"), t("以鼠标位置为中心放大、缩小")],
-    [t("挪时间线"), t("拖上面的时间刻度条，或按住空格拖轨道，或直接滚轮")],
-    [t("播放时"), t("播放头走到右边，时间线自动翻到下一页")],
+    [t("单击轨道"), t("播放头跳到那里，同时取消选中")],
+    [t("按住鼠标拖动"), t("选一段")],
+    [t("拖选区的边"), t("调整选区")],
+    ["Ctrl + X", t("删掉选中的一段")],
+    [t("空格"), t("播放 / 暂停（有选中时只放选中段）")],
+    ["Esc", t("取消选中")],
+    [t("Ctrl + 滚轮"), t("放大 / 缩小")],
+    [t("拖刻度条，或按住空格拖"), t("左右移动时间线")],
+    ["Ctrl + Z", t("撤销")],
   ];
   return (
     <span className="ml-help">
@@ -100,22 +103,12 @@ function Help() {
         ?
       </button>
       <span className="ml-help-tip" role="tooltip" id="ml-help-tip">
-        <b>{t("自己动手剪")}</b>
-        <span className="ml-help-rows">
-          {rows.map(([k, v]) => (
-            <span key={k} className="ml-help-row">
-              <span className="ml-help-k">{k}</span>
-              <span>{v}</span>
-            </span>
-          ))}
-        </span>
-        <b>{t("AI 剪的和你剪的")}</b>
-        <span className="ml-help-p">
-          {t("橙色竖线是剪切点，斜纹是只删了一个人的地方，紫框是恢复过的，虚线框是 AI 提议、还在等你批准的。")}
-        </span>
-        <span className="ml-help-p">
-          {t("AI 初剪、对话里让 AI 改的、你自己剪的，都是一样的改动：Ctrl + Z 撤销，或者在「这附近改了什么」里点恢复；AI 的提议在「审阅改动」或右边对话里批准。")}
-        </span>
+        {rows.map(([k, v]) => (
+          <span key={k} className="ml-help-row">
+            <span className="ml-help-k">{k}</span>
+            <span>{v}</span>
+          </span>
+        ))}
       </span>
     </span>
   );

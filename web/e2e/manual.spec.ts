@@ -176,8 +176,8 @@ test.describe.serial("manual editing", () => {
     await expect(tip).toBeHidden();
     await page.getByTestId("ml-help").hover();
     await expect(tip).toBeVisible();
-    await expect(tip).toContainText("按住空格拖轨道");
-    await expect(tip).toContainText("等你批准");
+    await expect(tip).toContainText("按住空格拖");
+    await expect(tip).toContainText("Ctrl + X");
   });
 
   test("cut from both tracks, shows as 手动剪辑, undo brings it back", async ({ page }) => {
@@ -207,9 +207,9 @@ test.describe.serial("manual editing", () => {
     await expect(page.getByTestId("lane-Pei").locator('.mark-span[title^="Pei 单轨静音"]')).toHaveCount(1);
     await expect(page.getByTestId("lane-Leon").locator('.mark-span[title^="Pei 单轨静音"]')).toHaveCount(0);
     expect(await duration(page)).toBeCloseTo(before, 2);
-    // Del on a new selection cuts it from every track
+    // Ctrl + X on a new selection cuts it from every track
     await dragLane(page, "Leon", 0.7, 0.75);
-    await page.keyboard.press("Delete");
+    await page.keyboard.press("Control+x");
     await expect(page.locator(".toast")).toContainText("已删掉");
     await page.getByRole("button", { name: "撤销" }).click();
     await page.getByRole("button", { name: "撤销" }).click();

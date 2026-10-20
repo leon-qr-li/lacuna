@@ -27,3 +27,5 @@ for small follow-up features. Decision `manual-editing`.
   to its start (`useManual.ts`, on the audio element's play event; voice-cut time, so it also works with music on).
 - A "?" next to 剪辑时间线 explains clicking, selecting, zoom / pan, the marks and how AI and manual cuts are undone /
   restored / approved (`Help` in `EditLanes.tsx`, hover or keyboard focus).
+- Leon 15:08–15:12Z: the "?" lists one line per action (his wording); the selection bar's key is now Ctrl + X
+  (⌘ + X; Delete still works); a col-resize cursor shows on a selection's edges (`is-edge`).

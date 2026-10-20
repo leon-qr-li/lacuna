@@ -78,16 +78,18 @@ export function useManual(ep: Episode | null, player: Player, run: (p: Promise<E
     }
   }, [player.time, player.ref]);
 
-  // Delete / Backspace cuts the selection from every track, Esc drops it
+  // Ctrl + X (⌘ + X) cuts the selection from every track (Leon 2026-10-20: closer to the hand than Delete, which
+  // still works too), Esc drops it
   useEffect(() => {
     if (!sel) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === "Delete" || e.key === "Backspace") {
+      if (tag === "INPUT" || tag === "TEXTAREA" || e.altKey) return;
+      const mod = e.ctrlKey || e.metaKey;
+      if ((mod && e.key.toLowerCase() === "x") || (!mod && (e.key === "Delete" || e.key === "Backspace"))) {
         e.preventDefault();
         void cut(null);
-      } else if (e.key === "Escape") setSel(null);
+      } else if (!mod && e.key === "Escape") setSel(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

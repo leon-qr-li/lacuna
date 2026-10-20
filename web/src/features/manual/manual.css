@@ -7,15 +7,12 @@
 .ml-help-btn { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line-2); background: none; color: var(--ink-3);
   font: 700 12px/1 var(--sans); cursor: help; padding: 0; }
 .ml-help-btn:hover, .ml-help-btn:focus-visible { color: var(--accent-ink); border-color: var(--accent); }
-.ml-help-tip { position: absolute; top: calc(100% + 8px); left: -8px; z-index: 30; width: min(520px, 80vw); display: none; flex-direction: column;
-  gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop);
+.ml-help-tip { position: absolute; top: calc(100% + 8px); left: -8px; z-index: 30; width: min(400px, 80vw); display: none; flex-direction: column;
+  gap: 4px; padding: 14px 16px; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop);
   font-size: 13px; line-height: 1.55; color: var(--ink-2); }
 .ml-help:hover .ml-help-tip, .ml-help:focus-within .ml-help-tip { display: flex; }
-.ml-help-tip b { color: var(--ink); font-size: 13px; }
-.ml-help-rows { display: grid; gap: 4px; }
-.ml-help-row { display: grid; grid-template-columns: 92px 1fr; gap: 10px; }
-.ml-help-k { color: var(--ink); font-weight: 600; white-space: nowrap; }
-.ml-help-p { display: block; }
+.ml-help-row { display: grid; grid-template-columns: 9.5em 1fr; gap: 12px; }
+.ml-help-k { color: var(--ink); font-weight: 600; }
 /* the time ruler: drag it to pan; labels sit on the lanes' time scale */
 .ml-ruler { position: relative; flex: 1; height: 22px; border-radius: 8px; background: var(--hover); overflow: hidden; cursor: grab;
   touch-action: none; user-select: none; font-size: 11px; color: var(--ink-3); }
