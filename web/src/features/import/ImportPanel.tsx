@@ -353,14 +353,16 @@ function JobRow({ j, toReview, onChange }: { j: ImportJobView; toReview: number;
   const [err, setErr] = useState<string | null>(null);
   const act = (p: Promise<unknown>) => p.then(onChange).catch((e) => setErr((e as Error).message));
   const running = RUNNING.has(j.state);
+  // the track files in host order; tags are the show's own (older imports: L + P)
+  const trackFiles = (j.hosts?.map(([tag]) => tag) ?? ["L", "P"]).map((tag) => j.tracks[tag]).filter(Boolean);
   return (
     <li className={`job job-${j.state}`} data-testid="import-job" data-state={j.state}>
       <div className="row gap8 wrap">
         <strong>{j.title}</strong>
         {!running && <span className={`chip ${j.state === "done" ? "chip-ok" : ""}`}>{STATE_LABEL[j.state]}</span>}
         <span className="muted small">
-          {j.tracks.L.name} + {j.tracks.P.name}
-          {j.tracks.L.duration ? ` · ${fmt(j.tracks.L.duration)}` : ""}
+          {trackFiles.map((x) => x.name).join(" + ")}
+          {trackFiles[0]?.duration ? ` · ${fmt(trackFiles[0].duration)}` : ""}
         </span>
       </div>
       {running && (

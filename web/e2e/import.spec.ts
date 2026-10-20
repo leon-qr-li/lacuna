@@ -150,3 +150,24 @@ test("archive the imported episode, then delete it for good", async ({ page }) =
   await page.goto("/#/");
   await expect(page.getByText("这个项目里还没有剧集")).toBeVisible();
 });
+
+test("import: a show whose hosts aren't Leon + Pei (a new project) lists its tracks on the task card", async ({ page }) => {
+  // a new project's hosts get tags other than L / P; the task card used to read tracks.L and went blank
+  const before = await (await page.request.get("/api/show")).json();
+  const put = (hosts: { name: string }[]) => page.request.put("/api/show", { data: { ...before, hosts } });
+  expect((await put([{ name: "Ann" }, { name: "Bo" }])).ok()).toBeTruthy();
+  try {
+    await page.goto("/#/");
+    await page.getByRole("button", { name: "导入新一集" }).click();
+    await page.getByTestId("import-file-ann").setInputFiles(LEON);
+    await page.getByTestId("import-file-bo").setInputFiles(PEI);
+    await expect(page.getByTestId("import-bo")).toHaveText("Pei.wav");
+    await page.getByRole("button", { name: "开始导入" }).click();
+    const job = page.getByTestId("import-job");
+    await expect(job).toContainText("Leon.wav + Pei.wav · 1:00");
+    await expect(page.locator("a.brand")).toBeVisible(); // the page still renders
+    await expect(page).toHaveURL(/#\/ep\/EP\d+\/review$/, { timeout: 30_000 }); // and the import finishes
+  } finally {
+    await put(before.hosts);
+  }
+});

@@ -177,7 +177,7 @@ def write_recordings(folder: str | Path) -> dict[str, Path]:
 def fake_asr(tag: str, x, progress=lambda f, s: None) -> dict:
     """Stand-in for lacuna_app.asr.transcribe: one VAD segment per turn, the synthetic words as
     Paraformer tokens; SenseVoice agrees except it hears an extra 嗯 after the first word."""
-    name = {"L": "Leon", "P": "Pei"}[tag]
+    name = {"L": "Leon", "P": "Pei", "A": "Leon", "B": "Pei"}[tag]   # A / B: a new project's first two hosts
     words = words_by_track()[name]
     segs = []
     for tr, a, b in TURNS:
