@@ -15,6 +15,6 @@ test("one host erased: room tone, on Pei's lane only, timeline unchanged", async
 
   await page.goto("/");
   await page.getByRole("link", { name: /整集试听/ }).click();
-  await expect(page.getByTestId("lane-Pei").locator(`.mark-span[title="${erase.title}"]`)).toHaveCount(1);
-  await expect(page.getByTestId("lane-Leon").locator(`.mark-span[title="${erase.title}"]`)).toHaveCount(0);
+  await expect(page.getByTestId("lane-Pei").locator(`.mark-span[data-title="${erase.title}"]`)).toHaveCount(1);
+  await expect(page.getByTestId("lane-Leon").locator(`.mark-span[data-title="${erase.title}"]`)).toHaveCount(0);
 });

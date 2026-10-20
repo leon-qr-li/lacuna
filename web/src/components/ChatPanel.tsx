@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { GrowText } from "./GrowText";
 import type { AB, Episode, Health, Proposal, Usage } from "../api";
 import { api, fmt } from "../api";
@@ -29,11 +30,15 @@ interface Props {
   onEpisode: (ep: Episode) => void;
   onPauseMain: () => void;
   onCollapse?: () => void;
+  /** tabs in place of the title (整集试听's side panel); they get the LACUNA badge to show on the AI tab */
+  tabs?: (badge: ReactNode) => ReactNode;
+  /** shown instead of the conversation while another tab is open; the conversation stays mounted */
+  alt?: ReactNode;
 }
 
 let nextId = 1;
 
-export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse }: Props) {
+export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, alt }: Props) {
   const [msgs, setMsgs] = useState<Msg[]>(() => [
     {
       id: nextId++,
@@ -142,24 +147,24 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse }: Prop
     input.current?.focus();
   };
 
+  const badge = health && (
+    <span
+      className={`chip small ${claude ? "chip-ok" : ""}`}
+      data-testid="editor-badge"
+      title={claude ? t("接的是 LACUNA 云端 AI（只发送逐字稿和数字，不发送音频）") : health.editor_note}
+    >
+      {claude ? "LACUNA" : t("演示规则")}
+    </span>
+  );
+
   return (
     <section className="chat" aria-label={t("AI 制作人对话")}>
       <div className="chat-head">
-        <h2 className="chat-title">
-          {t("AI 制作人")}{" "}
-          {health && (
-            <span
-              className={`chip small ${claude ? "chip-ok" : ""}`}
-              data-testid="editor-badge"
-              title={claude ? t("接的是 LACUNA 云端 AI（只发送逐字稿和数字，不发送音频）") : health.editor_note}
-            >
-              {claude ? "LACUNA" : t("演示规则")}
-            </span>
-          )}
-        </h2>
+        {tabs ? tabs(badge) : <h2 className="chat-title">{t("AI 制作人")} {badge}</h2>}
         {onCollapse && <ChatCollapse onClick={onCollapse} />}
       </div>
-      <div className="chat-log" ref={log} aria-live="polite" data-testid="chat-log">
+      {alt}
+      <div className="chat-log" style={alt ? { display: "none" } : undefined} ref={log} aria-live="polite" data-testid="chat-log">
         {msgs.map((m) => (
           <div key={m.id} className={`msg msg-${m.role}`}>
             {m.at !== undefined && <span className="at mono">@ {fmt(m.at)}</span>}
@@ -190,7 +195,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse }: Prop
         ))}
         {busy && <Waiting className="msg msg-ai" label={claude ? t("LACUNA 正在看这附近的逐字稿…") : t("正在看这附近…")} />}
       </div>
-      <form className="chat-form" onSubmit={send}>
+      <form className="chat-form" onSubmit={send} style={alt ? { display: "none" } : undefined}>
         <label htmlFor="say" className="sr-only">
           {t("对 AI 制作人说（锚定在当前播放位置）")}
         </label>

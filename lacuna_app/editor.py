@@ -314,7 +314,8 @@ it is applied. `message` says in one or two short sentences what will change and
 def system_for(profile: dict | None) -> str:
     """SYSTEM for this workspace's show: Leon's show word for word, any other with its own hosts."""
     if show.is_legacy(profile):
-        return SYSTEM
+        note = show.legacy_level_note()
+        return SYSTEM + ("\n" + note if note else "")
     n = len(profile["hosts"])
     return show.neutral(SYSTEM, profile, [
         ("editing 《洛城二三事》, a casual two-host Chinese film podcast (hosts: Leon and Pei, one track each)",  # i18n-ignore

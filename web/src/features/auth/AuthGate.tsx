@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { AUTH_EVENT, authApi, type AuthStatus } from "./api";
-import { AuthScreen, inviteToken } from "./AuthScreen";
+import { AuthScreen, dropInvite, inviteToken } from "./AuthScreen";
 import { PageLoading } from "../loading/Loading";
 import { t } from "../../i18n";
 import "./auth.css";
@@ -42,10 +42,38 @@ export function AuthGate({ children }: { children: ReactNode }) {
     signedOut.current = true;
     return <AuthScreen status={st} onDone={check} />;
   }
-  if (inviteToken()) window.history.replaceState(null, "", "#/"); // an invite link opened while signed in
+  if (inviteToken()) return <InviteWhileSignedIn email={st.email} onDone={check} />;
   if (signedOut.current) {
     signedOut.current = false;
     if (!["", "#", "#/"].includes(window.location.hash)) window.history.replaceState(null, "", "#/");
   }
   return <>{children}</>;
+}
+
+/** An invite link opened in a browser that is signed in to another account: the invite is for a new
+ *  account, so offer to sign out first instead of dropping it silently. */
+function InviteWhileSignedIn({ email, onDone }: { email: string | null; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const signOut = () => {
+    setBusy(true);
+    authApi.logout().finally(onDone); // signed out, the gate opens the invite's sign-up page
+  };
+  const stay = () => {
+    dropInvite();
+    onDone();
+  };
+  return (
+    <main className="auth-down" data-testid="invite-signed-in">
+      <h1>{t("这是一个邀请链接")}</h1>
+      <p>{t("它用来创建一个新账号，但这个浏览器已经登录了 {email}。要接受邀请，先退出当前账号。", { email: email ?? "" })}</p>
+      <div className="row">
+        <button className="btn btn-primary" onClick={signOut} disabled={busy}>
+          {t("退出并接受邀请")}
+        </button>
+        <button className="btn btn-outline" onClick={stay} disabled={busy}>
+          {t("继续用 {email}", { email: email ?? "" })}
+        </button>
+      </div>
+    </main>
+  );
 }

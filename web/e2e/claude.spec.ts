@@ -21,7 +21,9 @@ test("chat with Claude: badge, cut the sentence at the playhead, cost line, appr
   const total = (await clock.textContent())!.split("/")[1].trim(); // "m:ss" length of the cut
   await proposal.getByRole("button", { name: "批准" }).click();
   await expect(page.getByText("✓ 已批准并应用")).toBeVisible();
+  await page.getByTestId("tab-near").click();
   await expect(page.locator('[data-testid=nearby] li[data-source="chat"]')).toHaveCount(1);
+  await page.getByTestId("tab-ai").click();
   await expect(clock).not.toContainText(`/ ${total}`);
 
   // "恢复" brings the chat cut back as a proposal

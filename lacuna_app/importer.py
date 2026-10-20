@@ -14,6 +14,7 @@ the tracks, features 4 %, AI first cut 20 %, building the episode 4 %.
 """
 from __future__ import annotations
 
+import contextvars
 import json
 import threading
 import time
@@ -247,7 +248,9 @@ class Importer:
         if wait:
             self._run(job)
         else:
-            threading.Thread(target=self._run, args=(job,), name=f"import-{job['id']}", daemon=True).start()
+            # the worker keeps the request's context: whose learned rules and 剪辑力度 apply (habits.py)
+            run = contextvars.copy_context().run
+            threading.Thread(target=run, args=(self._run, job), name=f"import-{job['id']}", daemon=True).start()
         return dict(job)
 
     # ------------------------------------------------------------------ the job
@@ -431,6 +434,7 @@ class Importer:
                 "ai_report": report_dict(report), "first_cut_engine": engine,
                 "imported_at": now(), "language": lang, "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in hosts}}
         create_episode(self.ws, job["id"], meta, project, edits, transcript)
+        self._mark_checked(job, d)
         self._level(job["id"])          # not cancellable: the episode exists now
         self._default_music(job["id"])
         cons = sum(e.consequential for e in edits)
@@ -453,12 +457,23 @@ class Importer:
             self._progress(job, "features", 0.0, tr("按项目设置校对专有名词"))
             fixer = self.term_fixer if self.term_fixer is not None else tf.TranscriptFixer()
             g = tf.glossary_for(self.ws.root, job.get("title") or "", [name for _, name in hosts])
-            fixes = fixer.propose(lines, g, on_usage=lambda u: self._log_usage(job["id"], u))
-            atomic_write_json(p, {"fixes": fixes, "terms": g.terms})
+            fixes, complete = fixer.propose_all(lines, g, on_usage=lambda u: self._log_usage(job["id"], u))
+            # sig: the glossary the model checked every line with (else the episode is checked again when it opens)
+            atomic_write_json(p, {"fixes": fixes, "terms": g.terms, "sig": tf.signature(g) if complete else None})
         done = tf.apply(lines, fixes)
         tf.write_back(asr, lines, done)
         if done:
             self._done_step(job, "terms", {"fixes": tf.summary(done)})
+
+    def _mark_checked(self, job: dict, d: Path) -> None:
+        """The new episode's transcript was proofread with this glossary (no second pass when it opens)."""
+        from .store import atomic_write_json as write
+        try:
+            sig = read_json(d / "term_fixes.json").get("sig")
+        except (OSError, ValueError):
+            sig = None
+        if sig:
+            write(self.ws.episode_dir(job["id"]) / "term_check.json", {"sig": sig, "at": now()})
 
     def _media(self, job: dict, d: Path) -> dict[str, MediaRef]:
         """Raw tracks as MediaRefs (read in place); conformed to WAV only if they can't be."""

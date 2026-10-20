@@ -5,6 +5,8 @@ import { joinList, t } from "../../i18n";
 
 export type HostColor = "blue" | "purple" | "teal" | "amber" | "green" | "pink";
 export type CutLevel = "gentle" | "normal" | "firm";
+/** a host against the editor's own 剪辑力度 (设置 → 剪辑习惯) */
+export type CutAdjust = "less" | "same" | "more";
 /** what the hosts speak: picks the speech recognisers and LACUNA's editing brief (lacuna_app/asr.py) */
 export type Language = "zh" | "en";
 export const LANGUAGES: Language[] = ["zh", "en"];
@@ -18,7 +20,7 @@ export interface Host {
   tag: string;
   name: string;
   color: HostColor;
-  cut_level: CutLevel;
+  cut_adjust: CutAdjust;
   style: string;
 }
 
@@ -33,6 +35,9 @@ export interface Show {
   needs_setup: boolean;
   colors: HostColor[];
   cut_levels: CutLevel[];
+  cut_adjusts: CutAdjust[];
+  /** the signed-in editor's 剪辑力度 */
+  my_level: CutLevel;
   max_hosts: number;
 }
 

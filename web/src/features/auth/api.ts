@@ -1,5 +1,6 @@
 // API of the sign-in feature (lacuna_app/routes/auth.py)
 import { req } from "../../api";
+import { lang as uiLang, type Lang } from "../../i18n";
 
 export type Role = "owner" | "admin" | "member";
 
@@ -72,7 +73,7 @@ export const authApi = {
     req<Step>("POST", "/api/auth/register", { email, password, setup_code, remember: true }),
   registerInvite: (invite: string, password: string) =>
     req<Step>("POST", "/api/auth/register", { invite, password, remember: true }),
-  invite: (token: string) => req<{ email: string; role: Role; by: string; exp: number }>("POST", "/api/auth/invite", { token }),
+  invite: (token: string) => req<{ email: string; role: Role; by: string; exp: number; lang?: Lang | null }>("POST", "/api/auth/invite", { token }),
   secondStep: (ticket: string, code: string) => req<Step>("POST", "/api/auth/2fa", { ticket, code }),
   enroll: (ticket: string, code: string) => req<Step>("POST", "/api/auth/2fa/enroll", { ticket, code }),
   sendCode: (email: string) => req<{ sent: true }>("POST", "/api/auth/code", { email, purpose: "reset" }),
@@ -88,12 +89,13 @@ export const authApi = {
   endDevices: (id: string | null) => req<{ ended: number; sessions: Device[] }>("POST", "/api/auth/sessions/end", { id }),
   // members and invites (owner, admins)
   people: () => req<People>("GET", "/api/auth/users"),
-  sendInvite: (email: string, role: Role, space: string | null = null, space_role: string | null = null) =>
+  sendInvite: (email: string, role: Role, space: string | null = null, space_role: string | null = null, lang: Lang = uiLang) =>
     req<People & { link: string; mailed: boolean; mail_error: string | null; email: string }>("POST", "/api/auth/invites", {
       email,
       role,
       space,
       space_role,
+      lang,
     }),
   revokeInvite: (id: string) => req<People>("DELETE", `/api/auth/invites/${encodeURIComponent(id)}`),
   updateMember: (email: string, c: { role?: Role; disabled?: boolean; reset_2fa?: boolean }) =>

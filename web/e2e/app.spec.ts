@@ -20,7 +20,7 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.getByTestId("lane-Leon")).toBeVisible();
     await expect(page.getByTestId("lane-Pei")).toBeVisible();
     await expect(page.getByTestId("clock")).toContainText("/ 0:52");
-    await expect(page.getByRole("heading", { name: "这附近改了什么" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /这附近改了什么/ })).toBeVisible(); // a tab of the side panel
   });
 
   test("play / pause", async ({ page }) => {
@@ -117,6 +117,7 @@ test.describe.serial("LACUNA Studio", () => {
 
     await proposal.getByRole("button", { name: "批准" }).click();
     await expect(page.getByText("✓ 已批准并应用")).toBeVisible();
+    await page.getByTestId("tab-near").click(); // the side panel's 这附近改了什么 tab
     const chatEdit = page.locator('[data-testid=nearby] li[data-source="chat"]');
     await expect(chatEdit).toContainText("停顿 2.0s → 0.4s");
     await expect(page.getByTestId("clock")).toContainText("/ 0:50");
@@ -127,6 +128,7 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.getByTestId("clock")).toContainText("/ 0:52");
 
     // the conversation survives a round trip through Edit Review
+    await page.getByTestId("tab-ai").click();
     await page.getByRole("link", { name: /审阅改动/ }).click();
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect(page.getByTestId("chat-log")).toContainText("✓ 已批准并应用");

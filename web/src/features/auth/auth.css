@@ -52,6 +52,7 @@
 .auth-steps .is-on { color: var(--ink); }
 .auth-steps .is-on b { background: var(--accent); color: #fff; }
 .auth-steps .is-done b { background: var(--ok); color: #fff; }
+.auth-down p { max-width: 460px; text-align: center; }
 .auth-down { min-height: 100vh; display: grid; place-content: center; gap: 12px; justify-items: center; background: var(--bg-glow), var(--bg); color: var(--ink); }
 
 @media (max-width: 900px) {

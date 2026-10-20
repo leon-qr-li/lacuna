@@ -97,6 +97,8 @@ def system_prompt(extra_rules: str = "", profile: dict | None = None, language: 
         return generic_prompt(extra_rules, profile)
     parts = [(PROMPTS / "first_cut_brief.txt").read_text(encoding="utf-8"),
              (PROMPTS / "learned_rules_ep001.txt").read_text(encoding="utf-8")]
+    if show.legacy_level_note():
+        parts.append(show.legacy_level_note())
     if extra_rules.strip():
         parts.append("RULES LEARNED FROM LEON'S LATER REVIEWS (newer than EP001; they win where they conflict)\n"
                      + extra_rules.strip())

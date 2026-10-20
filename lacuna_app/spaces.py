@@ -61,8 +61,30 @@ class Spaces:
         s = self.spaces.get(sid or "")
         return s["members"].get(email or "") if s else None
 
-    def mine(self, email: str) -> list[dict]:
-        rows = [{"id": s["id"], "name": s["name"], "role": s["members"][email]}
+    def title(self, sid: str) -> str:
+        """What people see as the project's name: its show name once set, else the name it was made with."""
+        try:
+            name = show.load(self.path(sid)).get("show_name") or ""
+        except Exception:
+            name = ""
+        return name or self.spaces[sid]["name"]
+
+    def summary(self, sid: str) -> dict:
+        """For the project list: how many episodes and albums, how many people, when last changed."""
+        root = self.path(sid)
+        eps = root / "episodes"
+        dirs = [p for p in eps.iterdir() if p.is_dir() and not p.name.startswith((".", "_"))] if eps.is_dir() else []
+        try:
+            albums = len((read_json(root / "albums.json") or {}).get("albums", []))
+        except (OSError, ValueError):
+            albums = 0
+        stamps = [p.stat().st_mtime for p in dirs] + [self.spaces[sid]["created"]]
+        return {"episodes": len(dirs), "albums": albums, "people": len(self.spaces[sid]["members"]),
+                "updated": max(stamps)}
+
+    def mine(self, email: str, detail: bool = False) -> list[dict]:
+        rows = [{"id": s["id"], "name": self.title(s["id"]), "role": s["members"][email],
+                 "by": (s.get("added_by") or {}).get(email)} | (self.summary(s["id"]) if detail else {})
                 for s in self.spaces.values() if email in s["members"]]
         return sorted(rows, key=lambda r: (r["id"] != MAIN, r["name"].lower()))
 
@@ -74,7 +96,7 @@ class Spaces:
         return mine[0]["id"] if mine else None
 
     def overview(self) -> list[dict]:
-        return sorted(({"id": s["id"], "name": s["name"], "created": s["created"],
+        return sorted(({"id": s["id"], "name": self.title(s["id"]), "created": s["created"],
                         "members": [{"email": e, "role": r} for e, r in sorted(s["members"].items())]}
                        for s in self.spaces.values()), key=lambda r: (r["id"] != MAIN, r["name"].lower()))
 
@@ -82,15 +104,16 @@ class Spaces:
     def _get(self, sid: str) -> dict:
         s = self.spaces.get(sid)
         if not s:
-            raise AuthError(tr("没有这个工作区"), 404)
+            raise AuthError(tr("没有这个项目"), 404)
         return s
 
-    def create(self, name: str, admin: str) -> dict:
+    def create(self, name: str, admin: str, named: bool = True) -> dict:
+        """`named` False: the project a new account starts with, whose first visit asks for its name too."""
         name = _name(name)
         with self.lock:
             sid = "sp_" + secrets.token_hex(4)
             self.path(sid).joinpath("episodes").mkdir(parents=True, exist_ok=True)
-            show.write_new(self.path(sid))       # a new show: the first visit asks for its name and hosts
+            show.write_new(self.path(sid), name if named else "")  # a new show: the first visit asks for its hosts
             self.spaces[sid] = {"id": sid, "name": name, "created": self.now(), "members": {admin: "admin"}}
             self._save()
             return self.spaces[sid]
@@ -100,8 +123,9 @@ class Spaces:
             self._get(sid)["name"] = _name(name)
             self._save()
 
-    def set_member(self, sid: str, email: str, role: str | None) -> None:
-        """Add, change or (role None) remove a member; a workspace always keeps one admin."""
+    def set_member(self, sid: str, email: str, role: str | None, by: str | None = None) -> None:
+        """Add, change or (role None) remove a member; a workspace always keeps one admin.
+        `by`: who brought a new member in (shown to them in their project list)."""
         with self.lock:
             s = self._get(sid)
             if role is not None and role not in SPACE_RANK:
@@ -112,7 +136,12 @@ class Spaces:
             else:
                 members[email] = role
             if s["members"] and not any(r == "admin" for r in members.values()):
-                raise AuthError(tr("工作区至少要留一个管理员"))
+                raise AuthError(tr("项目至少要留一个管理员"))
+            added = s.setdefault("added_by", {})
+            if role is None:
+                added.pop(email, None)
+            elif by and email not in s["members"] and by != email:
+                added[email] = by
             s["members"] = members
             self._save()
 
@@ -121,11 +150,12 @@ class Spaces:
         with self.lock:
             for s in self.spaces.values():
                 s["members"].pop(email, None)
+                s.get("added_by", {}).pop(email, None)
             self._save()
 
 
 def _name(name: str) -> str:
     n = " ".join((name or "").split())[:60]
     if not n:
-        raise AuthError(tr("给工作区起个名字"))
+        raise AuthError(tr("给项目起个名字"))
     return n

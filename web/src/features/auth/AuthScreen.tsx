@@ -3,7 +3,7 @@ import { authApi, type AuthStatus, type Step } from "./api";
 import { CodeInput, RecoveryCodes, SecondFactor, TwoStepQR } from "./TwoStep";
 import { BusyLabel } from "../loading/Loading";
 import { currentTheme, setTheme } from "../theme/theme";
-import { lang, setLang, t } from "../../i18n";
+import { lang, langChosen, setLang, t } from "../../i18n";
 
 type View =
   | { v: "login" }
@@ -15,10 +15,16 @@ type View =
   | { v: "saved"; email: string; codes: string[] };
 const MIN = 10;
 
-/** `#/invite/<token>`: the link in an invite email. */
+/** `/invite/<token>`: the link in an invite email (in the path: Cloudflare Access's sign-in drops a
+ *  #fragment; links sent before that were `#/invite/<token>` and still work). */
 export function inviteToken(): string | null {
-  const m = /^#\/invite\/([\w-]{20,})$/.exec(window.location.hash);
+  const m = /^\/invite\/([\w-]{20,})\/?$/.exec(window.location.pathname) ?? /^#\/invite\/([\w-]{20,})$/.exec(window.location.hash);
   return m ? m[1] : null;
+}
+
+/** Leaves the invite link for the app's home (剧集). */
+export function dropInvite() {
+  window.history.replaceState(null, "", "/#/");
 }
 
 /** Sign in (password, then the two-step code), the owner's first account, sign-up from an invite link,
@@ -38,7 +44,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
     else onDone();
   };
   const go = (v: "login" | "forgot") => {
-    if (inviteToken()) window.history.replaceState(null, "", "#/");
+    if (inviteToken()) dropInvite();
     setView({ v });
   };
   const p = { status, email, setEmail, go, next };
@@ -351,7 +357,11 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
   const [pw2, setPw2] = useState("");
   const { busy, err, setErr, run } = useSubmit();
   useEffect(() => {
-    authApi.invite(token).then(setInfo, (e) => setGone(String(e.message ?? e)));
+    authApi.invite(token).then((i) => {
+      // a fresh browser opens the sign-up in the invite email's language
+      if (!langChosen && i.lang && i.lang !== lang) setLang(i.lang);
+      else setInfo(i);
+    }, (e) => setGone(String(e.message ?? e)));
   }, [token]);
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -359,7 +369,7 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
     if (bad) return setErr(bad);
     run(async () => {
       const s = await authApi.registerInvite(token, pw);
-      window.history.replaceState(null, "", "#/");
+      dropInvite();
       next(s, info!.email);
     });
   };

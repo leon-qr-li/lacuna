@@ -1,0 +1,49 @@
+/* 项目 (decision projects-albums): the top-left project menu, 所有项目, 新项目, 项目设置 tabs, 邀请协作 */
+.prj-crumb { position: relative; display: inline-flex; min-width: 0; }
+.prj-crumb-btn { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; height: 32px; padding: 0 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.prj-crumb-btn:hover, .prj-crumb-btn[aria-expanded="true"] { background: var(--hover); }
+.prj-crumb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prj-caret { color: var(--ink-3); font-size: 11px; }
+.prj-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 30; min-width: 240px; padding: 6px; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow); display: flex; flex-direction: column; }
+.prj-menu hr { width: 100%; border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+.prj-menu-head { padding: 6px 10px 4px; font-size: 12px; color: var(--ink-3); }
+.prj-menu-item { display: grid; grid-template-columns: 1.2em minmax(0, 1fr); align-items: center; gap: 6px; padding: 7px 10px; border: 0; border-radius: 9px; background: none; color: var(--ink); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.prj-menu-item:hover, .prj-menu-item:focus-visible { background: var(--accent-soft); }
+.prj-menu-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prj-check { color: var(--accent-ink); }
+
+.prj-grid { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.prj-card { display: flex; align-items: center; gap: 16px; width: 100%; height: 100%; box-sizing: border-box; padding: 16px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.prj-card:hover { border-color: var(--line-2); }
+.prj-card-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.prj-card-body strong { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prj-by { color: var(--pei-ink); }
+.prj-here { color: var(--accent-ink); }
+.prj-card-new { justify-content: center; min-height: 98px; border-style: dashed; background: transparent; box-shadow: none; color: var(--ink-2); }
+.prj-card-new:hover { color: var(--ink); background: var(--panel); }
+
+.prj-dlg { width: min(460px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.prj-dlg h2 { margin-bottom: 0; }
+.prj-field { display: flex; flex-direction: column; gap: 4px; }
+.prj-field input { width: 100%; box-sizing: border-box; }
+.prj-label { font-size: 12px; color: var(--ink-3); }
+.prj-dlg .dlg-actions { margin-top: 4px; }
+
+.prj-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 14px; padding: 4px; border-radius: 14px; background: var(--hover); width: fit-content; max-width: 100%; box-sizing: border-box; }
+.prj-tab { padding: 7px 14px; border-radius: 10px; color: var(--ink-2); font-size: 14px; text-decoration: none; }
+.prj-tab:hover { color: var(--ink); }
+.prj-tab[aria-selected="true"] { background: var(--solid); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
+
+.prj-invite { display: grid; grid-template-columns: minmax(0, 1fr) 8rem auto; gap: 8px; align-items: center; }
+@media (max-width: 560px) { .prj-invite { grid-template-columns: 1fr 1fr; } .prj-invite input { grid-column: 1 / -1; } }
+.prj-hint { margin: 10px 0 0; }
+.prj-link { width: 100%; box-sizing: border-box; margin-top: 8px; font-family: var(--mono, monospace); font-size: 12px; }
+.prj-collab h3 { margin: 20px 0 8px; }
+.prj-people { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.prj-people li { display: grid; grid-template-columns: 32px minmax(0, 1fr) 8rem auto; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid var(--line); }
+.prj-people li:first-child { border-top: 0; }
+.prj-avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--leon) 16%, transparent); color: var(--ink); font-weight: 600; font-size: 13px; }
+.prj-pending .prj-avatar { background: var(--hover); color: var(--ink-3); }
+.prj-who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prj-role { color: var(--ink-2); font-size: 13px; }
+.prj-pending .prj-role { color: var(--ink-3); }

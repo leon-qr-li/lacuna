@@ -5,6 +5,8 @@ import { navCurrent } from "../registry";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { AccountCard } from "../auth/AccountCard";
 import { SpacesCard } from "../spaces/SpacesCard";
+import { HabitsCard } from "../habits/HabitsCard";
+import { SystemTermsCard } from "../transcript-fix/SystemTermsCard";
 import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 
@@ -70,6 +72,7 @@ export function SettingsView() {
       {err && <p className="error">{err}</p>}
 
       <ThemeSetting />
+      <HabitsCard />
 
       <section className="card" aria-label={t("版本")}>
         <div className="card-head">
@@ -113,13 +116,14 @@ export function SettingsView() {
 
       <AccountCard />
       <SpacesCard />
+      <SystemTermsCard />
 
       {!info.cloud && (
       <section className="card" aria-label={t("这台电脑")}>
         <h2>{t("这台电脑")}</h2>
         <ul className="plain small">
           <li>{t("系统：")}{info.platform}</li>
-          <li>{t("工作区：")}{info.workspace}</li>
+          <li>{t("项目：")}{info.workspace}</li>
           <li data-testid="ffmpeg-state">ffmpeg：{info.ffmpeg && info.ffprobe ? t("已就绪") : t("没找到（导入和导出会失败）")}</li>
           <li>{t("语音识别模型：")}{info.models ? t("已下载") : t("第一次导入时自动下载（约 400 MB）")}</li>
         </ul>

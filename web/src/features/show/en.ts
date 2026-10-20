@@ -7,9 +7,11 @@ export const en: Dict = {
   琥珀: "Amber",
   绿: "Green",
   粉: "Pink",
-  "轻剪：多保留原话": "Light: keep more of what they say",
+  比我平时更狠: "Firmer than I usually cut",
+  和我平时一样: "Same as I usually cut",
+  比我平时更松: "Lighter than I usually cut",
+  我平时的剪辑力度: "How much I usually cut",
   正常: "Normal",
-  "狠剪：啰嗦和跑题多删": "Firm: cut rambling and tangents",
   节目名: "Show name",
   中文: "Chinese",
   英文: "English",
@@ -44,8 +46,8 @@ export const en: Dict = {
   已保存: "Saved",
   "正在打开节目设置…": "Opening show settings…",
   节目设置: "Show settings",
-  "这个工作区做的节目。导入、AI 剪辑、show notes 和海报都按这里来。":
-    "The show this workspace makes. Imports, LACUNA's editing, show notes and covers follow these settings.",
+  "这个项目做的节目。导入、AI 剪辑、show notes 和海报都按这里来。":
+    "The show this project makes. Imports, LACUNA's editing, show notes and covers follow these settings.",
   先介绍一下你的节目: "First, tell LACUNA about your show",
   "填节目名和主持人，每位主持人一条分轨。以后可以在「节目」里改，也能设剪辑风格。":
     "Enter the show name and its hosts (one track each). You can change them later under Show, and set an editing style there too.",

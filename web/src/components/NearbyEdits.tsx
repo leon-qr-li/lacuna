@@ -2,6 +2,9 @@ import type { EditInfo, Episode } from "../api";
 import { fmt, statusLabel } from "../api";
 import { t } from "../i18n";
 
+/** the edits within 20 seconds of the playhead (also counted on the side panel's tab) */
+export const nearEdits = (ep: Episode, time: number) => ep.edits.filter((e) => e.category !== "loudness" && Math.abs(e.t - time) <= 20);
+
 export function NearbyEdits({
   ep,
   time,
@@ -13,7 +16,7 @@ export function NearbyEdits({
   onSeek: (t: number) => void;
   onReview: (e: EditInfo, action: "restore" | "apply") => void;
 }) {
-  const near = ep.edits.filter((e) => e.category !== "loudness" && Math.abs(e.t - time) <= 20);
+  const near = nearEdits(ep, time);
   return (
     <section className="card" aria-label={t("当前位置附近的改动")}>
       <h2>{t("这附近改了什么")}</h2>

@@ -435,3 +435,59 @@ def test_api_calls_retry_a_5xx_or_a_dropped_connection():
     with pytest.raises(provision.ProvisionError, match="403"):
         h("GET", "/x")
     assert len(calls) == 1                   # a 4xx is an answer, not a hiccup
+
+
+class FakeResend:
+    def __init__(self, restricted=False):
+        self.domains, self.writes, self.restricted, self.checks = [], [], restricted, 0
+
+    def __call__(self, method, path, body=None):
+        if self.restricted:
+            return 401, {"name": "restricted_api_key", "message": "This API key is restricted to only send emails"}
+        if method != "GET":
+            self.writes.append((method, path))
+        if path == "/domains":
+            if method == "GET":
+                return 200, {"data": [{"id": d["id"], "name": d["name"]} for d in self.domains]}
+            d = {"id": "dom1", "name": body["name"], "status": "not_started", "records": [
+                {"record": "DKIM", "name": "resend._domainkey", "type": "TXT", "value": "p=MIGfMA0"},
+                {"record": "SPF", "name": "send", "type": "MX", "value": "feedback-smtp.us-east-1.amazonses.com",
+                 "priority": 10},
+                {"record": "SPF", "name": "send", "type": "TXT", "value": "v=spf1 include:amazonses.com ~all"},
+                {"record": "Receiving", "name": "lacunastudio.app", "type": "MX", "value": "inbound-smtp.resend.com",
+                 "priority": 10}]}
+            self.domains.append(d)
+            return 201, {"id": d["id"]}
+        if path == "/domains/dom1/verify":
+            self.domains[0]["status"] = "pending"
+            return 200, {}
+        if path == "/domains/dom1":
+            if self.domains[0]["status"] == "pending":
+                self.checks += 1
+                if self.checks >= 2:
+                    self.domains[0]["status"] = "verified"
+            return 200, self.domains[0]
+        raise AssertionError(f"unexpected Resend call {method} {path}")
+
+
+def test_mail_domain_adds_resend_records_and_verifies_once(api):
+    a, _ = api
+    a.dns.append({"id": "old", "type": "CNAME", "name": provision.DOMAIN, "content": "t.cfargotunnel.com"})
+    rs = FakeResend()
+    cf, resend = provision.Cloudflare(FakeHttp(a.cf)), provision.Resend(FakeHttp(rs))
+    assert provision.mail_domain(cf, resend, False) == "missing" and not rs.writes and not a.writes   # plan
+    assert provision.mail_domain(cf, resend, True, sleep=lambda s: None) == "verified"
+    added = {(r["type"], r["name"]) for r in a.dns if r["id"] != "old"}
+    assert added == {("TXT", f"resend._domainkey.{provision.DOMAIN}"), ("MX", f"send.{provision.DOMAIN}"),
+                     ("TXT", f"send.{provision.DOMAIN}"), ("TXT", f"_dmarc.{provision.DOMAIN}")}
+    assert not any(r.get("proxied") for r in a.dns if r["id"] != "old")       # email records are DNS only
+    assert next(r for r in a.dns if r["type"] == "MX")["priority"] == 10
+    writes = (len(a.writes), len(rs.writes))
+    assert provision.mail_domain(cf, resend, True) == "verified"                # second run changes nothing
+    assert (len(a.writes), len(rs.writes)) == writes
+
+
+def test_mail_domain_names_a_send_only_resend_key():
+    rs = FakeResend(restricted=True)
+    with pytest.raises(provision.ProvisionError, match="Full access"):
+        provision.Resend(FakeHttp(rs)).ensure(True)

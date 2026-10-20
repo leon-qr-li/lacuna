@@ -73,7 +73,7 @@ def test_invite_only_signup(tmp_path, mailer):
     assert pei.post("/api/auth/invites", json={"email": "pei@example.com"}).status_code == 401
     out = c.post("/api/auth/invites", json={"email": "Pei@Example.com", "role": "member"},
                  headers={"origin": "https://studio.example"}).json()
-    assert out["mailed"] is True and out["link"].startswith("https://studio.example/#/invite/")
+    assert out["mailed"] is True and out["link"].startswith("https://studio.example/invite/")
     assert mailer.outbox[-1]["to"] == "pei@example.com" and out["link"] in mailer.outbox[-1]["text"]
     assert [i["email"] for i in out["invites"]] == ["pei@example.com"]
     tok = invite_token(out["link"])
@@ -117,7 +117,7 @@ def test_invite_link_returned_when_mail_fails(tmp_path):
     a = Auth(tmp_path, Down())
     a.register_first("leon@example.com", PW, None, True)
     out = a.invite("leon@example.com", "pei@example.com", "member", "http://127.0.0.1:8765")
-    assert out["mailed"] is False and "403" in out["mail_error"] and out["link"].startswith("http://127.0.0.1:8765/#/invite/")
+    assert out["mailed"] is False and "403" in out["mail_error"] and out["link"].startswith("http://127.0.0.1:8765/invite/")
     assert a.register_invite(invite_token(out["link"]), PW, True)["step"] == "done"
 
 
@@ -347,10 +347,36 @@ def test_invites_follow_cloudflare_access(tmp_path, mailer, monkeypatch):
     c = make(tmp_path, mailer)
     c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
     out = c.post("/api/auth/invites", json={"email": "pei@example.com"}).json()
-    assert out["link"].startswith("https://studio.example/#/invite/")
+    assert out["link"].startswith("https://studio.example/invite/")
     c.delete(f"/api/auth/invites/{out['invites'][0]['id']}")
     tok = invite_token(c.post("/api/auth/invites", json={"email": "bob@example.com"}).json()["link"])
     TestClient(c.app).post("/api/auth/register", json={"invite": tok, "password": PW})
     c.delete("/api/auth/users/bob@example.com")
     assert calls == [("allow", "pei@example.com"), ("revoke", "pei@example.com"), ("allow", "bob@example.com"),
                      ("revoke", "bob@example.com")]
+
+
+def test_resend_test_sender_moves_to_the_verified_domain(tmp_path, mailer):
+    from lacuna_app.auth import DEFAULT_SENDER
+    d = tmp_path / "auth"
+    d.mkdir()
+    (d / "users.json").write_text(json.dumps({"users": [], "config": {"sender": "LACUNA <onboarding@resend.dev>"}}))
+    assert Auth(tmp_path, mailer).config["sender"] == DEFAULT_SENDER == "LACUNA <noreply@lacunastudio.app>"
+    (d / "users.json").write_text(json.dumps({"users": [], "config": {"sender": "Pod <hi@example.com>"}}))
+    assert Auth(tmp_path, mailer).config["sender"] == "Pod <hi@example.com>"     # a chosen address stays
+
+
+def test_invite_email_language_is_the_inviters_pick(tmp_path, mailer):
+    c = make(tmp_path, mailer)
+    c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
+    out = c.post("/api/auth/invites", json={"email": "pei@example.com"}).json()     # default: the inviter's interface
+    assert "邀请你使用 LACUNA" in mailer.outbox[-1]["subject"]
+    assert TestClient(c.app).post("/api/auth/invite", json={"token": invite_token(out["link"])}).json()["lang"] == "zh"
+    out = c.post("/api/auth/invites", json={"email": "sam@example.com", "lang": "en"}).json()
+    mail = mailer.outbox[-1]
+    assert mail["subject"] == "leon@example.com invited you to LACUNA" and "set your password" in mail["text"]
+    assert out["link"] in mail["text"]
+    # the sign-up page learns the email's language
+    assert TestClient(c.app).post("/api/auth/invite", json={"token": invite_token(out["link"])}).json()["lang"] == "en"
+    # the inviter's own interface language is untouched
+    assert c.post("/api/auth/invites", json={"email": "x"}).json()["detail"] == "邮箱格式不对"

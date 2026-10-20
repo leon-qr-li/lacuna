@@ -24,7 +24,7 @@ export const en: Dict = {
   "保存": "Save",
   "这台电脑": "This computer",
   "系统：": "System: ",
-  "工作区：": "Workspace: ",
+  "项目：": "Project: ",
   "已就绪": "ready",
   "没找到（导入和导出会失败）": "not found (import and export will fail)",
   "语音识别模型：": "Speech models: ",

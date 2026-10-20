@@ -112,6 +112,7 @@ class InviteBody(BaseModel):
     role: str = "member"
     space: str | None = None        # workspace to join (routes/spaces.py): "new" = a workspace of their own
     space_role: str | None = None
+    lang: str | None = None         # the email's language (zh / en); default the inviter's interface
 
 
 class UserBody(BaseModel):
@@ -190,6 +191,10 @@ def register(app, ctx) -> None:
         except Exception as e:      # network, Cloudflare API
             print(f"LACUNA: Cloudflare Access update for {email} failed: {e}", flush=True)
 
+    # 邀请协作 (routes/spaces.py) sends project invites with the same link and Access list
+    app.state.invite_origin = origin
+    app.state.grant_access = access
+
     @app.get("/api/auth/status")
     def status(request: Request):
         out = auth.status(token(request))
@@ -213,7 +218,7 @@ def register(app, ctx) -> None:
     @app.post("/api/auth/invite")
     def invite_info(body: InviteToken):
         i = run(lambda: auth.invite_info(body.token))
-        return {"email": i["email"], "role": i["role"], "by": i["by"], "exp": i["exp"]}
+        return {"email": i["email"], "role": i["role"], "by": i["by"], "exp": i["exp"], "lang": i.get("lang")}
 
     @app.post("/api/auth/register")
     def register_(body: RegisterBody, request: Request):
@@ -288,7 +293,7 @@ def register(app, ctx) -> None:
         email = at_least(request, "admin")
         check = getattr(app.state, "invite_space", None)     # set by routes/spaces.py
         extra = run(lambda: check(email, body.space, body.space_role)) if check else None
-        out = run(lambda: auth.invite(email, body.email, body.role, origin(request), extra))
+        out = run(lambda: auth.invite(email, body.email, body.role, origin(request), extra, body.lang))
         access(out["email"], True)
         return {**out, **people()}
 

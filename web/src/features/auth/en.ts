@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "邀请邮件的语言": "Invite email language",
   "《洛城二三事》的剪辑工作台": "The editing studio for 《洛城二三事》",
   "连不上 LACUNA：{err}": "Can't reach LACUNA: {err}",
   "重试": "Retry",
@@ -153,4 +154,9 @@ export const en: Dict = {
   "重置": "Reset",
   "重置两步验证": "Reset two-step",
   "云端版的 key 在服务器的环境变量里设置，不能在网页上改。": "Online, the key is set in the server's environment, not in the browser.",
+  "这是一个邀请链接": "This is an invite link",
+  "它用来创建一个新账号，但这个浏览器已经登录了 {email}。要接受邀请，先退出当前账号。":
+    "It creates a new account, but this browser is signed in as {email}. Sign out first to accept the invite.",
+  "退出并接受邀请": "Sign out and accept",
+  "继续用 {email}": "Stay signed in as {email}",
 };
