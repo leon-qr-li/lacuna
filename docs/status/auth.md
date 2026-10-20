@@ -38,3 +38,7 @@ desktop (设置 → 账号与安全). The 设置 card 账号与邮件 is now spl
 - Invite email language (decision `2026-10-20-invite-mail-language.md`): 「中文邮件 / English email」 select in both
   invite forms (`features/auth/MailLang.tsx`); the sign-up page of a fresh browser opens in the email's language.
   Tests: `test_invite_email_language_is_the_inviters_pick`, `test_spaces.py`, `web/e2e/auth.spec.ts`.
+- Invite link fix (2026-10-20, Leon's staging E2E): links are `/invite/<token>` (path), not `#/invite/<token>` —
+  Cloudflare Access's email sign-in drops a URL's #fragment, so a new invitee landed on the plain login page.
+  Old `#/` links still open. A link opened where someone is signed in now says so (「退出并接受邀请」 /
+  「继续用 …」) instead of dropping it. Tests: `web/e2e/auth.spec.ts`, `tests/app/test_auth_invites_2fa.py`.

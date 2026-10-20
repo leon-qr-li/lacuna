@@ -621,7 +621,8 @@ class Auth:
             self.invites[_sha(token)] = {"hash": _sha(token), "email": email, "role": role, "by": actor,
                                          "created": now, "exp": now + INVITE_S, "lang": lang, **(extra or {})}
             self._save_users()
-        link = f"{origin.rstrip('/')}/#/invite/{token}"
+        # in the path, not after "#": Cloudflare Access's sign-in drops a URL's #fragment on the way back
+        link = f"{origin.rstrip('/')}/invite/{token}"
         mailed, why = False, None
         try:
             with speaking(lang):

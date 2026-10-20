@@ -15,10 +15,16 @@ type View =
   | { v: "saved"; email: string; codes: string[] };
 const MIN = 10;
 
-/** `#/invite/<token>`: the link in an invite email. */
+/** `/invite/<token>`: the link in an invite email (in the path: Cloudflare Access's sign-in drops a
+ *  #fragment; links sent before that were `#/invite/<token>` and still work). */
 export function inviteToken(): string | null {
-  const m = /^#\/invite\/([\w-]{20,})$/.exec(window.location.hash);
+  const m = /^\/invite\/([\w-]{20,})\/?$/.exec(window.location.pathname) ?? /^#\/invite\/([\w-]{20,})$/.exec(window.location.hash);
   return m ? m[1] : null;
+}
+
+/** Leaves the invite link for the app's home (剧集). */
+export function dropInvite() {
+  window.history.replaceState(null, "", "/#/");
 }
 
 /** Sign in (password, then the two-step code), the owner's first account, sign-up from an invite link,
@@ -38,7 +44,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
     else onDone();
   };
   const go = (v: "login" | "forgot") => {
-    if (inviteToken()) window.history.replaceState(null, "", "#/");
+    if (inviteToken()) dropInvite();
     setView({ v });
   };
   const p = { status, email, setEmail, go, next };
@@ -363,7 +369,7 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
     if (bad) return setErr(bad);
     run(async () => {
       const s = await authApi.registerInvite(token, pw);
-      window.history.replaceState(null, "", "#/");
+      dropInvite();
       next(s, info!.email);
     });
   };

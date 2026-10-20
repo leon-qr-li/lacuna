@@ -73,7 +73,7 @@ def test_invite_only_signup(tmp_path, mailer):
     assert pei.post("/api/auth/invites", json={"email": "pei@example.com"}).status_code == 401
     out = c.post("/api/auth/invites", json={"email": "Pei@Example.com", "role": "member"},
                  headers={"origin": "https://studio.example"}).json()
-    assert out["mailed"] is True and out["link"].startswith("https://studio.example/#/invite/")
+    assert out["mailed"] is True and out["link"].startswith("https://studio.example/invite/")
     assert mailer.outbox[-1]["to"] == "pei@example.com" and out["link"] in mailer.outbox[-1]["text"]
     assert [i["email"] for i in out["invites"]] == ["pei@example.com"]
     tok = invite_token(out["link"])
@@ -117,7 +117,7 @@ def test_invite_link_returned_when_mail_fails(tmp_path):
     a = Auth(tmp_path, Down())
     a.register_first("leon@example.com", PW, None, True)
     out = a.invite("leon@example.com", "pei@example.com", "member", "http://127.0.0.1:8765")
-    assert out["mailed"] is False and "403" in out["mail_error"] and out["link"].startswith("http://127.0.0.1:8765/#/invite/")
+    assert out["mailed"] is False and "403" in out["mail_error"] and out["link"].startswith("http://127.0.0.1:8765/invite/")
     assert a.register_invite(invite_token(out["link"]), PW, True)["step"] == "done"
 
 
@@ -347,7 +347,7 @@ def test_invites_follow_cloudflare_access(tmp_path, mailer, monkeypatch):
     c = make(tmp_path, mailer)
     c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
     out = c.post("/api/auth/invites", json={"email": "pei@example.com"}).json()
-    assert out["link"].startswith("https://studio.example/#/invite/")
+    assert out["link"].startswith("https://studio.example/invite/")
     c.delete(f"/api/auth/invites/{out['invites'][0]['id']}")
     tok = invite_token(c.post("/api/auth/invites", json={"email": "bob@example.com"}).json()["link"])
     TestClient(c.app).post("/api/auth/register", json={"invite": tok, "password": PW})

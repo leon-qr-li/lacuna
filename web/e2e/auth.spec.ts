@@ -98,7 +98,8 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await members.getByRole("button", { name: "发送邀请" }).click();
   await expect(members.getByTestId("invite-result")).toContainText("邀请邮件已发到 pei@example.com");
   const link = (await members.getByTestId("invite-link").textContent())!;
-  expect(link).toMatch(/\/#\/invite\/[\w-]{20,}$/);
+  // in the path, not after "#": Cloudflare Access's sign-in on the way in drops a #fragment
+  expect(link).toMatch(/[^#]\/invite\/[\w-]{20,}$/);
   const sent = (await mails(request, "pei@example.com")).at(-1)!;
   expect(sent.subject).toBe("leon@example.com 邀请你使用 LACUNA");
   expect(sent.text).toContain(link);
@@ -113,9 +114,18 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   expect((await mails(request, "sam@example.com")).at(-1)!.subject).toBe("leon@example.com invited you to LACUNA");
   const samCtx = await page.context().browser()!.newContext();
   const sam = await samCtx.newPage();
-  await sam.goto((await members.getByTestId("invite-link").textContent())!);
+  const samLink = (await members.getByTestId("invite-link").textContent())!;
+  await sam.goto(samLink);
   await expect(sam.getByRole("heading", { name: "Accept your invite" })).toBeVisible();
   await samCtx.close();
+
+  // opened where someone is already signed in: say so instead of dropping the invite
+  await page.goto(link);
+  await expect(page.getByTestId("invite-signed-in")).toContainText("leon@example.com");
+  await page.getByRole("button", { name: "继续用 leon@example.com" }).click();
+  await expect(page.locator(".topbar")).toBeVisible();
+  expect(new URL(page.url()).pathname + new URL(page.url()).hash).toBe("/#/");
+  await page.goto("/#/settings");
 
   // Pei opens the link in another browser
   const pei = await page.context().browser()!.newContext();
@@ -133,6 +143,10 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await expect(p.getByRole("region", { name: "账号与安全" }).getByTestId("account-role")).toHaveText("成员");
   await expect(p.getByRole("region", { name: "成员与邀请" })).toHaveCount(0); // members don't manage people
   await expect(p.getByRole("region", { name: "邮件" })).toHaveCount(0);
+  // Pei, signed in, opens Sam's invite: signing out leads to its sign-up page
+  await p.goto(samLink);
+  await p.getByRole("button", { name: /退出并接受邀请|Sign out and accept/ }).click();
+  await expect(p.getByRole("heading", { name: /接受邀请|Accept your invite/ })).toBeVisible();
   // the link works once
   const again = await (await pei.newPage()).request.post("/api/auth/invite", { data: { token: link.split("/").at(-1) } });
   expect(again.status()).toBe(404);
