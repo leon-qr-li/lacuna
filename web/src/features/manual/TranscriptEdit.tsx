@@ -8,6 +8,7 @@ import { manualApi, TEXT_S } from "./api";
 import type { Line } from "./api";
 import { range, useChunks } from "./chunks";
 import { fmtTenths, SelBar } from "./SelBar";
+import { FillerButton } from "../fillers/FillerButton";
 import type { Manual } from "./useManual";
 
 const BEFORE_S = 15; // the card shows from a little before the playhead ...
@@ -51,7 +52,7 @@ export function TranscriptEdit({
   time: number;
   player: Player;
   m: Manual;
-  run: (p: Promise<Episode>, msg?: string) => Promise<boolean>;
+  run: (p: Promise<Episode>, msg?: string | ((next: Episode) => string)) => Promise<boolean>;
 }) {
   const { sel, setSel } = m;
   const drag = useRef<{ a: W; moved: boolean; again: boolean } | null>(null);
@@ -135,6 +136,7 @@ export function TranscriptEdit({
       <div className="card-head">
         <h2>{t("文字稿剪辑")}</h2>
         <span className="muted small">{t("选中文字 → 删掉；删过的显示删除线，点一下可恢复")}</span>
+        <FillerButton ep={ep} time={time} player={player} run={run} />
       </div>
       {!ep.has_transcript ? (
         <p className="muted">{t("这一集没有文字稿，可以在上面的时间线上拖选来剪。")}</p>
