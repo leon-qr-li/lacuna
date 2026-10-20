@@ -3,7 +3,9 @@
 Leon 要求记下的、正式商业化 / 发 beta 邀请前必须做完的事。新的条目加在「最后一步」之前；「最后一步」永远排在最后。
 
 ## 待办
-（暂无其他条目）
+- [ ] **正式发布前撤回公开的 `/api/version`，换成最安全的版本校验方式**（Leon 2026-10-20：「在正式发布前，我要撤回，要最安全的方式」）。
+  - 现在：`lacunastudio.app/api/version` 和 staging 上的同一地址不用登录就能打开，只返回版本号，部署校验靠它（`docs/decisions/2026-10-20-public-version-check.md`）。
+  - 撤回时：删掉 `deploy/provision.py` 的 `version_door` 和两个 Access 应用「LACUNA version」「LACUNA preview version」及策略「LACUNA version (public)」（跑 Provision apply 不会自动删，要用 API 删掉），删掉 `lacuna_app/cloud.py` 的 `VERSION_PATH` 放行；部署校验改用一个长期 Access service token（存 GitHub secret，门完全关上），`deploy/ci.py wait_live` 带上它读 `/api/health`。
 
 ## 最后一步（发 beta 邀请之前，Leon 2026-10-19 定）
 - [ ] **彻底再测一遍英文剪辑的水平：精度测试 + 深度测试。**
