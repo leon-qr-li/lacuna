@@ -113,6 +113,8 @@ class DB:
         out = self.path.with_name(SNAPSHOT_FILE)
         tmp = out.with_suffix(".tmp")
         with self.lock:
+            if self._timer and self._timer is not threading.current_thread():
+                self._timer.cancel()          # this copy covers the pending one
             self._timer = None
             self._dirty = False
             self._snap_at = time.time()
