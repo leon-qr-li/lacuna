@@ -5,6 +5,7 @@ import { navCurrent } from "../registry";
 import { ThemeSetting } from "../theme/ThemeSetting";
 import { MailCard, MembersCard, SecurityCard, useAuthStatus } from "../auth/AccountCard";
 import { SpacesCard } from "../spaces/SpacesCard";
+import { PlanCard } from "../plans/PlanCard";
 import { HabitsCard } from "../habits/HabitsCard";
 import { SystemTermsCard } from "../transcript-fix/SystemTermsCard";
 import { t } from "../../i18n";
@@ -27,11 +28,12 @@ export function SettingsLink() {
   );
 }
 
-type Section = "general" | "edit" | "projects" | "account" | "members" | "mail" | "ai";
+type Section = "general" | "edit" | "projects" | "plan" | "account" | "members" | "mail" | "ai";
 const SECTIONS: { id: Section; group: "me" | "admin"; label: string; about: string }[] = [
   { id: "general", group: "me", label: t("通用"), about: t("界面主题、语言和版本。") },
   { id: "edit", group: "me", label: t("剪辑习惯"), about: t("你平时下手多重，每个节目都按这个来。") },
   { id: "projects", group: "me", label: t("我的节目"), about: t("你建的和受邀加入的节目。") },
+  { id: "plan", group: "me", label: t("套餐与用量"), about: t("你的套餐、用了多少，以及各套餐的区别。") },
   { id: "account", group: "me", label: t("账号与安全"), about: t("登录、密码、两步验证和登录过的设备。") },
   { id: "members", group: "admin", label: t("成员与邀请"), about: t("邀请新账号、管理成员角色。") },
   { id: "mail", group: "admin", label: t("邮件发件人"), about: t("邀请邮件和验证码从哪个地址发出。") },
@@ -90,6 +92,7 @@ export function SettingsView() {
   const st = auth.st?.email && auth.st.role ? auth.st : null; // null: no sign-in (a local copy), the one user is its admin
   const admin = !st || st.role !== "member";
   const shown = SECTIONS.filter((x) => {
+    if (x.id === "plan") return !!st;
     if (x.id === "account" || x.id === "members") return !!st && (x.id === "account" || admin);
     if (x.id === "mail") return !!st && st.role === "owner" && !!st.mail;
     return x.group === "me" || admin;
@@ -161,6 +164,7 @@ export function SettingsView() {
           )}
           {cur.id === "edit" && <HabitsCard />}
           {cur.id === "projects" && <SpacesCard />}
+          {cur.id === "plan" && st && <PlanCard />}
           {cur.id === "account" && st && <SecurityCard st={st} setSt={auth.setSt} />}
           {cur.id === "members" && st && <MembersCard me={st.email!} role={st.role!} />}
           {cur.id === "mail" && st && <MailCard st={st} setSt={auth.setSt} />}

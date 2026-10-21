@@ -29,7 +29,7 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
   const leon = await browser.newContext();
   const lp = await leon.newPage();
   expect((await lp.request.post("/api/auth/register", { data: { email: "leon@example.com", password: PW } })).ok()).toBeTruthy();
-  const inv = await (await lp.request.post("/api/auth/invites", { data: { email: "beta@example.com" } })).json();
+  const inv = await (await lp.request.post("/api/auth/invites", { data: { email: "beta@example.com", plan: "pro" } })).json();
   const b = await (await browser.newContext()).newPage();
   expect((await b.request.post("/api/auth/register", { data: { invite: inv.link.split("/").at(-1), password: PW } })).ok()).toBeTruthy();
 
@@ -50,10 +50,10 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
   await expect(row.getByRole("combobox")).toHaveValue("viewer");
   // someone without an account: Leon (LACUNA's owner) sends a sign-up invite that waits as 待接受
   await lp.getByTestId("invite-email").fill("pei@example.com");
-  await lp.getByTestId("invite-role").selectOption({ label: "剪辑" });
+  await lp.getByTestId("invite-role").selectOption({ label: "剪辑师" });
   await lp.getByTestId("invite-send").click();
   const pending = lp.getByTestId("pending-invite").filter({ hasText: "pei@example.com" });
-  await expect(pending).toContainText("剪辑 · 待接受");
+  await expect(pending).toContainText("剪辑师 · 待接受");
   await pending.getByRole("button", { name: "撤回" }).click();
   if (SHOTS) await lp.screenshot({ path: `${SHOTS}/invite.png`, fullPage: true });
   await expect(lp.getByTestId("pending-invite")).toHaveCount(0);

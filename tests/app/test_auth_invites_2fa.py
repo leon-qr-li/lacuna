@@ -397,7 +397,7 @@ def test_invite_email_names_the_project_and_role(tmp_path):
     with speaking("zh"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "洛城二三事", "editor")
     assert m["subject"] == "Leon 邀请你加入「洛城二三事」"
-    assert "你被邀请以「剪辑」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
+    assert "你被邀请以「剪辑师」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
     assert "<br>「洛城二三事」" in m["html"]
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "viewer")

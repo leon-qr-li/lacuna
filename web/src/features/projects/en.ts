@@ -5,8 +5,8 @@ export const en: Dict = {
   "邀请已经发到 {email}": "Invite sent to {email}",
   "没能发邮件，把下面的链接发给 {email}": "Couldn't send the email; send {email} the link below",
   "邀请": "Invite",
-  "对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理：管协作者、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。":
-    "They see every episode, album and media file in this show, not your other shows. Manage: collaborators and deleting episodes for good. Edit: all editing work. Listen: listen and read only.",
+  "对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理员：管协作者、改节目设置、归档和永久删除；剪辑师：导入和所有剪辑工作；只听：只能试听和查看。":
+    "They see every episode, album and asset of this show, none of your other shows. Admin: manages collaborators, show settings, archive and delete; Editor: imports and all editing; Listen: listens and views only.",
   "还没有 LACUNA 账号的人，请 LACUNA 管理员邀请。": "People without a LACUNA account are invited by a LACUNA admin.",
   "邀请链接": "Invite link",
   "协作者": "Collaborators",
@@ -83,4 +83,21 @@ export const en: Dict = {
   "新剧集默认用的片头片尾。": "The intro and outro new episodes get by default.",
   "show notes 和发布资料的默认做法。": "How show notes and the publishing pack are done by default.",
   "谁能看、谁能剪这个节目。": "Who can view and who can edit this show.",
+  "剪辑师": "Editor",
+  "角色能做什么": "What each role can do",
+  "试听、看剧集和文稿": "Listen, view episodes and transcripts",
+  "导入、剪辑、导出": "Import, edit, export",
+  "邀请和移出协作者": "Invite and remove collaborators",
+  "改节目设置": "Change show settings",
+  "归档、永久删除": "Archive, delete for good",
+  "可以": "Allowed",
+  "不可以": "Not allowed",
+  "允许 LACUNA 支持查看": "Let LACUNA support look",
+  "已打开：LACUNA 支持可以只读查看这个节目，到 {until} 自动关闭。":
+    "On: LACUNA support can view this show read-only until {until}, then it turns off by itself.",
+  "平时谁都看不到你的节目，LACUNA 的工作人员也不行。需要帮忙时打开，LACUNA 支持能只读查看 7 天，到期自动关闭。":
+    "Nobody outside your show can see it, LACUNA staff included. Turn this on when you need help: LACUNA support can view it read-only for 7 days, then it turns off by itself.",
+  "打开 7 天": "Turn on for 7 days",
+  "你在以 LACUNA 支持的身份只读查看这个节目。": "You're viewing this show read-only as LACUNA support.",
+  "只有节目的管理员能改这些设置，你可以查看。": "Only the show's admins can change these settings; you can view them.",
 };

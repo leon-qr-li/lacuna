@@ -3,6 +3,9 @@ import { req } from "../../api";
 import { lang as uiLang, type Lang } from "../../i18n";
 
 export type Role = "owner" | "admin" | "member";
+/** lacuna_app/plans.py */
+export type PlanId = "trial" | "basic" | "pro";
+export const PLAN_IDS: PlanId[] = ["trial", "basic", "pro"];
 
 export interface AuthStatus {
   accounts: boolean;
@@ -21,6 +24,10 @@ export interface AuthStatus {
   setup_code: boolean;
   /** in the cloud: the owner's email, when Cloudflare Access proved this visitor is the owner (no setup code) */
   owner_email?: string | null;
+  /** the signed-in account's plan */
+  plan?: PlanId | null;
+  /** Cloudflare Turnstile's site key when the human check is on (lacuna_app/turnstile.py), else null */
+  turnstile?: string | null;
   /** owner only */
   mail: { configured: boolean; source: string | null; sender: string } | null;
 }
@@ -46,6 +53,7 @@ export interface Member {
   twofa: boolean;
   disabled: boolean;
   seen: number | null;
+  plan: PlanId;
 }
 
 export interface Invite {
@@ -55,6 +63,18 @@ export interface Invite {
   by: string;
   created: number;
   exp: number;
+  plan: PlanId;
+}
+
+/** A 申请试用 from the sign-in page (lacuna_app/routes/auth_requests.py). */
+export interface AccessRequest {
+  id: string;
+  email: string;
+  show: string;
+  note: string;
+  created: number;
+  lang: Lang | null;
+  status: string;
 }
 
 export interface People {
@@ -67,8 +87,17 @@ export const AUTH_EVENT = "lacuna:auth";
 
 export const authApi = {
   status: () => req<AuthStatus>("GET", "/api/auth/status"),
-  login: (email: string, password: string, remember: boolean) =>
-    req<Step>("POST", "/api/auth/login", { email, password, remember }),
+  login: (email: string, password: string, remember: boolean, turnstile: string | null = null) =>
+    req<Step>("POST", "/api/auth/login", { email, password, remember, turnstile }),
+  requestAccess: (r: { email: string; show: string; note: string; turnstile: string | null }) =>
+    req<{ ok: true }>("POST", "/api/access-requests", { ...r, lang: uiLang }),
+  accessRequests: () => req<{ requests: AccessRequest[] }>("GET", "/api/access-requests"),
+  decideRequest: (id: string, action: "invite" | "dismiss") =>
+    req<{ requests: AccessRequest[]; link?: string; mailed?: boolean; mail_error?: string | null }>(
+      "POST",
+      `/api/access-requests/${encodeURIComponent(id)}`,
+      { action, lang: uiLang },
+    ),
   registerFirst: (email: string, password: string, setup_code: string | null) =>
     req<Step>("POST", "/api/auth/register", { email, password, setup_code, remember: true }),
   registerInvite: (invite: string, password: string) =>
@@ -89,16 +118,17 @@ export const authApi = {
   endDevices: (id: string | null) => req<{ ended: number; sessions: Device[] }>("POST", "/api/auth/sessions/end", { id }),
   // members and invites (owner, admins)
   people: () => req<People>("GET", "/api/auth/users"),
-  sendInvite: (email: string, role: Role, space: string | null = null, space_role: string | null = null, lang: Lang = uiLang) =>
+  sendInvite: (email: string, role: Role, space: string | null = null, space_role: string | null = null, lang: Lang = uiLang, plan: PlanId | null = null) =>
     req<People & { link: string; mailed: boolean; mail_error: string | null; email: string }>("POST", "/api/auth/invites", {
       email,
       role,
       space,
       space_role,
       lang,
+      plan,
     }),
   revokeInvite: (id: string) => req<People>("DELETE", `/api/auth/invites/${encodeURIComponent(id)}`),
-  updateMember: (email: string, c: { role?: Role; disabled?: boolean; reset_2fa?: boolean }) =>
+  updateMember: (email: string, c: { role?: Role; disabled?: boolean; reset_2fa?: boolean; plan?: PlanId }) =>
     req<People>("POST", `/api/auth/users/${encodeURIComponent(email)}`, c),
   removeMember: (email: string) => req<People>("DELETE", `/api/auth/users/${encodeURIComponent(email)}`),
   // email (owner)

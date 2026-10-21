@@ -402,6 +402,8 @@ def register(app, ctx) -> None:
                 auth.setup_code = None
                 auth._save_users()
                 auth._save_sessions()
+            with auth.db.tx() as c:
+                c.execute("DELETE FROM access_requests")
             return {"ok": True}
 
         @app.get("/api/auth/_test/outbox")

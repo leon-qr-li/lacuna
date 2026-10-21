@@ -5,7 +5,7 @@ import { confirmDialog } from "../dialog/Dialog";
 import { BusyLabel } from "../loading/Loading";
 import { t } from "../../i18n";
 
-export const SPACE_ROLE: Record<SpaceRole, string> = { admin: t("管理"), editor: t("剪辑"), viewer: t("只听") };
+export const SPACE_ROLE: Record<SpaceRole, string> = { admin: t("管理员"), editor: t("剪辑师"), viewer: t("只听") };
 const ROLES: SpaceRole[] = ["admin", "editor", "viewer"];
 
 /** 设置 → 工作区: where your episodes, library and learned rules live, and who shares them. */
@@ -41,7 +41,7 @@ export function SpacesCard() {
         </span>
       </div>
       <p className="muted small">
-        {t("剧集、素材库和学到的规则都属于节目，只有它的成员能看到。管理：管成员、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。")}
+        {t("剧集、素材库和学到的规则都属于节目，只有它的成员能看到。管理员：管成员、改节目设置、归档和永久删除；剪辑师：导入和所有剪辑工作；只听：只能试听和查看。")}
       </p>
       {managed.map((s) => (
         <SpaceBlock key={s.id} s={s} current={s.id === sp.current!.id} busy={busy} act={act} />

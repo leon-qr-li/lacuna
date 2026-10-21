@@ -66,3 +66,17 @@
 .prj-danger-zone { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
 .prj-danger-zone p { margin: 2px 0 0; }
 .prj-readonly { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; background: var(--hover); color: var(--ink-2); font-size: 14px; }
+
+/* batch 3: the show roles table and 「允许 LACUNA 支持查看」 (ShowRoles.tsx) */
+.prj-matrix { margin-top: 24px; }
+.prj-matrix h3 { font-size: 14px; margin: 0 0 8px; }
+.prj-matrix table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.prj-matrix th, .prj-matrix td { padding: 8px 10px; border-top: 1px solid var(--line); text-align: center; }
+.prj-matrix th:first-child, .prj-matrix td:first-child { text-align: left; }
+.prj-matrix th { font-weight: 600; color: var(--muted); border-top: 0; }
+.prj-matrix td { color: var(--muted); }
+.prj-matrix td.is-on { color: var(--accent); font-weight: 600; }
+.prj-support { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }
+.prj-support p { margin: 4px 0 0; }
+.prj-locked { border: 0; margin: 0; padding: 0; min-width: 0; }
+.prj-locked-note { margin: 0 0 12px; }

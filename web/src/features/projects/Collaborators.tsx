@@ -85,7 +85,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
         </form>
       )}
       <p className="muted small prj-hint">
-        {t("对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理：管协作者、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。")}
+        {t("对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理员：管协作者、改节目设置、归档和永久删除；剪辑师：导入和所有剪辑工作；只听：只能试听和查看。")}
         {manage && !p.can_invite_new && ` ${t("还没有 LACUNA 账号的人，请 LACUNA 管理员邀请。")}`}
       </p>
       {note && (

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { authApi, type AuthStatus, type Step } from "./api";
 import { CodeInput, RecoveryCodes, SecondFactor, TwoStepQR } from "./TwoStep";
+import { Turnstile } from "./Turnstile";
 import { BusyLabel } from "../loading/Loading";
 import { currentTheme, setTheme } from "../theme/theme";
 import { lang, langChosen, setLang, t } from "../../i18n";
@@ -10,6 +11,7 @@ type View =
   | { v: "first" }
   | { v: "invite"; token: string }
   | { v: "forgot" }
+  | { v: "ask" }
   | { v: "code"; ticket: string; email: string }
   | { v: "enroll"; ticket: string; email: string; secret: string; uri: string }
   | { v: "saved"; email: string; codes: string[] };
@@ -43,7 +45,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
     else if (s.recovery?.length) setView({ v: "saved", email: who, codes: s.recovery });
     else onDone();
   };
-  const go = (v: "login" | "forgot") => {
+  const go = (v: "login" | "forgot" | "ask") => {
     if (inviteToken()) dropInvite();
     setView({ v });
   };
@@ -57,7 +59,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
         </div>
         <p className="auth-tag">
           {SLOGAN}
-          <small>{t("《洛城二三事》的剪辑工作台")}</small>
+          <small>{t("从录音到发布，一个工作台。")}</small>
         </p>
         <div className="auth-wave">
           {BARS.map((h, i) => (
@@ -72,6 +74,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
           {view.v === "first" && <First {...p} />}
           {view.v === "invite" && <FromInvite {...p} token={view.token} />}
           {view.v === "forgot" && <Forgot {...p} />}
+          {view.v === "ask" && <AskAccess {...p} />}
           {view.v === "code" && <Code {...p} ticket={view.ticket} who={view.email} />}
           {view.v === "enroll" && <Enroll {...p} view={view} />}
           {view.v === "saved" && (
@@ -202,7 +205,7 @@ interface FormProps {
   status: AuthStatus;
   email: string;
   setEmail: (s: string) => void;
-  go: (v: "login" | "forgot") => void;
+  go: (v: "login" | "forgot" | "ask") => void;
   next: (s: Step, who: string) => void;
 }
 
@@ -252,10 +255,18 @@ function Err({ err }: { err: string | null }) {
 function Login({ status, email, setEmail, go, next }: FormProps) {
   const [pw, setPw] = useState("");
   const [remember, setRemember] = useState(true);
+  const [human, setHuman] = useState<string | null>(null);
+  const [tries, setTries] = useState(0);
   const { busy, err, run } = useSubmit();
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    run(async () => next(await authApi.login(email, pw, remember), email.trim().toLowerCase()));
+    run(async () => {
+      try {
+        next(await authApi.login(email, pw, remember, human), email.trim().toLowerCase());
+      } finally {
+        if (status.turnstile) setTries((n) => n + 1); // a token works once
+      }
+    });
   };
   return (
     <form onSubmit={submit}>
@@ -272,11 +283,17 @@ function Login({ status, email, setEmail, go, next }: FormProps) {
           {t("忘记密码？")}
         </button>
       </div>
+      <Turnstile siteKey={status.turnstile} onToken={setHuman} nonce={tries} />
       <Err err={err} />
-      <button className="auth-btn" disabled={busy}>
+      <button className="auth-btn" disabled={busy || (!!status.turnstile && !human)}>
         <BusyLabel busy={busy} label={t("登录")} busyLabel={t("登录中…")} />
       </button>
-      <p className="auth-foot">{t("LACUNA 只对受邀请的人开放。")}</p>
+      <p className="auth-foot">
+        {t("还没有账号？LACUNA 目前仅限邀请。")}{" "}
+        <button type="button" className="auth-link" onClick={() => go("ask")} data-testid="auth-ask">
+          {t("申请试用")} →
+        </button>
+      </p>
       {!status.cloud && (
         <p className="auth-note">
           <i />
@@ -508,6 +525,65 @@ function Forgot({ email, setEmail, go, next }: FormProps) {
           label={step === 1 ? t("发送验证码") : t("保存并登录")}
           busyLabel={step === 1 ? t("发送中…") : t("保存中…")}
         />
+      </button>
+      <p className="auth-foot">
+        <button type="button" className="auth-link" onClick={() => go("login")}>
+          ← {t("返回登录")}
+        </button>
+      </p>
+    </form>
+  );
+}
+
+/** 申请试用: someone without an account asks for one; the site owner gets an email and sends the invite
+ *  from 设置 → 成员与邀请 (lacuna_app/routes/auth_requests.py). */
+function AskAccess({ status, email, setEmail, go }: FormProps) {
+  const [show, setShow] = useState("");
+  const [note, setNote] = useState("");
+  const [human, setHuman] = useState<string | null>(null);
+  const [tries, setTries] = useState(0);
+  const [sent, setSent] = useState(false);
+  const { busy, err, run } = useSubmit();
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    run(async () => {
+      try {
+        await authApi.requestAccess({ email, show, note, turnstile: human });
+        setSent(true);
+      } finally {
+        if (status.turnstile) setTries((n) => n + 1);
+      }
+    });
+  };
+  if (sent)
+    return (
+      <div data-testid="auth-asked">
+        <h1>{t("收到了")}</h1>
+        <p className="auth-sub">{t("我们会尽快看你的申请。通过后，邀请邮件会发到 {email}，按邮件里的链接设个密码就能开始。", { email: email.trim() })}</p>
+        <button type="button" className="auth-btn" onClick={() => go("login")}>
+          {t("返回登录")}
+        </button>
+      </div>
+    );
+  return (
+    <form onSubmit={submit}>
+      <h1>{t("申请试用")}</h1>
+      <p className="auth-sub">{t("LACUNA 目前仅限邀请。留下邮箱，通过后我们把邀请发给你：免费体验 1 小时音频，带一集示例。")}</p>
+      <EmailField email={email} setEmail={setEmail} autoFocus />
+      <Field label={t("节目名")} hint={t("可不填")}>
+        <span className="auth-input">
+          <input value={show} onChange={(e) => setShow(e.target.value)} maxLength={80} data-testid="auth-ask-show" />
+        </span>
+      </Field>
+      <Field label={t("想用 LACUNA 做什么")} hint={t("可不填")}>
+        <span className="auth-input">
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3} data-testid="auth-ask-note" />
+        </span>
+      </Field>
+      <Turnstile siteKey={status.turnstile} onToken={setHuman} nonce={tries} />
+      <Err err={err} />
+      <button className="auth-btn" disabled={busy || (!!status.turnstile && !human)}>
+        <BusyLabel busy={busy} label={t("提交申请")} busyLabel={t("提交中…")} />
       </button>
       <p className="auth-foot">
         <button type="button" className="auth-link" onClick={() => go("login")}>
