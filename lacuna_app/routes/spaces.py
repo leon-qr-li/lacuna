@@ -29,7 +29,7 @@ from .auth import _cookie
 
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
-GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits")
+GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
@@ -457,7 +457,7 @@ def register(app, ctx) -> None:
         if sid not in spaces.spaces:
             raise HTTPException(404, tr("没有这个节目"))
         if not may_delete(email, sid):
-            raise HTTPException(403, tr("只有节目的创建者或 LACUNA 的所有者能永久删除节目"))
+            raise HTTPException(403, tr("只有节目的创建者或站长能永久删除节目"))
         if not spaces.archived(sid):
             raise HTTPException(409, tr("先把节目归档，才能永久删除"))
         if body.confirm.strip() != spaces.title(sid):

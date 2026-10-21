@@ -312,7 +312,7 @@ class Auth:
         email = self.who(token)
         u = self.users.get(email or "")
         return {"accounts": self.has_accounts(), "setup": not self.users and not self.skip_setup,
-                "email": email, "role": u["role"] if u else None,
+                "email": email, "role": u["role"] if u else None, "plan": (u.get("plan") or plans.DEFAULT) if u else None,
                 "twofa": bool(u and u.get("totp")), "require_2fa": self.require_2fa, "cloud": self.cloud,
                 "first": not self.users, "setup_code": bool(self.setup_code) and not self.users,
                 "mail": self.mail_status() if u and u["role"] == "owner" else None}
@@ -378,6 +378,23 @@ class Auth:
     def _end_all(self, email: str, keep: str | None = None) -> None:
         self.sessions = {k: v for k, v in self.sessions.items() if v["email"] != email or k == keep}
         self._save_sessions()
+
+    def note_device(self, email: str, agent: str) -> bool:
+        """Remember this browser + system for the account; True when it is new and the account had signed
+        in elsewhere before (then the person gets a 新设备登录 email, lacuna_app/notice_mail.py)."""
+        from .notice_mail import device_label
+        key = _sha(device_label(agent))[:16]
+        with self.lock:
+            u = self.users.get(email)
+            if not u:
+                return False
+            seen = u.setdefault("devices", [])
+            if key in seen:
+                return False
+            seen.append(key)
+            del seen[:-20]
+            self._save_users()
+            return len(seen) > 1
 
     # -- codes
     def send_code(self, email: str, purpose: str) -> None:
@@ -588,7 +605,7 @@ class Auth:
             email = i["email"]
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
                                  "role": i["role"], "verified": True, "invited_by": i["by"], "id": new_user_id(),
-                                 "plan": plans.check(i.get("plan") or plans.DEFAULT)}
+                                 "plan": plans.check(i.get("plan") or plans.DEFAULT), "lang": i.get("lang")}
             del self.invites[i["hash"]]
             self._save_users()
         for f in self.on_joined:

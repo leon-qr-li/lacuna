@@ -9,15 +9,20 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+import threading
+import time
+
 from .. import cloud as cloudflare
+from .. import notice_mail, turnstile
 from ..auth import COOKIE, RANK, Auth, AuthError
-from ..i18n import tr
+from ..i18n import speaking, tr
 
 # reachable without signing in: the sign-in screens, the host's health / version checks
 OPEN = {("GET", "/api/health"), ("GET", "/api/app"), ("GET", "/api/auth/status"), ("POST", "/api/auth/login"),
         ("POST", "/api/auth/register"), ("POST", "/api/auth/code"), ("POST", "/api/auth/reset"),
         ("POST", "/api/auth/2fa"), ("POST", "/api/auth/2fa/enroll"), ("POST", "/api/auth/invite"),
-        ("POST", "/api/auth/logout"), ("POST", "/api/auth/_test/reset"), ("GET", "/api/auth/_test/outbox")}
+        ("POST", "/api/auth/logout"), ("POST", "/api/auth/_test/reset"), ("GET", "/api/auth/_test/outbox"),
+        ("POST", "/api/access-requests")}
 # the whole installation: the AI key (a setting for everyone) is the owner's
 OWNER_ONLY = {("POST", "/api/app/api-key")}
 
@@ -42,13 +47,14 @@ class _Gate:
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http" and scope["path"].startswith("/api/") \
-                and (scope["method"], scope["path"]) not in OPEN and self.auth.has_accounts():
+                and (scope["method"], scope["path"]) not in OPEN and (self.auth.has_accounts() or self.auth.cloud):
+            # in the cloud even a fresh server with no account yet is closed: only the sign-up screen answers
             raw = next((v.decode("latin-1") for k, v in scope.get("headers", []) if k == b"cookie"), "")
             email = self.auth.who(_cookie(raw))
             if not email:
                 return await JSONResponse({"detail": tr("请先登录")}, status_code=401)(scope, receive, send)
             if (scope["method"], scope["path"]) in OWNER_ONLY and self.auth.role(email) != "owner":
-                return await JSONResponse({"detail": tr("只有所有者能改这项设置")}, status_code=403)(scope, receive, send)
+                return await JSONResponse({"detail": tr("只有站长能改这项设置")}, status_code=403)(scope, receive, send)
         return await self.app(scope, receive, send)
 
 
@@ -56,6 +62,7 @@ class Creds(BaseModel):
     email: str
     password: str
     remember: bool = True
+    turnstile: str | None = None    # Cloudflare Turnstile's token (lacuna_app/turnstile.py), when it is on
 
 
 class RegisterBody(BaseModel):
@@ -131,8 +138,40 @@ def register(app, ctx) -> None:
                                                    skip_setup=bool(ctx.option("auth_skip_setup")),
                                                    cloud=cloud_mode() if cloud is None else bool(cloud)))
     app.add_middleware(_Gate, auth=auth)
+    # Cloudflare Turnstile on sign-in and 申请试用: on when the server has its keys (tests pass a fake)
+    human = ctx.option("turnstile") or (turnstile.Verifier() if turnstile.site_key() else None)
+    human_key = ctx.option("turnstile_site_key") or turnstile.site_key()
+    app.state.human_check = lambda token, request: human is None or human.ok(token, ip(request) or (
+        request.client.host if request.client else None))
 
-    def finish(out: dict) -> JSONResponse:
+    def new_device_mail(email: str, request: Request) -> None:
+        """A sign-in from a browser + system this account hasn't used: tell its owner by email (in the
+        background; a mail failure never stops the sign-in)."""
+        if not auth.note_device(email, agent(request)):
+            return
+        u = auth.users.get(email) or {}
+        when = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(auth.now()))
+        with speaking(u.get("lang") or "zh"):
+            m = notice_mail.new_device(email, notice_mail.device_label(agent(request)), when,
+                                       notice_mail.country_name(request.headers.get("cf-ipcountry")),
+                                       f"{origin(request).rstrip('/')}/#/settings/account")
+
+        def send():
+            try:
+                auth.mailer.send(auth.config["sender"], email, m["subject"], m["text"], html=m["html"],
+                                 inline=notice_mail_inline())
+            except Exception as e:      # noqa: BLE001 - mail is best-effort here
+                print(f"LACUNA: new-device mail failed: {e}", flush=True)
+        if ctx.option("mail_inline"):
+            send()
+        else:
+            threading.Thread(target=send, name="new-device-mail", daemon=True).start()
+
+    def notice_mail_inline() -> list[dict]:
+        from ..invite_mail import inline_logo
+        return inline_logo()
+
+    def finish(out: dict, request: Request | None = None) -> JSONResponse:
         """A step result; when it holds a session, set the cookie and keep the token out of the body."""
         body = {k: v for k, v in out.items() if k != "session"}
         res = JSONResponse({"ok": True, **body})
@@ -141,6 +180,9 @@ def register(app, ctx) -> None:
             # SameSite=Strict: other websites open in the browser can't use the session; Secure in the cloud
             res.set_cookie(COOKIE, token, max_age=max_age, httponly=True, samesite="strict", path="/",
                            secure=auth.cloud)
+            email = auth.who(token)
+            if email and request is not None:
+                new_device_mail(email, request)
         return res
 
     def run(fn):
@@ -161,7 +203,7 @@ def register(app, ctx) -> None:
     def at_least(request: Request, role: str) -> str:
         email = me(request)
         if RANK[auth.role(email)] < RANK[role]:
-            raise HTTPException(403, tr("只有所有者能改这项设置") if role == "owner" else tr("只有管理员能管理成员和邀请"))
+            raise HTTPException(403, tr("只有站长能改这项设置") if role == "owner" else tr("只有站长和站点管理员能管理成员和邀请"))
         return email
 
     def ip(request: Request) -> str | None:
@@ -199,7 +241,7 @@ def register(app, ctx) -> None:
 
     @app.get("/api/auth/status")
     def status(request: Request):
-        out = auth.status(token(request))
+        out = auth.status(token(request)) | {"turnstile": human_key}
         if out.get("first") and owner(request):
             out["setup_code"] = False          # Access proved it is the owner: no code to type
             out["owner_email"] = owner(request)
@@ -207,15 +249,17 @@ def register(app, ctx) -> None:
 
     @app.post("/api/auth/login")
     def login(body: Creds, request: Request):
-        return finish(run(lambda: auth.login(body.email, body.password, body.remember, ip(request), agent(request))))
+        if not app.state.human_check(body.turnstile, request):
+            raise HTTPException(400, tr("请先完成人机验证，再登录"))
+        return finish(run(lambda: auth.login(body.email, body.password, body.remember, ip(request), agent(request))), request)
 
     @app.post("/api/auth/2fa")
     def second_step(body: TicketBody, request: Request):
-        return finish(run(lambda: auth.second_step(body.ticket, body.code, ip(request))))
+        return finish(run(lambda: auth.second_step(body.ticket, body.code, ip(request))), request)
 
     @app.post("/api/auth/2fa/enroll")
     def enroll(body: TicketBody, request: Request):
-        return finish(run(lambda: auth.enroll(body.ticket, body.code, ip(request))))
+        return finish(run(lambda: auth.enroll(body.ticket, body.code, ip(request))), request)
 
     @app.post("/api/auth/invite")
     def invite_info(body: InviteToken):
@@ -225,9 +269,9 @@ def register(app, ctx) -> None:
     @app.post("/api/auth/register")
     def register_(body: RegisterBody, request: Request):
         if body.invite:
-            return finish(run(lambda: auth.register_invite(body.invite, body.password, body.remember, agent(request))))
+            return finish(run(lambda: auth.register_invite(body.invite, body.password, body.remember, agent(request))), request)
         return finish(run(lambda: auth.register_first(body.email or "", body.password, body.setup_code, body.remember,
-                                                      agent(request), proven=owner(request))))
+                                                      agent(request), proven=owner(request))), request)
 
     @app.post("/api/auth/code")
     def code(body: CodeBody):
@@ -236,7 +280,7 @@ def register(app, ctx) -> None:
 
     @app.post("/api/auth/reset")
     def reset(body: ResetBody, request: Request):
-        return finish(run(lambda: auth.reset(body.email, body.code, body.password, agent(request))))
+        return finish(run(lambda: auth.reset(body.email, body.code, body.password, agent(request))), request)
 
     @app.post("/api/auth/logout")
     def logout(request: Request):

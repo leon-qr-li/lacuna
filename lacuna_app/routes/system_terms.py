@@ -35,5 +35,5 @@ def register(app, ctx) -> None:
     def put_terms(request: Request, body: TermsBody):
         ok, email = admin(request)
         if not ok:
-            raise HTTPException(403, tr("只有管理员能改系统专有名词"))
+            raise HTTPException(403, tr("只有站长和站点管理员能改系统专有名词"))
         return {"terms": system_terms.save(root, body.terms, email), "can_edit": True}

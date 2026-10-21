@@ -146,8 +146,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "管理": "Manager",
     "剪辑": "Editor",
     "只听": "Listener",
-    "只有所有者能改这项设置": "Only the owner can change this setting",
-    "只有管理员能管理成员和邀请": "Only admins can manage members and invites",
+    "只有站长能改这项设置": "Only the owner can change this setting",
+    "只有站长和站点管理员能管理成员和邀请": "Only the owner and site admins can manage members and invites",
     # workspaces (docs/decisions/2026-10-19-workspaces.md)
     "只有节目管理员能改这个节目": "Only a show manager can change this show",
     "没有这个节目": "No such show",
@@ -465,7 +465,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "不支持这种语言：{language}": "This language is not supported: {language}",
     "找识别漏掉的 um / uh": "Finding the um / uh the transcript missed",
     "按节目设置校对专有名词": "Checking the show's names against the show settings",
-    "只有管理员能改系统专有名词": "Only admins can change the system terms",
+    "只有站长和站点管理员能改系统专有名词": "Only the owner and site admins can change the system terms",
     # missing recordings (sources.py)
     "这一集的原始音轨不在服务器上，现在放不了声音。请在这一集页面顶上重新上传原始音轨。":
         "This episode's original tracks are not on the server, so nothing can play yet. Upload them again at the top of the episode page.",
@@ -486,8 +486,45 @@ EN: dict[str, str | tuple[str, str]] = {
     "这个节目是 LACUNA 的主节目，不能删除": "This is LACUNA's main show and can't be deleted",
     "这个节目还没有图片": "This show has no picture yet",
     "图片太大了（最大 10 MB）": "The image is too big (10 MB at most)",
-    "只有节目的创建者或 LACUNA 的所有者能永久删除节目": "Only the show's creator or LACUNA's owner can delete a show for good",
+    "只有节目的创建者或站长能永久删除节目": "Only the show's creator or LACUNA's owner can delete a show for good",
     "先把节目归档，才能永久删除": "Archive the show first, then you can delete it for good",
     "节目名称不对，没有删除": "The show name doesn't match, nothing was deleted",
     "这是你唯一的节目。先新建一个节目，再删除这个": "This is your only show. Create another show first, then delete this one",
+    # batch 3: site database, plans, roles, sign-in door
+    "没有这个套餐": "There's no such plan",
+    "未知设备": "Unknown device",
+    "中国": "China", "加拿大": "Canada", "日本": "Japan", "美国": "United States", "英国": "United Kingdom",
+    "中国台湾": "Taiwan", "中国香港": "Hong Kong", "德国": "Germany", "新加坡": "Singapore", "澳大利亚": "Australia",
+    "法国": "France",
+    "大致位置": "Approximate location",
+    "时间": "Time",
+    "设备": "Device",
+    "新设备登录了你的 LACUNA 账号": "New sign-in to your LACUNA account",
+    "有人刚刚在一台新设备上登录了 {email}。": "Someone just signed in to {email} on a new device.",
+    "检查登录设备": "Review your devices",
+    "是你本人就不用管。不是你的话，马上改密码，并在 设置 → 账号与安全 里退出这台设备。":
+        "If this was you, there's nothing to do. If not, change your password now and sign that device out in Settings → Account & security.",
+    "想用 LACUNA 做什么": "What they'd like LACUNA to do",
+    "邮箱": "Email",
+    "新的试用申请：{email}": "New access request: {email}",
+    "去发邀请": "Send an invite",
+    "有人在登录页申请试用 LACUNA。": "Someone asked for access to LACUNA on the sign-in page.",
+    "在 设置 → 成员与邀请 → 试用申请 里一键发邀请或忽略。":
+        "Invite them or dismiss the request in Settings → Members & invites → Access requests.",
+    "免费体验": "Free trial",
+    "基础版": "Basic",
+    "专业版": "Pro",
+    "你的套餐「{plan}」最多 {n} 个节目。想要更多，请联系我们换套餐。":
+        "Your {plan} plan includes up to {n} shows. Contact us to change plans if you need more.",
+    "「{plan}」不能邀请协作者。想和别人一起做节目，请联系我们换套餐。":
+        "The {plan} plan can't invite collaborators. Contact us to change plans to make a show with others.",
+    "这个节目的套餐「{plan}」最多 {n} 位协作者。想要更多，请联系我们换套餐。":
+        "This show's {plan} plan includes up to {n} collaborators. Contact us to change plans if you need more.",
+    "请先完成人机验证，再登录": "Complete the human check first, then sign in",
+    "这个申请已经没有了": "That request is gone",
+    "请先完成人机验证": "Complete the human check first",
+    "今天申请太多次了，明天再试": "Too many requests today. Try again tomorrow",
+    "只有节目管理员能改节目设置。": "Only the show's admins can change show settings.",
+    "管理员": "Admin",
+    "剪辑师": "Editor",
 }
