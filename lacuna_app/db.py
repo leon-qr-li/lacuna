@@ -122,7 +122,7 @@ class DB:
                 self.conn.backup(dst)
             finally:
                 dst.close()
-        os.replace(tmp, out)
+            os.replace(tmp, out)      # under the lock: a timed snapshot running at once can't take our .tmp
         return out
 
     def close(self) -> None:
