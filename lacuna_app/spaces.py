@@ -10,10 +10,16 @@ Roles inside a workspace: admin (members, rename, delete episodes for good), edi
 viewer (listen and read only). Site owner and admins (auth.py) manage every workspace.
 
 File: ``<root>/auth/spaces.json`` (atomic writes, store.py).
+
+Each project has a square picture (uploaded, ``<root>/auth/pictures/<id>.png``) or else its own solid colour
+(``color``, picked at creation so projects look different). A project manager can archive it: it moves to
+「已归档」 and is read-only for everyone until restored. Only its creator or the site owner can then delete it
+for good, typing its name (decision projects-archive-delete).
 """
 from __future__ import annotations
 
 import secrets
+import shutil
 import threading
 import time
 from pathlib import Path
@@ -26,6 +32,9 @@ from .store import atomic_write_json, read_json
 
 MAIN = "main"
 SPACE_RANK = {"viewer": 1, "editor": 2, "admin": 3}
+# a project's colour while it has no picture: solid, readable under white text in both themes, far apart
+COLORS = ("#E2583E", "#3D7BF0", "#1F9D74", "#9A55E8", "#E0A21A", "#D93E7F", "#2AA5B8", "#6C7A3A", "#C9682D", "#5A5FD6")
+PICTURE_PX = 256
 
 
 class Spaces:
@@ -36,6 +45,10 @@ class Spaces:
         self.lock = threading.RLock()
         data = read_json(self.file) if self.file.exists() else None
         self.spaces: dict[str, dict] = {s["id"]: s for s in (data or {}).get("spaces", [])}
+        if any("color" not in x for x in self.spaces.values()):       # projects from before colours
+            for x in sorted(self.spaces.values(), key=lambda x: x.get("created", 0)):
+                x.setdefault("color", self._free_color())
+            self._save()
 
     def _save(self) -> None:
         self.file.parent.mkdir(parents=True, exist_ok=True)
@@ -50,10 +63,30 @@ class Spaces:
             owner = next((u for u in users if u["role"] == "owner"), users[0])
             self.spaces[MAIN] = {"id": MAIN, "name": owner["email"].split("@")[0], "created": self.now(),
                                  "members": {u["email"]: "admin" if u["role"] in ("owner", "admin") else "editor"
-                                             for u in users}}
+                                             for u in users},
+                                 "created_by": owner["email"], "color": self._free_color()}
             self._save()
 
+    def _free_color(self) -> str:
+        """The least used colour (the first of those): a new project looks different from the others."""
+        used = [x.get("color") for x in self.spaces.values()]
+        return min(COLORS, key=lambda c: (used.count(c), COLORS.index(c)))
+
     # -- queries
+    def picture_file(self, sid: str) -> Path:
+        return self.root / "auth" / "pictures" / f"{sid}.png"
+
+    def creator(self, sid: str) -> str | None:
+        """Who made the project (older ones: their first manager nobody else brought in)."""
+        s = self.spaces[sid]
+        if s.get("created_by"):
+            return s["created_by"]
+        added = s.get("added_by") or {}
+        return next((e for e, r in s["members"].items() if r == "admin" and e not in added), None)
+
+    def archived(self, sid: str | None) -> bool:
+        return bool(self.spaces.get(sid or "", {}).get("archived"))
+
     def path(self, sid: str) -> Path:
         return self.root if sid == MAIN else self.root / "spaces" / sid
 
@@ -82,18 +115,27 @@ class Spaces:
         return {"episodes": len(dirs), "albums": albums, "people": len(self.spaces[sid]["members"]),
                 "updated": max(stamps)}
 
+    def look(self, sid: str) -> dict:
+        """How the project shows: its colour, its picture's address (None: the colour), archived or not."""
+        s = self.spaces[sid]
+        pic = self.picture_file(sid)
+        url = f"/api/spaces/{sid}/picture?v={int(pic.stat().st_mtime)}" if pic.is_file() else None
+        return {"color": s.get("color") or COLORS[0], "picture": url, "archived": bool(s.get("archived"))}
+
     def mine(self, email: str, detail: bool = False) -> list[dict]:
         rows = [{"id": s["id"], "name": self.title(s["id"]), "role": s["members"][email],
-                 "by": (s.get("added_by") or {}).get(email)} | (self.summary(s["id"]) if detail else {})
+                 "by": (s.get("added_by") or {}).get(email)} | self.look(s["id"]) | (self.summary(s["id"]) if detail else {})
                 for s in self.spaces.values() if email in s["members"]]
         return sorted(rows, key=lambda r: (r["id"] != MAIN, r["name"].lower()))
 
     def current(self, email: str, wanted: str | None) -> str | None:
-        """The workspace this person is in: the one they picked if they still belong to it, else their first."""
+        """The workspace this person is in: the one they picked if they still belong to it (archived ones
+        too: they can still be opened and read), else their first one that is not archived."""
         if wanted and self.role(wanted, email):
             return wanted
         mine = self.mine(email)
-        return mine[0]["id"] if mine else None
+        live = [m for m in mine if not m["archived"]] or mine
+        return live[0]["id"] if live else None
 
     def overview(self) -> list[dict]:
         return sorted(({"id": s["id"], "name": self.title(s["id"]), "created": s["created"],
@@ -114,7 +156,8 @@ class Spaces:
             sid = "sp_" + secrets.token_hex(4)
             self.path(sid).joinpath("episodes").mkdir(parents=True, exist_ok=True)
             show.write_new(self.path(sid), name if named else "")  # a new show: the first visit asks for its hosts
-            self.spaces[sid] = {"id": sid, "name": name, "created": self.now(), "members": {admin: "admin"}}
+            self.spaces[sid] = {"id": sid, "name": name, "created": self.now(), "members": {admin: "admin"},
+                                "created_by": admin, "color": self._free_color()}
             self._save()
             return self.spaces[sid]
 
@@ -144,6 +187,50 @@ class Spaces:
                 added[email] = by
             s["members"] = members
             self._save()
+
+    def set_picture(self, sid: str, data: bytes) -> None:
+        """An uploaded picture, cut to the middle square and made PICTURE_PX wide (PNG)."""
+        self._get(sid)
+        from PIL import Image, ImageOps
+        import io
+        try:
+            im = Image.open(io.BytesIO(data))
+            im = ImageOps.exif_transpose(im).convert("RGBA")
+        except Exception as e:          # noqa: BLE001 - Pillow raises many kinds on a bad file
+            raise AuthError(tr("这不是一张能打开的图片")) from e
+        im = ImageOps.fit(im, (PICTURE_PX, PICTURE_PX), Image.LANCZOS)
+        out = self.picture_file(sid)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_suffix(".tmp")
+        im.save(tmp, "PNG", optimize=True)
+        tmp.replace(out)
+
+    def drop_picture(self, sid: str) -> None:
+        self._get(sid)
+        self.picture_file(sid).unlink(missing_ok=True)
+
+    def archive(self, sid: str, by: str, on: bool = True) -> None:
+        """Archive (read-only for everyone, listed under 已归档) or restore."""
+        with self.lock:
+            s = self._get(sid)
+            if on:
+                s["archived"] = {"at": self.now(), "by": by}
+            else:
+                s.pop("archived", None)
+            self._save()
+
+    def delete(self, sid: str) -> None:
+        """For good: the project's folder, picture and record. MAIN (the installation's own folder) never."""
+        with self.lock:
+            self._get(sid)
+            if sid == MAIN:
+                raise AuthError(tr("这个项目是 LACUNA 的主项目，不能删除"))
+            folder = self.path(sid)
+            del self.spaces[sid]
+            self._save()
+        self.picture_file(sid).unlink(missing_ok=True)
+        if folder.is_dir() and folder.parent == self.root / "spaces":
+            shutil.rmtree(folder, ignore_errors=True)
 
     def forget(self, email: str) -> None:
         """An account was deleted: it leaves every workspace (what it made stays)."""

@@ -467,4 +467,13 @@ EN: dict[str, str | tuple[str, str]] = {
     "封面图片太大（最多 10 MB）": "The cover image is too big (10 MB at most)",
     "还没有默认的片头片尾": "There's no default intro or outro yet",
     "这一集不在专辑里": "This episode isn't in an album",
+    "这个项目已归档，只能查看。恢复后才能修改。": "This project is archived and read-only. Restore it to make changes.",
+    "这不是一张能打开的图片": "That isn't an image that can be opened",
+    "这个项目是 LACUNA 的主项目，不能删除": "This is LACUNA's main project and can't be deleted",
+    "这个项目还没有图片": "This project has no picture yet",
+    "图片太大了（最大 10 MB）": "The image is too big (10 MB at most)",
+    "只有项目的创建者或 LACUNA 的所有者能永久删除项目": "Only the project's creator or LACUNA's owner can delete a project for good",
+    "先把项目归档，才能永久删除": "Archive the project first, then you can delete it for good",
+    "项目名称不对，没有删除": "The project name doesn't match, nothing was deleted",
+    "这是你唯一的项目。先新建一个项目，再删除这个": "This is your only project. Create another project first, then delete this one",
 }

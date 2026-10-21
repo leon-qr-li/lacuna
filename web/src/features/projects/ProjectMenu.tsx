@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { t } from "../../i18n";
+import { ProjectAvatar } from "./Avatar";
 import { NewProjectDialog } from "./NewProject";
 import { openProject, useProjects } from "./api";
 
@@ -42,7 +43,13 @@ export function ProjectCrumb() {
           data-testid="project-menu"
           title={t("项目")}
         >
+          <ProjectAvatar p={cur} size={22} />
           <span className="prj-crumb-name">{cur.name}</span>
+          {cur.archived && (
+            <span className="prj-tag" data-testid="project-archived-tag">
+              {t("已归档 · 只读")}
+            </span>
+          )}
           <span aria-hidden="true" className="prj-caret">
             ▾
           </span>
@@ -56,13 +63,15 @@ export function ProjectCrumb() {
                 type="button"
                 role="menuitemradio"
                 aria-checked={p.id === cur.id}
-                className="prj-menu-item"
+                className="prj-menu-item prj-menu-row"
                 onClick={() => (p.id === cur.id ? go("#/") : void openProject(p.id))}
               >
                 <span className="prj-check" aria-hidden="true">
                   {p.id === cur.id ? "✓" : ""}
                 </span>
+                <ProjectAvatar p={p} size={20} />
                 <span className="prj-menu-name">{p.name}</span>
+                {p.archived ? <span className="prj-tag">{t("已归档")}</span> : <span />}
               </button>
             ))}
             <hr />
