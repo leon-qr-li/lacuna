@@ -110,6 +110,13 @@ def test_running_import_reports_time_left_and_step_times(tmp_path):
     assert j["state"] == "done" and "eta_s" not in j
     for s in ("asr_L", "asr_P", "features", "first_cut", "episode"):
         assert j["steps"][s]["seconds"] >= 0, s
-    saved = json.loads((ws.root / "imports" / "EP002" / "job.json").read_text(encoding="utf-8"))
+    # the job turns "done" in memory a moment before job.json is written (flaked on macOS CI)
+    f = ws.root / "imports" / "EP002" / "job.json"
+    saved: dict = {}
+    for _ in range(100):
+        saved = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+        if saved.get("state") == "done":
+            break
+        time.sleep(0.05)
     assert saved["steps"]["first_cut"]["seconds"] >= 1.0
     assert import_eta.history(ws.root / "imports")["first_cut"] > 0      # the next import learns from this one
