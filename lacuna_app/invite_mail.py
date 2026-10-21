@@ -47,6 +47,13 @@ def who_of(email: str) -> str:
     return name[:1].upper() + name[1:] if name[:1].isascii() else name
 
 
+def white(inner: str) -> str:
+    """White text on the dark header / button, kept white in Gmail's dark mode on phones, which otherwise turns
+    light text dark (Leon 2026-10-21: the title vanished on the navy band). Two black layers blended
+    screen + difference cancel Gmail's change; elsewhere (``u + .body`` only matches Gmail) nothing changes."""
+    return f'<span class="gm-screen" style="display:inline-block"><span class="gm-diff" style="display:inline-block">{inner}</span></span>'
+
+
 def steps() -> list[tuple[str, str]]:
     """Version A 「六步流程」 (Leon 2026-10-21): an episode from import to publish, each step in one line."""
     return [(tr("导入分轨"), tr("每位主持人一条分轨，自动转成文字稿")),
@@ -93,23 +100,23 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
     logo = (f'<td><img src="cid:{LOGO_CID}" width="40" height="40" alt="LACUNA" style="display:block;border-radius:10px"></td>'
             if logo_png() else "")
     body = f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light only"><title>{e(subject)}</title><style>body{{margin:0}} @media (max-width:620px){{.wrap{{width:100%!important}} .pad{{padding-left:24px!important;padding-right:24px!important}} .h1{{font-size:24px!important}}}}</style></head>
-<body style="margin:0;padding:0;background:#f1f1f6"><div style="display:none;max-height:0;overflow:hidden">{e(subject)}</div>
+<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>{e(subject)}</title><style>body{{margin:0}} u+.body .gm-screen{{background:#000;mix-blend-mode:screen}} u+.body .gm-diff{{background:#000;mix-blend-mode:difference}} @media (max-width:620px){{.wrap{{width:100%!important}} .pad{{padding-left:24px!important;padding-right:24px!important}} .h1{{font-size:24px!important}}}}</style></head>
+<body class="body" style="margin:0;padding:0;background:#f1f1f6"><div style="display:none;max-height:0;overflow:hidden">{e(subject)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1f6"><tr><td align="center" style="padding:40px 12px">
 <table class="wrap" role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(9,11,31,.12)">
 <tr><td class="pad" style="background:#0b0e26;background-image:radial-gradient(120% 140% at 85% 0%,#2a1f5c 0%,#0b0e26 55%);padding:36px 48px 32px">
  <table role="presentation" cellpadding="0" cellspacing="0"><tr>{logo}
- <td style="padding-left:{12 if logo else 0}px;font:700 15px {SANS};letter-spacing:3px;color:#ffffff">LACUNA <span style="font-weight:400;color:#9aa0c8">STUDIO</span></td></tr></table>
+ <td style="padding-left:{12 if logo else 0}px;font:700 15px {SANS};letter-spacing:3px;color:#ffffff">{white("LACUNA")} <span style="font-weight:400;color:#9aa0c8">STUDIO</span></td></tr></table>
  <div style="height:2px;margin-top:28px;background:#FF7A3D;background-image:linear-gradient(90deg,#FFC24B 0%,#FF7A3D 40%,#FF4F7B 75%,#A35CFF 100%);border-radius:2px"></div>
  <div style="margin-top:28px;font:600 12px {SANS};letter-spacing:3px;color:#ffb48c">{e(kicker)}</div>
- <div class="h1" style="margin-top:10px;font:700 28px/1.35 {SANS};color:#ffffff">{title}</div>
+ <div class="h1" style="margin-top:10px;font:700 28px/1.35 {SANS};color:#ffffff">{white(title)}</div>
 </td></tr>
 <tr><td class="pad" style="padding:36px 48px 8px">
  <p style="margin:0 0 12px;font:16px/1.75 {SANS};color:#3a3d55">{e(lead + about)}</p>
  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px">{steps_html}</table>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #ececf3">{row_html}</table>
  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:32px 0 14px"><tr><td style="border-radius:999px;background:#df4a22;background-image:linear-gradient(90deg,#df4a22,#d93366 55%,#8f45f0)">
-  <a href="{e(link, quote=True)}" style="display:inline-block;padding:15px 40px;font:600 16px {SANS};color:#ffffff;text-decoration:none;letter-spacing:.5px">{e(button)} &rarr;</a></td></tr></table>
+  <a href="{e(link, quote=True)}" style="display:inline-block;padding:15px 40px;font:600 16px {SANS};color:#ffffff;text-decoration:none;letter-spacing:.5px">{white(e(button) + " &rarr;")}</a></td></tr></table>
  <p style="margin:0;font:13px {SANS};color:#8a8da6">{e(valid)}</p>
  <p style="margin:24px 0 0;font:12px/1.6 {SANS};color:#a0a3b8">{e(fallback)}<br><a href="{e(link, quote=True)}" style="color:#b8460f;word-break:break-all">{e(link)}</a></p>
 </td></tr>
