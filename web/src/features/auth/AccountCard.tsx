@@ -58,6 +58,25 @@ function device(agent: string): string {
   return [browser, os].filter(Boolean).join(" · ") || agent.slice(0, 60) || t("未知设备");
 }
 
+/** The signed-in account (null while loading or without sign-in); `setSt` after a change. */
+export function useAuthStatus() {
+  const [st, setSt] = useState<AuthStatus | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    authApi.status().then(
+      (s) => {
+        setSt(s);
+        setLoaded(true);
+      },
+      () => {
+        setSt(null);
+        setLoaded(true);
+      },
+    );
+  }, []);
+  return { st, setSt, loaded };
+}
+
 /** 设置: my account and security (everyone), email (owner), members and invites (owner, admins). */
 export function AccountCard() {
   const [st, setSt] = useState<AuthStatus | null>(null);
@@ -75,7 +94,7 @@ export function AccountCard() {
   );
 }
 
-function SecurityCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
+export function SecurityCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
   const { busy, msg, act } = useAct();
   return (
     <section className="card account-card" aria-label={t("账号与安全")}>
@@ -325,7 +344,7 @@ function Devices() {
 }
 
 /** Owner and admins: invite by email (one-time link, 7 days), pending invites, members. */
-function MembersCard({ me, role }: { me: string; role: Role }) {
+export function MembersCard({ me, role }: { me: string; role: Role }) {
   const [people, setPeople] = useState<People | null>(null);
   const [email, setEmail] = useState("");
   const [newRole, setNewRole] = useState<Role>("member");
@@ -504,7 +523,7 @@ function MembersCard({ me, role }: { me: string; role: Role }) {
 }
 
 /** Owner: the Resend key and sender for invite and password-reset emails. */
-function MailCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
+export function MailCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
   const mail = st.mail!;
   const [key, setKey] = useState("");
   const [sender, setSender] = useState(mail.sender);

@@ -19,7 +19,7 @@ for (const theme of ["light", "dark"] as const) {
     await expect.poll(async () => (await (await page.request.get(`${api}/export`)).json()).job?.state ?? "none", { timeout: 30_000 }).not.toBe("running");
 
     const screens = ["#/", `#/ep/${ep}/listen`, `#/ep/${ep}/review`, `#/ep/${ep}/music`, `#/ep/${ep}/export`,
-      `#/ep/${ep}/publish`, `#/ep/${ep}/poster`, `#/ep/${ep}/upload`, "#/learning", "#/library", "#/settings"];
+      `#/ep/${ep}/publish`, `#/ep/${ep}/poster`, `#/ep/${ep}/upload`, "#/learning", "#/library", "#/settings", "#/settings/edit", "#/settings/ai"];
     const problems: string[] = [];
     let total = 0;
     for (const s of screens) {

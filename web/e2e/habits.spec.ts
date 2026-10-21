@@ -11,7 +11,7 @@ test.afterEach(reset);
 for (const theme of ["light", "dark"] as const) {
   test(`editing habits in settings (${theme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: theme });
-    await page.goto("/#/settings");
+    await page.goto("/#/settings/edit");
     await page.evaluate((t) => localStorage.setItem("lacuna.theme", t), theme);
     await page.reload();
     const card = page.getByTestId("habits-card");
@@ -34,11 +34,11 @@ test("hosts are set relative to the editor's level", async ({ page, request }) =
   const pick = page.getByTestId("host-adjust").first();
   await expect(pick).toBeVisible();
   await expect(pick.locator("option")).toHaveText(["比我平时更狠", "和我平时一样", "比我平时更松"]);
-  await expect(page.getByRole("link", { name: "我平时的剪辑力度" }).first()).toHaveAttribute("href", "#/settings");
+  await expect(page.getByRole("link", { name: "我平时的剪辑力度" }).first()).toHaveAttribute("href", "#/settings/edit");
 });
 
 test("editing habits in English", async ({ page }) => {
-  await page.goto("/#/settings");
+  await page.goto("/#/settings/edit");
   await page.evaluate(() => localStorage.setItem("lacuna.lang", "en"));
   await page.reload();
   const card = page.getByTestId("habits-card");

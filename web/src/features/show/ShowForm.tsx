@@ -179,7 +179,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
                           </option>
                         ))}
                       </select>
-                      <a className="small" href="#/settings">
+                      <a className="small" href="#/settings/edit">
                         {t("我平时的剪辑力度")}
                       </a>
                     </label>

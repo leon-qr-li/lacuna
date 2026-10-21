@@ -28,6 +28,7 @@ class ShowBody(BaseModel):
     footer: str = Field("", max_length=1200)
     hosts: list[HostBody] = Field(default_factory=list, max_length=20)
     publish: PublishBody = Field(default_factory=PublishBody)
+    terms: list[str] | None = Field(None, max_length=200)    # 专有名词; left out = keep the stored ones
 
 
 def register(app, ctx) -> None:
@@ -38,6 +39,9 @@ def register(app, ctx) -> None:
     @app.put("/api/show")
     def put_show(body: ShowBody):
         try:
-            return show.view(show.save(ctx.ws.root, body.model_dump()))
+            data = body.model_dump()
+            if body.terms is None:
+                data.pop("terms")
+            return show.view(show.save(ctx.ws.root, data))
         except show.ShowError as e:
             raise HTTPException(400, str(e))

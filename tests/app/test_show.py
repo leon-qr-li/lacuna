@@ -114,3 +114,11 @@ def test_four_hosts_at_most(tmp_path):
     r = c.put("/api/show", json={"show_name": "X", "hosts": [{"name": n} for n in "ABCD"]})
     assert r.status_code == 200 and len(r.json()["hosts"]) == 4
     assert c.get("/api/show").json()["max_hosts"] == 4
+
+
+def test_project_terms_saved_from_the_form_and_kept_when_left_out(tmp_path):
+    c = TestClient(create_app(make_workspace(tmp_path / "ws"), MockEditorAdapter(), web_dist=tmp_path / "none"))
+    body = {"show_name": "X", "hosts": [{"name": "A"}]}
+    assert c.put("/api/show", json=body | {"terms": ["王家卫", " 花样年华 ", ""]}).json()["terms"] == ["王家卫", "花样年华"]
+    assert c.put("/api/show", json=body).json()["terms"] == ["王家卫", "花样年华"]
+    assert c.put("/api/show", json=body | {"terms": []}).json()["terms"] == []
