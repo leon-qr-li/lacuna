@@ -40,6 +40,11 @@ test("申请试用 → the owner's email and list → invite with a plan; 套餐
   expect(note.subject).toBe("新的试用申请：ava@example.com");
   expect(note.text).toContain("夜航电台");
   expect(note.html).toContain("去发邀请");
+  // and the person who asked gets the 「已收到申请」 mail: what happens next, no link
+  const got = (await mails(request, "ava@example.com")).at(-1)!;
+  expect(got.subject).toBe("我们收到了你的 LACUNA 试用申请");
+  expect(got.text).toContain("审核通过后发送邀请");
+  expect(got.text).not.toContain("/invite/");
 
   // the owner's list: invite with one click; the request leaves the list, the invite waits (基础版 by default)
   await lp.goto("/#/settings/members");
@@ -54,7 +59,13 @@ test("申请试用 → the owner's email and list → invite with a plan; 套餐
   await expect(members.getByTestId("invites")).toContainText("基础版");
   expect((await mails(request, "ava@example.com")).at(-1)!.subject).toContain("LACUNA");
 
-  // an invite on the free trial
+  // an invite on the free trial, in the three-section form (对方 / 节目 / 套餐)
+  const form = members.getByTestId("invite-form");
+  await expect(form).toContainText("邀请邮件发到这个地址");
+  await expect(form).toContainText("决定可用时长和节目数");
+  await expect(form.getByTestId("invite-plan")).toContainText("基础版 · 每月 4 小时 · 1 个节目");
+  await expect(form.getByLabel("在节目里的角色")).toBeDisabled();
+  if (SHOTS) await form.screenshot({ path: `${SHOTS}/invite-form.png` });
   await members.getByLabel("对方的邮箱").fill("tia@example.com");
   await members.getByTestId("invite-plan").selectOption("trial");
   await members.getByRole("button", { name: "发送邀请" }).click();
