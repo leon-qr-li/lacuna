@@ -100,7 +100,7 @@ def test_presence_forgets_a_page_that_went_quiet():
     assert p.hello("EP1", {"key": "b", "name": "pei"}) == [{"name": "leon"}]
     now[0] = 30.0
     assert p.hello("EP1", {"key": "b", "name": "pei"}) == []
-    assert p.hello("EP1", None) == [{"name": "pei"}]            # no accounts: nobody to show, nothing noted
+    assert p.hello("EP1", None) == []                           # no accounts (the shared E2E server): nobody
 
 
 def test_stale_show_notes_and_show_settings_are_not_overwritten(tmp_path):

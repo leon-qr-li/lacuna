@@ -1,5 +1,7 @@
 import { useState } from "react";
+import type { RequestError } from "../../api";
 import { t } from "../../i18n";
+import { noticeDialog } from "../dialog/Dialog";
 import { BusyLabel } from "../loading/Loading";
 import { LANGUAGE_LABELS, LANGUAGES, setShow, showApi, type CutAdjust, type Host, type HostColor, type Language, type Show } from "./api";
 
@@ -51,6 +53,20 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // the version this form was filled from (co-editing: a save from an older one is refused)
+  const [rev, setRev] = useState(show.rev);
+
+  /** Fill the form with what is stored (after someone else saved first). */
+  const fill = (s: Show) => {
+    setName(s.show_name);
+    setAbout(s.about);
+    setLanguage(s.language ?? "zh");
+    setFooter(s.footer);
+    setHosts(s.hosts.length ? s.hosts : [newHost(s, [])]);
+    setAlbum(s.publish.album);
+    setTerms((s.terms ?? []).join("\n"));
+    setRev(s.rev);
+  };
 
   const edit = (i: number, patch: Partial<Host>) => {
     setSaved(false);
@@ -68,13 +84,27 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
         hosts,
         publish: { ximalaya: show.publish.ximalaya || !!album.trim(), album },
         ...(compact ? {} : { terms: splitTerms(terms) }),
+        rev,
       });
       setShow(s);
       setHosts(s.hosts);
       setTerms((s.terms ?? []).join("\n"));
+      setRev(s.rev);
       setSaved(true);
       onSaved?.(s);
     } catch (e) {
+      if ((e as RequestError).stale) {
+        // someone else saved first (features/coedit): show what is stored now, nothing was overwritten
+        try {
+          const s = await showApi.get();
+          setShow(s);
+          fill(s);
+        } catch {
+          /* the notice still says what happened */
+        }
+        await noticeDialog((e as Error).message);
+        return;
+      }
       setErr(String((e as Error).message ?? e));
     } finally {
       setBusy(false);

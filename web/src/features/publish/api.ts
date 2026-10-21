@@ -28,6 +28,8 @@ export interface PublishPack {
   notes: string[];
   adapter: string;
   usage: Partial<Usage>;
+  /** goes up at every save (co-editing: a save from an older version is refused) */
+  rev?: number;
   generated_at: string;
   library: boolean;
 }
@@ -53,7 +55,8 @@ export const publishApi = {
   publish: (id: string) => req<PublishView>("GET", `${ep(id)}/publish`),
   generatePublish: (id: string) => req<PublishView>("POST", `${ep(id)}/publish/generate`),
   retimePublish: (id: string) => req<PublishView>("POST", `${ep(id)}/publish/retime`),
-  editPublish: (id: string, body: { markdown?: string | null; title?: string }) =>
+  // `rev`: the pack version on screen; someone saved since -> 409 with `stale` (features/coedit)
+  editPublish: (id: string, body: { markdown?: string | null; title?: string; rev?: number }) =>
     req<PublishView>("PUT", `${ep(id)}/publish`, body),
   publishName: (id: string, heard: string, action: "apply" | "ignore") =>
     req<PublishView>("POST", `${ep(id)}/publish/names`, { heard, action }),

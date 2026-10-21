@@ -61,17 +61,19 @@ class Presence:
         self.seen: dict[str, dict[str, dict]] = {}
 
     def hello(self, episode_id: str, editor: dict | None) -> list[dict]:
-        """Note that `editor` is here; returns the others here now, longest-present first."""
+        """Note that `editor` is here; returns the others here now, longest-present first. Without
+        accounts (`editor` None) there is nobody to show."""
+        if not editor:
+            return []
         now = self.clock()
         with self.lock:
             here = self.seen.setdefault(episode_id, {})
             for k in [k for k, v in here.items() if now - v["at"] > SEEN_S]:
                 del here[k]
-            if editor:
-                was = here.get(editor["key"])
-                here[editor["key"]] = {"name": editor["name"], "at": now, "since": was["since"] if was else now}
-            mine = editor["key"] if editor else None
-            return [{"name": v["name"]} for k, v in sorted(here.items(), key=lambda kv: kv[1]["since"]) if k != mine]
+            was = here.get(editor["key"])
+            here[editor["key"]] = {"name": editor["name"], "at": now, "since": was["since"] if was else now}
+            return [{"name": v["name"]} for k, v in sorted(here.items(), key=lambda kv: kv[1]["since"])
+                    if k != editor["key"]]
 
     def bye(self, episode_id: str, editor: dict | None) -> None:
         if editor:

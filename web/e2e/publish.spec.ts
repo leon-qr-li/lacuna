@@ -55,6 +55,23 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await expect(name).toContainText("已改");
   await expect(page.getByTestId("publish-title")).toHaveText("两部电影一个结局");
 
+  // someone else saves while this page still shows the older version (co-editing, features/coedit):
+  // the save is refused, the latest shows, and what was typed stays below it to copy from
+  const pub = `/api/episodes/${encodeURIComponent(decodeURIComponent(/#\/ep\/([^/]+)/.exec(page.url())![1]))}/publish`;
+  await page.getByRole("button", { name: "编辑" }).click();
+  await page.getByRole("textbox", { name: "Markdown" }).fill("# 我这边写的\n");
+  const rev = (await (await page.request.get(pub)).json()).pack.rev;
+  expect((await page.request.put(pub, { data: { title: "另一位成员换的标题", rev } })).ok()).toBe(true);
+  await page.getByRole("button", { name: "保存" }).click();
+  const dlg = page.getByRole("alertdialog");
+  await expect(dlg).toContainText("刚刚修改了发布资料");
+  await dlg.getByRole("button").first().click();
+  await expect(page.getByTestId("publish-mine").getByRole("textbox")).toHaveValue("# 我这边写的\n");
+  await expect(page.getByRole("textbox", { name: "Markdown" })).toHaveValue(/# 另一位成员换的标题/);
+  await page.getByRole("button", { name: "取消" }).click();
+  await expect(page.getByTestId("publish-title")).toHaveText("另一位成员换的标题");
+  await expect(notes).not.toContainText("我这边写的");
+
   // hand edit, saved, survives reload
   await page.getByRole("button", { name: "编辑" }).click();
   const box = page.getByRole("textbox", { name: "Markdown" });

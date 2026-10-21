@@ -55,6 +55,8 @@ export interface Episode {
   proposals: Proposal[];
   has_transcript: boolean;
   playhead?: number;
+  /** goes up at every change of the episode, by anyone (co-editing, features/coedit) */
+  rev?: number;
 }
 
 export interface EpisodeListItem {
@@ -198,17 +200,27 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
   return res.json() as Promise<T>;
 }
 
+/** A failed request: `status`, and `stale` when the change was refused because someone else changed
+ *  the same thing first (co-editing, features/coedit): the page should load the latest. */
+export type RequestError = Error & { status?: number; stale?: boolean };
+
 /** The error for a failed request (the server's `detail`); a 401 also brings the sign-in screen
  *  back (features/auth/AuthGate). Every raw fetch of the app goes through this. */
-export async function failure(res: Response, url: string): Promise<Error> {
+export async function failure(res: Response, url: string): Promise<RequestError> {
   if (res.status === 401 && !url.startsWith("/api/auth/")) window.dispatchEvent(new Event("lacuna:auth"));
   let msg = res.statusText;
+  let stale = false;
   try {
-    msg = (await res.json()).detail ?? msg;
+    const body = await res.json();
+    msg = body.detail ?? msg;
+    stale = body.stale === true;
   } catch {
     /* not JSON */
   }
-  return new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+  const err: RequestError = new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+  err.status = res.status;
+  if (stale) err.stale = true;
+  return err;
 }
 
 export const ep = (id: string) => `/api/episodes/${encodeURIComponent(id)}`;
@@ -236,10 +248,11 @@ export const api = {
   episode: (id: string) => req<Episode>("GET", ep(id)),
   editAB: (id: string, eid: string) => req<AB>("GET", `${ep(id)}/edits/${eid}/ab`),
   editText: (id: string, eid: string) => req<{ lines: TextLine[] }>("GET", `${ep(id)}/edits/${eid}/text`),
-  review: (id: string, eid: string, action: "keep" | "restore" | "apply", playhead: number) =>
-    req<Episode>("POST", `${ep(id)}/edits/${eid}/review`, { action, playhead }),
-  reviewAll: (id: string, action: "approve" | "keep" | "restore", playhead: number, ids?: string[]) =>
-    req<Episode & { changed: number }>("POST", `${ep(id)}/review`, { action, playhead, ids }),
+  // `rev`: the episode version on screen; the server refuses (409, stale) when someone else changed it since
+  review: (id: string, eid: string, action: "keep" | "restore" | "apply", playhead: number, rev?: number) =>
+    req<Episode>("POST", `${ep(id)}/edits/${eid}/review`, { action, playhead, rev }),
+  reviewAll: (id: string, action: "approve" | "keep" | "restore", playhead: number, ids?: string[], rev?: number) =>
+    req<Episode & { changed: number }>("POST", `${ep(id)}/review`, { action, playhead, ids, rev }),
   undo: (id: string, playhead: number) => req<Episode>("POST", `${ep(id)}/undo`, { playhead }),
   redo: (id: string, playhead: number) => req<Episode>("POST", `${ep(id)}/redo`, { playhead }),
   chat: (id: string, text: string, playhead: number) =>
