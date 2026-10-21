@@ -9,7 +9,8 @@ role, one button, the link written out, expiry), zh or en like before. Subject �
 HTML send fails the plain-text mail is sent instead.
 
 ## Gmail dark mode (2026-10-21)
-Gmail on iPhone flips light text dark in dark mode, so the white title and wordmark vanished on the navy band
-(Leon's test). The white header and button text now sit in two black blend layers (screen + difference,
-`invite_mail.white()`), which undo Gmail's change; the CSS matches only Gmail (`u + .body`), so other apps and
-light mode look as before.
+Gmail on iPhone recolours text in dark mode, so the white title and wordmark turned dark on the navy band
+(Leon's test). A first fix (CSS blend layers, #163) did not hold in his Gmail. Now the dark band (logo, wordmark,
+sunset rule, kicker, title) and the 接受邀请 pill are inline PNG pictures (`invite_mail.header_png()` /
+`button_png()`, drawn with resvg, Inter + Noto Sans CJK from the image's fonts-noto-cjk), which no mail app
+recolours. The alt texts carry the title and the button label; without a CJK font the HTML versions stand in.

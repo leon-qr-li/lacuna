@@ -642,7 +642,7 @@ class Auth:
                 m = invite_mail.render(actor, link, project, extra.get("space_role"))
             try:
                 self.mailer.send(self.config["sender"], email, m["subject"], m["text"], html=m["html"],
-                                 inline=invite_mail.inline_logo())
+                                 inline=m["inline"])
             except MailError:           # the designed one refused: the plain one still gets the link there
                 self.mailer.send(self.config["sender"], email, m["subject"], m["text"])
             mailed = True
