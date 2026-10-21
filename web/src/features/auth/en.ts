@@ -153,7 +153,7 @@ export const en: Dict = {
     "It creates a new account, but this browser is signed in as {email}. Sign out first to accept the invite.",
   "退出并接受邀请": "Sign out and accept",
   "继续用 {email}": "Stay signed in as {email}",
-  "从录音到发布，一个工作台。": "From recording to release, one studio.",
+  "从剪辑到发布，一个工作台。": "From edit to release, one studio.",
   "还没有账号？LACUNA 目前仅限邀请。": "No account yet? LACUNA is invite-only for now.",
   "申请试用": "Request access",
   "收到了": "Request received",

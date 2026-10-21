@@ -59,7 +59,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
         </div>
         <p className="auth-tag">
           {SLOGAN}
-          <small>{t("从录音到发布，一个工作台。")}</small>
+          <small>{t("从剪辑到发布，一个工作台。")}</small>
         </p>
         <div className="auth-wave">
           {BARS.map((h, i) => (

@@ -84,7 +84,8 @@ def test_snapshot_is_a_consistent_copy(tmp_path):
     with sqlite3.connect(out) as copy:
         assert copy.execute("SELECT value FROM meta WHERE key = 'x'").fetchone() == ("1",)
         assert copy.execute("PRAGMA integrity_check").fetchone() == ("ok",)
-    assert not out.with_suffix(".tmp").exists()
+    with db.lock:          # the copy-in-progress exists only while a snapshot holds the lock (one may be timed)
+        assert not out.with_suffix(".tmp").exists()
 
 
 def test_a_failed_change_writes_nothing(tmp_path):
