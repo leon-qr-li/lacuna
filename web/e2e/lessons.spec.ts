@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { undoKey } from "./undo";
 
 // 本集学到的规则 (首次检测 #12): a step between 整集试听 and 配乐; LACUNA proposes this episode's habits with
 // evidence, Leon adopts, edits by hand, tells LACUNA how to change, or skips each. Rules come from a scripted
@@ -100,11 +101,9 @@ test("本集学到的规则: summary with evidence → adopt / edit / tell LACUN
 
   // other specs share this backend: take the approved chat edit back out of the review list
   await page.goto(lessonsUrl.replace(/\/lessons$/, "/listen"));
-  const undo = page.getByRole("button", { name: "撤销" });
-  await expect(undo).toHaveAttribute("title", /^批准/);
-  const what = (await undo.getAttribute("title")) ?? "";
-  await undo.click();
-  await expect(undo).not.toHaveAttribute("title", what);
+  await expect(page.getByTestId("play")).toBeVisible();
+  await undoKey(page);
+  await expect(page.locator(".toast")).toContainText("已撤销：批准");
 });
 
 test("本集学到的规则 in English fits the layout", async ({ page, context }) => {

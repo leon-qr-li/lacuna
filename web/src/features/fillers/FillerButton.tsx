@@ -20,7 +20,7 @@ export function FillerButton({
   ep: Episode;
   time: number;
   player: Player;
-  run: (p: Promise<Episode>, msg?: string | ((next: Episode) => string)) => Promise<boolean>;
+  run: (p: Promise<Episode>, msg?: string | ((next: Episode) => string), opts?: { undo?: boolean }) => Promise<boolean>;
 }) {
   const [data, setData] = useState<Fillers | null>(null);
   const [open, setOpen] = useState(false);
@@ -67,7 +67,8 @@ export function FillerButton({
     setBusy(true);
     const all = picked.length === hosts.length;
     const ok = await run(fillersApi.cut(ep.id, all ? null : picked.map((h) => h.name), time), (r) =>
-      t("已去掉 {n} 个 um / uh，可撤销", { n: (r as Episode & { cut: number }).cut }),
+      t("已去掉 {n} 个 um / uh，Ctrl+Z 可撤销", { n: (r as Episode & { cut: number }).cut }),
+      { undo: true },
     );
     setBusy(false);
     if (ok) setOpen(false);

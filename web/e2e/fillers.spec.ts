@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { SCOPES_PORT } from "../playwright.config";
+import { undoKey } from "./undo";
 
 // 去掉 um / uh (decision english-fillers): an English episode shows how many um / uh are still heard on 文字稿剪辑;
 // the panel takes them all out (or one host's) in one undoable step. Runs on the scopes server, which holds an
@@ -33,7 +34,7 @@ test.describe.serial("um / uh", () => {
     await pop.getByRole("checkbox").first().uncheck(); // leave Leon's in
     await expect(pop.getByTestId("fillers-cut")).toHaveText("去掉 1 个");
     await pop.getByTestId("fillers-cut").click();
-    await expect(page.locator(".toast")).toContainText("已去掉 1 个 um / uh，可撤销");
+    await expect(page.locator(".toast")).toContainText("已去掉 1 个 um / uh，Ctrl+Z 可撤销");
     await expect(pop).toHaveCount(0);
     await expect(page.getByTestId("fillers-btn")).toContainText("3");
 
@@ -52,11 +53,11 @@ test.describe.serial("um / uh", () => {
     await struck.click();
     await expect(page.getByTestId("fillers-btn")).toContainText("1");
 
-    await page.getByRole("button", { name: "撤销" }).click(); // the restore
-    await page.getByRole("button", { name: "撤销" }).click(); // the three
+    await undoKey(page); // the restore
+    await undoKey(page); // the three
     await expect(page.locator(".toast")).toContainText("已撤销：去掉 um / uh（3 处）");
     await expect(page.getByTestId("fillers-btn")).toContainText("3");
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(page.getByTestId("fillers-btn")).toContainText("4");
   });
 

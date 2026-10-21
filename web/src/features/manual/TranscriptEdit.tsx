@@ -54,7 +54,7 @@ export function TranscriptEdit({
   time: number;
   player: Player;
   m: Manual;
-  run: (p: Promise<Episode>, msg?: string | ((next: Episode) => string)) => Promise<boolean>;
+  run: (p: Promise<Episode>, msg?: string | ((next: Episode) => string), opts?: { undo?: boolean }) => Promise<boolean>;
 }) {
   const { sel, setSel } = m;
   const drag = useRef<{ a: W; moved: boolean; again: boolean } | null>(null);
@@ -128,7 +128,7 @@ export function TranscriptEdit({
   }, [nowLine, sel]);
 
   const restore = (eid: string) => {
-    if (ep.edits.some((x) => x.id === eid)) void run(api.review(ep.id, eid, "restore", time), t("已恢复原话，可撤销"));
+    if (ep.edits.some((x) => x.id === eid)) void run(api.review(ep.id, eid, "restore", time), t("已恢复原话，Ctrl+Z 可撤销"));
   };
   const titleOf = (eid: string) => ep.edits.find((x) => x.id === eid)?.title ?? "";
   const idx = (name: string) => Math.max(0, ep.tracks.findIndex((tr) => tr.name === name)) % 6;

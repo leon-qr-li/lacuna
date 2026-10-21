@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { SCOPES_PORT } from "../playwright.config";
+import { undoKey } from "./undo";
 
 // 手动剪辑 (decision manual-editing): select a stretch on the waveform or the transcript, cut it from every
 // track or silence one host; it is an ordinary undoable edit. Runs on the scopes server (its own state).
@@ -193,7 +194,7 @@ test.describe.serial("manual editing", () => {
     await expect(row).toContainText("手动删除");
     await expect(row).toContainText("手动剪辑");
     expect(await duration(page)).toBeLessThan(before - 1);
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(page.locator(".toast")).toContainText("已撤销：手动剪辑：");
     await expect(row).toHaveCount(0);
     expect(await duration(page)).toBeCloseTo(before, 2);
@@ -212,8 +213,8 @@ test.describe.serial("manual editing", () => {
     await dragLane(page, "Leon", 0.7, 0.75);
     await page.keyboard.press("Control+x");
     await expect(page.locator(".toast")).toContainText("已删掉");
-    await page.getByRole("button", { name: "撤销" }).click();
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
+    await undoKey(page);
     await page.getByTestId("tab-near").click();
     await expect(page.locator(".side-near")).toBeVisible();
     await expect(page.locator('[data-testid="nearby"] li[data-source="manual"]')).toHaveCount(0);

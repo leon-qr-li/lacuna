@@ -11,7 +11,8 @@ import type { Episode } from "../api";
 export interface EpisodeTabProps {
   id: string;
   ep: Episode;
-  flash: (msg: string) => void;
+  /** A toast; `undo` adds a small 撤销 button (bulk actions). */
+  flash: (msg: string, opts?: { undo?: boolean }) => void;
   pauseMain: () => void;
   /** Replace the episode shown everywhere (a tab that changed it, e.g. a volume edit on 声音). */
   onEpisode?: (ep: Episode) => void;

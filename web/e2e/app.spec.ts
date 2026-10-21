@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { undoKey } from "./undo";
 
 const audioTime = (page: Page) =>
   page.getByTestId("main-audio").evaluate((a: HTMLAudioElement) => a.currentTime);
@@ -68,7 +69,7 @@ test.describe.serial("LACUNA Studio", () => {
     await page.keyboard.press("r");
     await expect(page.locator(".toast")).toHaveText("已恢复原话");
     await expect(page.getByRole("button", { name: "重新应用这个删除" })).toBeVisible();
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(page.getByRole("button", { name: "保留这个删除" })).toBeVisible();
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect(page.getByTestId("play")).toBeVisible();
@@ -89,7 +90,7 @@ test.describe.serial("LACUNA Studio", () => {
     await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
     await page.keyboard.press("r");
     await expect(page.locator(".toast")).toHaveText("已恢复原话");
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(page.getByRole("button", { name: "保留这个删除" })).toBeVisible();
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
@@ -122,7 +123,7 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(chatEdit).toContainText("停顿 2.0s → 0.4s");
     await expect(page.getByTestId("clock")).toContainText("/ 0:50");
 
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(page.locator(".toast")).toContainText("已撤销");
     await expect(chatEdit).toHaveCount(0);
     await expect(page.getByTestId("clock")).toContainText("/ 0:52");
@@ -136,7 +137,10 @@ test.describe.serial("LACUNA Studio", () => {
 
   test("export the current version as MP3 + WAV", async ({ page }) => {
     await openEpisode(page);
-    await page.getByTestId("export-toggle").click(); // 导出 is a step of the flow (phase 8)
+    // export only from its step of the flow: no 导出 shortcut in the top bar
+    await expect(page.getByTestId("export-toggle")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "撤销" })).toHaveCount(0);
+    await page.getByRole("navigation", { name: "制作流程" }).getByRole("link", { name: "导出", exact: true }).click();
     await expect(page.getByRole("navigation", { name: "制作流程" }).locator('[aria-current="page"]')).toHaveText("导出");
     const pop = page.locator('[aria-label="导出成品"]');
     await expect(pop).toContainText("−16 LUFS");

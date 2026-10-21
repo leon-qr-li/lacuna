@@ -32,7 +32,7 @@ export function useManual(ep: Episode | null, player: Player, run: (p: Promise<E
       const s = (sel.b - sel.a).toFixed(1);
       const ok = await run(
         manualApi.cut(id, sel.a, sel.b, track, Math.max(0, sel.a - 2)),
-        track ? t("已静音 {track} {s} 秒，可撤销", { track, s }) : t("已删掉 {s} 秒，可撤销", { s }),
+        track ? t("已静音 {track} {s} 秒，Ctrl+Z 可撤销", { track, s }) : t("已删掉 {s} 秒，Ctrl+Z 可撤销", { s }),
       );
       setBusy(false);
       if (ok) setSel(null);

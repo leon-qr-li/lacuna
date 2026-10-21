@@ -22,7 +22,7 @@ export const en: Dict = {
   "已恢复原话": "Original words restored",
   "已保留": "Cut kept",
   "已重新应用": "Applied again",
-  "已全部通过 {changed} 处，可撤销": { one: "Approved {changed} edit (you can undo)", other: "Approved all {changed} edits (you can undo)" },
+  "已全部通过 {changed} 处，Ctrl+Z 可撤销": { one: "Approved {changed} edit (Ctrl+Z to undo)", other: "Approved all {changed} edits (Ctrl+Z to undo)" },
   "无法打开剧集：": "Can't open the episode: ",
   "审阅改动": "Review edits",
   "整集试听": "Listen",
