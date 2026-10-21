@@ -243,9 +243,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "不是音频文件：{name}": "Not an audio file: {name}",
     "生成审阅（核对音频）": "Building the review (checking audio)",
     "生成审阅（精修剪辑点）": "Building the review (refining cut points)",
+    "{episode_id}（已删）": "{episode_id} (deleted)",
     "已经有一集叫 {episode_id}，换个编号": "There's already an episode called {episode_id}; pick another ID",
-    "{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号":
-        "{episode_id} belonged to a deleted episode (its learned habits are still filed under it); pick another ID",
     "{a} 和 {b} 选了同一个文件": "{a} and {b} have the same file",
     "先在「节目」里填好主持人": "Add the hosts under Show first",
     "要 {n} 条分轨（每位主持人一条），收到 {got} 条": "{n} tracks are needed (one per host), got {got}",

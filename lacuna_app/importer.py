@@ -32,7 +32,7 @@ from . import import_eta
 from . import learning
 from . import show as show_mod
 from .ai_cut import TrackTokens, build_episode, report_dict
-from .archive import retired_ids
+from .archive import free_deleted_ids
 from .episode import create_episode
 from .events import track
 from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json, now_iso as now
@@ -175,9 +175,7 @@ class Importer:
             raise ImportError_(tr("剧集编号不能含 \\ / : * ? \" < > | 等字符"))
         if episode_id in self.ws.episode_ids():
             raise ImportError_(tr("已经有一集叫 {episode_id}，换个编号", episode_id=episode_id))
-        if episode_id in retired_ids(self.ws):
-            raise ImportError_(tr("{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号",
-                                  episode_id=episode_id))
+        free_deleted_ids(self.ws)     # a deleted episode's evidence must not become this one's
         profile = show_mod.load(self.ws.root)
         hosts = show_mod.tracks(profile)
         if language is not None and language not in asr_mod.LANGUAGES:

@@ -92,9 +92,11 @@ def test_delete_for_good_keeps_learning_and_exports(ws, tmp_path):
     assert not (ws / "episodes" / ".trash").exists()
     # what stays: the finished exports, and every bit of learning evidence
     assert (exports / "out.mp3").read_bytes() == b"mp3"
-    snap = json.loads((ws / "learning" / "decisions" / f"{AI_EPISODE}.json").read_text(encoding="utf-8"))
+    filed = r.json()["learning_filed_as"]
+    assert filed.startswith(f"{AI_EPISODE}@")
+    snap = json.loads((ws / "learning" / "decisions" / f"{filed}.json").read_text(encoding="utf-8"))
     assert any(d["edit_id"] == first["id"] and d["verdict"] == "restored" for d in snap["decisions"])
-    chat = json.loads((ws / "learning" / "chats" / f"{AI_EPISODE}.json").read_text(encoding="utf-8"))
+    chat = json.loads((ws / "learning" / "chats" / f"{filed}.json").read_text(encoding="utf-8"))
     assert chat["turns"][0]["text"] == "以后 Pei 的嗯少删点"
     if rules_before is not None:
         assert (ws / "learning" / "rules.json").exists()

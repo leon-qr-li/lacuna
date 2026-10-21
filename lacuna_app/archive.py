@@ -20,14 +20,19 @@ library.py) leave the library the usual way (file moved to ``library/_removed/``
 and those another episode has or uses stay, the episode just leaves their list. Archiving touches
 no asset.
 
-Because that evidence is filed by episode id, a deleted episode's id is retired for good
-(`retired_ids`): a new import never takes it, or its review snapshot, lessons and chat would be
-overwritten by (or mixed into) the new episode's.
+That evidence is filed by episode id, so once the folder is gone it is filed away under a name of its
+own, ``<id>@<date>-<rand>`` (`file_away`, decision 2026-10-21-free-episode-ids): it keeps counting for
+「学到的规则」 (which reads every file in those folders) and the id is free for a new episode at once,
+which then starts with no review snapshot, lessons or chat of its own. Ids deleted before that change
+were kept out of use instead; `free_deleted_ids` files their evidence away the same way (run at start,
+when the import form asks for the next id, and before an import takes an id).
 """
 from __future__ import annotations
 
 import gc
 import os
+import re
+import secrets
 import shutil
 import threading
 import uuid
@@ -45,14 +50,84 @@ TRASH_DIR = ".trash"          # inside episodes/: a dot name is never an episode
 LEARNING_EVIDENCE = ("decisions", "chats", "lessons", "asks")     # learning/<kind>/<episode id>.json
 
 
-def retired_ids(ws: Workspace) -> set[str]:
-    """Ids of deleted episodes: their learning evidence is still on file, the episode is not."""
+NOT_EPISODES = {"direct"}         # learning/asks/direct.json: rules added directly (stutter_rule_once)
+FILED_AWAY = re.compile(r"@\d{4}-\d{2}-\d{2}-[0-9a-f]{4}$")
+
+
+def episode_label(name: str) -> str:
+    """How a learning source reads: ``EP003@2026-10-21-a1b2`` -> 「EP003（已删）」."""
+    return tr("{episode_id}（已删）", episode_id=FILED_AWAY.sub("", name)) if FILED_AWAY.search(name) else name
+
+
+def _evidence_ids(ws: Workspace) -> set[str]:
     seen = set()
     for kind in LEARNING_EVIDENCE:
         d = ws.root / "learning" / kind
         if d.is_dir():
-            seen |= {p.stem for p in d.glob("*.json")}
-    return seen - set(ws.episode_ids())
+            seen |= {p.name[:-len(".json")] for p in d.glob("*.json")}
+    return seen
+
+
+def _relabel(doc, old: str, new: str):
+    """Every ``"episode": <old>`` (or ``<old>.hand_edit``) in a learning file now names `new`."""
+    if isinstance(doc, list):
+        return [_relabel(x, old, new) for x in doc]
+    if not isinstance(doc, dict):
+        return doc
+    out = {}
+    for k, v in doc.items():
+        if k == "episode" and isinstance(v, str) and (v == old or v.startswith(old + ".")):
+            v = new + v[len(old):]
+        out[k] = _relabel(v, old, new)
+    return out
+
+
+def file_away(ws: Workspace, episode_id: str) -> str | None:
+    """File a deleted episode's learning evidence under ``<id>@<date>-<rand>``, freeing the id.
+
+    Each file is moved first (one atomic step, so nothing is ever counted twice), then the episode
+    names inside it are rewritten (an unreadable file is kept as it is). Returns the new name, or
+    None when there was nothing on file."""
+    new = f"{episode_id}@{_now()[:10]}-{secrets.token_hex(2)}"
+    moved = False
+    for kind in LEARNING_EVIDENCE:
+        d = ws.root / "learning" / kind
+        src, dst = d / f"{episode_id}.json", d / f"{new}.json"
+        old_bak = src.with_name(src.name + ".bak")
+        if not src.exists():
+            if old_bak.exists():                 # only the backup survived a crash: it is the evidence
+                os.replace(old_bak, dst)
+                moved = True
+            continue
+        os.replace(src, dst)
+        moved = True
+        try:
+            atomic_write_json(dst, _relabel(read_json(dst), episode_id, new))
+        except (OSError, ValueError):
+            pass
+        for bak in (old_bak, dst.with_name(dst.name + ".bak")):
+            try:
+                bak.unlink()
+            except OSError:
+                pass
+    return new if moved else None
+
+
+def free_deleted_ids(ws: Workspace) -> dict[str, str]:
+    """File away the evidence of every episode that is no longer here (ids retired before deleted
+    episodes freed their id). Returns old id -> new name."""
+    live = set(ws.episode_ids())
+    out = {}
+    for eid in sorted(_evidence_ids(ws) - live - NOT_EPISODES):
+        if FILED_AWAY.search(eid):
+            continue
+        try:
+            check_id(eid)
+            if (new := file_away(ws, eid)) is not None:
+                out[eid] = new
+        except (OSError, PathError):
+            continue           # tried again next time
+    return out
 
 
 class ArchiveError(RuntimeError):
@@ -147,6 +222,10 @@ class Archive:
             eps.pop(episode_id, None)
             self._write(eps)
         freed = _rmtree(gone)
+        try:
+            filed = file_away(self.ws, episode_id)      # the id is free for a new episode from now on
+        except OSError:
+            filed = None                                # free_deleted_ids does it at the next import
 
         # 2. the import cache, so a new import under the same id starts clean
         try:
@@ -179,7 +258,8 @@ class Archive:
         except (OSError, ValueError):
             pass
         self.empty_trash()
-        return {"deleted": episode_id, "freed_bytes": freed, "tracks": removed, "assets": assets}
+        return {"deleted": episode_id, "freed_bytes": freed, "tracks": removed, "assets": assets,
+                "learning_filed_as": filed}
 
     def _keep_chat(self, episode_id: str, d: Path) -> None:
         src = d / CHAT_FILE

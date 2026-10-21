@@ -24,6 +24,7 @@ export const en: Dict = {
   "学到的规则": "Learned rules",
   "来源：{sources}。": "Sources: {sources}.",
   "{ep}（你手剪的成品）": "{ep} (your hand edit)",
+  "{ep}（已删）": "{ep} (deleted)",
   "还没有": "none yet",
   "审阅里逐条决定 {considered} 个；所有来源合计保留 {kept}、恢复或没删 {restored}、补删 {added}。":
     "{considered} decided one by one in review; across all sources {kept} kept, {restored} restored or not cut, {added} cut by you.",
