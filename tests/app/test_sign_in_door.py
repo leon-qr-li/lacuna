@@ -77,8 +77,11 @@ def test_access_request_reaches_the_owner_once(tmp_path):
     body = {"email": "Host@Example.com", "show": "深夜电影院", "note": "两个人的对谈节目"}
     assert anon.post("/api/access-requests", json=body).json() == {"ok": True}
     assert anon.post("/api/access-requests", json=body).json() == {"ok": True}    # same day: nothing new
-    [m] = mailer.outbox
+    m, got = mailer.outbox                     # the owner's notice and the 「已收到申请」 mail, once each
     assert m["to"] == "leon@example.com" and "host@example.com" in m["subject"] and "深夜电影院" in m["text"]
+    assert got["to"] == "host@example.com" and got["subject"] == "我们收到了你的 LACUNA 试用申请"
+    assert "审核通过后发送邀请" in got["text"] and "深夜电影院" in got["text"] and "UTC" in got["text"]
+    assert "/invite/" not in got["text"] and "两个人的对谈节目" not in got["text"]
     reqs = c.get("/api/access-requests").json()["requests"]
     assert [(r["email"], r["show"]) for r in reqs] == [("host@example.com", "深夜电影院")]
     assert anon.get("/api/access-requests").status_code == 401
@@ -100,7 +103,7 @@ def test_access_requests_are_checked_and_limited(tmp_path):
     # dismissing removes it from the list
     rid = c.get("/api/access-requests").json()["requests"][0]["id"]
     assert len(c.post(f"/api/access-requests/{rid}", json={"action": "dismiss"}).json()["requests"]) == 4
-    # someone who already has an account: the same answer, no mail to the owner
+    # someone who already has an account: the same answer, no mail to the owner or to them
     n = len(mailer.outbox)
     TestClient(c.app, headers={"cf-connecting-ip": "1.2.3.4"}).post(
         "/api/access-requests", json={"email": "leon@example.com", "turnstile": "good"})
@@ -117,3 +120,12 @@ def test_without_access_in_front_the_app_sign_in_is_the_door(tmp_path, monkeypat
     assert c.get("/api/episodes").status_code == 401              # but the app's sign-in is
     assert c.post("/api/app/api-key", json={"key": "x"}).status_code == 404   # cloud rules still hold
     assert app.user_middleware[0].cls.__name__ == "CloudGate"
+
+
+def test_request_received_mail_speaks_the_language_it_was_asked_in(tmp_path):
+    c, mailer = make(tmp_path)
+    TestClient(c.app).post("/api/access-requests", json={"email": "ava@example.com", "lang": "en"})
+    got = mailer.outbox[-1]
+    assert got["to"] == "ava@example.com" and got["subject"] == "We received your LACUNA access request"
+    assert "An invite once it's approved" in got["text"] and "节目" not in got["text"]
+    assert "ignore this email" in got["html"] and "cid:" in got["html"]       # same 夜航信笺 look, no button

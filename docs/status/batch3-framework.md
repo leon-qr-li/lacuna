@@ -14,6 +14,10 @@ merge → prod, no staging). Leon picked option A on all 11 questions of the dec
   cloud.py (`LACUNA_ACCESS=off`), web/src/features/auth (Turnstile.tsx, 申请试用 view), deploy/provision.py +
   deploy/site-door.txt. tests test_sign_in_door.py, test_cloud.py, tests/test_provision.py, e2e plans_roles/auth.
 - Event log — decision `event-log`; events.py, routes/events.py. tests test_events.py.
+- Polish (Leon 2026-10-21 04:24Z picks): invite form B 「分区表单」 (对方 / 节目 / 套餐) in
+  web/src/features/auth/InviteForm.tsx + invite_form.css; 「已收到申请」 mail A 「夜航信笺」 to the person who asked
+  (notice_mail.request_received, steps + no button; sent with the owner's notice, only for emails without an
+  account). tests test_sign_in_door.py, e2e plans_roles.spec.ts.
 
 ## Not done here (on purpose)
 - Cloudflare Access is still ON: deploy/site-door.txt says `access`. Opening it waits for Leon to type

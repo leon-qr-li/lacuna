@@ -1,7 +1,7 @@
 """申请试用 (decision 2026-10-21-app-sign-in): someone without an account asks for one on the sign-in page.
 
 ``POST /api/access-requests`` is open (no sign-in), behind the Turnstile check when it is on, and limited:
-one request per email per day, ``PER_IP`` per address per day. The site owner gets an email; the owner
+one request per email per day, ``PER_IP`` per address per day. The site owner gets an email, the person who asked a 「已收到申请」 one; the owner
 and site admins see the list in 设置 → 成员与邀请 and send the invite (or dismiss it) with one click.
 The answer never says whether the email already has an account.
 """
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import secrets
 import threading
+import time
 
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
@@ -16,7 +17,7 @@ from pydantic import BaseModel, Field
 from .. import db as sitedb
 from .. import notice_mail
 from ..auth import COOKIE, RANK, Auth, AuthError, MailError, norm_email
-from ..i18n import speaking, tr
+from ..i18n import lang, speaking, tr
 
 DAY = 86400
 PER_IP = 5
@@ -55,6 +56,17 @@ def register(app, ctx) -> None:
         return [sitedb.loads(r["data"]) | {"id": r["id"], "status": r["status"]}
                 for r in db.query("SELECT * FROM access_requests WHERE status = ? ORDER BY created DESC", (status,))]
 
+    def mail(to: str, m: dict, what: str) -> None:
+        def send():
+            try:
+                auth.mailer.send(auth.config["sender"], to, m["subject"], m["text"], html=m["html"], inline=m["inline"])
+            except (MailError, OSError) as e:
+                print(f"LACUNA: {what} mail failed: {e}", flush=True)
+        if ctx.option("mail_inline"):
+            send()
+        else:
+            threading.Thread(target=send, name=f"{what}-mail", daemon=True).start()
+
     def notify(row: dict, request: Request) -> None:
         owner = next((u for u in auth.users.values() if u["role"] == "owner"), None)
         if not owner:
@@ -62,17 +74,14 @@ def register(app, ctx) -> None:
         origin = app.state.invite_origin(request) if hasattr(app.state, "invite_origin") else ""
         with speaking(owner.get("lang") or "zh"):
             m = notice_mail.access_request(row["email"], row["show"], row["note"], f"{origin.rstrip('/')}/#/settings/members")
+        mail(owner["email"], m, "access-request")
 
-        def send():
-            try:
-                auth.mailer.send(auth.config["sender"], owner["email"], m["subject"], m["text"], html=m["html"],
-                                 inline=m["inline"])
-            except (MailError, OSError) as e:
-                print(f"LACUNA: access-request mail failed: {e}", flush=True)
-        if ctx.option("mail_inline"):
-            send()
-        else:
-            threading.Thread(target=send, name="access-request-mail", daemon=True).start()
+    def received(row: dict) -> None:
+        """The 「已收到申请」 mail to the person who asked, in the language they asked in."""
+        when = time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime(row["created"]))
+        with speaking(row.get("lang") or lang()):
+            m = notice_mail.request_received(row["email"], row["show"], when)
+        mail(row["email"], m, "request-received")
 
     @app.post("/api/access-requests")
     def ask(body: RequestBody, request: Request):
@@ -101,6 +110,7 @@ def register(app, ctx) -> None:
                       (rid, email, now, "new", sitedb.dumps(row)))
         if email not in auth.users:
             notify(row, request)
+            received(row)
         return {"ok": True}
 
     @app.get("/api/access-requests")

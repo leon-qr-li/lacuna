@@ -180,4 +180,17 @@ export const en: Dict = {
   "{role} · {plan} · {by} 邀请 · {exp} 过期": "{role} · {plan} · invited by {by} · expires {exp}",
   "LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。站点管理员能邀请和管理用户、改套餐；只有站长能设站点管理员、改 AI 密钥和邮件设置。":
     "LACUNA is invite-only for now. An invite link is tied to one email, works once, for 7 days. Site admins invite and manage users and set plans; only the owner makes site admins and changes the AI key and email settings.",
+  "邀请新成员": "Invite someone",
+  "对方": "Who",
+  "邀请邮件发到这个地址": "The invite email goes to this address",
+  "站点角色": "Site role",
+  "邮件语言": "Email language",
+  "加入现有节目，或给对方新建一个": "Join an existing show, or get a new one of their own",
+  "节目里的角色": "Role in the show",
+  "新建时为管理员": "Admin of their new show",
+  "决定可用时长和节目数": "Sets their audio hours and number of shows",
+  "对方会收到一封邀请邮件，也可以复制链接直接发给对方。": "They get an invite email; you can also copy the link and send it yourself.",
+  "时长不限": "unlimited hours",
+  "节目不限": "unlimited shows",
+  "{n} 个节目": { one: "{n} show", other: "{n} shows" },
 };

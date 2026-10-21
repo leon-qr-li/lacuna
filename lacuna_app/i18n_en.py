@@ -514,6 +514,20 @@ EN: dict[str, str | tuple[str, str]] = {
     "有人在登录页申请试用 LACUNA。": "Someone asked for access to LACUNA on the sign-in page.",
     "在 设置 → 成员与邀请 → 试用申请 里一键发邀请或忽略。":
         "Invite them or dismiss the request in Settings → Members & invites → Access requests.",
+    "申请邮箱": "Email",
+    "提交时间": "Submitted",
+    "申请已提交": "Request submitted",
+    "我们已收到你的信息": "We have your details",
+    "审核通过后发送邀请": "An invite once it's approved",
+    "邀请邮件会发到这个邮箱，链接 7 天内有效": "The invite comes to this address; its link works for 7 days",
+    "设置密码，开始使用": "Set a password and get started",
+    "按邀请邮件的步骤设置密码和两步验证": "Follow the invite to set a password and two-step verification",
+    "我们收到了你的 LACUNA 试用申请": "We received your LACUNA access request",
+    "感谢你关注 LACUNA Studio。你的申请已经登记，我们会尽快完成审核。接下来会这样进行：":
+        "Thank you for your interest in LACUNA Studio. Your request is registered and we'll review it shortly. Here's what happens next:",
+    "如果这不是你本人提交的申请，忽略这封邮件即可，不会创建任何账号。":
+        "If you didn't make this request, you can ignore this email; no account will be created.",
+    "申请已收到 · RECEIVED": "RECEIVED",
     "免费体验": "Free trial",
     "基础版": "Basic",
     "专业版": "Pro",

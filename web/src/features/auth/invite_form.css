@@ -1,0 +1,16 @@
+/* 设置 → 成员与邀请: invite form B 「分区表单」 (InviteForm.tsx) */
+.invite-form { margin-top: 16px; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 16px; }
+.invite-form h3 { margin: 0 0 4px; font-size: 14px; }
+.invite-sec { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
+.invite-form h3 + .invite-sec { border-top: 0; }
+.invite-sec-head strong { display: block; font-size: 14px; font-weight: 600; }
+.invite-sec-head span { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-3); line-height: 1.5; }
+.invite-fields { display: grid; gap: 12px; min-width: 0; }
+.invite-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-width: 0; }
+.invite-label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink-2); min-width: 0; }
+.invite-form input, .invite-form select { width: 100%; }
+.invite-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line); }
+@media (max-width: 720px) {
+  .invite-sec { grid-template-columns: 1fr; gap: 10px; }
+  .invite-two { grid-template-columns: 1fr; }
+}

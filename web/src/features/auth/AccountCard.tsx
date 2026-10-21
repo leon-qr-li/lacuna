@@ -2,11 +2,10 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { AUTH_EVENT, PLAN_IDS, authApi, type AccessRequest, type AuthStatus, type Device, type People, type PlanId, type Role } from "./api";
 import { CodeInput, RecoveryCodes, SecondFactor, TwoStepQR } from "./TwoStep";
 import { confirmDialog } from "../dialog/Dialog";
-import { spacesApi, type SpaceInfo, type SpaceRole } from "../spaces/api";
-import { SPACE_ROLE } from "../spaces/SpacesCard";
+import { spacesApi, type SpaceInfo } from "../spaces/api";
 import { BusyLabel } from "../loading/Loading";
-import { t, type Lang } from "../../i18n";
-import { MailLang, defaultMailLang } from "./MailLang";
+import { t } from "../../i18n";
+import { InviteForm } from "./InviteForm";
 import "./auth.css";
 
 const KEY_SOURCE: Record<string, string> = {
@@ -349,15 +348,9 @@ function Devices() {
 /** Owner and admins: invite by email (one-time link, 7 days), pending invites, members. */
 export function MembersCard({ me, role }: { me: string; role: Role }) {
   const [people, setPeople] = useState<People | null>(null);
-  const [email, setEmail] = useState("");
-  const [newRole, setNewRole] = useState<Role>("member");
   const [link, setLink] = useState<{ link: string; email: string; mailed: boolean; why: string | null } | null>(null);
   const [copied, setCopied] = useState(false);
   const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
-  const [space, setSpace] = useState("new");
-  const [spaceRole, setSpaceRole] = useState<SpaceRole>("editor");
-  const [mailLang, setMailLang] = useState<Lang>(defaultMailLang);
-  const [plan, setPlan] = useState<PlanId>("basic");
   const [asks, setAsks] = useState<AccessRequest[]>([]);
   const { busy, msg, act } = useAct();
   useEffect(() => {
@@ -376,58 +369,22 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
       <p className="muted small">
         {t("LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。站点管理员能邀请和管理用户、改套餐；只有站长能设站点管理员、改 AI 密钥和邮件设置。")}
       </p>
-      <form
-        className="row gap8 account-wrap"
-        onSubmit={(e) => {
-          e.preventDefault();
+      <InviteForm
+        grantable={grantable}
+        roleNames={ROLE}
+        planNames={PLAN}
+        spaces={spaces}
+        busy={busy}
+        onSend={(f, done) =>
           act("invite", async () => {
-            const r = await authApi.sendInvite(email, newRole, space, space === "new" ? null : spaceRole, mailLang, plan);
+            const r = await authApi.sendInvite(f.email, f.role, f.space, f.spaceRole, f.lang, f.plan);
             setPeople(r);
             setLink({ link: r.link, email: r.email, mailed: r.mailed, why: r.mail_error });
             setCopied(false);
-            setEmail("");
-          });
-        }}
-      >
-        <input className="grow" type="text" inputMode="email" autoComplete="off" required placeholder={t("对方的邮箱")} aria-label={t("对方的邮箱")} value={email} onChange={(e) => setEmail(e.target.value)} />
-        <select aria-label={t("角色")} value={newRole} onChange={(e) => setNewRole(e.target.value as Role)}>
-          {grantable.map((r) => (
-            <option key={r} value={r}>
-              {ROLE[r]}
-            </option>
-          ))}
-        </select>
-        {spaces.length > 0 && (
-          <select aria-label={t("加入哪个节目")} value={space} onChange={(e) => setSpace(e.target.value)} data-testid="invite-space">
-            <option value="new">{t("给对方新建一个节目")}</option>
-            {spaces.map((s) => (
-              <option key={s.id} value={s.id}>
-                {t("加入「{name}」", { name: s.name })}
-              </option>
-            ))}
-          </select>
-        )}
-        {space !== "new" && (
-          <select aria-label={t("在节目里的角色")} value={spaceRole} onChange={(e) => setSpaceRole(e.target.value as SpaceRole)}>
-            {(["admin", "editor", "viewer"] as SpaceRole[]).map((r) => (
-              <option key={r} value={r}>
-                {SPACE_ROLE[r]}
-              </option>
-            ))}
-          </select>
-        )}
-        <select aria-label={t("套餐")} value={plan} onChange={(e) => setPlan(e.target.value as PlanId)} data-testid="invite-plan">
-          {PLAN_IDS.map((p) => (
-            <option key={p} value={p}>
-              {PLAN[p]}
-            </option>
-          ))}
-        </select>
-        <MailLang value={mailLang} onChange={setMailLang} />
-        <button className="btn btn-primary" disabled={!!busy || !email}>
-          <BusyLabel busy={busy === "invite"} label={t("发送邀请")} busyLabel={t("发送中…")} />
-        </button>
-      </form>
+            done();
+          })
+        }
+      />
       {link && (
         <div data-testid="invite-result">
           <p className={link.mailed ? "account-ok small" : "muted small"}>
