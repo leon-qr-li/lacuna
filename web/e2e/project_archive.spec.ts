@@ -28,7 +28,8 @@ test("a project gets a colour, a picture, is archived read-only, then deleted fo
 
   await page.goto("/#/project/basic");
   await page.reload(); // the page loaded before the project was made
-  await expect(page.getByTestId("project-menu")).toHaveText(/旧节目/);
+  // the reload re-opens the whole app (sign-in check, projects, show): slow on macOS CI
+  await expect(page.getByTestId("project-menu")).toHaveText(/旧节目/, { timeout: 20_000 });
   await expect(page.getByTestId("project-look").getByTestId("project-color")).toHaveText("旧");
   await page.getByTestId("project-picture-file").setInputFiles({ name: "p.png", mimeType: "image/png", buffer: PNG });
   await expect(page.getByTestId("project-look").getByTestId("project-picture")).toBeVisible();
