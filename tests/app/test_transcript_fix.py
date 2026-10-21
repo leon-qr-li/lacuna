@@ -270,3 +270,79 @@ def test_an_episode_is_proofread_again_by_itself_when_the_terms_change(tmp_path)
     off = TestClient(create_app(root, MockEditorAdapter(), web_dist=Path("/nonexistent"),
                                 transcript_fixer=tf.TranscriptFixer(api_key="")))
     assert off.get(url).json() == {"due": False}
+
+
+# ---------------------------------------------------------------------------- audio first (decision transcript-audio-first)
+
+def test_sounds_alike_accepts_mishearings_and_refuses_other_names():
+    for wrong, right in [("利奥", "Leon"), ("里昂", "Leon"), ("配", "Pei"), ("洛城二三世", "洛城二三事"),
+                         ("pose", "PULSE"), ("拆GPT", "ChatGPT"), ("克劳德", "Claude")]:
+        assert tf.sounds_alike(wrong, right), (wrong, right)
+    for wrong, right in [("洛城二三事", "TEST Project"), ("Leon", "LI"), ("Pei", "WANG"), ("pose", "EPISODE"),
+                         ("节目", "EPISODE"), ("Leon", "WANG")]:
+        assert not tf.sounds_alike(wrong, right), (wrong, right)
+
+
+def leons_test_project():
+    """Leon's case (2026-10-20): project "TEST Project", hosts LI / WANG, episode "TEST EPISODE", but the
+    audio is a real 洛城二三事 episode with Leon and Pei."""
+    lines = [tf.Line("L0001", "LI", words("大", "家", "好")),
+             tf.Line("L0002", "WANG", words("欢", "迎", "你", "来", "听", "洛", "城", "二", "三", "事", t0=2)),
+             tf.Line("L0003", "LI", words("我", "是", "Leon", t0=4)),
+             tf.Line("L0004", "WANG", words("我", "是", "Pei", t0=5)),
+             tf.Line("L0005", "LI", words("那", "这", "期", "又", "是", "一", "期", "pose", t0=6))]
+    g = tf.Glossary(terms=["TEST Project", "LI", "WANG", "TEST", "EPISODE", "Leon"], show="TEST Project", title="TEST EPISODE")
+    return lines, g
+
+
+def test_the_audio_wins_over_the_projects_names():
+    lines, g = leons_test_project()
+    forced = [{"line": "L0002", "wrong": "洛城二三事", "right": "TEST Project"},
+              {"line": "L0003", "wrong": "Leon", "right": "LI"},
+              {"line": "L0004", "wrong": "Pei", "right": "WANG"},
+              {"line": "L0005", "wrong": "pose", "right": "EPISODE"}]
+    assert tf.check(forced, lines, g) == []
+    fx, m = fixer(answer=lambda _: forced)
+    assert fx.fix(lines, g) == []
+    assert [ln.text for ln in lines[1:4]] == ["欢迎你来听洛城二三事", "我是Leon", "我是Pei"]
+    # a real mis-hearing of a term is still fixed
+    mis = [tf.Line("L0001", "LI", words("我", "是", "利", "奥"))]
+    assert tf.check([{"line": "L0001", "wrong": "利奥", "right": "Leon"}], mis, g) == \
+        [{"line": "L0001", "wrong": "利奥", "right": "Leon"}]
+
+
+def test_names_an_older_pass_forced_in_are_put_back():
+    lines, g = leons_test_project()
+    old = [{"line": "L0002", "wrong": "洛城二三事", "right": "TEST Project"},
+           {"line": "L0003", "wrong": "Leon", "right": "LI"},
+           {"line": "L0005", "wrong": "利奥", "right": "Leon"}]               # a fair one stays
+    tf.apply(lines, old[:2])
+    assert lines[1].text == "欢迎你来听TEST Project" and lines[2].text == "我是LI"
+    assert tf.undo_forced(lines, old) == 2
+    assert lines[1].text == "欢迎你来听洛城二三事" and lines[2].text == "我是Leon"
+    assert lines[1].words[-1]["end"] == pytest.approx(2 + 9 * 0.3 + 0.25)          # times kept
+
+
+@ffmpeg
+def test_an_episode_proofread_before_gets_back_what_was_said(tmp_path):
+    root = make_workspace(tmp_path / "ws")
+    d = root / "episodes" / EPISODE
+    t = json.loads((d / "transcript.json").read_text(encoding="utf-8"))
+    (d / "transcript.before_fix.json").write_text(json.dumps(t, ensure_ascii=False), encoding="utf-8")
+    leon = sorted(t["tracks"]["Leon"])
+    said = leon[0][2]
+    leon[0][2] = "WANG"                                    # an older pass forced a host name over the first word
+    t["tracks"]["Leon"] = leon
+    (d / "transcript.json").write_text(json.dumps(t, ensure_ascii=False), encoding="utf-8")
+    fx, m = fixer()
+    c = TestClient(create_app(root, MockEditorAdapter(), web_dist=Path("/nonexistent"), transcript_fixer=fx))
+    url = f"/api/episodes/{EPISODE}/transcript/fix"
+    g = tf.glossary_for(root, "", ["Leon", "Pei"])
+    tf.mark_checked(d, g)
+    (d / tf.CHECK_FILE).write_text(json.dumps({"sig": tf.signature(g)}), encoding="utf-8")    # checked by the old rule
+    assert c.get(url).json() == {"due": True}
+    out = c.post(url, json={}).json()
+    assert out["changed"] == 1
+    now = json.loads((d / "transcript.json").read_text(encoding="utf-8"))
+    assert sorted(now["tracks"]["Leon"])[0][2] == said
+    assert c.get(url).json() == {"due": False} and tf.checked_version(d) == tf.CHECK_VERSION

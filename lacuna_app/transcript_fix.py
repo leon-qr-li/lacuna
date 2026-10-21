@@ -8,6 +8,10 @@ mis-heard; it answers {line, wrong, right} triples and this module makes the cha
 
 * ``right`` must be one of the terms (show name, hosts, albums, terms from 项目设置, names Leon
   corrected before, Latin names in the episode title); anything else is dropped;
+* the AUDIO is the source of truth (decision `transcript-audio-first`): ``wrong`` must *sound like*
+  ``right`` (both romanised, pinyin for Chinese, and compared, `sounds_alike`). The terms are hints for
+  mis-hearings, never names to force in: a project called "TEST Project" with hosts LI / WANG does not
+  turn 洛城二三事 / Leon / Pei, which were really said, into its own names;
 * ``wrong`` must be in that line and cover whole words (never half of an English word);
 * only word *text* changes: start / end times stay, a term heard as several words becomes one word
   spanning them, so every edit, cut and the audio are untouched (no words are added).
@@ -20,6 +24,7 @@ Off with ``LACUNA_TRANSCRIPT_FIX=off``.
 """
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import os
@@ -40,6 +45,8 @@ CHUNK_CHARS = 6000           # transcript text per request (~1 h of Chinese talk
 WORKERS = 4
 MAX_TERMS = 300
 CHECK_FILE = "term_check.json"     # <episode>/: the glossary its transcript was last proofread with
+CHECK_VERSION = 2            # 2: fixes must sound alike (audio first); older checks are redone and their forced names undone
+SOUND_RATIO = 0.4            # romanised similarity a mis-hearing needs (利奥 ~ Leon 0.5, pose ~ PULSE 0.67, Leon ~ LI 0.33)
 LINE_GAP_S = 0.6             # same speaker, shorter pause -> same line (as manual.transcript)
 
 SYSTEM = (Path(__file__).resolve().parent / "prompts" / "transcript_fix.txt").read_text(encoding="utf-8").strip()
@@ -85,6 +92,35 @@ class Glossary:
 
 def _key(s: str) -> str:
     return "".join(c.lower() if len(c.lower()) == 1 else c for c in re.sub(r"\s+", "", s))
+
+
+# letters that recognisers swap at the start of a word (b/p, d/t, l/n/r, ...)
+_ONSETS = ("bp", "dt", "gkcq", "lnr", "szcxj", "jqxzc", "fhvw", "wu", "yi", "aeiou")
+
+
+def romanise(s: str) -> str:
+    """How `s` sounds, as plain letters: Chinese characters in toneless pinyin, Latin lower-cased."""
+    try:
+        from pypinyin import Style, lazy_pinyin
+        parts = lazy_pinyin(s, style=Style.NORMAL, errors="default")
+    except ImportError:            # without pypinyin a Chinese mis-hearing only matches Chinese spelled alike
+        parts = [s]
+    return re.sub(r"[^0-9a-z\u3400-\u9fff]", "", "".join(parts).lower())
+
+
+def sounds_alike(wrong: str, right: str) -> bool:
+    """Whether `wrong` can be what a recogniser wrote for `right` said aloud: same first sound (or a
+    letter recognisers swap) and romanised spellings at least SOUND_RATIO alike."""
+    a, b = romanise(wrong), romanise(right)
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    if a[0] != b[0] and not any(a[0] in g and b[0] in g for g in _ONSETS):
+        return False
+    if min(len(a), len(b)) / max(len(a), len(b)) < 0.4:
+        return False
+    return difflib.SequenceMatcher(None, a, b).ratio() >= SOUND_RATIO
 
 
 def glossary_for(root: str | Path, title: str = "", extra: list[str] = ()) -> Glossary:
@@ -138,9 +174,17 @@ def checked(ep_dir: Path) -> str | None:
         return None
 
 
+def checked_version(ep_dir: Path) -> int:
+    try:
+        return int(json.loads((Path(ep_dir) / CHECK_FILE).read_text(encoding="utf-8")).get("v") or 1)
+    except (OSError, ValueError, AttributeError, TypeError):
+        return 0
+
+
 def mark_checked(ep_dir: Path, g: Glossary) -> None:
     from .store import atomic_write_json
-    atomic_write_json(Path(ep_dir) / CHECK_FILE, {"sig": signature(g), "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
+    atomic_write_json(Path(ep_dir) / CHECK_FILE, {"sig": signature(g), "v": CHECK_VERSION,
+                                                  "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
 
 
 # ---------------------------------------------------------------------------- lines and fixes
@@ -235,7 +279,8 @@ def known(lines: list[Line], g: Glossary) -> list[dict]:
 
 
 def check(fixes: list[dict], lines: list[Line], g: Glossary) -> list[dict]:
-    """Keep only answers that name a reference term and quote whole words of that line."""
+    """Keep only answers that name a reference term, quote whole words of that line and sound like
+    the term (the audio wins: what was said and does not sound like a term stays as heard)."""
     allowed = g.allowed()
     by_id = {ln.id: ln for ln in lines}
     out = []
@@ -252,7 +297,53 @@ def check(fixes: list[dict], lines: list[Line], g: Glossary) -> list[dict]:
             continue
         if not find_spans(ln.words, wrong):
             continue
+        if not sounds_alike(wrong, term):
+            continue
         out.append({"line": line, "wrong": wrong, "right": term})
+    return out
+
+
+def forced(fixes: list[dict]) -> list[dict]:
+    """Fixes made before the sound-alike rule (CHECK_VERSION 1) that it would refuse: a name forced over
+    what was said (洛城二三事 → TEST Project). Only those whose `right` came from a single `wrong`."""
+    bad = [f for f in fixes if f.get("wrong") and f.get("right") and not sounds_alike(str(f["wrong"]), str(f["right"]))]
+    good = {_key(str(f["right"])) for f in fixes if f not in bad}
+    by_right: dict[str, set[str]] = {}
+    for f in bad:
+        by_right.setdefault(_key(str(f["right"])), set()).add(str(f["wrong"]))
+    out, seen = [], set()
+    for f in bad:
+        k = _key(str(f["right"]))
+        if k in good or len(by_right[k]) != 1 or k in seen:
+            continue
+        seen.add(k)
+        out.append({"wrong": str(f["right"]), "right": str(f["wrong"])})       # the way back
+    return out
+
+
+def undo_forced(lines: list[Line], fixes: list[dict]) -> int:
+    """Put back what was said where an older pass forced a name in (see `forced`); returns how many places."""
+    n = 0
+    for back in forced(fixes):
+        for ln in lines:
+            n += replace(ln.words, back["wrong"], back["right"])
+    return n
+
+
+def changed_words(before: list[Line], after: list[Line]) -> list[dict]:
+    """The {"wrong", "right"} an older pass wrote, found by time: a word of `after` that covers words of
+    `before` with other text (a proofread keeps every start / end time)."""
+    out = []
+    by_speaker: dict[str, list[dict]] = {}
+    for ln in before:
+        by_speaker.setdefault(ln.speaker, []).extend(ln.words)
+    for ln in after:
+        old = by_speaker.get(ln.speaker, [])
+        for w in ln.words:
+            covered = [o for o in old if o["start"] >= w["start"] - 0.005 and o["end"] <= w["end"] + 0.005]
+            was = join_words(o["t"] for o in covered)
+            if covered and _key(was) != _key(w["t"]):
+                out.append({"wrong": was, "right": w["t"]})
     return out
 
 

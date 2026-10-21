@@ -65,7 +65,7 @@ def test_tags_stay_with_their_hosts(tmp_path):
     ({"show_name": "X", "hosts": []}, "主持人"),
     ({"show_name": "X", "hosts": [{"name": "A"}, {"name": "a"}]}, "同名"),
     ({"show_name": "X", "hosts": [{"name": "A"}, {"name": " "}]}, "名字"),
-    ({"show_name": "X", "hosts": [{"name": str(i)} for i in range(7)]}, "最多"),
+    ({"show_name": "X", "hosts": [{"name": str(i)} for i in range(5)]}, "每个项目最多 4 位主持人"),
 ])
 def test_refuses_what_would_break_imports(tmp_path, body, msg):
     app = create_app(make_workspace(tmp_path / "ws"), MockEditorAdapter(), web_dist=tmp_path / "none")
@@ -105,3 +105,12 @@ def test_byline():
     assert show.byline(names("A")) == "A"
     assert show.byline(names("A", "B")) == "A & B"
     assert show.byline(names()) == ""
+
+
+def test_four_hosts_at_most(tmp_path):
+    """A project has at most 4 hosts (tracks): 4 save, the page is told the limit."""
+    app = create_app(make_workspace(tmp_path / "ws"), MockEditorAdapter(), web_dist=tmp_path / "none")
+    c = TestClient(app)
+    r = c.put("/api/show", json={"show_name": "X", "hosts": [{"name": n} for n in "ABCD"]})
+    assert r.status_code == 200 and len(r.json()["hosts"]) == 4
+    assert c.get("/api/show").json()["max_hosts"] == 4

@@ -430,7 +430,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "两位主持人不能同名：{name}": "Two hosts can't have the same name: {name}",
     "给节目起个名字": "Give the show a name",
     "至少要有一位主持人": "The show needs at least one host",
-    "最多 {n} 位主持人": "At most {n} hosts",
+    "每个项目最多 {n} 位主持人": "A project can have at most {n} hosts",
+    "每个项目最多 {n} 位主持人，一集最多导入 {n} 条分轨，收到 {got} 条": "A project can have at most {n} hosts, so an episode takes at most {n} tracks; got {got}",
     # English engine (asr.py, importer.py)
     "不支持这种语言：{language}": "This language is not supported: {language}",
     "找识别漏掉的 um / uh": "Finding the um / uh the transcript missed",

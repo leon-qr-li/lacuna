@@ -26,6 +26,13 @@ const newHost = (s: Show, hosts: Host[]): Host => ({
   style: "",
 });
 
+/** 专有名词 as typed (lines, commas, 、) -> the list the server keeps */
+const splitTerms = (s: string) =>
+  s
+    .split(/[\n,，、;；]+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+
 /** The show's name and hosts (+ in full mode: editing style, show-notes footer, 喜马拉雅). `compact`
  *  is the first-run setup of a new workspace: only what an import needs. */
 export type ShowPart = "basic" | "hosts" | "publish";
@@ -39,6 +46,8 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
   const [footer, setFooter] = useState(show.footer);
   const [hosts, setHosts] = useState<Host[]>(show.hosts.length ? show.hosts : [newHost(show, [])]);
   const [album, setAlbum] = useState(show.publish.album);
+  // 专有名词: one per line (or comma separated); hints for the transcript's proofreading, the audio wins
+  const [terms, setTerms] = useState((show.terms ?? []).join("\n"));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -58,9 +67,11 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
         footer,
         hosts,
         publish: { ximalaya: show.publish.ximalaya || !!album.trim(), album },
+        ...(compact ? {} : { terms: splitTerms(terms) }),
       });
       setShow(s);
       setHosts(s.hosts);
+      setTerms((s.terms ?? []).join("\n"));
       setSaved(true);
       onSaved?.(s);
     } catch (e) {
@@ -103,6 +114,19 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
           <span>{t("一句话介绍")}</span>
           <input value={about} maxLength={200} onChange={(e) => setAbout(e.target.value)} placeholder={t("比如：两个朋友的电影闲聊")} />
           <small className="muted">{t("AI 剪辑、写 show notes 和画海报时会参考。")}</small>
+        </label>
+      )}
+      {!compact && has("basic") && (
+        <label className="show-field">
+          <span>{t("专有名词")}</span>
+          <textarea
+            value={terms}
+            rows={3}
+            onChange={(e) => setTerms(e.target.value)}
+            placeholder={t("一行一个，比如：王家卫、花样年华、PULSE")}
+            data-testid="show-terms"
+          />
+          <small className="muted">{t("节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。")}</small>
         </label>
       )}
       {has("hosts") && (
@@ -171,12 +195,16 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
               </li>
             ))}
           </ul>
-          {hosts.length < show.max_hosts && (
+          {hosts.length < show.max_hosts ? (
             <div>
               <button type="button" className="btn btn-outline btn-small" onClick={() => setHosts((hs) => [...hs, newHost(show, hs)])}>
                 {t("+ 加一位主持人")}
               </button>
             </div>
+          ) : (
+            <small className="muted" data-testid="show-hosts-max">
+              {t("每个项目最多 {n} 位主持人（每人一条分轨）。", { n: show.max_hosts })}
+            </small>
           )}
           {!compact && <small className="muted">{t("改名字不影响已经导入的剧集；新导入的剧集用新名字。")}</small>}
         </div>

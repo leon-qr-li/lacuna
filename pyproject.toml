@@ -11,6 +11,7 @@ dependencies = [
   "uvicorn>=0.29",
   "resvg-py>=0.5",
   "Pillow>=10",
+  "pypinyin>=0.51",
 ]
 
 [project.optional-dependencies]

@@ -10,6 +10,7 @@ from pathlib import Path
 from fastapi import HTTPException
 
 from .. import transcript_fix as tf
+from ..store import read_json
 from ..server import USAGE_LOG, log_usage
 from .episodes import PlayheadBody
 
@@ -22,6 +23,23 @@ def register(app, ctx) -> None:
 
     running: set[str] = set()
     lock = threading.Lock()
+
+    def earlier_fixes(ep) -> list[dict] | None:
+        """Fixes an older pass (before the sound-alike rule) wrote into this episode, or None when it was
+        checked with today's rule: the import's own and, by time, those of an earlier proofread."""
+        if tf.checked_version(ep.dir) >= tf.CHECK_VERSION:
+            return None
+        out: list[dict] = []
+        imp = ctx.ws.root / "imports" / ep.dir.name / "term_fixes.json"
+        try:
+            if imp.is_file():
+                out += [f for f in read_json(imp).get("fixes", []) if isinstance(f, dict)]
+            if (ep.dir / BACKUP).is_file():
+                before = tf.lines_from_transcript(read_json(ep.dir / BACKUP))
+                out += tf.changed_words(before, tf.lines_from_transcript(ep.transcript or {}))
+        except (OSError, ValueError, AttributeError, TypeError, KeyError):
+            pass
+        return out
 
     def glossary(ep):
         with ep.lock:
@@ -39,7 +57,10 @@ def register(app, ctx) -> None:
         with lock:
             if episode_id in running:
                 return {"due": False}
-        return {"due": tf.checked(ep.dir) != tf.signature(glossary(ep))}
+        if tf.checked(ep.dir) != tf.signature(glossary(ep)):
+            return {"due": True}
+        with ep.lock:
+            return {"due": bool(tf.forced(earlier_fixes(ep) or []))}     # a name forced in before: put back
 
     @app.post("/api/episodes/{episode_id}/transcript/fix")
     def fix(episode_id: str, body: PlayheadBody):
@@ -53,6 +74,7 @@ def register(app, ctx) -> None:
         try:
             with ep.lock:
                 lines = tf.lines_from_transcript(ep.transcript)
+                earlier = earlier_fixes(ep)
             g = glossary(ep)
             # the model is asked without holding the episode: playing and editing go on meanwhile
             fixes, complete = fixer.propose_all(lines, g, on_usage=lambda u: log_usage(ctx.ws.root / USAGE_LOG, episode_id, u))
@@ -65,12 +87,13 @@ def register(app, ctx) -> None:
         def apply() -> dict:
             with ep.lock:
                 current = tf.lines_from_transcript(ep.transcript)
+                undone = tf.undo_forced(current, earlier or [])       # audio first: what was said comes back
                 done = tf.apply(current, fixes)
-                if done:
+                if done or undone:
                     name = Path(ep.meta.get("transcript") or "transcript.json").name
                     if not (ep.dir / BACKUP).is_file():
                         shutil.copy2(ep.dir / name, ep.dir / BACKUP)
                     ep.set_transcript(tf.transcript_from_lines(ep.transcript, current))
-            return {"fixes": tf.summary(done), "changed": sum(f["count"] for f in done),
+            return {"fixes": tf.summary(done), "changed": sum(f["count"] for f in done) + undone,
                     "ai": fixer.available}
         return mutate(ep, body.playhead, apply)
