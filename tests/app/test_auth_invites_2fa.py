@@ -433,3 +433,15 @@ def test_a_refused_designed_mail_still_sends_the_plain_one(tmp_path, mailer):
     c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
     out = c.post("/api/auth/invites", json={"email": "pei@example.com"}).json()
     assert out["mailed"] and out["link"] in m.outbox[-1]["text"] and not m.outbox[-1]["html"]
+
+
+def test_invite_email_keeps_white_text_in_gmail_dark_mode():
+    """Gmail on phones turns light text dark in dark mode; the header title, the wordmark and the button text
+    sit in the screen + difference blend layers that undo it (Gmail only: ``u + .body``)."""
+    from lacuna_app import invite_mail
+    from lacuna_app.i18n import speaking
+    with speaking("zh"):
+        h = invite_mail.render("leon@example.com", "https://x/invite/t")["html"]
+    assert '<body class="body"' in h and "u+.body .gm-screen" in h and "mix-blend-mode:difference" in h
+    assert h.count('class="gm-screen"') == 3
+    assert invite_mail.white("LACUNA") in h and invite_mail.white("Leon 邀请你使用 LACUNA") in h
