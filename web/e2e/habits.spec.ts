@@ -17,8 +17,11 @@ for (const theme of ["light", "dark"] as const) {
     const card = page.getByTestId("habits-card");
     await expect(card).toContainText("包括别人邀请你协作的项目");
     await expect(card.getByRole("radio", { name: "正常" })).toHaveAttribute("aria-checked", "true");
+    // the button turns on at once; the reload below must wait until the server has saved it
+    const saved = page.waitForResponse((r) => r.url().endsWith("/api/habits") && r.request().method() === "PUT");
     await card.getByRole("radio", { name: "狠剪" }).click();
     await expect(card.getByRole("radio", { name: "狠剪" })).toHaveAttribute("aria-checked", "true");
+    expect((await saved).ok()).toBeTruthy();
     expect((await scan(page)).bad).toEqual([]);
     await page.reload();
     await expect(page.getByTestId("habits-card").getByRole("radio", { name: "狠剪" })).toHaveAttribute("aria-checked", "true");
