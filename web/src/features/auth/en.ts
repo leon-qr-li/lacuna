@@ -2,7 +2,6 @@ import type { Dict } from "../../i18n";
 
 export const en: Dict = {
   "邀请邮件的语言": "Invite email language",
-  "《洛城二三事》的剪辑工作台": "The editing studio for 《洛城二三事》",
   "连不上 LACUNA：{err}": "Can't reach LACUNA: {err}",
   "重试": "Retry",
   "邮箱": "Email",
@@ -58,14 +57,10 @@ export const en: Dict = {
   "发测试邮件": "Send test email",
   "测试邮件已发到 {to}，去收件箱看看。": "Test email sent to {to}; check your inbox.",
   // two-step sign-in, invites, members (docs/decisions/2026-10-19-invites-roles-2fa.md)
-  "LACUNA 只对受邀请的人开放。": "LACUNA is invitation-only.",
-  "LACUNA 只对受邀请的人开放。邀请链接绑定邮箱，7 天内有效，只能用一次。管理员能邀请和管理成员；只有所有者能设管理员、改 AI 密钥和邮件设置。":
-    "LACUNA is invitation-only. An invite link is tied to one email, lasts 7 days and works once. Admins can invite and manage members; only the owner can make admins and change the AI key and email settings.",
   "LACUNA 在网上运行，每个账号都要开两步验证：登录时除了密码，还要手机上的 6 位数字。只需设置一次。":
     "LACUNA runs online, so every account uses two-step sign-in: besides your password, you enter 6 digits from your phone. You only set it up once.",
   "{by} 邀请你加入 LACUNA。设一个密码就能开始。": "{by} invited you to LACUNA. Choose a password to get started.",
   "{email} 的角色": "Role of {email}",
-  "{role} · {by} 邀请 · {exp} 过期": "{role} · invited by {by} · expires {exp}",
   "下载 .txt": "Download .txt",
   "两步验证": "Two-step sign-in",
   "两步验证二维码": "Two-step sign-in QR code",
@@ -101,7 +96,6 @@ export const en: Dict = {
   "成员": "Members",
   "成员与邀请": "Members & invites",
   "我已经把恢复码存好了（比如密码管理器里）": "I've saved the recovery codes (e.g. in a password manager)",
-  "所有者": "Owner",
   "手机上验证器 App 里 LACUNA 这一项的 6 位数字。": "The 6 digits for LACUNA in your authenticator app.",
   "手机不在身边？用恢复码": "No phone? Use a recovery code",
   "手机丢了或不在身边时，用其中一个代替 6 位数字登录。每个只能用一次，而且只显示这一次。":
@@ -159,4 +153,31 @@ export const en: Dict = {
     "It creates a new account, but this browser is signed in as {email}. Sign out first to accept the invite.",
   "退出并接受邀请": "Sign out and accept",
   "继续用 {email}": "Stay signed in as {email}",
+  "从录音到发布，一个工作台。": "From recording to release, one studio.",
+  "还没有账号？LACUNA 目前仅限邀请。": "No account yet? LACUNA is invite-only for now.",
+  "申请试用": "Request access",
+  "收到了": "Request received",
+  "我们会尽快看你的申请。通过后，邀请邮件会发到 {email}，按邮件里的链接设个密码就能开始。":
+    "We'll look at it soon. Once approved, an invite goes to {email}: set a password from its link and you're in.",
+  "LACUNA 目前仅限邀请。留下邮箱，通过后我们把邀请发给你：免费体验 1 小时音频，带一集示例。":
+    "LACUNA is invite-only for now. Leave your email and we'll send an invite once approved: a free trial with 1 hour of audio and a sample episode.",
+  "节目名": "Show name",
+  "可不填": "optional",
+  "想用 LACUNA 做什么": "What would you use LACUNA for",
+  "提交申请": "Send request",
+  "提交中…": "Sending…",
+  "站长": "Owner",
+  "站点管理员": "Site admin",
+  "用户": "User",
+  "免费体验": "Free trial",
+  "基础版": "Basic",
+  "专业版": "Pro",
+  "套餐": "Plan",
+  "{email} 的套餐": "Plan of {email}",
+  "试用申请": "Access requests",
+  "发邀请": "Invite",
+  "忽略": "Dismiss",
+  "{role} · {plan} · {by} 邀请 · {exp} 过期": "{role} · {plan} · invited by {by} · expires {exp}",
+  "LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。站点管理员能邀请和管理用户、改套餐；只有站长能设站点管理员、改 AI 密钥和邮件设置。":
+    "LACUNA is invite-only for now. An invite link is tied to one email, works once, for 7 days. Site admins invite and manage users and set plans; only the owner makes site admins and changes the AI key and email settings.",
 };

@@ -10,6 +10,7 @@ import { useShow } from "../show/api";
 import { spacesApi, type MySpace } from "../spaces/api";
 import { ProjectAvatar } from "./Avatar";
 import { Collaborators } from "./Collaborators";
+import { RoleMatrix, SupportAccess } from "./ShowRoles";
 import { loadProjects, setProjects, useProjects } from "./api";
 
 type Tab = ShowPart | "music" | "people";
@@ -57,6 +58,8 @@ export function ProjectSettings() {
   }, []);
   if (!show) return <PageLoading label={t("正在打开节目设置…")} shape="list" />;
   const cur = sp?.current;
+  // only the show's 管理员 change its settings (decision 2026-10-21-roles); archived: nobody until restored
+  const locked = !!cur && (cur.role !== "admin" || !!cur.archived);
   return (
     <main className="home settings prj-settings">
       <div className="home-hero">
@@ -82,14 +85,27 @@ export function ProjectSettings() {
             <p className="muted small">{ABOUT[tab]}</p>
           </div>
           {cur?.archived && <ArchivedNote p={cur} />}
+          {locked && !cur?.archived && tab !== "people" && (
+            <p className="prj-readonly prj-locked-note" data-testid="project-locked">
+              {cur?.support ? t("你在以 LACUNA 支持的身份只读查看这个节目。") : t("只有节目的管理员能改这些设置，你可以查看。")}
+            </p>
+          )}
           <section className="card" role="tabpanel">
             {tab === "basic" && cur && <ProjectLook p={cur} />}
-            {(tab === "basic" || tab === "hosts" || tab === "publish") && (
-              <ShowForm key={tab} show={show} parts={[tab]} onSaved={() => void loadProjects(true)} />
-            )}
+            <fieldset className="prj-locked" disabled={locked && tab !== "people"}>
+              {(tab === "basic" || tab === "hosts" || tab === "publish") && (
+                <ShowForm key={tab} show={show} parts={[tab]} onSaved={() => void loadProjects(true)} />
+              )}
+              {tab === "music" && <ProjectMusic />}
+            </fieldset>
             {tab === "basic" && cur?.role === "admin" && !cur.archived && <ArchiveZone p={cur} />}
-            {tab === "music" && <ProjectMusic />}
-            {tab === "people" && cur && <Collaborators id={cur.id} me={me} manage={cur.role === "admin"} />}
+            {tab === "people" && cur && (
+              <>
+                <Collaborators id={cur.id} me={me} manage={cur.role === "admin" && !cur.archived} />
+                <RoleMatrix />
+                {!cur.support && <SupportAccess id={cur.id} manage={cur.role === "admin"} />}
+              </>
+            )}
           </section>
         </div>
       </div>

@@ -94,3 +94,10 @@
 .account-stack { display: grid; gap: 8px; max-width: 420px; margin-top: 8px; }
 .account-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
 .people-list li.is-off .people-who strong { color: var(--ink-3); text-decoration: line-through; }
+
+/* batch 3: the human check and 申请试用 (AuthScreen.tsx) */
+.auth-input:has(textarea) { height: auto; padding: 10px 14px; }
+.auth-input textarea { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; resize: vertical; padding: 0; }
+.auth-turnstile { margin: 4px 0 12px; min-height: 65px; }
+.auth-input textarea, .auth-input textarea:focus { box-shadow: none; border-radius: 0; min-height: 60px; }
+.people-note { display: block; color: var(--ink-2); }

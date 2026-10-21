@@ -24,6 +24,8 @@ export interface MySpace {
   archived?: boolean;
   /** you may delete it for good (its creator, or LACUNA's owner) */
   can_delete?: boolean;
+  /** you are LACUNA support looking in read-only (the show allowed it, decision 2026-10-21-roles) */
+  support?: boolean;
 }
 
 /** 邀请协作: a project's collaborators and the invites waiting for them */
@@ -34,6 +36,12 @@ export interface ProjectPeople {
   invites: { id: string; email: string; role: SpaceRole; exp: number }[];
   /** only LACUNA admins may invite someone without an account */
   can_invite_new: boolean;
+  /** 「允许 LACUNA 支持查看」 is on until then (seconds since 1970), null: off */
+  support_until: number | null;
+  /** the plan of the account that made the show (its limits apply here) */
+  plan: "trial" | "basic" | "pro";
+  /** people in it besides the person who made it */
+  collaborators: number;
   joined?: string;
   invited?: string;
   link?: string;
@@ -83,6 +91,8 @@ export const spacesApi = {
   /** for good, from 已归档, with the project's name typed */
   remove: (id: string, confirm: string) =>
     req<Spaces & { deleted: string }>("DELETE", `/api/spaces/${encodeURIComponent(id)}`, { confirm }),
+  /** 「允许 LACUNA 支持查看」 for 7 days, or off */
+  support: (id: string, on: boolean) => req<ProjectPeople>("POST", `/api/spaces/${encodeURIComponent(id)}/support`, { on }),
   withdraw: (id: string, invite: string) =>
     req<ProjectPeople>("DELETE", `/api/spaces/${encodeURIComponent(id)}/invites/${encodeURIComponent(invite)}`),
 };

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { AUTH_EVENT, authApi, type AuthStatus, type Device, type People, type Role } from "./api";
+import { AUTH_EVENT, PLAN_IDS, authApi, type AccessRequest, type AuthStatus, type Device, type People, type PlanId, type Role } from "./api";
 import { CodeInput, RecoveryCodes, SecondFactor, TwoStepQR } from "./TwoStep";
 import { confirmDialog } from "../dialog/Dialog";
 import { spacesApi, type SpaceInfo, type SpaceRole } from "../spaces/api";
@@ -17,7 +17,10 @@ const KEY_SOURCE: Record<string, string> = {
   test: t("测试"),
 };
 
-export const ROLE: Record<Role, string> = { owner: t("所有者"), admin: t("管理员"), member: t("成员") };
+/** site roles (decision 2026-10-21-roles); a show's own roles are SPACE_ROLE */
+export const ROLE: Record<Role, string> = { owner: t("站长"), admin: t("站点管理员"), member: t("用户") };
+/** lacuna_app/plans.py */
+export const PLAN: Record<PlanId, string> = { trial: t("免费体验"), basic: t("基础版"), pro: t("专业版") };
 const RANK: Record<Role, number> = { member: 1, admin: 2, owner: 3 };
 
 type Msg = { ok: boolean; text: string } | null;
@@ -354,9 +357,12 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
   const [space, setSpace] = useState("new");
   const [spaceRole, setSpaceRole] = useState<SpaceRole>("editor");
   const [mailLang, setMailLang] = useState<Lang>(defaultMailLang);
+  const [plan, setPlan] = useState<PlanId>("basic");
+  const [asks, setAsks] = useState<AccessRequest[]>([]);
   const { busy, msg, act } = useAct();
   useEffect(() => {
     authApi.people().then(setPeople, () => setPeople(null));
+    authApi.accessRequests().then((r) => setAsks(r.requests), () => setAsks([]));
     spacesApi.list().then((s) => setSpaces(s?.all ?? []), () => setSpaces([]));
   }, []);
   if (!people) return null;
@@ -368,14 +374,14 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
         <h2>{t("成员与邀请")}</h2>
       </div>
       <p className="muted small">
-        {t("LACUNA 只对受邀请的人开放。邀请链接绑定邮箱，7 天内有效，只能用一次。管理员能邀请和管理成员；只有所有者能设管理员、改 AI 密钥和邮件设置。")}
+        {t("LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。站点管理员能邀请和管理用户、改套餐；只有站长能设站点管理员、改 AI 密钥和邮件设置。")}
       </p>
       <form
         className="row gap8 account-wrap"
         onSubmit={(e) => {
           e.preventDefault();
           act("invite", async () => {
-            const r = await authApi.sendInvite(email, newRole, space, space === "new" ? null : spaceRole, mailLang);
+            const r = await authApi.sendInvite(email, newRole, space, space === "new" ? null : spaceRole, mailLang, plan);
             setPeople(r);
             setLink({ link: r.link, email: r.email, mailed: r.mailed, why: r.mail_error });
             setCopied(false);
@@ -410,6 +416,13 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
             ))}
           </select>
         )}
+        <select aria-label={t("套餐")} value={plan} onChange={(e) => setPlan(e.target.value as PlanId)} data-testid="invite-plan">
+          {PLAN_IDS.map((p) => (
+            <option key={p} value={p}>
+              {PLAN[p]}
+            </option>
+          ))}
+        </select>
         <MailLang value={mailLang} onChange={setMailLang} />
         <button className="btn btn-primary" disabled={!!busy || !email}>
           <BusyLabel busy={busy === "invite"} label={t("发送邀请")} busyLabel={t("发送中…")} />
@@ -435,6 +448,42 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
         </div>
       )}
 
+      {asks.length > 0 && (
+        <>
+          <h3>{t("试用申请")}</h3>
+          <ul className="people-list" data-testid="access-requests">
+            {asks.map((a) => (
+              <li key={a.id}>
+                <div className="people-who">
+                  <strong>{a.email}</strong>
+                  <span className="muted small">{[a.show, when(a.created)].filter(Boolean).join(" · ")}</span>
+                  {a.note && <span className="small people-note">{a.note}</span>}
+                </div>
+                <div className="people-actions">
+                  <button
+                    className="btn btn-primary btn-small"
+                    disabled={!!busy}
+                    onClick={() =>
+                      act("ask", async () => {
+                        const r = await authApi.decideRequest(a.id, "invite");
+                        setAsks(r.requests);
+                        setPeople(await authApi.people());
+                        if (r.link) setLink({ link: r.link, email: a.email, mailed: !!r.mailed, why: r.mail_error ?? null });
+                      })
+                    }
+                  >
+                    {t("发邀请")}
+                  </button>
+                  <button className="btn btn-outline btn-small" disabled={!!busy} onClick={() => act("ask", async () => setAsks((await authApi.decideRequest(a.id, "dismiss")).requests))}>
+                    {t("忽略")}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
       {people.invites.length > 0 && (
         <>
           <h3>{t("等待接受的邀请")}</h3>
@@ -443,7 +492,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
               <li key={i.id}>
                 <div className="people-who">
                   <strong>{i.email}</strong>
-                  <span className="muted small">{t("{role} · {by} 邀请 · {exp} 过期", { role: ROLE[i.role], by: i.by, exp: when(i.exp) })}</span>
+                  <span className="muted small">{t("{role} · {plan} · {by} 邀请 · {exp} 过期", { role: ROLE[i.role], plan: PLAN[i.plan] ?? "", by: i.by, exp: when(i.exp) })}</span>
                 </div>
                 <button className="btn btn-outline btn-small" disabled={!!busy} onClick={() => act("revoke", async () => setPeople(await authApi.revokeInvite(i.id)))}>
                   {t("撤回")}
@@ -466,8 +515,22 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
                   {[ROLE[u.role], u.twofa ? t("已开两步验证") : t("没开两步验证"), u.disabled ? t("已停用") : t("最近使用 {b}", { b: when(u.seen) })].join(" · ")}
                 </span>
               </div>
+              <div className="people-actions">
+                <select
+                  aria-label={t("{email} 的套餐", { email: u.email })}
+                  value={u.plan}
+                  disabled={!!busy}
+                  data-testid="member-plan"
+                  onChange={(e) => act("plan", async () => setPeople(await authApi.updateMember(u.email, { plan: e.target.value as PlanId })))}
+                >
+                  {PLAN_IDS.map((p) => (
+                    <option key={p} value={p}>
+                      {PLAN[p]}
+                    </option>
+                  ))}
+                </select>
               {can && (
-                <div className="people-actions">
+                <>
                   {role === "owner" && (
                     <select
                       aria-label={t("{email} 的角色", { email: u.email })}
@@ -511,8 +574,9 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
                   >
                     {t("删除")}
                   </button>
-                </div>
+                </>
               )}
+              </div>
             </li>
           );
         })}

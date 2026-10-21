@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from lacuna_app import create_app, totp
 from lacuna_app.auth import Auth, AuthError, MailError
 from lacuna_app.editor import MockEditorAdapter
+from tests.app import site_db
 from tests.app.e2e.auth import FakeMailer
 
 PW = "correct horse battery"
@@ -86,7 +87,7 @@ def test_invite_only_signup(tmp_path, mailer):
     # used up
     assert TestClient(c.app).post("/api/auth/register", json={"invite": tok, "password": PW}).status_code == 404
     # the token itself is never stored
-    assert tok not in (tmp_path / "ws" / "auth" / "users.json").read_text()
+    assert tok not in site_db.stored(tmp_path / "ws")
 
 
 def test_invite_expiry_revoke_and_newest_wins(tmp_path, mailer):
@@ -207,7 +208,7 @@ def test_cloud_requires_two_step_from_the_first_sign_in(tmp_path, mailer):
     assert r.status_code == 200 and "secure" in r.headers["set-cookie"].lower()
     recovery = r.json()["recovery"]
     assert len(recovery) == 10 and c.get("/api/auth/status").json()["twofa"] is True
-    stored = (tmp_path / "ws" / "auth" / "users.json").read_text()
+    stored = site_db.stored(tmp_path / "ws")
     assert not any(x in stored for x in recovery)
 
     # signing in again: password, then the authenticator (the same code can't be used twice)
@@ -362,8 +363,10 @@ def test_resend_test_sender_moves_to_the_verified_domain(tmp_path, mailer):
     d.mkdir()
     (d / "users.json").write_text(json.dumps({"users": [], "config": {"sender": "LACUNA <onboarding@resend.dev>"}}))
     assert Auth(tmp_path, mailer).config["sender"] == DEFAULT_SENDER == "LACUNA <noreply@lacunastudio.app>"
+    d = tmp_path / "b" / "auth"
+    d.mkdir(parents=True)
     (d / "users.json").write_text(json.dumps({"users": [], "config": {"sender": "Pod <hi@example.com>"}}))
-    assert Auth(tmp_path, mailer).config["sender"] == "Pod <hi@example.com>"     # a chosen address stays
+    assert Auth(tmp_path / "b", mailer).config["sender"] == "Pod <hi@example.com>"     # a chosen address stays
 
 
 def test_invite_email_language_is_the_inviters_pick(tmp_path, mailer):
@@ -395,7 +398,7 @@ def test_invite_email_names_the_project_and_role(tmp_path):
     with speaking("zh"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "洛城二三事", "editor")
     assert m["subject"] == "Leon 邀请你加入「洛城二三事」"
-    assert "你被邀请以「剪辑」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
+    assert "你被邀请以「剪辑师」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
     assert "<br>「洛城二三事」" in m["html"] or "cid:lacuna-head" in m["html"]   # the HTML header or its picture
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "viewer")

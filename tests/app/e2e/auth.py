@@ -24,3 +24,4 @@ def configure(mode: str, ws: Path, svc: dict) -> None:
         return
     svc["mailer"] = FakeMailer()
     svc["auth_test_reset"] = True
+    svc["mail_inline"] = True          # notice mails (new device, 申请试用) land in the outbox before the answer

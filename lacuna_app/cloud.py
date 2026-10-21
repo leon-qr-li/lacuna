@@ -14,6 +14,10 @@ Off unless ``LACUNA_CLOUD=1``; a local development checkout never sees any of th
   reads it through a path-scoped Access bypass (deploy/provision.py), so a deploy needs no Cloudflare API
   call (decision ``public-version-check``; withdrawn before public launch).
 
+``LACUNA_ACCESS=off`` (deploy/site-door.txt "open", decision 2026-10-21-app-sign-in): Cloudflare Access no
+longer stands in front of the site, so there is no token to check; the app's own sign-in (password +
+two-step + Turnstile) is the door. Everything else above still holds.
+
 Settings (environment, set by deploy/provision.py): ``LACUNA_OWNER_EMAIL`` (see ``owner_email``), ``CF_ACCESS_TEAM_DOMAIN`` (``<team>.cloudflareaccess.com``),
 ``CF_ACCESS_AUD`` (the Access application's audience tag). Missing settings stop the server from
 starting: cloud mode fails closed.
@@ -53,6 +57,11 @@ class CloudConfigError(RuntimeError):
 
 def enabled() -> bool:
     return os.environ.get("LACUNA_CLOUD") == "1"
+
+
+def access_required() -> bool:
+    """Cloudflare Access is in front of the site and its token is checked (the default; fail closed)."""
+    return os.environ.get("LACUNA_ACCESS", "").strip().lower() != "off"
 
 
 def staging() -> bool:
@@ -116,7 +125,7 @@ def _fetch_json(url: str, timeout: float = 10) -> dict:
 class CloudGate:
     """ASGI middleware, outermost: Access token check, local-only actions, minimal pre-sign-in info."""
 
-    def __init__(self, app, verifier: AccessVerifier, signed_in: Callable[[str], bool], version: Callable[[], str]):
+    def __init__(self, app, verifier: AccessVerifier | None, signed_in: Callable[[str], bool], version: Callable[[], str]):
         self.app, self.verifier, self.signed_in, self.version = app, verifier, signed_in, version
 
     async def __call__(self, scope, receive, send):
@@ -128,7 +137,7 @@ class CloudGate:
             return await JSONResponse({"version": self.version()})(scope, receive, send)
         client = (scope.get("client") or ("", 0))[0]
         headers = dict(scope.get("headers") or [])
-        if client not in LOOPBACK:
+        if client not in LOOPBACK and self.verifier is not None:
             token = headers.get(ACCESS_HEADER, b"").decode("latin-1")
             claims = self.verifier.verify(token) if token else None
             if claims is None:
@@ -212,7 +221,9 @@ def install(app, signed_in: Callable[[str], bool], version: Callable[[], str],
     """Add the cloud gate when cloud mode is on; True when installed."""
     if not enabled():
         return False
-    verifier = verifier or AccessVerifier(os.environ.get("CF_ACCESS_TEAM_DOMAIN", ""),
-                                          os.environ.get("CF_ACCESS_AUD", ""))
+    if verifier is None and access_required():
+        verifier = AccessVerifier(os.environ.get("CF_ACCESS_TEAM_DOMAIN", ""), os.environ.get("CF_ACCESS_AUD", ""))
+    elif not access_required():
+        verifier = None             # no Access in front: the app's own sign-in is the door
     app.add_middleware(CloudGate, verifier=verifier, signed_in=signed_in, version=version)
     return True

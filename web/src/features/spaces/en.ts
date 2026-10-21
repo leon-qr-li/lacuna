@@ -3,10 +3,9 @@ import type { Dict } from "../../i18n";
 export const en: Dict = {
   "节目": "Show",
   "现在在：{name}（{role}）": "Now in: {name} ({role})",
-  "剧集、素材库和学到的规则都属于节目，只有它的成员能看到。管理：管成员、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。":
-    "Episodes, the library and learned rules belong to a show; only its members see them. Manage: members and deleting episodes for good. Edit: all editing work. Listen: listen and read only.",
+  "剧集、素材库和学到的规则都属于节目，只有它的成员能看到。管理员：管成员、改节目设置、归档和永久删除；剪辑师：导入和所有剪辑工作；只听：只能试听和查看。":
+    "Episodes, the library and learned rules belong to a show; only its members see them. Admin: manages members, show settings, archive and delete; Editor: imports and all editing; Listen: listens and views only.",
   "管理": "Manage",
-  "剪辑": "Edit",
   "只听": "Listen",
   "新节目的名字": "New show name",
   "新建节目": "New show",

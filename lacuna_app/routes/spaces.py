@@ -17,24 +17,27 @@ from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from .. import cloud, habits
+from .. import cloud, habits, plans
 from ..appinfo import current_version
 from ..auth import COOKIE, Auth, AuthError
 from ..i18n import tr
 from ..learning import LEARN_DIR, RULES_FILE
 from ..spaces import MAIN, SPACE_RANK, Spaces
 from ..store import atomic_write_json, read_json
+from . import events as events_routes
 from .auth import _cookie
 
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
-GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits")
+GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
 # services that only hold models: one copy for every workspace
 SHARED = ("dictation", "dictation_fixer")
 FOR_GOOD = re.compile(r"^/api/episodes/[^/]+$")      # DELETE = delete an episode for good
+# 节目设置 (name, hosts, opener / ending, publishing): the show's managers only (decision 2026-10-21-roles)
+SETTINGS = {("PUT", "/api/show"), ("PATCH", "/api/albums/project")}
 
 
 def _cookies(scope) -> SimpleCookie:
@@ -89,6 +92,8 @@ class _Dispatch:
             return await deny(tr("这个节目已归档，只能查看。恢复后才能修改。"))
         if role != "admin" and method == "DELETE" and FOR_GOOD.match(path):
             return await deny(tr("只有节目管理员能彻底删除剧集。"))
+        if role != "admin" and (method, path) in SETTINGS:
+            return await deny(tr("只有节目管理员能改节目设置。"))
         # whose learned rules and 剪辑力度 apply: the signed-in person's own, in every project (habits.py)
         token = habits.HOME.set(habits.home_for(self.spaces.root, email))
         try:
@@ -145,6 +150,10 @@ class ArchiveBody(BaseModel):
     archived: bool = True
 
 
+class SupportBody(BaseModel):
+    on: bool
+
+
 class DeleteBody(BaseModel):
     confirm: str            # the project's name, typed
 
@@ -164,6 +173,7 @@ def register(app, ctx) -> None:
     auth: Auth = ctx.provide("auth")              # routes/auth.py (registered before this module)
     spaces: Spaces = ctx.provide("spaces", lambda: Spaces(ctx.ws.root))
     spaces.adopt(list(auth.users.values()))
+    spaces.staff = lambda email: auth.role(email) in ("owner", "admin")
     children: dict = {}
     lock = threading.Lock()
 
@@ -182,6 +192,8 @@ def register(app, ctx) -> None:
 
     app.state.space_apps = children
     app.add_middleware(_Dispatch, auth=auth, spaces=spaces, child=child)
+    # the event log sees every workspace's requests: outside the dispatcher, inside the cloud gate (routes/events.py)
+    events_routes.install(app, ctx, auth, spaces)
     # in the cloud the Cloudflare Access check (routes/cloud.py) must come before anything else, this
     # dispatcher included: install it once more on the outside (the inner one and each workspace's own
     # app check again, which costs one cached signature check)
@@ -223,8 +235,22 @@ def register(app, ctx) -> None:
         return auth.role(email) in ("owner", "admin")
 
     def may_manage(email: str, sid: str) -> None:
-        if not (site_admin(email) or spaces.role(sid, email) == "admin"):
+        """The show's own managers. Site owner and admins don't manage other people's shows (decision
+        2026-10-21-roles): they can't see what is in them."""
+        if spaces.role(sid, email) != "admin":
             raise HTTPException(403, tr("只有节目管理员能改这个节目"))
+
+    def plan_of(email: str | None) -> str:
+        return (auth.users.get(email or "") or {}).get("plan") or plans.DEFAULT
+
+    def room_for(sid: str, newcomer: str) -> None:
+        """A new collaborator fits in the plan of the show's maker (someone already in it always does)."""
+        if newcomer in spaces.spaces[sid]["members"]:
+            return
+        try:
+            plans.check_collaborators(plan_of(spaces.creator(sid)), spaces.collaborators(sid))
+        except plans.PlanLimit as e:
+            raise HTTPException(403, str(e))
 
     def live(sid: str) -> None:
         if spaces.archived(sid):
@@ -243,6 +269,10 @@ def register(app, ctx) -> None:
         role = role or "editor"
         if role not in SPACE_RANK:
             raise AuthError(tr("没有这个角色"))
+        try:
+            plans.check_collaborators(plan_of(spaces.creator(space)), spaces.collaborators(space))
+        except plans.PlanLimit as e:
+            raise AuthError(str(e), 403)
         return {"space": space, "space_role": role, "space_name": spaces.title(space)}
 
     app.state.invite_space = invite_space
@@ -275,6 +305,10 @@ def register(app, ctx) -> None:
     def create(body: NameBody, request: Request):
         """Anyone signed in may start a project of their own (they manage it); they are moved into it."""
         email = me(request)
+        try:
+            plans.check_shows(plan_of(email), spaces.owned(email))
+        except plans.PlanLimit as e:
+            raise HTTPException(403, str(e))
         made = run(lambda: spaces.create(body.name, email))
         res = JSONResponse(overview(request, email, made["id"]) | {"created": made["id"]})
         res.set_cookie(SPACE_COOKIE, made["id"], max_age=365 * 86400, httponly=True, samesite="strict", path="/",
@@ -297,6 +331,8 @@ def register(app, ctx) -> None:
         target = body.email.strip().lower()
         if body.role is not None and target not in auth.users:
             raise HTTPException(404, tr("没有这个账号：先在「成员与邀请」里邀请对方"))
+        if body.role is not None:
+            room_for(sid, target)
         run(lambda: spaces.set_member(sid, target, body.role, by=email))
         return overview(request, email)
 
@@ -305,7 +341,8 @@ def register(app, ctx) -> None:
         s = spaces.spaces.get(sid)
         if not s:
             raise HTTPException(404, tr("没有这个节目"))
-        return {"id": sid, "name": spaces.title(sid),
+        return {"id": sid, "name": spaces.title(sid), "support_until": spaces.support_until(sid),
+                "plan": plan_of(spaces.creator(sid)), "collaborators": spaces.collaborators(sid),
                 "members": [{"email": e, "role": r} for e, r in sorted(s["members"].items())],
                 "invites": [{"id": i["id"], "email": i["email"], "role": i.get("space_role") or "editor",
                              "exp": i["exp"]} for i in auth.list_invites() if i.get("space") == sid],
@@ -317,8 +354,16 @@ def register(app, ctx) -> None:
     @app.get("/api/spaces/{sid}/people")
     def list_people(sid: str, request: Request):
         email = me(request)
-        if not spaces.role(sid, email) and not site_admin(email):
+        if not spaces.role(sid, email):
             raise HTTPException(403, tr("你不在这个节目里"))
+        return people_for(email, sid)
+
+    @app.post("/api/spaces/{sid}/support")
+    def support(sid: str, body: SupportBody, request: Request):
+        """「允许 LACUNA 支持查看」: site owner and admins may open this show read-only for 7 days."""
+        email = me(request)
+        may_manage(email, sid)
+        run(lambda: spaces.set_support(sid, body.on, email))
         return people_for(email, sid)
 
     @app.post("/api/spaces/{sid}/invite")
@@ -334,6 +379,7 @@ def register(app, ctx) -> None:
             raise HTTPException(422, tr("没有这个角色"))
         out: dict = {}
         if target in auth.users:
+            room_for(sid, target)
             run(lambda: spaces.set_member(sid, target, role, by=email))
             out = {"joined": target}
         elif site_admin(email):
@@ -365,7 +411,7 @@ def register(app, ctx) -> None:
     @app.get("/api/spaces/{sid}/picture")
     def picture(sid: str, request: Request):
         email = me(request)
-        if sid not in spaces.spaces or not (spaces.role(sid, email) or site_admin(email)):
+        if sid not in spaces.spaces or not spaces.role(sid, email):
             raise HTTPException(404, tr("没有这个节目"))
         f = spaces.picture_file(sid)
         if not f.is_file():
@@ -411,7 +457,7 @@ def register(app, ctx) -> None:
         if sid not in spaces.spaces:
             raise HTTPException(404, tr("没有这个节目"))
         if not may_delete(email, sid):
-            raise HTTPException(403, tr("只有节目的创建者或 LACUNA 的所有者能永久删除节目"))
+            raise HTTPException(403, tr("只有节目的创建者或站长能永久删除节目"))
         if not spaces.archived(sid):
             raise HTTPException(409, tr("先把节目归档，才能永久删除"))
         if body.confirm.strip() != spaces.title(sid):

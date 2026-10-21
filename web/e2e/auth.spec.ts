@@ -75,7 +75,7 @@ test("first run: create the owner account, then the app opens", async ({ page })
 test("设置: owner invites Pei by email; the login page has no open sign-up", async ({ page, request }) => {
   await signIn(page, "leon@example.com", "wrong password!");
   await expect(page.getByRole("alert")).toHaveText("邮箱或密码不对");
-  await expect(page.getByText("LACUNA 只对受邀请的人开放。")).toBeVisible();
+  await expect(page.getByText("还没有账号？LACUNA 目前仅限邀请。")).toBeVisible();
   await expect(page.getByRole("button", { name: "注册" })).toHaveCount(0);
   await page.getByTestId("auth-password").fill(PW);
   await page.getByRole("button", { name: "登录", exact: true }).click();
@@ -84,7 +84,7 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await page.goto("/#/settings/account");
   const me = page.getByRole("region", { name: "账号与安全" });
   await expect(me.getByTestId("account-email")).toContainText("已登录：leon@example.com");
-  await expect(me.getByTestId("account-role")).toHaveText("所有者");
+  await expect(me.getByTestId("account-role")).toHaveText("站长");
   await expect(me.getByTestId("twostep-state")).toHaveText("没开启");
   await expect(me.getByTestId("devices").getByText("这台设备")).toBeVisible();
 
@@ -144,7 +144,7 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await expect(p.locator(".topbar")).toBeVisible();
   expect(new URL(p.url()).hash).toBe("#/");
   await p.goto("/#/settings/account");
-  await expect(p.getByRole("region", { name: "账号与安全" }).getByTestId("account-role")).toHaveText("成员");
+  await expect(p.getByRole("region", { name: "账号与安全" }).getByTestId("account-role")).toHaveText("用户");
   // members don't manage people: no 管理 group at all, and its addresses fall back to 通用
   await expect(p.getByRole("navigation", { name: "设置" }).getByRole("group", { name: "管理" })).toHaveCount(0);
   await p.goto("/#/settings/members");

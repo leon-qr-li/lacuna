@@ -26,6 +26,8 @@ class FakeAPI:
         self.writes: list[tuple[str, str]] = []
         self.tunnels, self.dns, self.idps, self.groups, self.policies, self.apps = [], [], [], [], [], []
         self.buckets, self.tokens = [], []
+        self.widgets: list[dict] = []
+        self.turnstile_allowed = True
         self.registry, self.volumes, self.firewalls, self.droplets = None, [], [], []
         self.sizes = [{"slug": "s-4vcpu-8gb", "available": True, "regions": ["sfo3"], "vcpus": 4}]
 
@@ -74,6 +76,16 @@ class FakeAPI:
                 item = next(x for x in coll if x["id"] == p.rsplit("/", 1)[1])
                 item.update(body)
                 return ok(item)
+        if "/challenges/widgets" in p:
+            if not self.turnstile_allowed:
+                return 403, {"success": False, "errors": [{"code": 10000, "message": "Authentication error"}]}
+            if p.endswith("/challenges/widgets"):
+                if method == "GET":
+                    return ok([{k: v for k, v in w.items() if k != "secret"} for w in self.widgets])
+                w = body | {"sitekey": f"0x4AAA{self.id()}", "secret": f"0x4BBB-turnstile-secret-{self.n}"}
+                self.widgets.append(w)
+                return ok(w)
+            return ok(next(w for w in self.widgets if w["sitekey"] == p.rsplit("/", 1)[1]))
         if p.endswith("/r2/buckets"):
             if method == "GET":
                 return ok({"buckets": [{"name": b} for b in self.buckets]})
@@ -162,10 +174,10 @@ def api(monkeypatch):
         monkeypatch.setenv(k, v)
     a = FakeAPI()
 
-    def run(mode):
+    def run(mode, door="access"):
         cf = provision.Cloudflare(FakeHttp(a.cf))
         do = provision.DigitalOcean(FakeHttp(a.do), sleep=lambda s: None)
-        return provision.run(mode, cf, do)
+        return provision.run(mode, cf, do, door)
 
     return a, run
 
@@ -491,3 +503,71 @@ def test_mail_domain_names_a_send_only_resend_key():
     rs = FakeResend(restricted=True)
     with pytest.raises(provision.ProvisionError, match="Full access"):
         provision.Resend(FakeHttp(rs)).ensure(True)
+
+
+# ---- the site door (decision 2026-10-21-app-sign-in): Access off only with recreate, and back again
+
+def _env(a, name="/etc/lacuna/lacuna.env"):
+    return dict(line.split("=", 1) for line in user_data(a)[name].splitlines())
+
+
+def _main_policies(a):
+    app = next(x for x in a.apps if x["domain"] == provision.DOMAIN)
+    return [next(p for p in a.policies if p["id"] == x["id"]) for x in app["policies"]]
+
+
+def test_site_door_file_says_access_by_default(tmp_path):
+    assert provision.site_door(tmp_path / "none.txt") == "access"
+    (tmp_path / "d.txt").write_text("open\n")
+    assert provision.site_door(tmp_path / "d.txt") == "open"
+    (tmp_path / "d.txt").write_text("wide open")
+    with pytest.raises(provision.ProvisionError):
+        provision.site_door(tmp_path / "d.txt")
+    assert provision.site_door() == "access"      # the repo's file: Access stays until Leon says otherwise
+
+
+def test_open_door_with_apply_changes_nothing_in_front_of_the_running_server(api, capsys):
+    a, run = api
+    run("apply")
+    before = [dict(p) for p in _main_policies(a)]
+    run("apply", door="open")
+    assert [p["decision"] for p in _main_policies(a)] == [p["decision"] for p in before] == ["allow", "non_identity"]
+    assert a.widgets == []
+    assert "takes effect with recreate" in capsys.readouterr().out
+
+
+def test_open_door_with_recreate_lets_everyone_reach_the_apps_own_sign_in(api, capsys):
+    a, run = api
+    run("apply")
+    run("plan", door="open")
+    assert a.widgets == []
+    run("recreate", door="open")
+    assert [p["decision"] for p in _main_policies(a)] == ["bypass", "non_identity"]
+    assert _main_policies(a)[0]["include"] == [{"everyone": {}}]
+    staging = next(x for x in a.apps if x["domain"] == provision.PREVIEW_DOMAIN)
+    assert next(p for p in a.policies if p["id"] == staging["policies"][0]["id"])["decision"] == "allow"
+    assert len(a.widgets) == 1 and a.widgets[0]["domains"] == [provision.DOMAIN]
+    env = _env(a)
+    assert env["LACUNA_ACCESS"] == "off" and env["TURNSTILE_SITE_KEY"] == a.widgets[0]["sitekey"]
+    assert env["TURNSTILE_SECRET_KEY"] == a.widgets[0]["secret"]
+    assert not {"LACUNA_ACCESS", "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY"} & set(_env(a, "/etc/lacuna/preview.env"))
+    assert "turnstile-secret" not in capsys.readouterr().out
+    # again: the same widget, not a second one
+    run("recreate", door="open")
+    assert len(a.widgets) == 1
+
+    # the way back: access + recreate puts Access in front again
+    run("recreate", door="access")
+    assert [p["decision"] for p in _main_policies(a)] == ["allow", "non_identity"]
+    assert "LACUNA_ACCESS" not in _env(a) and "TURNSTILE_SECRET_KEY" not in _env(a)
+
+
+def test_open_door_without_the_turnstile_permission_stops_before_the_server(api):
+    a, run = api
+    run("apply")
+    a.turnstile_allowed = False
+    first = a.droplets[0]["id"]
+    with pytest.raises(provision.ProvisionError, match="Turnstile"):
+        run("recreate", door="open")
+    assert a.droplets[0]["id"] == first
+    assert [p["decision"] for p in _main_policies(a)] == ["allow", "non_identity"]

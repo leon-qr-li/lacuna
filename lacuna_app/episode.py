@@ -42,6 +42,7 @@ from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
 from .store import CHAT_FILE, META_FILE, STATE_FILE, Workspace, atomic_write_json, read_json, now_iso
+from .events import track
 from .i18n import N_, tr
 
 STATE_SCHEMA = 1
@@ -454,6 +455,7 @@ class Episode:
                         [(eid, "status", APPLIED)])
         else:
             raise ConflictError(f"unknown action {action}")
+        track("review.decide", self.id, action=action, source=e.source, category=e.category)
 
     def pending_ids(self) -> list[str]:
         """Edits that still wait for Leon's judgement (in effect or not): what `pending_review` counts."""
@@ -478,6 +480,8 @@ class Episode:
         n = len({i for i, f, v in changes if getattr(self.edits[i], f) != v})
         label = {"approve": "全部通过", "keep": "全部保留删除", "restore": "全部恢复原话"}[action]  # i18n-ignore
         self.change(f"{label}（{n} 处）", changes)  # i18n-ignore
+        ai = sum(1 for i in targets if self.edits[i].source != "manual")
+        track("review.batch", self.id, action=action, edits=len(targets), changed=n, ai=ai)
         return n
 
     def add_edit(self, ops: list[dict], category: str, title: str, reason: str = "",

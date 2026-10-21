@@ -38,7 +38,7 @@ def logo_png() -> bytes | None:
 
 
 def space_role_label(role: str | None) -> str:
-    return {"admin": tr("管理"), "editor": tr("剪辑"), "viewer": tr("只听")}.get(role or "", "")
+    return {"admin": tr("管理员"), "editor": tr("剪辑师"), "viewer": tr("只听")}.get(role or "", "")
 
 
 def who_of(email: str) -> str:

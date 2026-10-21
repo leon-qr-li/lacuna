@@ -102,15 +102,31 @@ def test_the_version_alone_is_open_without_a_token(client, keys):
         assert client.request(method, path).status_code == 403, (method, path)
 
 
-def test_desktop_only_actions_are_gone(client, keys):
+def owner_signed_in(client, keys, monkeypatch) -> dict:
+    """The owner's account, signed in (a cloud server answers nothing but the sign-up screen before)."""
+    monkeypatch.setenv("LACUNA_OWNER_EMAIL", "leon@example.com")
     h = hdr(token(keys[0]))
+    out = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW}, headers=h).json()
+    code = totp.code_at(out["secret"], int(time.time() // totp.STEP))
+    assert client.post("/api/auth/2fa/enroll", json={"ticket": out["ticket"], "code": code}, headers=h).status_code == 200
+    return h
+
+
+def test_a_fresh_cloud_server_answers_only_the_sign_up_screen(client, keys):
+    h = hdr(token(keys[0]))
+    assert client.get("/api/auth/status", headers=h).status_code == 200
+    assert client.get("/api/episodes", headers=h).status_code == 401
+
+
+def test_desktop_only_actions_are_gone(client, keys, monkeypatch):
+    h = owner_signed_in(client, keys, monkeypatch)
     for path in ("/api/app/update/check", "/api/app/update/prepare", "/api/app/update/apply", "/api/app/api-key",
                  "/api/auth/resend-key", "/api/episodes/EP001/exports/open", "/api/library/open"):
         assert client.post(path, json={"key": "sk-x"}, headers=h).status_code == 404, path
 
 
-def test_import_reads_only_uploaded_tracks(client, keys, tmp_path):
-    h = hdr(token(keys[0]))
+def test_import_reads_only_uploaded_tracks(client, keys, tmp_path, monkeypatch):
+    h = owner_signed_in(client, keys, monkeypatch)
     outside = tmp_path / "secret.wav"
     outside.write_bytes(b"RIFF")
     r = client.post("/api/imports", json={"id": "EP009", "tracks": [str(outside), str(outside)]}, headers=h)

@@ -17,9 +17,11 @@ Decisions: docs/decisions/2026-10-17-local-sign-in.md (the base), 2026-10-19-inv
   With two-step sign-in on, a reset also needs the authenticator (or a recovery code).
 - In the cloud the first account also needs the setup code written to <root>/auth/setup-code.txt (and the
   server log) on the first start, so nobody who reaches a fresh server first can make themselves owner.
-- Locked out with no email: delete <workspace>/auth/users.json and the app asks for a new first account.
+- Plans (lacuna_app/plans.py): every account has one (``plan``); its shows use its allowance.
 
-Files: <workspace>/auth/users.json (accounts, invites, config), sessions.json (atomic writes, store.py).
+Storage: the site database (lacuna_app/db.py): tables users, invites, config, sessions. The JSON files used
+before (<workspace>/auth/users.json, sessions.json) are read once into it and left in place for 30 days.
+Locked out with no email: delete the rows of the users table and the app asks for a new first account.
 """
 from __future__ import annotations
 
@@ -38,10 +40,11 @@ import urllib.request
 from pathlib import Path
 from typing import Callable
 
-from . import totp
+from . import db as sitedb
+from . import plans, totp
 from .i18n import lang as ui_lang, normalize as norm_lang, speaking, tr
 from .keystore import find_secret, save_secret
-from .store import atomic_write_json, read_json
+from .store import read_json
 
 COOKIE = "lacuna_session"
 REMEMBER_S = 30 * 86400
@@ -63,6 +66,13 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _SCRYPT = dict(n=2 ** 14, r=8, p=1, maxmem=64 * 1024 * 1024, dklen=32)
 RANK = {"member": 1, "admin": 2, "owner": 3}
 SETUP_FILE = "setup-code.txt"
+OLD_FILES = ("users.json", "users.json.bak", "sessions.json", "sessions.json.bak")
+KEEP_OLD_S = 30 * 86400
+
+
+def new_user_id() -> str:
+    """The account's internal id: what the event log and the admin pages use instead of the email."""
+    return "u_" + secrets.token_hex(6)
 
 
 class AuthError(Exception):
@@ -174,20 +184,21 @@ class Auth:
         self.mailer = mailer if mailer is not None else ResendMailer()
         self.now = clock
         self.lock = threading.RLock()
-        data = read_json(self.dir / "users.json") if (self.dir / "users.json").exists() else None
-        data = data or {}
-        self.users: dict[str, dict] = {u["email"]: u for u in data.get("users", [])}
-        for u in self.users.values():            # accounts from before roles: the first one is the owner
-            u.setdefault("role", "owner" if u.pop("owner", False) else "member")
-            u.pop("owner", None)
-        self.config: dict = {"sender": DEFAULT_SENDER, **data.get("config", {})}
+        self.db = sitedb.at(root)
+        now = self.now()
+        if self.db.meta("auth_from_json") is None:
+            self._from_json()
+        self.users: dict[str, dict] = {r["email"]: sitedb.loads(r["data"]) for r in self.db.query("SELECT * FROM users")}
+        self.config: dict = {"sender": DEFAULT_SENDER,
+                             **{r["key"]: sitedb.loads(r["value"]) for r in self.db.query("SELECT * FROM config")}}
         if TEST_SENDER_DOMAIN in self.config["sender"]:   # saved before the domain was verified
             self.config["sender"] = DEFAULT_SENDER
         self.config.pop("allow_register", None)  # sign-up is by invite only now
-        now = self.now()
-        self.invites: dict[str, dict] = {i["hash"]: i for i in data.get("invites", []) if i["exp"] > now}
-        sess = read_json(self.dir / "sessions.json") if (self.dir / "sessions.json").exists() else None
-        self.sessions: dict[str, dict] = {k: v for k, v in (sess or {}).get("sessions", {}).items() if v["exp"] > now}
+        self.invites: dict[str, dict] = {r["hash"]: sitedb.loads(r["data"])
+                                         for r in self.db.query("SELECT * FROM invites WHERE exp > ?", (now,))}
+        self.sessions: dict[str, dict] = {r["hash"]: sitedb.loads(r["data"])
+                                          for r in self.db.query("SELECT * FROM sessions WHERE exp > ?", (now,))}
+        self._drop_old_files()
         self.codes: dict[tuple[str, str], dict] = {}
         self.tickets: dict[str, dict] = {}        # password checked, waiting for the two-step code
         self.pending_totp: dict[str, dict] = {}   # signed in, setting up the authenticator
@@ -204,18 +215,61 @@ class Auth:
     def require_2fa(self) -> bool:
         return self.cloud
 
-    # -- persistence
+    # -- persistence (the site database)
+    def _from_json(self) -> None:
+        """Once: the accounts kept in auth/users.json + sessions.json before the database move in. Everyone
+        who had an account then keeps a free 专业版 (decision 2026-10-21-plans). The files stay 30 days."""
+        f = self.dir / "users.json"
+        data = (read_json(f) if f.exists() else None) or {}
+        users = {u["email"]: u for u in data.get("users", [])}
+        for u in users.values():                 # accounts from before roles: the first one is the owner
+            u.setdefault("role", "owner" if u.pop("owner", False) else "member")
+            u.pop("owner", None)
+            u.setdefault("plan", plans.PRO)
+            u.setdefault("plan_free", True)
+        sess = read_json(self.dir / "sessions.json") if (self.dir / "sessions.json").exists() else None
+        self.users, self.config = users, data.get("config", {})
+        self.invites = {i["hash"]: i for i in data.get("invites", []) if i["exp"] > self.now()}
+        self.sessions = {k: v for k, v in (sess or {}).get("sessions", {}).items() if v["exp"] > self.now()}
+        self._save_users()
+        self._save_sessions()
+        self.db.set_meta("auth_from_json", str(self.now()))
+
+    def _drop_old_files(self) -> None:
+        """30 days after the move, the old JSON files go (until then a rollback to an older version finds them)."""
+        moved = float(self.db.meta("auth_from_json") or 0)
+        if moved and self.now() - moved > KEEP_OLD_S:
+            for name in OLD_FILES:
+                (self.dir / name).unlink(missing_ok=True)
+
     def _save_users(self) -> None:
-        self.dir.mkdir(parents=True, exist_ok=True)
         now = self.now()
         self.invites = {k: v for k, v in self.invites.items() if v["exp"] > now}
-        atomic_write_json(self.dir / "users.json", {"users": list(self.users.values()), "config": self.config,
-                                                    "invites": list(self.invites.values())})
+        for u in self.users.values():
+            u.setdefault("id", new_user_id())
+            u.setdefault("plan", plans.DEFAULT)
+        with self.db.tx() as c:
+            c.execute("DELETE FROM users")
+            c.executemany("INSERT INTO users (email, id, role, plan, created, disabled, data) VALUES (?,?,?,?,?,?,?)",
+                          [(u["email"], u["id"], u["role"], u["plan"], u["created"], int(bool(u.get("disabled"))),
+                            sitedb.dumps(u)) for u in self.users.values()])
+            c.execute("DELETE FROM invites")
+            c.executemany("INSERT INTO invites (hash, email, exp, data) VALUES (?,?,?,?)",
+                          [(i["hash"], i["email"], i["exp"], sitedb.dumps(i)) for i in self.invites.values()])
+            c.execute("DELETE FROM config")
+            c.executemany("INSERT INTO config (key, value) VALUES (?,?)",
+                          [(k, sitedb.dumps(v)) for k, v in self.config.items()])
 
     def _save_sessions(self) -> None:
-        self.dir.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(self.dir / "sessions.json", {"sessions": self.sessions})
+        with self.db.tx() as c:
+            c.execute("DELETE FROM sessions")
+            c.executemany("INSERT INTO sessions (hash, email, exp, data) VALUES (?,?,?,?)",
+                          [(k, v["email"], v["exp"], sitedb.dumps(v)) for k, v in self.sessions.items()])
         self._seen_saved = self.now()
+
+    def user_id(self, email: str | None) -> str | None:
+        u = self.users.get(email or "")
+        return u.get("id") if u else None
 
     def _make_setup_code(self) -> None:
         f = self.dir / SETUP_FILE
@@ -258,7 +312,7 @@ class Auth:
         email = self.who(token)
         u = self.users.get(email or "")
         return {"accounts": self.has_accounts(), "setup": not self.users and not self.skip_setup,
-                "email": email, "role": u["role"] if u else None,
+                "email": email, "role": u["role"] if u else None, "plan": (u.get("plan") or plans.DEFAULT) if u else None,
                 "twofa": bool(u and u.get("totp")), "require_2fa": self.require_2fa, "cloud": self.cloud,
                 "first": not self.users, "setup_code": bool(self.setup_code) and not self.users,
                 "mail": self.mail_status() if u and u["role"] == "owner" else None}
@@ -324,6 +378,23 @@ class Auth:
     def _end_all(self, email: str, keep: str | None = None) -> None:
         self.sessions = {k: v for k, v in self.sessions.items() if v["email"] != email or k == keep}
         self._save_sessions()
+
+    def note_device(self, email: str, agent: str) -> bool:
+        """Remember this browser + system for the account; True when it is new and the account had signed
+        in elsewhere before (then the person gets a 新设备登录 email, lacuna_app/notice_mail.py)."""
+        from .notice_mail import device_label
+        key = _sha(device_label(agent))[:16]
+        with self.lock:
+            u = self.users.get(email)
+            if not u:
+                return False
+            seen = u.setdefault("devices", [])
+            if key in seen:
+                return False
+            seen.append(key)
+            del seen[:-20]
+            self._save_users()
+            return len(seen) > 1
 
     # -- codes
     def send_code(self, email: str, purpose: str) -> None:
@@ -511,7 +582,8 @@ class Auth:
             if self.setup_code and proven != email and not hmac.compare_digest(self.setup_code, (setup_code or "").strip().lower()):
                 raise AuthError(tr("初始化码不对：在服务器上的 auth/setup-code.txt 里"), 403)
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
-                                 "role": "owner", "verified": False}
+                                 "role": "owner", "verified": False, "id": new_user_id(), "plan": plans.PRO,
+                                 "plan_free": True}
             self._save_users()
             if self.setup_code:
                 (self.dir / SETUP_FILE).unlink(missing_ok=True)
@@ -532,7 +604,8 @@ class Auth:
             i = self.invite_info(token)
             email = i["email"]
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
-                                 "role": i["role"], "verified": True, "invited_by": i["by"]}
+                                 "role": i["role"], "verified": True, "invited_by": i["by"], "id": new_user_id(),
+                                 "plan": plans.check(i.get("plan") or plans.DEFAULT), "lang": i.get("lang")}
             del self.invites[i["hash"]]
             self._save_users()
         for f in self.on_joined:
@@ -577,12 +650,17 @@ class Auth:
         for v in self.sessions.values():
             last[v["email"]] = max(last.get(v["email"], 0), v.get("seen", v["created"]))
         rows = [{"email": u["email"], "role": u["role"], "created": u["created"], "twofa": bool(u.get("totp")),
-                 "disabled": bool(u.get("disabled")), "seen": last.get(u["email"])} for u in self.users.values()]
+                 "disabled": bool(u.get("disabled")), "seen": last.get(u["email"]),
+                 "plan": u.get("plan") or plans.DEFAULT} for u in self.users.values()]
         return sorted(rows, key=lambda r: (-RANK[r["role"]], r["created"]))
 
     def update_user(self, actor: str, target: str, role: str | None = None, disabled: bool | None = None,
-                    reset_2fa: bool = False) -> None:
+                    reset_2fa: bool = False, plan: str | None = None) -> None:
         with self.lock:
+            if plan is not None:
+                self.set_plan(actor, target, plan)
+                if role is None and disabled is None and not reset_2fa:
+                    return
             u = self._manage(actor, target)
             if role is not None:
                 self._grantable(actor, role)
@@ -595,6 +673,20 @@ class Auth:
                 u.pop("totp", None)
                 u.pop("recovery", None)
                 self._end_all(target)
+            self._save_users()
+
+    def set_plan(self, actor: str, target: str, plan: str) -> None:
+        """Site owner and admins set anyone's plan, their own too (nobody pays yet: decision 2026-10-21-plans)."""
+        if plan not in plans.PLANS:
+            raise AuthError(tr("没有这个套餐"))
+        with self.lock:
+            a, u = self.users.get(actor), self.users.get(target)
+            if not u:
+                raise AuthError(tr("没有这个账号"), 404)
+            if not a or RANK[a["role"]] < RANK["admin"]:
+                raise AuthError(tr("你没有权限改这个账号"), 403)
+            u["plan"] = plan
+            u.pop("plan_free", None)
             self._save_users()
 
     def delete_user(self, actor: str, target: str) -> None:
@@ -611,6 +703,7 @@ class Auth:
     def list_invites(self) -> list[dict]:
         now = self.now()
         return sorted(({"id": i["hash"][:16], "email": i["email"], "role": i["role"], "by": i["by"],
+                        "plan": i.get("plan") or plans.DEFAULT,
                         "created": i["created"], "exp": i["exp"], "space": i.get("space"),
                         "space_role": i.get("space_role")} for i in self.invites.values() if i["exp"] > now),
                       key=lambda r: -r["created"])
@@ -621,6 +714,8 @@ class Auth:
         `lang` (zh / en) is the email's language, picked by the inviter; default the inviter's interface."""
         email = norm_email(email)
         self._grantable(actor, role)
+        if (extra or {}).get("plan") not in (None, *plans.PLANS):
+            raise AuthError(tr("没有这个套餐"))
         if email in self.users:
             raise AuthError(tr("这个邮箱已经有账号了"), 409)
         token = secrets.token_urlsafe(32)
