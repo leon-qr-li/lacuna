@@ -54,6 +54,7 @@ test.describe.serial("um / uh", () => {
     await expect(page.getByTestId("fillers-btn")).toContainText("1");
 
     await undoKey(page); // the restore
+    await expect(page.locator(".toast")).toContainText("已撤销：恢复");
     await undoKey(page); // the three
     await expect(page.locator(".toast")).toContainText("已撤销：去掉 um / uh（3 处）");
     await expect(page.getByTestId("fillers-btn")).toContainText("3");

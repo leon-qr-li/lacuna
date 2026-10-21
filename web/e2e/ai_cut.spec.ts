@@ -73,6 +73,7 @@ test("review: decide → jump to next pending; Y shortcut; 全部通过 in one s
   await page.getByTestId("toast-undo").click();
   await expect(page.getByTestId("review-progress")).toContainText("已过目 2 / 4");
   await undoKey(page);
+  await expect(page.getByTestId("review-progress")).toContainText("已过目 1 / 4");
   await undoKey(page);
   await expect(page.getByTestId("review-progress")).toContainText("已过目 0 / 4");
 });

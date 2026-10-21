@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { undoKey } from "./undo";
 
-// Leon 2026-10-20 (version B): 整集试听 is one screen — the timeline (minimap + player inside) on top, the transcript
+// Leon 2026-10-20 (version B): 整集试听 is one screen — the timeline (player inside; no minimap since round 4) on top, the transcript
 // under it, a side panel with tabs AI 制作人 / 这附近改了什么; 「下一步」 at the top right of every step.
 
 async function openListen(page: Page) {
@@ -20,12 +21,10 @@ test("整集试听 fits one screen: timeline, player and transcript all in view,
   const player = (await page.getByRole("region", { name: "播放器" }).boundingBox())!;
   expect(tx.y).toBeGreaterThan(lanes.y + lanes.height - 1); // transcript under the timeline
   expect(tx.y + tx.height).toBeLessThanOrEqual(900);
-  // the player and the minimap live inside the timeline card
+  // the player lives inside the timeline card; no minimap strip (round 4)
   expect(player.y).toBeGreaterThan(lanes.y);
   expect(player.y + player.height).toBeLessThanOrEqual(lanes.y + lanes.height);
-  const mini = (await page.getByTestId("minimap").boundingBox())!;
-  expect(mini.y).toBeGreaterThan(lanes.y);
-  expect(mini.y).toBeLessThan((await page.getByTestId("ml-ruler").boundingBox())!.y);
+  await expect(page.getByTestId("minimap")).toHaveCount(0);
   // each lane is taller than the old 44 px strip
   expect((await page.getByTestId("lane-Leon").boundingBox())!.height).toBeGreaterThan(56);
   // the transcript scrolls inside its own card
@@ -34,14 +33,6 @@ test("整集试听 fits one screen: timeline, player and transcript all in view,
   // no separate overview card any more, and no 下一步 at the page bottom
   await expect(page.getByRole("region", { name: "整集概览" })).toHaveCount(0);
   await expect(page.locator(".next-step")).toHaveCount(0);
-});
-
-test("minimap: a click moves the playhead", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await openListen(page);
-  const m = (await page.getByTestId("minimap").boundingBox())!;
-  await page.mouse.click(m.x + m.width * 0.5, m.y + m.height / 2);
-  await expect(page.getByTestId("clock")).not.toContainText(/^0:00 /);
 });
 
 test("side panel: tabs AI 制作人 / 这附近改了什么, counted, remembered", async ({ page }) => {
@@ -54,7 +45,7 @@ test("side panel: tabs AI 制作人 / 这附近改了什么, counted, remembered
   await expect(page.getByTestId("nearby")).toHaveCount(0);
 
   // jump to an edit so the nearby list has rows
-  const m = (await page.getByTestId("minimap").boundingBox())!;
+  const m = (await page.getByTestId("lane-Leon").boundingBox())!;
   await page.mouse.click(m.x + m.width * 0.35, m.y + m.height / 2);
   await page.getByTestId("tab-near").click();
   await expect(page.getByTestId("tab-near")).toHaveAttribute("aria-selected", "true");
@@ -98,7 +89,7 @@ test("timeline: the card on a cut listens around it and restores it, undo puts i
   await pop.getByRole("button", { name: "恢复" }).click();
   await expect(page.locator(".toast")).toContainText("已恢复原话");
   await expect.poll(() => lane.locator(".mark-cut").count()).toBeLessThan(before);
-  await page.getByRole("button", { name: "撤销" }).click();
+  await undoKey(page);
   await expect(page.locator(".toast")).toContainText("已撤销");
   await expect.poll(() => lane.locator(".mark-cut").count()).toBe(before);
 

@@ -19,7 +19,7 @@ import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
 import { Home } from "./features/episodes/Home";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
-import { CutPop, Minimap, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
+import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
@@ -304,7 +304,6 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
                 player={player}
                 highlight={pending}
                 m={manual}
-                top={<Minimap ep={ep} time={player.time} onSeek={player.seek} />}
                 bottom={
                   <>
                     <PlayerBar player={player} duration={ep.duration} />
