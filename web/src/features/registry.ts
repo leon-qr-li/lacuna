@@ -11,7 +11,8 @@ import type { Episode } from "../api";
 export interface EpisodeTabProps {
   id: string;
   ep: Episode;
-  flash: (msg: string) => void;
+  /** A toast; `undo` adds a small 撤销 button (bulk actions). */
+  flash: (msg: string, opts?: { undo?: boolean }) => void;
   pauseMain: () => void;
   /** Replace the episode shown everywhere (a tab that changed it, e.g. a volume edit on 声音). */
   onEpisode?: (ep: Episode) => void;
@@ -60,4 +61,5 @@ export const pages: Page[] = features.flatMap((f) => f.pages ?? []);
 export const navLinks: NavLink[] = byOrder(features.flatMap((f) => f.nav ?? []));
 
 /** `aria-current` for a top-bar link to `#/<path>`: "page" while that page is open (styled in episodes.css). */
-export const navCurrent = (path: string) => (window.location.hash === `#/${path}` ? ("page" as const) : undefined);
+export const navCurrent = (path: string) =>
+  window.location.hash === `#/${path}` || window.location.hash.startsWith(`#/${path}/`) ? ("page" as const) : undefined;

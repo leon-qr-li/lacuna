@@ -51,4 +51,29 @@ export const en: Dict = {
   "建你的第一个项目": "Create your first project",
   "一档播客、一个客户、一个栏目都可以是一个项目。填名字和主持人，每位主持人一条分轨；这些以后都能在项目设置里改。":
     "A podcast, a client or a segment can each be a project. Fill in the name and hosts, one track per host; you can change all of it later in project settings.",
+  "已归档": "Archived",
+  "已归档 · 只读": "Archived · read-only",
+  "恢复": "Restore",
+  "永久删除": "Delete for good",
+  "这是你唯一的项目。先新建一个项目，再删除这个。": "This is your only project. Create another project first, then delete this one.",
+  "归档的项目只能查看，所有协作者都不能修改。恢复后一切照旧。":
+    "Archived projects are read-only for every collaborator. Restoring brings everything back as it was.",
+  "永久删除「{name}」": "Delete “{name}” for good",
+  "这个项目里的所有剧集、专辑、素材、导出文件和协作者都会被删除，不能恢复。学到的规则和剪辑力度是你自己的，会留下。":
+    "Every episode, album, media file, export and collaborator in this project will be deleted. This can't be undone. Your learned rules and editing strength are your own and stay.",
+  "输入项目名称「{name}」确认": "Type the project name “{name}” to confirm",
+  "项目图片": "Project picture",
+  "方形图片，会自动裁成正方形。没有图片时用这个项目自己的颜色。":
+    "A square picture; others are cropped to a square. Without one, the project uses its own colour.",
+  "换一张图片": "Change picture",
+  "上传图片": "Upload picture",
+  "改用颜色": "Use colour instead",
+  "归档「{name}」？": "Archive “{name}”?",
+  "归档后项目移到「已归档」，所有协作者都只能查看、不能修改。随时可以恢复。":
+    "The project moves to Archived, where every collaborator can view but not change it. You can restore it any time.",
+  "归档": "Archive",
+  "归档项目": "Archive project",
+  "不再做的项目可以归档：只读，放进「已归档」。永久删除要先归档。":
+    "Archive a project you're done with: it becomes read-only and moves to Archived. A project must be archived before it can be deleted for good.",
+  "这个项目已归档，只能查看。恢复后才能修改。": "This project is archived and read-only. Restore it to make changes.",
 };

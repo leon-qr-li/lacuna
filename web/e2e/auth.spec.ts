@@ -14,8 +14,8 @@ test.afterAll(async ({ request }) => {
   await request.post("/api/auth/_test/reset?skip_setup=true");
 });
 
-async function mails(request: APIRequestContext, to: string): Promise<{ to: string; subject: string; text: string }[]> {
-  const all = (await (await request.get("/api/auth/_test/outbox")).json()).mails as { to: string; subject: string; text: string }[];
+async function mails(request: APIRequestContext, to: string): Promise<{ to: string; subject: string; text: string; html?: string }[]> {
+  const all = (await (await request.get("/api/auth/_test/outbox")).json()).mails as { to: string; subject: string; text: string; html?: string }[];
   return all.filter((m) => m.to === to);
 }
 
@@ -81,18 +81,20 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(page.locator(".topbar")).toBeVisible();
 
-  await page.goto("/#/settings");
+  await page.goto("/#/settings/account");
   const me = page.getByRole("region", { name: "账号与安全" });
   await expect(me.getByTestId("account-email")).toContainText("已登录：leon@example.com");
   await expect(me.getByTestId("account-role")).toHaveText("所有者");
   await expect(me.getByTestId("twostep-state")).toHaveText("没开启");
   await expect(me.getByTestId("devices").getByText("这台设备")).toBeVisible();
 
+  await page.goto("/#/settings/mail");
   const mail = page.getByRole("region", { name: "邮件" });
   await expect(mail.getByTestId("resend-state")).toContainText("已接上");
   await mail.getByRole("button", { name: "发测试邮件" }).click();
   await expect(mail.getByRole("status")).toHaveText("测试邮件已发到 leon@example.com，去收件箱看看。");
 
+  await page.goto("/#/settings/members");
   const members = page.getByRole("region", { name: "成员与邀请" });
   await members.getByLabel("对方的邮箱").fill("pei@example.com");
   await members.getByRole("button", { name: "发送邀请" }).click();
@@ -101,8 +103,10 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   // in the path, not after "#": Cloudflare Access's sign-in on the way in drops a #fragment
   expect(link).toMatch(/[^#]\/invite\/[\w-]{20,}$/);
   const sent = (await mails(request, "pei@example.com")).at(-1)!;
-  expect(sent.subject).toBe("leon@example.com 邀请你使用 LACUNA");
+  expect(sent.subject).toBe("Leon 邀请你使用 LACUNA");
   expect(sent.text).toContain(link);
+  expect(sent.html).toContain("接受邀请"); // design A 「夜航信笺」
+  expect(sent.html).toContain(`href="${link}"`);
   await expect(members.getByTestId("invites")).toContainText("pei@example.com");
   await shot(page, "settings_members");
   // an English invite email; a fresh browser opens its sign-up page in English
@@ -111,7 +115,7 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await members.getByTestId("invite-lang").selectOption("en");
   await members.getByRole("button", { name: "发送邀请" }).click();
   await expect(members.getByTestId("invite-result")).toContainText("邀请邮件已发到 sam@example.com");
-  expect((await mails(request, "sam@example.com")).at(-1)!.subject).toBe("leon@example.com invited you to LACUNA");
+  expect((await mails(request, "sam@example.com")).at(-1)!.subject).toBe("Leon invited you to LACUNA");
   const samCtx = await page.context().browser()!.newContext();
   const sam = await samCtx.newPage();
   const samLink = (await members.getByTestId("invite-link").textContent())!;
@@ -125,7 +129,7 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await page.getByRole("button", { name: "继续用 leon@example.com" }).click();
   await expect(page.locator(".topbar")).toBeVisible();
   expect(new URL(page.url()).pathname + new URL(page.url()).hash).toBe("/#/");
-  await page.goto("/#/settings");
+  await page.goto("/#/settings/members");
 
   // Pei opens the link in another browser
   const pei = await page.context().browser()!.newContext();
@@ -139,9 +143,14 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await p.getByRole("button", { name: "创建账号" }).click();
   await expect(p.locator(".topbar")).toBeVisible();
   expect(new URL(p.url()).hash).toBe("#/");
-  await p.goto("/#/settings");
+  await p.goto("/#/settings/account");
   await expect(p.getByRole("region", { name: "账号与安全" }).getByTestId("account-role")).toHaveText("成员");
-  await expect(p.getByRole("region", { name: "成员与邀请" })).toHaveCount(0); // members don't manage people
+  // members don't manage people: no 管理 group at all, and its addresses fall back to 通用
+  await expect(p.getByRole("navigation", { name: "设置" }).getByRole("group", { name: "管理" })).toHaveCount(0);
+  await p.goto("/#/settings/members");
+  await expect(p.getByRole("region", { name: "成员与邀请" })).toHaveCount(0);
+  await expect(p.getByTestId("app-version")).toBeVisible();
+  await p.goto("/#/settings/mail");
   await expect(p.getByRole("region", { name: "邮件" })).toHaveCount(0);
   // Pei, signed in, opens Sam's invite: signing out leads to its sign-up page
   await p.goto(samLink);
@@ -160,6 +169,7 @@ test("two-step sign-in: turn it on in 设置, then sign in with the phone code o
   await signIn(page, "leon@example.com");
   await expect(page.locator(".topbar")).toBeVisible();
   await page.getByRole("link", { name: "设置" }).click();
+  await page.getByTestId("settings-nav-account").click();
   const me = page.getByRole("region", { name: "账号与安全" });
   await me.getByRole("button", { name: "开启两步验证" }).click();
   await expect(me.getByTestId("twostep-qr")).toBeVisible();
@@ -234,7 +244,7 @@ test("cloud: the first sign-in sets up two-step before the app opens", async ({ 
   await page.getByTestId("recovery-saved").check();
   await page.getByRole("button", { name: "进入 LACUNA" }).click();
   await expect(page.locator(".topbar")).toBeVisible();
-  await page.goto("/#/settings");
+  await page.goto("/#/settings/account");
   const me = page.getByRole("region", { name: "账号与安全" });
   await expect(me.getByTestId("twostep-state")).toHaveText("已开启");
   await expect(me.getByRole("button", { name: "关闭" })).toHaveCount(0); // required online

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { undoKey } from "./undo";
 
 // 声音 (backlog 7): both hosts evened out, per-track gain, volume from the chat, clipping repair (V7).
 // The synthetic episode's first cut already raises Leon by 3 dB (its "响度匹配" edit). Every test
@@ -42,8 +43,8 @@ test.describe.serial("声音", () => {
     await expect(page.getByTestId("levels")).toContainText("两人已经一样响");
     for (const n of ["Leon", "Pei"]) await expect(page.getByTestId(`levels-track-${n}`)).toContainText("现在 -20.0 LUFS");
     await expect(page.getByTestId("levels-auto")).toHaveText("重新统一");
-    // the header's undo knows it and takes both gains back
-    await page.getByRole("button", { name: "撤销" }).click();
+    // the toast's 撤销 takes both gains back in one step
+    await page.getByTestId("toast-undo").click();
     await expect(page.locator(".toast")).toContainText("统一两人音量");
     await expect(gain(page, "Leon")).toHaveText("+3.0 dB");
     expect(await gains(page)).toEqual(before);
@@ -61,9 +62,9 @@ test.describe.serial("声音", () => {
     await expect.poll(() => gains(page)).toEqual({ Leon: 3, Pei: -4.5 });
     await expect(page.getByRole("button", { name: /用建议值/ }).first()).toBeVisible();
     // back to where it was: two undo steps
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(page.locator(".toast")).toContainText("已撤销");
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect.poll(() => gains(page)).toEqual({ Leon: 3, Pei: 0 });
     await expect(gain(page, "Pei")).toHaveText("±0.0 dB");
   });
@@ -76,7 +77,7 @@ test.describe.serial("声音", () => {
     await expect(page.getByTestId("proposal")).toHaveCount(0); // applied at once, nothing to approve
     await page.getByRole("link", { name: "声音", exact: true }).click();
     await expect(gain(page, "Pei")).toHaveText("+2.0 dB");
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(gain(page, "Pei")).toHaveText("±0.0 dB");
   });
 

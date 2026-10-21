@@ -31,6 +31,8 @@ export interface Show {
   footer: string;
   hosts: Host[];
   publish: { ximalaya: boolean; album: string };
+  /** 专有名词 of this project: hints for the transcript's proofreading (lacuna_app/transcript_fix.py) */
+  terms?: string[];
   legacy: boolean;
   needs_setup: boolean;
   colors: HostColor[];
@@ -41,7 +43,7 @@ export interface Show {
   max_hosts: number;
 }
 
-export type ShowInput = Pick<Show, "show_name" | "about" | "language" | "footer" | "hosts" | "publish">;
+export type ShowInput = Pick<Show, "show_name" | "about" | "language" | "footer" | "hosts" | "publish" | "terms">;
 
 export const showApi = {
   get: () => req<Show>("GET", "/api/show"),

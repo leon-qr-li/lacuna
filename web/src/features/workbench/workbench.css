@@ -23,12 +23,6 @@
 .wb .lanes .player { position: static; margin-top: 2px; padding: 8px 14px; border: 0; border-radius: 16px; background: var(--hover); box-shadow: none; }
 .wb .lanes .player .play { width: 40px; height: 40px; min-width: 40px; font-size: 15px; }
 .wb .lanes .music-listen { align-self: flex-end; }
-.wb-mini { display: flex; flex-direction: column; gap: 6px; margin-left: 56px; }
-.wb-topics { display: flex; gap: 4px; }
-.wb-topics .topic { padding: 4px 10px; font-size: 12px; }
-.wb-ov { height: 16px; border-radius: 6px; }
-.wb-ov .tick { top: 4px; bottom: 4px; }
-.wb-ov .tick.major { top: 2px; bottom: 2px; }
 
 /* the card for an edit under the pointer */
 .ml-pop { position: absolute; z-index: 30; transform: translateX(-50%); min-width: 230px; max-width: 320px; padding: 12px 14px; border-radius: 14px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); font-size: 13px; color: var(--ink); }

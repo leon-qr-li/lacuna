@@ -19,7 +19,7 @@ import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
 import { Home } from "./features/episodes/Home";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
-import { CutPop, Minimap, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
+import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
@@ -106,7 +106,8 @@ function PageScreen({ path }: { path: string }) {
 function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [ep, setEp] = useState<Episode | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  // a toast; `undo` puts a small 撤销 button in it (after a bulk action: 全部通过 / 去掉 um/uh / 统一音量)
+  const [toast, setToast] = useState<{ msg: string; undo?: boolean } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const raw = usePlayer();
   const listen = useMusicListen(id, `${ep?.version ?? ""}|${mode}`, raw);
@@ -126,17 +127,18 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ep?.audio_url, ep?.playhead]);
 
-  const flash = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast((t) => (t === msg ? null : t)), 2500);
+  const flash = (msg: string, opts?: { undo?: boolean }) => {
+    const item = { msg, undo: opts?.undo };
+    setToast(item);
+    window.setTimeout(() => setToast((t) => (t === item ? null : t)), opts?.undo ? 6000 : 2500);
   };
 
   const run = useCallback(
-    async (p: Promise<Episode>, msg?: string | ((next: Episode) => string)): Promise<boolean> => {
+    async (p: Promise<Episode>, msg?: string | ((next: Episode) => string), opts?: { undo?: boolean }): Promise<boolean> => {
       try {
         const next = await p;
         setEp(next);
-        if (msg) flash(typeof msg === "function" ? msg(next) : msg);
+        if (msg) flash(typeof msg === "function" ? msg(next) : msg, opts);
         return true;
       } catch (e) {
         flash(t("操作失败：{message}", { message: (e as Error).message }));
@@ -146,7 +148,10 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
     [],
   );
 
-  const undo = () => ep?.can_undo && run(api.undo(id, player.time), t("已撤销：{undo_label}", { undo_label: ep.undo_label }));
+  const undo = () => {
+    setToast(null);
+    return ep?.can_undo && run(api.undo(id, player.time), t("已撤销：{undo_label}", { undo_label: ep.undo_label }));
+  };
   const redo = () => ep?.can_redo && run(api.redo(id, player.time), t("已重做：{redo_label}", { redo_label: ep.redo_label }));
   const review = (e: EditInfo, action: "keep" | "restore" | "apply") =>
     run(
@@ -154,7 +159,11 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       action === "restore" ? (e.status === "restored" ? t("已确认不删") : t("已恢复原话")) : action === "keep" ? t("已保留") : t("已重新应用"),
     );
   const approveAll = () =>
-    run(api.reviewAll(id, "approve", player.time), (n) => t("已全部通过 {changed} 处，可撤销", { changed: (n as Episode & { changed: number }).changed }));
+    run(
+      api.reviewAll(id, "approve", player.time),
+      (n) => t("已全部通过 {changed} 处，Ctrl+Z 可撤销", { changed: (n as Episode & { changed: number }).changed }),
+      { undo: true },
+    );
 
   const manual = useManual(ep, player, run); // the selection of 手动剪辑 (timeline + transcript)
 
@@ -222,17 +231,6 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
             </span>
           )}
           <span className="grow" />
-          <button type="button" className="btn btn-ghost btn-small" onClick={undo} disabled={!ep?.can_undo} title={ep?.undo_label ?? ""}>
-            <Icon name="undo" /> {t("撤销")}
-          </button>
-          <button type="button" className="btn btn-ghost btn-small" onClick={redo} disabled={!ep?.can_redo} title={ep?.redo_label ?? ""}>
-            <Icon name="redo" /> {t("重做")}
-          </button>
-          {mode !== "export" && (
-            <a className="btn btn-primary btn-small linkbtn" href={href("export")} data-testid="export-toggle">
-              {t("导出")}
-            </a>
-          )}
           {next && <NextStep href={href(next.mode)} label={next.label} />}
         </div>
         <nav aria-label={t("制作流程")} className="modes">
@@ -265,8 +263,13 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       {ep?.demo && <p className="banner">{ep.demo_note || t("演示数据")}</p>}
       {ep && <MissingSources ep={ep} />}
       {toast && (
-        <div className="toast" role="status">
-          {toast}
+        <div className={`toast ${toast.undo ? "toast-undo" : ""}`} role="status">
+          {toast.msg}
+          {toast.undo && ep?.can_undo && (
+            <button type="button" className="toast-undo-btn" onClick={() => void undo()} data-testid="toast-undo">
+              {t("撤销")}
+            </button>
+          )}
         </div>
       )}
       {/* one audio element shared by both modes: the playhead is common */}
@@ -301,7 +304,6 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
                 player={player}
                 highlight={pending}
                 m={manual}
-                top={<Minimap ep={ep} time={player.time} onSeek={player.seek} />}
                 bottom={
                   <>
                     <PlayerBar player={player} duration={ep.duration} />

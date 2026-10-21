@@ -64,10 +64,22 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   await expect(p.getByTestId("show-name")).toHaveValue("周末电影院");
   await p.getByTestId("project-tab-hosts").click();
   await p.getByRole("group", { name: "颜色" }).nth(2).getByRole("button", { name: "粉" }).click();
+  // a fourth host is the last one: then the page says so instead of offering a fifth
+  await p.getByRole("button", { name: "+ 加一位主持人" }).click();
+  await p.getByLabel("第 4 位主持人的名字").fill("Dee");
+  await expect(p.getByRole("button", { name: "+ 加一位主持人" })).toHaveCount(0);
+  await expect(p.getByTestId("show-hosts-max")).toHaveText("每个项目最多 4 位主持人（每人一条分轨）。");
   await p.getByTestId("show-save").click();
   await expect(p.getByText("已保存")).toBeVisible();
   const s = await (await p.request.get("/api/show")).json();
-  expect(s.hosts.map((h: { color: string }) => h.color)).toEqual(["blue", "purple", "pink"]);
+  expect(s.hosts.map((h: { color: string }) => h.color)).toEqual(["blue", "purple", "pink", "teal"]);
+  // 专有名词 in 基本信息, one per line
+  await p.getByTestId("project-tab-basic").click();
+  await p.getByTestId("show-terms").fill("王家卫\n花样年华, PULSE");
+  await p.getByTestId("show-save").click();
+  await expect(p.getByText("已保存")).toBeVisible();
+  expect((await (await p.request.get("/api/show")).json()).terms).toEqual(["王家卫", "花样年华", "PULSE"]);
+  await expect(p.getByTestId("show-terms")).toHaveValue("王家卫\n花样年华\nPULSE");
 
   // Leon's show did not change
   const l = await (await leon.request.get("/api/show")).json();

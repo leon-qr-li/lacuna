@@ -4,3 +4,23 @@
 .settings .card { margin-bottom: 16px; }
 .settings .gap { gap: 8px; }
 .settings .plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+/* design C (Leon 2026-10-20): a left side nav grouped 个人 / 管理, one section at a time */
+.settings:has(.set-layout) { max-width: 1040px; }
+.set-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 28px; align-items: start; }
+.set-nav { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 18px; }
+.set-nav-group { display: flex; flex-direction: column; gap: 2px; }
+.set-nav-label { display: flex; align-items: center; gap: 8px; padding: 0 12px 6px; font-size: 12px; color: var(--ink-3); }
+.set-nav-badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.set-nav-item { position: relative; display: block; padding: 10px 12px; border-radius: 10px; color: var(--ink-2); font-size: 14px; text-decoration: none; }
+.set-nav-item:hover { color: var(--ink); background: var(--hover); }
+.set-nav-item[aria-current="page"] { color: var(--ink); font-weight: 650; background: var(--hover); box-shadow: inset 2px 0 0 var(--accent); }
+.set-head { margin: 4px 0 14px; }
+.set-head h2 { margin: 0 0 4px; font-size: 19px; }
+.set-head p { margin: 0; }
+@media (max-width: 760px) {
+  .set-layout { grid-template-columns: 1fr; gap: 14px; }
+  .set-nav { position: static; flex-direction: row; flex-wrap: wrap; gap: 4px 14px; }
+  .set-nav-group { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .set-nav-label { padding: 0 6px 0 0; }
+}

@@ -64,4 +64,3 @@
 .import-grid:has([data-testid="import-album"]) { grid-template-columns: 1fr 2fr minmax(8rem, auto) minmax(8rem, auto); }
 @media (max-width: 760px) { .import-grid:has([data-testid="import-album"]) { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .import-grid:has([data-testid="import-album"]) { grid-template-columns: 1fr; } }
-.ep-list .ep-item:has(.alb-move) .ep-body > strong { padding-right: 150px; }

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { undoKey } from "./undo";
 
 // served by the second webServer in playwright.config.ts (an AI first-cut episode, short window)
 test.use({ baseURL: "http://127.0.0.1:8798" });
@@ -63,15 +64,16 @@ test("review: decide → jump to next pending; Y shortcut; 全部通过 in one s
 
   // approve the remaining two in one go
   await page.getByRole("button", { name: "剩下 2 处全部通过" }).click();
-  await expect(page.locator(".toast")).toHaveText("已全部通过 2 处，可撤销");
+  await expect(page.locator(".toast")).toContainText("已全部通过 2 处，Ctrl+Z 可撤销");
   await expect(page.getByTestId("review-progress")).toContainText("已过目 4 / 4");
   await expect(page.getByRole("button", { name: /全部通过/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /审阅改动/ })).toHaveText("审阅改动 · 0");
 
-  // one undo takes back exactly the batch, then the two single decisions
-  await page.getByRole("button", { name: "撤销" }).click();
+  // one undo (the toast's 撤销) takes back exactly the batch, then the two single decisions
+  await page.getByTestId("toast-undo").click();
   await expect(page.getByTestId("review-progress")).toContainText("已过目 2 / 4");
-  await page.getByRole("button", { name: "撤销" }).click();
-  await page.getByRole("button", { name: "撤销" }).click();
+  await undoKey(page);
+  await expect(page.getByTestId("review-progress")).toContainText("已过目 1 / 4");
+  await undoKey(page);
   await expect(page.getByTestId("review-progress")).toContainText("已过目 0 / 4");
 });

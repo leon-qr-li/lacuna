@@ -8,7 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from lacuna_app import create_app, totp
-from lacuna_app.auth import Auth, AuthError
+from lacuna_app.auth import Auth, AuthError, MailError
 from lacuna_app.editor import MockEditorAdapter
 from tests.app.e2e.auth import FakeMailer
 
@@ -111,7 +111,7 @@ def test_invite_expiry_revoke_and_newest_wins(tmp_path, mailer):
 
 def test_invite_link_returned_when_mail_fails(tmp_path):
     class Down(FakeMailer):
-        def send(self, *a):
+        def send(self, *a, **k):
             from lacuna_app.auth import MailError
             raise MailError("Resend 403")
     a = Auth(tmp_path, Down())
@@ -374,9 +374,45 @@ def test_invite_email_language_is_the_inviters_pick(tmp_path, mailer):
     assert TestClient(c.app).post("/api/auth/invite", json={"token": invite_token(out["link"])}).json()["lang"] == "zh"
     out = c.post("/api/auth/invites", json={"email": "sam@example.com", "lang": "en"}).json()
     mail = mailer.outbox[-1]
-    assert mail["subject"] == "leon@example.com invited you to LACUNA" and "set your password" in mail["text"]
+    assert mail["subject"] == "Leon invited you to LACUNA" and "Accept the invitation" in mail["text"]
     assert out["link"] in mail["text"]
+    # design A 「夜航信笺」: the same in HTML, with the logo inline (cid:), never a link to the site
+    assert "Accept the invitation" in mail["html"] and f'href="{out["link"]}"' in mail["html"]
+    assert "邀请" not in mail["html"] and "Mind the gaps. Keep the voice." in mail["html"]
+    if mail["inline"]:
+        assert 'src="cid:lacuna-logo"' in mail["html"] and mail["inline"][0]["png"]
     # the sign-up page learns the email's language
     assert TestClient(c.app).post("/api/auth/invite", json={"token": invite_token(out["link"])}).json()["lang"] == "en"
     # the inviter's own interface language is untouched
     assert c.post("/api/auth/invites", json={"email": "x"}).json()["detail"] == "邮箱格式不对"
+
+
+def test_invite_email_names_the_project_and_role(tmp_path):
+    """The invite email (design A) says which project and as what, in the picked language."""
+    from lacuna_app import invite_mail
+    from lacuna_app.i18n import speaking
+    with speaking("zh"):
+        m = invite_mail.render("leon@example.com", "https://x/invite/t", "洛城二三事", "editor")
+    assert m["subject"] == "Leon 邀请你加入「洛城二三事」"
+    assert "你被邀请以「剪辑」身份加入这个项目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
+    assert "<br>「洛城二三事」" in m["html"]
+    with speaking("en"):
+        m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "viewer")
+    assert m["subject"] == "Leon invited you to “PULSE”" and "as Listener" in m["html"]
+    assert not any("\u4e00" <= ch <= "\u9fff" for ch in m["html"] + m["text"])
+    with speaking("zh"):
+        esc = invite_mail.render("a@b.c", "https://x/invite/t", "<b>x</b>", "admin")["html"]
+    assert "<b>x</b>" not in esc and "&lt;b&gt;x&lt;/b&gt;" in esc
+
+
+def test_a_refused_designed_mail_still_sends_the_plain_one(tmp_path, mailer):
+    class NoHtml(type(mailer)):
+        def send(self, sender, to, subject, text, html=None, inline=None):
+            if html:
+                raise MailError("refused")  # i18n-ignore
+            super().send(sender, to, subject, text)
+    m = NoHtml()
+    c = make(tmp_path, m)
+    c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW})
+    out = c.post("/api/auth/invites", json={"email": "pei@example.com"}).json()
+    assert out["mailed"] and out["link"] in m.outbox[-1]["text"] and not m.outbox[-1]["html"]

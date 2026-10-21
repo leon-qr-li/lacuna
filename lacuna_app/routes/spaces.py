@@ -8,11 +8,13 @@ learned rules and background jobs never mix between workspaces.
 from __future__ import annotations
 
 import re
+import shutil
 import threading
+import time
 from http.cookies import SimpleCookie
 
 from fastapi import HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from .. import cloud, habits
@@ -83,6 +85,8 @@ class _Dispatch:
         method = scope["method"]
         if role == "viewer" and method not in ("GET", "HEAD"):
             return await deny(tr("你在这个项目里只能试听和查看，不能修改。"))
+        if self.spaces.archived(sid) and method not in ("GET", "HEAD"):
+            return await deny(tr("这个项目已归档，只能查看。恢复后才能修改。"))
         if role != "admin" and method == "DELETE" and FOR_GOOD.match(path):
             return await deny(tr("只有项目管理员能彻底删除剧集。"))
         # whose learned rules and 剪辑力度 apply: the signed-in person's own, in every project (habits.py)
@@ -135,6 +139,17 @@ class SwitchBody(BaseModel):
 
 class NameBody(BaseModel):
     name: str
+
+
+class ArchiveBody(BaseModel):
+    archived: bool = True
+
+
+class DeleteBody(BaseModel):
+    confirm: str            # the project's name, typed
+
+
+PICTURE_MAX = 10 * 1024 * 1024
 
 
 class MemberBody(BaseModel):
@@ -211,6 +226,14 @@ def register(app, ctx) -> None:
         if not (site_admin(email) or spaces.role(sid, email) == "admin"):
             raise HTTPException(403, tr("只有项目管理员能改这个项目"))
 
+    def live(sid: str) -> None:
+        if spaces.archived(sid):
+            raise HTTPException(403, tr("这个项目已归档，只能查看。恢复后才能修改。"))
+
+    def may_delete(email: str, sid: str) -> bool:
+        """Deleting for good: the project's creator or LACUNA's owner, never the main project."""
+        return sid != MAIN and (spaces.creator(sid) == email or auth.role(email) == "owner")
+
     def invite_space(actor: str, space: str | None, role: str | None) -> dict:
         """What an invite (routes/auth.py) puts its new account into."""
         if not space or space == "new":
@@ -220,13 +243,13 @@ def register(app, ctx) -> None:
         role = role or "editor"
         if role not in SPACE_RANK:
             raise AuthError(tr("没有这个角色"))
-        return {"space": space, "space_role": role}
+        return {"space": space, "space_role": role, "space_name": spaces.title(space)}
 
     app.state.invite_space = invite_space
 
     def overview(request: Request, email: str, picked: str | None = None) -> dict:
         cur = spaces.current(email, picked or request.cookies.get(SPACE_COOKIE))
-        mine = spaces.mine(email, detail=True)
+        mine = [m | {"can_delete": may_delete(email, m["id"])} for m in spaces.mine(email, detail=True)]
         out = {"current": next((s for s in mine if s["id"] == cur), None), "mine": mine}
         if site_admin(email):
             out["all"] = spaces.overview()
@@ -262,6 +285,7 @@ def register(app, ctx) -> None:
     def rename(sid: str, body: NameBody, request: Request):
         email = me(request)
         may_manage(email, sid)
+        live(sid)
         run(lambda: spaces.rename(sid, body.name))
         return overview(request, email)
 
@@ -269,6 +293,7 @@ def register(app, ctx) -> None:
     def member(sid: str, body: MemberBody, request: Request):
         email = me(request)
         may_manage(email, sid)
+        live(sid)
         target = body.email.strip().lower()
         if body.role is not None and target not in auth.users:
             raise HTTPException(404, tr("没有这个账号：先在「成员与邀请」里邀请对方"))
@@ -302,6 +327,7 @@ def register(app, ctx) -> None:
         which only the site's owner and admins may send (the site stays invite-only)."""
         email = me(request)
         may_manage(email, sid)
+        live(sid)
         target = body.email.strip().lower()
         role = body.role or "editor"
         if role not in SPACE_RANK:
@@ -311,7 +337,7 @@ def register(app, ctx) -> None:
             run(lambda: spaces.set_member(sid, target, role, by=email))
             out = {"joined": target}
         elif site_admin(email):
-            sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request), {"space": sid, "space_role": role}, body.lang))
+            sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request), {"space": sid, "space_role": role, "space_name": spaces.title(sid)}, body.lang))
             grant = getattr(app.state, "grant_access", None)       # routes/auth.py: Cloudflare Access list
             if grant:
                 grant(sent["email"], True)
@@ -334,3 +360,76 @@ def register(app, ctx) -> None:
                 if e not in auth.users:
                     drop(e, False)
         return people_for(email, sid)
+
+    # -- the project's picture, archive (已归档, read-only) and deleting it for good
+    @app.get("/api/spaces/{sid}/picture")
+    def picture(sid: str, request: Request):
+        email = me(request)
+        if sid not in spaces.spaces or not (spaces.role(sid, email) or site_admin(email)):
+            raise HTTPException(404, tr("没有这个项目"))
+        f = spaces.picture_file(sid)
+        if not f.is_file():
+            raise HTTPException(404, tr("这个项目还没有图片"))
+        # the address carries ?v=<mtime>, so a new picture is a new address
+        return FileResponse(f, media_type="image/png", headers={"Cache-Control": "private, max-age=31536000"})
+
+    @app.post("/api/spaces/{sid}/picture")
+    async def set_picture(sid: str, request: Request):
+        """The picture as the request body (any image Pillow opens); it is cut to a centred square."""
+        email = me(request)
+        may_manage(email, sid)
+        live(sid)
+        data = await request.body()
+        if not data:
+            raise HTTPException(422, tr("这不是一张能打开的图片"))
+        if len(data) > PICTURE_MAX:
+            raise HTTPException(413, tr("图片太大了（最大 10 MB）"))
+        run(lambda: spaces.set_picture(sid, data))
+        return overview(request, email)
+
+    @app.delete("/api/spaces/{sid}/picture")
+    def drop_picture(sid: str, request: Request):
+        email = me(request)
+        may_manage(email, sid)
+        live(sid)
+        run(lambda: spaces.drop_picture(sid))
+        return overview(request, email)
+
+    @app.post("/api/spaces/{sid}/archive")
+    def archive(sid: str, body: ArchiveBody, request: Request):
+        email = me(request)
+        may_manage(email, sid)
+        run(lambda: spaces.archive(sid, email, body.archived))
+        return overview(request, email)
+
+    @app.delete("/api/spaces/{sid}")
+    def delete(sid: str, body: DeleteBody, request: Request):
+        """For good, only from 已归档, only by its creator or LACUNA's owner, with the name typed. What its
+        editors taught LACUNA in it (learning/, the evidence behind learned rules) is first copied into the
+        deleting person's own store; learned rules and 剪辑力度 are theirs already (habits.py)."""
+        email = me(request)
+        if sid not in spaces.spaces:
+            raise HTTPException(404, tr("没有这个项目"))
+        if not may_delete(email, sid):
+            raise HTTPException(403, tr("只有项目的创建者或 LACUNA 的所有者能永久删除项目"))
+        if not spaces.archived(sid):
+            raise HTTPException(409, tr("先把项目归档，才能永久删除"))
+        if body.confirm.strip() != spaces.title(sid):
+            raise HTTPException(422, tr("项目名称不对，没有删除"))
+        if not [m for m in spaces.mine(email) if m["id"] != sid]:
+            raise HTTPException(409, tr("这是你唯一的项目。先新建一个项目，再删除这个"))
+        learned = spaces.path(sid) / LEARN_DIR
+        if learned.is_dir():
+            keep = habits.home_for(spaces.root, email) / LEARN_DIR / "from_projects" / \
+                f"{sid}-{time.strftime('%Y%m%d-%H%M%S')}"
+            shutil.copytree(learned, keep, ignore=shutil.ignore_patterns(RULES_FILE), dirs_exist_ok=True)
+        for i in auth.list_invites():
+            if i.get("space") == sid:
+                auth.revoke_invite(i["id"])
+        with lock:
+            children.pop(sid, None)
+        run(lambda: spaces.delete(sid))
+        res = JSONResponse(overview(request, email) | {"deleted": sid})
+        if request.cookies.get(SPACE_COOKIE) == sid:
+            res.delete_cookie(SPACE_COOKIE, path="/")
+        return res

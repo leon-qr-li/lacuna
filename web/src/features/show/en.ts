@@ -53,4 +53,9 @@ export const en: Dict = {
     "Enter the show name and its hosts (one track each). You can change them later under Show, and set an editing style there too.",
   节目: "Show",
   "{list} 和 {last}": "{list} and {last}",
+  专有名词: "Names and terms",
+  "一行一个，比如：王家卫、花样年华、PULSE": "One per line, e.g. Wong Kar-wai, In the Mood for Love, PULSE",
+  "节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。":
+    "Names of people, films and segments the show often mentions. When the transcript mis-hears one as something that sounds alike, it is corrected to this spelling; the recording comes first, nothing that sounds different is forced.",
+  "每个项目最多 {n} 位主持人（每人一条分轨）。": "A project can have at most {n} hosts (one track each).",
 };

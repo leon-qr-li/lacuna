@@ -184,6 +184,8 @@ class Importer:
         language = language or profile.get("language") or "zh"
         if not hosts:
             raise ImportError_(tr("先在「节目」里填好主持人"))
+        if len(paths) > show_mod.MAX_HOSTS:
+            raise ImportError_(tr("每个项目最多 {n} 位主持人，一集最多导入 {n} 条分轨，收到 {got} 条", n=show_mod.MAX_HOSTS, got=len(paths)))
         if len(paths) != len(hosts):
             raise ImportError_(tr("要 {n} 条分轨（每位主持人一条），收到 {got} 条", n=len(hosts), got=len(paths)))
         tracks = {tag: check_track(p) for (tag, _), p in zip(hosts, paths)}
@@ -451,8 +453,8 @@ class Importer:
         from . import transcript_fix as tf
         p = d / "term_fixes.json"
         lines = tf.lines_from_asr(asr, dict(hosts))
-        if p.is_file():
-            fixes = read_json(p).get("fixes", [])
+        if p.is_file():          # a resumed import: what the model said, under today's rule (sounds alike)
+            fixes = [f for f in read_json(p).get("fixes", []) if tf.sounds_alike(str(f.get("wrong", "")), str(f.get("right", "")))]
         else:
             self._progress(job, "features", 0.0, tr("按项目设置校对专有名词"))
             fixer = self.term_fixer if self.term_fixer is not None else tf.TranscriptFixer()
@@ -473,7 +475,8 @@ class Importer:
         except (OSError, ValueError):
             sig = None
         if sig:
-            write(self.ws.episode_dir(job["id"]) / "term_check.json", {"sig": sig, "at": now()})
+            from .transcript_fix import CHECK_VERSION
+            write(self.ws.episode_dir(job["id"]) / "term_check.json", {"sig": sig, "v": CHECK_VERSION, "at": now()})
 
     def _media(self, job: dict, d: Path) -> dict[str, MediaRef]:
         """Raw tracks as MediaRefs (read in place); conformed to WAV only if they can't be."""

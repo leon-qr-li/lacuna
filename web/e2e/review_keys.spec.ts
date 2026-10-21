@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { undoKey } from "./undo";
 
 // review shortcuts (Space, ← →, K, R, ?) and the progress chip in the dock; AI first-cut server
 test.use({ baseURL: "http://127.0.0.1:8798" });
@@ -56,8 +57,8 @@ test("review shortcuts: arrows move, K keeps, R restores, ? shows the card, typi
   await expect(page.getByTestId("review-shortcuts")).toBeVisible();
 
   // leave the shared backend as we found it
-  await page.getByRole("button", { name: "撤销" }).click();
+  await undoKey(page);
   await expect(chip).toHaveText(at(1));
-  await page.getByRole("button", { name: "撤销" }).click();
+  await undoKey(page);
   await expect(chip).toHaveText(at(0));
 });

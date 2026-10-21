@@ -156,6 +156,9 @@ a.brand:hover { color: var(--ink); }
 .subtabs a[aria-current="page"] { background: var(--solid); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
 .banner { margin: 0; padding: 7px 28px; background: var(--banner); color: var(--banner-ink); font-size: 12.5px; }
 .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 60; padding: 11px 18px; border-radius: 14px; background: var(--ink); color: var(--on-ink); box-shadow: var(--shadow-pop); }
+.toast-undo { display: flex; align-items: center; gap: 14px; padding-right: 8px; }
+.toast-undo-btn { border: 0; border-radius: 9px; padding: 5px 11px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; background: color-mix(in srgb, var(--on-ink) 16%, transparent); color: var(--on-ink); }
+.toast-undo-btn:hover { background: color-mix(in srgb, var(--on-ink) 26%, transparent); }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;

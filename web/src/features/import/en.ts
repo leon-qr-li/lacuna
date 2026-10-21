@@ -17,4 +17,6 @@ export const en: Dict = {
   "AI 第一刀（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。":
     "First cut (AI not connected, pauses tightened only): {edits} edits, {review} for you to review.",
   这一集说的语言: "Language of this episode",
+  "这个项目有 {n} 位主持人，只用了前 {n} 条分轨（每个项目最多 4 位主持人，每人一条）。":
+    "This project has {n} hosts, so only the first {n} tracks were used (a project has at most 4 hosts, one track each).",
 };

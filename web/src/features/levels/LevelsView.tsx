@@ -11,7 +11,7 @@ import { levelsApi } from "./api";
 interface Props {
   id: string;
   ep: Episode;
-  flash: (m: string) => void;
+  flash: (m: string, opts?: { undo?: boolean }) => void;
   onPauseMain: () => void;
   onEpisode?: (ep: Episode) => void;
 }
@@ -47,13 +47,14 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
     who: string,
     p: () => ReturnType<typeof levelsApi.auto>,
     done?: string,
+    undoable?: boolean,
   ) => {
     setBusy(who);
     try {
       const r = await p();
       setLv(r.levels);
       onEpisode?.(r);
-      if (done) flash(done);
+      if (done) flash(done, { undo: undoable });
     } catch (e) {
       flash(t("没调成：{message}", { message: (e as Error).message }));
       levelsApi.levels(id).then(setLv, () => undefined);
@@ -65,7 +66,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
   const setGain = (track: string, g: number) =>
     run(track, () => levelsApi.setGain(id, track, g, player.time));
   const auto = () =>
-    run("auto", () => levelsApi.auto(id, player.time), t("两人音量已统一"));
+    run("auto", () => levelsApi.auto(id, player.time), t("两人音量已统一"), true);
   const listenAt = (s: number) => {
     player.seek(Math.max(s - 2, 0));
     player.play();

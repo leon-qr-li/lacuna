@@ -9,7 +9,7 @@ import "./projects.css";
 /** 邀请协作 in the top bar, for the project's managers. */
 function InviteLink() {
   const sp = useProjects();
-  if (sp?.current?.role !== "admin") return null;
+  if (sp?.current?.role !== "admin" || sp.current.archived) return null;
   return (
     <a className="btn btn-outline row" href="#/invite" aria-current={navCurrent("invite")} data-testid="invite-link">
       {t("邀请协作")}

@@ -75,6 +75,12 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
   await fresh.getByTestId("project-menu").click();
   if (SHOTS) await fresh.screenshot({ path: `${SHOTS}/menu.png` });
   await fresh.getByTestId("project-new").click();
+  // the dialog sits in the middle of the window, not stuck against the top bar
+  const box = (await fresh.getByTestId("project-new-dialog").boundingBox())!;
+  const vp = fresh.viewportSize()!;
+  expect(box.y).toBeGreaterThan(40);
+  expect(Math.abs(box.y + box.height / 2 - vp.height / 2)).toBeLessThan(40);
+  expect(Math.abs(box.x + box.width / 2 - vp.width / 2)).toBeLessThan(40);
   await fresh.getByTestId("project-name").fill("片场夜谈");
   await fresh.getByTestId("project-create").click();
   await expect(fresh.getByTestId("project-menu")).toHaveText(/片场夜谈/);

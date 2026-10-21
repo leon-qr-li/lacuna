@@ -53,6 +53,13 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.getByTestId("album-row")).toHaveCount(0);
     await expect(card).toHaveCount(1);
 
+    // the card's actions (移到专辑 / 归档) sit in a row under the text, never over the title
+    const tb = (await card.locator(".ep-body > strong").boundingBox())!;
+    for (const b of [card.getByTestId("album-move"), card.locator(".ep-archive")]) {
+      const ab = (await b.boundingBox())!;
+      expect(ab.y).toBeGreaterThanOrEqual(tb.y + tb.height);
+    }
+
     // move it out: the album shows as a cover, the episode under 不在专辑里
     await card.getByTestId("album-move").click();
     await page.getByTestId("album-menu").getByRole("menuitemradio", { name: "不在专辑里" }).click();

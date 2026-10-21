@@ -47,3 +47,22 @@
 .prj-who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prj-role { color: var(--ink-2); font-size: 13px; }
 .prj-pending .prj-role { color: var(--ink-3); }
+
+/* project picture / colour, 已归档 (decision projects-archive-delete) */
+.prj-pic { display: inline-flex; flex: none; align-items: center; justify-content: center; object-fit: cover; color: #fff; font-weight: 700; line-height: 1; user-select: none; }
+.prj-grid > li { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.prj-archive { margin-top: 36px; }
+.prj-archive h2 { margin: 0 0 4px; font-size: 17px; }
+.prj-archived .prj-card { opacity: 0.78; box-shadow: none; }
+.prj-archived .prj-pic { filter: grayscale(0.55); }
+.prj-card-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.prj-crumb-btn .prj-pic { border-radius: 6px; }
+.prj-menu-item .prj-pic { border-radius: 5px; }
+.prj-menu-item.prj-menu-row { grid-template-columns: 1.2em 20px minmax(0, 1fr) auto; }
+.prj-tag { padding: 1px 7px; border-radius: 999px; background: var(--hover); color: var(--ink-3); font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+.prj-look { display: flex; align-items: center; gap: 16px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
+.prj-look-body { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.prj-look-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.prj-danger-zone { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+.prj-danger-zone p { margin: 2px 0 0; }
+.prj-readonly { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 14px; border-radius: 12px; background: var(--hover); color: var(--ink-2); font-size: 14px; }

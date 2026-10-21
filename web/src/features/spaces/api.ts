@@ -1,5 +1,5 @@
 // API of workspaces (lacuna_app/routes/spaces.py)
-import { req } from "../../api";
+import { failure, req } from "../../api";
 import { lang as uiLang, type Lang } from "../../i18n";
 
 export type SpaceRole = "admin" | "editor" | "viewer";
@@ -16,6 +16,14 @@ export interface MySpace {
   people?: number;
   /** last change, seconds since 1970 */
   updated?: number;
+  /** its solid colour while it has no picture */
+  color?: string;
+  /** its square picture's address, null: none (the colour shows) */
+  picture?: string | null;
+  /** in 已归档: read-only for everyone until restored */
+  archived?: boolean;
+  /** you may delete it for good (its creator, or LACUNA's owner) */
+  can_delete?: boolean;
 }
 
 /** 邀请协作: a project's collaborators and the invites waiting for them */
@@ -62,6 +70,19 @@ export const spacesApi = {
   people: (id: string) => req<ProjectPeople>("GET", `/api/spaces/${encodeURIComponent(id)}/people`),
   invite: (id: string, email: string, role: SpaceRole, lang: Lang = uiLang) =>
     req<ProjectPeople>("POST", `/api/spaces/${encodeURIComponent(id)}/invite`, { email, role, lang }),
+  /** any image; the server cuts it to a centred square */
+  setPicture: async (id: string, file: Blob): Promise<Spaces> => {
+    const url = `/api/spaces/${encodeURIComponent(id)}/picture`;
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": file.type || "application/octet-stream" }, body: file });
+    if (!r.ok) throw await failure(r, url);
+    return (await r.json()) as Spaces;
+  },
+  dropPicture: (id: string) => req<Spaces>("DELETE", `/api/spaces/${encodeURIComponent(id)}/picture`),
+  /** archive (read-only, under 已归档) or restore */
+  archive: (id: string, archived: boolean) => req<Spaces>("POST", `/api/spaces/${encodeURIComponent(id)}/archive`, { archived }),
+  /** for good, from 已归档, with the project's name typed */
+  remove: (id: string, confirm: string) =>
+    req<Spaces & { deleted: string }>("DELETE", `/api/spaces/${encodeURIComponent(id)}`, { confirm }),
   withdraw: (id: string, invite: string) =>
     req<ProjectPeople>("DELETE", `/api/spaces/${encodeURIComponent(id)}/invites/${encodeURIComponent(invite)}`),
 };

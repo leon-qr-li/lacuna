@@ -44,7 +44,7 @@ test("no screen names the AI vendor (zh + en)", async ({ page }) => {
   const ep = /#\/ep\/([^/]+)/.exec(page.url())![1];
   // every episode tab and page (new tabs / pages: add them here)
   const tabs = ["listen", "review", "lessons", "levels", "music", "export", "publish", "ximalaya", "poster", "upload"];
-  const screens = ["#/", ...tabs.map((m) => `#/ep/${ep}/${m}`), "#/learning", "#/library", "#/archive", "#/settings"];
+  const screens = ["#/", ...tabs.map((m) => `#/ep/${ep}/${m}`), "#/learning", "#/library", "#/archive", "#/settings", "#/settings/edit", "#/settings/projects", "#/settings/ai"];
   expect(await sweep(page, screens)).toEqual([]);
 });
 

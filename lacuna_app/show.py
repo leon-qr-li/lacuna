@@ -27,7 +27,7 @@ from .store import atomic_write_json, read_json
 
 FILE = "show.json"
 VERSION = 1
-MAX_HOSTS = 6
+MAX_HOSTS = 4           # a project has at most 4 hosts (tracks): what the editing is built and tested for
 MAX_TERMS = 60          # 专有名词: names the transcript must spell right (transcript_fix.py)
 # colour names, each a light + dark pair in web/src/features/show/show.css (WCAG AA checked there)
 COLORS = ("blue", "purple", "teal", "amber", "green", "pink")
@@ -173,7 +173,7 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
         if not hosts:
             raise ShowError(tr("至少要有一位主持人"))
         if len(hosts) > MAX_HOSTS:
-            raise ShowError(tr("最多 {n} 位主持人", n=MAX_HOSTS))
+            raise ShowError(tr("每个项目最多 {n} 位主持人", n=MAX_HOSTS))
     out["hosts"] = hosts[:MAX_HOSTS]
     return out
 

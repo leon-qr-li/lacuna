@@ -169,7 +169,7 @@ def test_forgot_password_flow(client, mailer):
 
 def test_mail_failure_is_reported(tmp_path):
     class Down(FakeMailer):
-        def send(self, *a):
+        def send(self, *a, **k):
             raise MailError("连不上 Resend")  # i18n-ignore
     a = Auth(tmp_path, Down())
     a.register_first("leon@example.com", PW, None, True)

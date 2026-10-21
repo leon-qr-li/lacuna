@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { SCOPES_PORT } from "../playwright.config";
+import { undoKey } from "./undo";
 
 // 手动剪辑 (decision manual-editing): select a stretch on the waveform or the transcript, cut it from every
 // track or silence one host; it is an ordinary undoable edit. Runs on the scopes server (its own state).
@@ -26,13 +27,38 @@ const duration = async (page: Page) =>
 test.describe.serial("manual editing", () => {
   test("drag selects on every lane; Esc drops it; a click only seeks", async ({ page }) => {
     await open(page);
+    const leonBefore = (await page.getByTestId("lane-Leon").boundingBox())!;
     await dragLane(page, "Leon", 0.3, 0.4);
-    await expect(page.getByTestId("ml-bar")).toContainText("已选");
     await expect(page.getByTestId("ml-sel")).toHaveCount(2); // the selection shows on both lanes
+    // round 4: a small vertical menu at the selection's right edge, centred between the tracks; no time text,
+    // no 听选中 / 取消; the tracks keep their height
+    const menu = page.getByTestId("ml-menu");
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole("menuitem")).toHaveText(["删掉这段Ctrl X", "只静音 Leon", "只静音 Pei"]);
+    await expect(page.getByTestId("ml-bar")).toHaveCount(0);
+    await expect(page.getByTestId("ml-listen")).toHaveCount(0);
+    const mb = (await menu.boundingBox())!;
+    const sb = (await page.getByTestId("ml-sel").first().boundingBox())!;
+    const leon = (await page.getByTestId("lane-Leon").boundingBox())!;
+    const pei = (await page.getByTestId("lane-Pei").boundingBox())!;
+    expect(leon).toEqual(leonBefore);
+    expect(mb.x).toBeGreaterThan(sb.x + sb.width);
+    expect(mb.x - (sb.x + sb.width)).toBeLessThan(16);
+    expect(Math.abs(mb.y + mb.height / 2 - (leon.y + pei.y + pei.height) / 2)).toBeLessThan(3);
+    // the legend sits in the title row, at its right
+    const lg = (await page.getByTestId("ml-legend").boundingBox())!;
+    const title = (await page.getByTestId("edit-lanes").getByRole("heading", { name: "剪辑时间线" }).boundingBox())!;
+    expect(Math.abs(lg.y + lg.height / 2 - (title.y + title.height / 2))).toBeLessThan(6);
+    // a click elsewhere closes the menu, a right-click on the selection opens it again
+    await page.getByTestId("edit-lanes").getByRole("heading").click();
+    await expect(menu).toHaveCount(0);
+    await page.mouse.click(sb.x + sb.width / 2, sb.y + sb.height / 2, { button: "right" });
+    await expect(menu).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.getByTestId("ml-bar")).toBeHidden();
+    await expect(menu).toHaveCount(0);
+    await expect(page.getByTestId("ml-sel")).toHaveCount(0);
     await page.getByTestId("lane-Pei").click({ position: { x: 200, y: 20 } });
-    await expect(page.getByTestId("ml-bar")).toBeHidden();
+    await expect(menu).toHaveCount(0);
     await expect(page.getByTestId("clock")).not.toContainText("0:00 /");
   });
 
@@ -88,7 +114,7 @@ test.describe.serial("manual editing", () => {
     await page.mouse.move(ruler.x + ruler.width * 0.3, ruler.y + ruler.height / 2, { steps: 6 });
     await page.mouse.up();
     await expect.poll(async () => (await view(page)).start).toBeGreaterThan(v0.start);
-    await expect(page.getByTestId("ml-bar")).toHaveCount(0); // panning never selects
+    await expect(page.getByTestId("ml-sel")).toHaveCount(0); // panning never selects
   });
 
   test("holding Space turns the lanes into a hand that pans; a Space tap still plays", async ({ page }) => {
@@ -109,7 +135,7 @@ test.describe.serial("manual editing", () => {
     await page.keyboard.up(" ");
     await expect(page.getByTestId("edit-lanes")).not.toHaveClass(/is-hand/);
     expect((await view(page)).start).toBeLessThan(v0.start); // dragged right: earlier audio comes into view
-    await expect(page.getByTestId("ml-bar")).toHaveCount(0);
+    await expect(page.getByTestId("ml-sel")).toHaveCount(0);
     await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "播放"); // a pan is not a play
     await page.keyboard.press(" ");
     await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "暂停");
@@ -136,12 +162,10 @@ test.describe.serial("manual editing", () => {
     await open(page);
     await page.getByLabel("暂停时回退 5 秒").uncheck();
     await dragLane(page, "Leon", 0.3, 0.36);
-    await expect(page.getByTestId("ml-bar")).toBeVisible();
-    const text = (await page.getByTestId("ml-bar").locator(".ml-what b").textContent()) ?? "";
-    const [a, b] = text.split("–").map((x) => {
-      const [m, s] = x.trim().split(":");
-      return Number(m) * 60 + Number(s);
-    });
+    const selBox = page.getByTestId("ml-sel").first();
+    await expect(selBox).toBeVisible();
+    const a = Number(await selBox.getAttribute("data-a"));
+    const b = Number(await selBox.getAttribute("data-b"));
     const audio = page.getByTestId("main-audio");
     await page.getByTestId("play").click();
     await expect(page.getByTestId("play")).toHaveAttribute("aria-label", "暂停");
@@ -149,7 +173,7 @@ test.describe.serial("manual editing", () => {
     const at = await audio.evaluate((el: HTMLAudioElement) => el.currentTime);
     expect(at).toBeCloseTo(a, 0); // back at the start of the selection
     expect(b).toBeGreaterThan(a);
-    await expect(page.getByTestId("ml-bar")).toBeVisible(); // the selection stays
+    await expect(page.getByTestId("ml-sel").first()).toBeVisible(); // the selection stays
   });
 
   test("on a selection edge the pointer turns into a resize cursor, and dragging it resizes", async ({ page }) => {
@@ -162,11 +186,11 @@ test.describe.serial("manual editing", () => {
     await page.mouse.move(box.x + box.width * 0.4, box.y + box.height / 2);
     await expect(lane).toHaveClass(/is-edge/);
     expect(await lane.evaluate((el) => getComputedStyle(el).cursor)).toBe("col-resize");
-    const before = await page.getByTestId("ml-bar").locator(".ml-what b").textContent();
+    const before = await page.getByTestId("ml-sel").first().getAttribute("data-b");
     await page.mouse.down();
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height / 2, { steps: 5 });
     await page.mouse.up();
-    await expect(page.getByTestId("ml-bar").locator(".ml-what b")).not.toHaveText(before ?? "");
+    await expect(page.getByTestId("ml-sel").first()).not.toHaveAttribute("data-b", before ?? "");
     await expect(lane).not.toHaveClass(/is-edge/);
   });
 
@@ -186,14 +210,14 @@ test.describe.serial("manual editing", () => {
     await dragLane(page, "Leon", 0.55, 0.62);
     await page.getByTestId("ml-cut").click();
     await expect(page.locator(".toast")).toContainText("已删掉");
-    await expect(page.getByTestId("ml-bar")).toBeHidden();
+    await expect(page.getByTestId("ml-menu")).toHaveCount(0);
     await page.getByTestId("tab-near").click();
     const row = page.locator('[data-testid="nearby"] li[data-source="manual"]');
     await expect(row).toHaveCount(1);
     await expect(row).toContainText("手动删除");
     await expect(row).toContainText("手动剪辑");
     expect(await duration(page)).toBeLessThan(before - 1);
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
     await expect(page.locator(".toast")).toContainText("已撤销：手动剪辑：");
     await expect(row).toHaveCount(0);
     expect(await duration(page)).toBeCloseTo(before, 2);
@@ -212,8 +236,9 @@ test.describe.serial("manual editing", () => {
     await dragLane(page, "Leon", 0.7, 0.75);
     await page.keyboard.press("Control+x");
     await expect(page.locator(".toast")).toContainText("已删掉");
-    await page.getByRole("button", { name: "撤销" }).click();
-    await page.getByRole("button", { name: "撤销" }).click();
+    await undoKey(page);
+    await expect(page.locator(".toast")).toContainText("已撤销");
+    await undoKey(page);
     await page.getByTestId("tab-near").click();
     await expect(page.locator(".side-near")).toBeVisible();
     await expect(page.locator('[data-testid="nearby"] li[data-source="manual"]')).toHaveCount(0);

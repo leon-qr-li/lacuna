@@ -6,7 +6,7 @@ import { t } from "../../i18n";
 import { manualApi, TILE_S } from "./api";
 import type { WaveTile } from "./api";
 import { range, useChunks } from "./chunks";
-import { SelBar } from "./SelBar";
+import { LaneMenu } from "./LaneMenu";
 import { MIN_SEL } from "./useManual";
 import type { Manual } from "./useManual";
 import "./manual.css";
@@ -135,9 +135,9 @@ export function EditLanes({
   player: Player;
   highlight?: EditInfo | null;
   m: Manual;
-  /** shown under the title, above the ruler (the whole-episode minimap) */
+  /** shown under the title, above the ruler */
   top?: ReactNode;
-  /** shown under the legend (the player) */
+  /** shown under the tracks (the player) */
   bottom?: ReactNode;
   /** a card for the edit under the pointer (listen / restore it from the timeline) */
   popover?: (e: EditInfo) => ReactNode;
@@ -165,6 +165,11 @@ export function EditLanes({
   const [edge, setEdge] = useState(false); // pointer on a selection edge (or dragging one): a resize cursor shows it
   const [pop, setPop] = useState<{ id: string; left: number; top: number } | null>(null); // the edit card under the pointer
   const popTimer = useRef(0);
+  // the selection's menu: opens when a drag on the tracks ends (or on a right-click in the selection); Esc, a
+  // click elsewhere or a new click on the tracks close it. Placed at the selection's right edge, between the tracks.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menu = useRef<HTMLDivElement | null>(null);
+  const [menuAt, setMenuAt] = useState<{ left: number; top: number } | null>(null);
   const keepPop = () => window.clearTimeout(popTimer.current);
   const dropPop = (ms = 250) => {
     window.clearTimeout(popTimer.current);
@@ -287,6 +292,7 @@ export function EditLanes({
     if (sel && side) [anchor, moved] = [side === "a" ? sel.b : sel.a, true];
     drag.current = { kind: "sel", x0: e.clientX, anchor, moved, r };
     setPop(null);
+    setMenuOpen(false);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   /** the card for the edit within a few pixels of the pointer on this lane, below the lane */
@@ -333,8 +339,50 @@ export function EditLanes({
     if (!g.moved) {
       setSel(null);
       player.seek(at(e.clientX, g.r)); // the window stays put
-    } else setSel((s) => (s && s.b - s.a >= MIN_SEL ? s : null));
+    } else {
+      setSel((s) => (s && s.b - s.a >= MIN_SEL ? s : null));
+      setMenuOpen(true);
+    }
   };
+  /** right-click on the tracks: the selection's menu when the pointer is on the selection */
+  const context = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const r = e.currentTarget.getBoundingClientRect();
+    const s = at(e.clientX, r);
+    if (sel?.from === "lanes" && s >= sel.a - 0.05 && s <= sel.b + 0.05) setMenuOpen(true);
+  };
+
+  const lanesSel = sel?.from === "lanes" ? sel : null;
+  useEffect(() => {
+    if (!lanesSel) setMenuOpen(false);
+  }, [lanesSel]);
+  // Esc closes it (useManual drops the selection too); a click outside it closes it
+  useEffect(() => {
+    if (!menuOpen) return;
+    const away = (e: PointerEvent) => !menu.current?.contains(e.target as Node) && setMenuOpen(false);
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("pointerdown", away);
+    window.addEventListener("keydown", key);
+    return () => {
+      window.removeEventListener("pointerdown", away);
+      window.removeEventListener("keydown", key);
+    };
+  }, [menuOpen]);
+  // where: 8 px right of the selection, vertically centred on the tracks; left of it when there is no room
+  useLayoutEffect(() => {
+    if (!menuOpen || !lanesSel || !card.current || !menu.current) return setMenuAt(null);
+    const bodies = card.current.querySelectorAll<HTMLElement>(".ml-body");
+    if (!bodies.length) return;
+    const c = card.current.getBoundingClientRect();
+    const first = bodies[0].getBoundingClientRect();
+    const last = bodies[bodies.length - 1].getBoundingClientRect();
+    const mw = menu.current.offsetWidth;
+    const mh = menu.current.offsetHeight;
+    const px = (v: number) => first.left - c.left + ((Math.max(t0, Math.min(t1, v)) - t0) / span) * first.width;
+    let left = px(lanesSel.b) + 8;
+    if (left + mw > c.width - 8) left = Math.max(8, px(lanesSel.a) - mw - 8);
+    setMenuAt({ left, top: (first.top + last.bottom) / 2 - c.top - mh / 2 });
+  }, [menuOpen, lanesSel, t0, t1, span]);
 
   const visible = ep.edits.filter((e) => e.category !== "loudness" && e.t + e.len >= t0 && e.t <= t1);
   const step = TICK_STEPS.find((s) => s / span >= 0.12) ?? 300; // about 8 labels across
@@ -354,6 +402,10 @@ export function EditLanes({
       <div className="ml-head">
         <h2>{t("剪辑时间线")}</h2>
         <Help />
+        <p className="muted small legend" data-testid="ml-legend">
+          <span className="lg lg-cut" /> {t("剪切点")}　<span className="lg lg-lift" /> {t("单轨删减")}
+          <span className="lg lg-restored" /> {t("已恢复")}　<span className="lg lg-pending" /> {t("待批准")}　<span className="lg ml-lg-sel" /> {t("你选中的")}
+        </p>
       </div>
       {top}
       <div className="lane">
@@ -379,6 +431,7 @@ export function EditLanes({
             }}
             onPointerUp={up}
             onPointerCancel={up}
+            onContextMenu={context}
             role="presentation"
             data-testid={`lane-${tr.name}`}
             data-track={tr.name}
@@ -401,16 +454,20 @@ export function EditLanes({
                 title={highlight.title}
               />
             )}
-            {showSel && <div className="ml-sel" style={{ left: x(Math.max(sel.a, t0)), width: w(sel.a, sel.b) }} data-testid="ml-sel" />}
+            {showSel && (
+              <div
+                className="ml-sel"
+                style={{ left: x(Math.max(sel.a, t0)), width: w(sel.a, sel.b) }}
+                data-testid="ml-sel"
+                data-a={sel.a.toFixed(2)}
+                data-b={sel.b.toFixed(2)}
+              />
+            )}
             {time >= t0 && time <= t1 && <div className="ml-head-line" style={{ left: x(time) }} />}
           </div>
         </div>
       ))}
-      {sel?.from === "lanes" && <SelBar ep={ep} m={m} />}
-      <p className="muted small legend">
-        <span className="lg lg-cut" /> {t("剪切点")}　<span className="lg lg-lift" /> {t("单轨删减")}
-        <span className="lg lg-restored" /> {t("已恢复")}　<span className="lg lg-pending" /> {t("待批准")}　<span className="lg ml-lg-sel" /> {t("你选中的")}
-      </p>
+      {menuOpen && lanesSel && <LaneMenu ref={menu} ep={ep} m={m} left={menuAt?.left ?? 0} top={menuAt?.top ?? 0} hidden={!menuAt} />}
       {bottom}
       {pop && popover && (() => {
         const ed = ep.edits.find((x) => x.id === pop.id);

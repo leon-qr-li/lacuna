@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { t } from "../../i18n";
 import { BusyLabel } from "../loading/Loading";
 import { spacesApi } from "../spaces/api";
 import { enterNew } from "./api";
 
-/** ＋ 新项目: just its name; the new project's 剧集 then asks for the language and hosts. */
+/**
+ * ＋ 新项目: just its name; the new project's 剧集 then asks for the language and hosts.
+ * Rendered into <body>: opened from the top bar's project menu, a `position: fixed` backdrop inside the
+ * blurred top bar would be placed against the bar (stuck at the top, half off-screen) instead of the window.
+ */
 export function NewProjectDialog({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,7 +32,7 @@ export function NewProjectDialog({ onClose }: { onClose: () => void }) {
       setBusy(false);
     }
   };
-  return (
+  return createPortal(
     <div className="dlg-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form
         className="dlg prj-dlg"
@@ -56,6 +61,7 @@ export function NewProjectDialog({ onClose }: { onClose: () => void }) {
           </button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

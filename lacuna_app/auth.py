@@ -127,11 +127,21 @@ class ResendMailer:
     def configured(self) -> bool:
         return bool(self._key())
 
-    def send(self, sender: str, to: str, subject: str, text: str) -> None:
+    def send(self, sender: str, to: str, subject: str, text: str, html: str | None = None,
+             inline: list[dict] | None = None) -> None:
+        """`html`: the designed version next to `text`; `inline`: images it shows by ``cid:`` ({filename,
+        content (bytes), content_id})."""
         key = self._key()
         if not key:
-            raise MailError(tr("还没接上 Resend：先在「设置 → 账号与邮件」里填 Resend API key"))
-        body = json.dumps({"from": sender, "to": [to], "subject": subject, "text": text}).encode()
+            raise MailError(tr("还没接上 Resend：先在「设置 → 邮件发件人」里填 Resend API key"))
+        doc: dict = {"from": sender, "to": [to], "subject": subject, "text": text}
+        if html:
+            doc["html"] = html
+        if inline:
+            import base64
+            doc["attachments"] = [{"filename": a["filename"], "content": base64.b64encode(a["content"]).decode(),
+                                   "content_id": a["content_id"]} for a in inline]
+        body = json.dumps(doc).encode()
         req = urllib.request.Request(self.URL, data=body, method="POST", headers={
             "Authorization": f"Bearer {key}", "Content-Type": "application/json",
             "User-Agent": "LACUNA-Studio"})   # Resend refuses urllib's default user agent
@@ -616,20 +626,25 @@ class Auth:
         token = secrets.token_urlsafe(32)
         now = self.now()
         lang = norm_lang(lang) or ui_lang()
+        extra = dict(extra or {})
+        project = extra.pop("space_name", None)          # for the email only
         with self.lock:
             self.invites = {k: v for k, v in self.invites.items() if v["email"] != email}   # the newest link wins
             self.invites[_sha(token)] = {"hash": _sha(token), "email": email, "role": role, "by": actor,
-                                         "created": now, "exp": now + INVITE_S, "lang": lang, **(extra or {})}
+                                         "created": now, "exp": now + INVITE_S, "lang": lang, **extra}
             self._save_users()
         # in the path, not after "#": Cloudflare Access's sign-in drops a URL's #fragment on the way back
         link = f"{origin.rstrip('/')}/invite/{token}"
         mailed, why = False, None
         try:
+            from . import invite_mail       # design A 「夜航信笺」
             with speaking(lang):
-                subject = tr("{who} 邀请你使用 LACUNA", who=actor)
-                text = tr("{who} 邀请你加入 LACUNA Studio。\n\n打开这个链接设置密码（7 天内有效，只能用一次）：\n{link}\n\n如果你不认识邀请人，忽略这封邮件即可。",
-                          who=actor, link=link)
-            self.mailer.send(self.config["sender"], email, subject, text)
+                m = invite_mail.render(actor, link, project, extra.get("space_role"))
+            try:
+                self.mailer.send(self.config["sender"], email, m["subject"], m["text"], html=m["html"],
+                                 inline=invite_mail.inline_logo())
+            except MailError:           # the designed one refused: the plain one still gets the link there
+                self.mailer.send(self.config["sender"], email, m["subject"], m["text"])
             mailed = True
         except MailError as e:
             why = str(e)
