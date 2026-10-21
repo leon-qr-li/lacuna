@@ -34,6 +34,7 @@ from . import show as show_mod
 from .ai_cut import TrackTokens, build_episode, report_dict
 from .archive import retired_ids
 from .episode import create_episode
+from .events import track
 from .store import PathError, Workspace, atomic_write_json, check_id, inside, read_json, now_iso as now
 from .i18n import N_, tr
 
@@ -306,6 +307,11 @@ class Importer:
                 self._cancel.discard(job["id"])
                 self._history = None             # this run's step times count from now on
             self._save(job)
+            audio = max((t.get("duration") or 0 for t in job["tracks"].values()), default=0)
+            track(f"import.{job['state']}", job["id"], audio_s=round(audio, 1), seconds=job["elapsed_s"],
+                  tracks=len(job["tracks"]), language=job.get("language") or "zh",
+                  edits=(job.get("result") or {}).get("edits"), to_review=(job.get("result") or {}).get("to_review"),
+                  failed_step=job.get("step") if job["state"] == "error" else None)
 
     def _steps(self, job: dict, d: Path) -> None:
         backend = self.asr_backend

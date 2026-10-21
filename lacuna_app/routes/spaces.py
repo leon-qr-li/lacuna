@@ -24,6 +24,7 @@ from ..i18n import tr
 from ..learning import LEARN_DIR, RULES_FILE
 from ..spaces import MAIN, SPACE_RANK, Spaces
 from ..store import atomic_write_json, read_json
+from . import events as events_routes
 from .auth import _cookie
 
 SPACE_COOKIE = "lacuna_space"
@@ -182,6 +183,8 @@ def register(app, ctx) -> None:
 
     app.state.space_apps = children
     app.add_middleware(_Dispatch, auth=auth, spaces=spaces, child=child)
+    # the event log sees every workspace's requests: outside the dispatcher, inside the cloud gate (routes/events.py)
+    events_routes.install(app, ctx, auth, spaces)
     # in the cloud the Cloudflare Access check (routes/cloud.py) must come before anything else, this
     # dispatcher included: install it once more on the outside (the inner one and each workspace's own
     # app check again, which costs one cached signature check)
