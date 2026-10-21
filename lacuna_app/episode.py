@@ -27,6 +27,7 @@ from dataclasses import asdict, dataclass, replace
 from functools import cached_property
 from itertools import accumulate
 from pathlib import Path, PureWindowsPath
+from typing import Iterable
 
 import numpy as np
 
@@ -208,6 +209,9 @@ class Episode:
         self.edits: dict[str, Edit] = {e["id"]: Edit(**e) for e in st["edits"]}
         self.history: dict[str, list] = st.get("history") or {"undo": [], "redo": []}
         self.proposals: dict[str, dict] = st.get("proposals") or {}
+        # co-editing (coedit.py): +1 at every save; which edit was last changed at which rev, by whom
+        self.rev: int = int(st.get("rev") or 0)
+        self.touched: dict[str, dict] = st.get("touched") or {}
         self.transcript_rev = ""
         self.transcript = self._load_transcript()
         self._words_ix: list[tuple] | None = None
@@ -408,7 +412,8 @@ class Episode:
             setattr(self.edits[c["id"]], c["field"], c[key])
 
     def change(self, label: str, changes: list[tuple[str, str, object]]) -> None:
-        """Apply field changes to edits as one undoable step."""
+        """Apply field changes to edits as one undoable step (the signed-in person's own, coedit.py)."""
+        from .coedit import me, stamp
         with self.lock:
             rec = [{"id": i, "field": f, "old": getattr(self._edit(i), f), "new": v} for i, f, v in changes]
             rec = [c for c in rec if c["old"] != c["new"]]
@@ -416,9 +421,41 @@ class Episode:
                 return
             self.timeline_for(self._enabled_after(rec))      # raises ConflictError if invalid
             self._set(rec, "new")
-            self.history["undo"].append({"label": label, "changes": rec})
-            self.history["redo"].clear()
+            self.history["undo"].append({"label": label, "changes": rec} | stamp())
+            # a new step drops this person's redo steps; other people's stay theirs
+            who = me()
+            self.history["redo"] = [e for e in self.history["redo"] if who is not None and e.get("by") not in (who, None)]
+            self._touch(rec)
             self.save()
+
+    def _touch(self, rec: list[dict]) -> None:
+        from .coedit import stamp
+        for c in rec:
+            self.touched[c["id"]] = {"rev": self.rev + 1} | stamp()     # the rev save() is about to write
+
+    def check_fresh(self, ids: Iterable[str], seen_rev: int | None) -> None:
+        """Refuse (StaleError) a decision on edits someone else changed after the version `seen_rev` the
+        page showed: they would be overwritten unseen. None (an older page) skips the check."""
+        from .coedit import StaleError, me
+        if seen_rev is None:
+            return
+        who = me()
+        with self.lock:
+            for i in ids:
+                t = self.touched.get(i)
+                if t and t["rev"] > seen_rev and (who is None or t.get("by") != who):
+                    name = t.get("by_name") or tr("其他成员")
+                    raise StaleError(tr("{name} 刚刚修改了这一处。页面已更新为最新内容，请确认后再操作。", name=name))
+
+    def own_step(self, src: str) -> dict | None:
+        """The signed-in person's latest undo (src "undo") or redo step; without accounts, the latest.
+        Steps from before co-editing (no "by") count as anyone's."""
+        from .coedit import me
+        who = me()
+        for entry in reversed(self.history[src]):
+            if who is None or entry.get("by") in (who, None):
+                return entry
+        return None
 
     def undo(self) -> str:
         return self._step("undo", "redo", "old")
@@ -427,15 +464,23 @@ class Episode:
         return self._step("redo", "undo", "new")
 
     def _step(self, src: str, dst: str, key: str) -> str:
+        """Undo / redo this person's own latest step, even when someone else's steps came after it, as
+        long as nobody has changed the same edit since (then it would undo their work: refused)."""
         with self.lock:
-            if not self.history[src]:
+            entry = self.own_step(src)
+            if entry is None:
                 raise ConflictError(tr("没有可以撤销的操作") if src == "undo" else tr("没有可以重做的操作"))
-            entry = self.history[src][-1]
+            now = "new" if key == "old" else "old"
+            for c in entry["changes"]:
+                if getattr(self._edit(c["id"]), c["field"]) != c[now]:
+                    name = (self.touched.get(c["id"]) or {}).get("by_name") or tr("其他成员")
+                    raise ConflictError(tr("此步骤之后，{name} 修改过同一处，无法撤销或重做此步骤。", name=name))
             target = [{"id": c["id"], "field": c["field"], "new": c[key]} for c in entry["changes"]]
             self.timeline_for(self._enabled_after(target))
-            self.history[src].pop()
+            self.history[src].remove(entry)
             self._set(entry["changes"], key)
             self.history[dst].append(entry)
+            self._touch(entry["changes"])
             self.save()
             return entry["label"]
 
@@ -771,10 +816,11 @@ class Episode:
         self.timeline_for(self.enabled)     # never persist an invalid state
         return {"schema": STATE_SCHEMA, "project": self.project_dict(self.enabled),
                 "edits": [asdict(e) for e in self.edits.values()],
-                "history": self.history, "proposals": self.proposals}
+                "history": self.history, "proposals": self.proposals, "rev": self.rev, "touched": self.touched}
 
     def save(self) -> None:
         with self.lock:
+            self.rev += 1
             atomic_write_json(self.dir / STATE_FILE, self.state_dict(),
                               protected=tuple(Path(m.path) for m in self.media.values()))
 
@@ -898,7 +944,7 @@ class Episode:
                     else:
                         spans.append([round(s, 3), round(en, 3)])
                 tracks.append({"name": trk.name, "gain_db": trk.gain_db, "clips": spans})
-            undo, redo = self.history["undo"], self.history["redo"]
+            undo, redo = self.own_step("undo"), self.own_step("redo")
             pending_review = sum(1 for d in edits if d["consequential"] and not d["approved"])
             review = [d["id"] for d in sorted((d for d in edits if d["consequential"]), key=review_sort_key)]
             return {
@@ -909,8 +955,9 @@ class Episode:
                 "version": key, "audio_url": f"/api/episodes/{self.id}/audio/{key}.wav",
                 "missing_sources": self.missing_sources(),
                 "can_undo": bool(undo), "can_redo": bool(redo),
-                "undo_label": history_label(undo[-1]["label"]) if undo else None,
-                "redo_label": history_label(redo[-1]["label"]) if redo else None,
+                "undo_label": history_label(undo["label"]) if undo else None,
+                "redo_label": history_label(redo["label"]) if redo else None,
+                "rev": self.rev,                            # co-editing: changes at every save (coedit.py)
                 "tracks": tracks, "topics": self.meta.get("topics", []),
                 "edits": edits, "routine": sorted(routine.values(), key=lambda r: -r["count"]),
                 "pending_review": pending_review, "review": review,

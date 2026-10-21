@@ -17,7 +17,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from .. import cloud, habits, plans
+from .. import cloud, coedit, habits, plans
 from ..appinfo import current_version
 from ..auth import COOKIE, Auth, AuthError
 from ..i18n import tr
@@ -96,11 +96,13 @@ class _Dispatch:
             return await deny(tr("只有节目管理员能改节目设置。"))
         # whose learned rules and 剪辑力度 apply: the signed-in person's own, in every project (habits.py)
         token = habits.HOME.set(habits.home_for(self.spaces.root, email))
+        who = coedit.EDITOR.set(coedit.editor_for(email))       # whose undo steps and saves (coedit.py)
         try:
             if sid == MAIN:
                 return await self.app(scope, receive, send)
             return await self.child(sid)(scope, receive, send)
         finally:
+            coedit.EDITOR.reset(who)
             habits.HOME.reset(token)
 
 
