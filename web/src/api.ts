@@ -65,6 +65,8 @@ export interface EpisodeListItem {
   raw_duration?: number;
   pending_review?: number;
   error?: string;
+  /** the chosen cover's preview, null: none chosen (the tile shows its letter) */
+  poster?: string | null;
 }
 
 export interface ABSide {

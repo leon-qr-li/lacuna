@@ -150,7 +150,7 @@ def credit_line(asset: dict) -> str:
 
 
 def _scope_defaults(a: dict) -> dict:
-    """Scope fields of an asset; one indexed before scopes existed is shared (整个项目)."""
+    """Scope fields of an asset; one indexed before scopes existed is shared (整个节目)."""
     for k in ("episodes", "albums"):
         v = a.get(k)
         a[k] = [str(e) for e in v] if isinstance(v, list) else []
@@ -456,7 +456,7 @@ class Library:
         return self._change_scope(asset_id, lambda a: a.update(shared=False, albums=[album_id], episodes=users))
 
     def make_shared(self, asset_id: str) -> dict:
-        """「设为整个项目」: offered on every episode's music page."""
+        """「设为整个节目」: offered on every episode's music page."""
         return self._change_scope(asset_id, lambda a: a.update(shared=True, episodes=[], albums=[]))
 
     def drop_album(self, album_id: str) -> list[str]:

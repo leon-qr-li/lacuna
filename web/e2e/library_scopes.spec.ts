@@ -30,8 +30,8 @@ test("add into an episode, move / share, and the music page lists only shared + 
 
   await page.goto("/#/library");
   const theme = page.getByTestId("asset-row").filter({ hasText: "odyssey_theme.mp3" });
-  await expect(theme.getByTestId("asset-scope")).toHaveText("整个项目");
-  await expect(theme.getByRole("button", { name: "设为整个项目" })).toHaveCount(0);
+  await expect(theme.getByTestId("asset-scope")).toHaveText("整个节目");
+  await expect(theme.getByRole("button", { name: "设为整个节目" })).toHaveCount(0);
 
   // the jingle is added straight into this episode (本集)
   await page.getByLabel("新文件加到哪里").selectOption(EP);
@@ -67,7 +67,7 @@ test("add into an episode, move / share, and the music page lists only shared + 
   // the theme moves to the other episode: no longer shared
   await theme.getByLabel("挪到某一集").selectOption(OTHER);
   await expect(theme.getByTestId("asset-scope")).toHaveText("本集：另一集（范围测试）");
-  await expect(theme.getByRole("button", { name: "设为整个项目" })).toBeVisible();
+  await expect(theme.getByRole("button", { name: "设为整个节目" })).toBeVisible();
 
   // ---- this episode's music page: its own jingle, not the other episode's theme
   await page.goto(`/#/ep/${encodeURIComponent(EP)}/music`);
@@ -91,8 +91,8 @@ test("add into an episode, move / share, and the music page lists only shared + 
 
   // made shared in the library: now every episode offers the jingle
   await page.goto("/#/library");
-  await jingle.getByRole("button", { name: "设为整个项目" }).click();
-  await expect(jingle.getByTestId("asset-scope")).toHaveText("整个项目");
+  await jingle.getByRole("button", { name: "设为整个节目" }).click();
+  await expect(jingle.getByTestId("asset-scope")).toHaveText("整个节目");
   await expect(jingle.getByTestId("credit-line")).toContainText("“洛城二三事 片头”");
   await page.goto(`/#/ep/${encodeURIComponent(OTHER)}/music`);
   await expect(picker).toHaveCount(2);

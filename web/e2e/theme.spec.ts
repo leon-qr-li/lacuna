@@ -30,7 +30,7 @@ test("theme: follows the system, toggle switches and is remembered; fonts are bu
 
   // the Chinese and Latin faces load from the app itself
   await page.goto("/#/");
-  await page.getByRole("heading", { name: "剧集" }).waitFor();
+  await page.locator("h1.home-title").waitFor();
   const faces = await page.evaluate(async () => {
     await document.fonts.ready;
     return {

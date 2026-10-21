@@ -35,7 +35,7 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
 
   const beta = await browserAs(browser, "beta@example.com");
   await expect(beta.getByText("合成测试集")).toHaveCount(0); // Leon's episode is not theirs
-  await expect(beta.getByTestId("show-setup")).toContainText("建你的第一个项目");
+  await expect(beta.getByTestId("show-setup")).toContainText("建你的第一个节目");
   await expect(beta.getByTestId("invite-link")).toBeVisible(); // they manage their own project
 
   // Leon invites them from the top bar's 邀请协作, as a listener; they have an account, so they join at once

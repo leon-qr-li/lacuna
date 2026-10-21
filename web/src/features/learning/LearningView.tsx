@@ -54,7 +54,11 @@ export function LearningView() {
   const [ov, setOv] = useState<LearningOverview | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [group, setGroup] = useState<Group>("pending");
+  // #/learning/approved (设置 → 剪辑习惯 links there) opens that tab
+  const [group, setGroup] = useState<Group>(() => {
+    const g = /^#\/learning\/(\w+)/.exec(window.location.hash)?.[1] as Group | undefined;
+    return g && GROUPS.includes(g) ? g : "pending";
+  });
   const [page, setPage] = useState(0);
   const [done, setDone] = useState<{ text: string; group: Group | null } | null>(null);
 

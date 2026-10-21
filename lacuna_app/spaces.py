@@ -146,7 +146,7 @@ class Spaces:
     def _get(self, sid: str) -> dict:
         s = self.spaces.get(sid)
         if not s:
-            raise AuthError(tr("没有这个项目"), 404)
+            raise AuthError(tr("没有这个节目"), 404)
         return s
 
     def create(self, name: str, admin: str, named: bool = True) -> dict:
@@ -179,7 +179,7 @@ class Spaces:
             else:
                 members[email] = role
             if s["members"] and not any(r == "admin" for r in members.values()):
-                raise AuthError(tr("项目至少要留一个管理员"))
+                raise AuthError(tr("节目至少要留一个管理员"))
             added = s.setdefault("added_by", {})
             if role is None:
                 added.pop(email, None)
@@ -224,7 +224,7 @@ class Spaces:
         with self.lock:
             self._get(sid)
             if sid == MAIN:
-                raise AuthError(tr("这个项目是 LACUNA 的主项目，不能删除"))
+                raise AuthError(tr("这个节目是 LACUNA 的主节目，不能删除"))
             folder = self.path(sid)
             del self.spaces[sid]
             self._save()
@@ -244,5 +244,5 @@ class Spaces:
 def _name(name: str) -> str:
     n = " ".join((name or "").split())[:60]
     if not n:
-        raise AuthError(tr("给项目起个名字"))
+        raise AuthError(tr("给节目起个名字"))
     return n

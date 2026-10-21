@@ -9,7 +9,7 @@ const onHome = () => ["", "#", "#/"].includes(window.location.hash);
 function EpisodesLink() {
   return (
     <a className="btn btn-outline row nav-episodes" href="#/" aria-current={onHome() ? "page" : undefined}>
-      {t("剧集")}
+      {t("首页")}
     </a>
   );
 }

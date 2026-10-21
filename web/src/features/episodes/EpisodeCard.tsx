@@ -7,9 +7,13 @@ import { t } from "../../i18n";
 export function EpisodeCard({ e, href, actions, extra }: { e: EpisodeListItem; href?: string; actions?: ReactNode; extra?: ReactNode }) {
   const body = (
     <>
-      <span className="ep-cover" aria-hidden="true">
-        {e.title.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 1)}
-      </span>
+      {e.poster ? (
+        <img className="ep-cover ep-cover-img" src={e.poster} alt="" data-testid="episode-poster" />
+      ) : (
+        <span className="ep-cover" aria-hidden="true">
+          {e.title.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 1)}
+        </span>
+      )}
       <span className="ep-body">
         <strong>{e.title}</strong>
         {e.error ? (

@@ -1,5 +1,5 @@
 """The invite email, design A 「夜航信笺」 (Leon 2026-10-20): a night-sky header with the glowing logo and the
-sunset line, then a white letter with who invites you, to which project and as what, a gradient 接受邀请 button,
+sunset line, then a white letter with who invites you, the six steps of an episode (copy A 「六步流程」, 2026-10-21), to which project and as what, a gradient 接受邀请 button,
 the 7-day note, the plain link and the slogan. Table layout with inline styles so Gmail, Outlook and phone mail
 apps show it alike; the logo goes along as an inline image (cid:), never as a link to the site, which sits
 behind sign-in. Chinese or English (``speaking``), as the inviter picked; the plain-text part says the same."""
@@ -47,6 +47,16 @@ def who_of(email: str) -> str:
     return name[:1].upper() + name[1:] if name[:1].isascii() else name
 
 
+def steps() -> list[tuple[str, str]]:
+    """Version A 「六步流程」 (Leon 2026-10-21): an episode from import to publish, each step in one line."""
+    return [(tr("导入分轨"), tr("每位主持人一条分轨，自动转成文字稿")),
+            (tr("LACUNA 初剪"), tr("去掉卡顿、口误和多余的话，留住对话的节奏")),
+            (tr("逐处审阅"), tr("每一刀都能试听、能恢复，最后由你拍板")),
+            (tr("配乐与响度"), tr("片头片尾、背景音乐，整集响度对齐平台标准")),
+            (tr("Show notes 与封面"), tr("按本集内容写好节目介绍和时间轴，配好封面海报")),
+            (tr("导出发布"), tr("导出成品音频，带上整套发布资料去上线"))]
+
+
 def render(inviter: str, link: str, project: str | None = None, role: str | None = None) -> dict:
     """{"subject", "text", "html", "preheader"} in the current ``tr`` language. `project`: the project the
     invite joins (None: the new account gets a project of its own); `role`: their role there."""
@@ -54,26 +64,32 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
     role_label = space_role_label(role) if project else ""
     if project:
         subject = tr("{who} 邀请你加入「{project}」", who=who, project=project)
-        lead = (tr("你被邀请以「{role}」身份加入这个项目。", role=role_label) if role_label else tr("你被邀请加入这个项目。"))
+        lead = (tr("你被邀请以「{role}」身份加入这个节目。", role=role_label) if role_label else tr("你被邀请加入这个节目。"))
     else:
         subject = tr("{who} 邀请你使用 LACUNA", who=who)
-        lead = tr("你会有一个自己的项目，导入分轨就能开始剪。")
-    about = tr("LACUNA Studio 帮播客团队把对话剪得干净自然：去掉卡顿和口误，留住每个人说话的味道。")
-    rows = ([(tr("项目"), project)] if project else []) + ([(tr("你的角色"), role_label)] if role_label else []) + \
+        lead = tr("你会有一个自己的节目。")
+    about = tr("LACUNA Studio 是一间完整的播客工作室，一期节目从导入录音到发布上线，每一步都在这里完成：")
+    flow = steps()
+    rows = ([(tr("节目"), project)] if project else []) + ([(tr("你的角色"), role_label)] if role_label else []) + \
         [(tr("邀请人"), inviter)]
     button = tr("接受邀请")
     valid = tr("链接 7 天内有效，只能使用一次。")
     fallback = tr("按钮打不开？把这个链接复制到浏览器：")
     ignore = tr("如果你不认识邀请人，忽略这封邮件即可，不会为你创建任何账号。")
     kicker = tr("邀请函 · INVITATION")
-    text = "\n\n".join([subject, lead + about, "\n".join(f"{k}：{v}" for k, v in rows),
-                        f"{button}（{valid}）\n{link}", ignore, "Mind the gaps. Keep the voice.\nLACUNA Studio · lacunastudio.app"])
+    colon = tr("：")
+    text = "\n\n".join([subject, lead + about, "\n".join(f"{i}. {h}{colon}{d}" for i, (h, d) in enumerate(flow, 1)), "\n".join(f"{k}{colon}{v}" for k, v in rows),
+                        tr("{button}（{valid}）", button=button, valid=valid) + "\n" + link, ignore, "Mind the gaps. Keep the voice.\nLACUNA Studio · lacunastudio.app"])
     e = html.escape
     title = e(subject).replace("「", "<br>「", 1) if project else e(subject)
     row_html = "".join(
         f'<tr><td style="padding:12px 0;border-top:1px solid #ececf3;font:14px {SANS};color:#8a8da6;width:110px">{e(k)}</td>'
         f'<td style="padding:12px 0;border-top:1px solid #ececf3;font:600 14px {SANS};color:#14162e;word-break:break-all">{e(v)}</td></tr>'
         for k, v in rows)
+    steps_html = "".join(
+        f'<tr><td valign="top" style="padding:9px 14px 9px 0;width:26px"><div style="width:24px;height:24px;border-radius:12px;background:#fff1ea;font:700 12px/24px {SANS};color:#c2410c;text-align:center">{i}</div></td>'
+        f'<td style="padding:9px 0;font:15px/1.6 {SANS};color:#3a3d55"><b style="color:#14162e">{e(h)}</b><br><span style="color:#6b6e88">{e(d)}</span></td></tr>'
+        for i, (h, d) in enumerate(flow, 1))
     logo = (f'<td><img src="cid:{LOGO_CID}" width="40" height="40" alt="LACUNA" style="display:block;border-radius:10px"></td>'
             if logo_png() else "")
     body = f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -89,7 +105,8 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
  <div class="h1" style="margin-top:10px;font:700 28px/1.35 {SANS};color:#ffffff">{title}</div>
 </td></tr>
 <tr><td class="pad" style="padding:36px 48px 8px">
- <p style="margin:0 0 28px;font:16px/1.75 {SANS};color:#3a3d55">{e(lead + about)}</p>
+ <p style="margin:0 0 12px;font:16px/1.75 {SANS};color:#3a3d55">{e(lead + about)}</p>
+ <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px">{steps_html}</table>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #ececf3">{row_html}</table>
  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:32px 0 14px"><tr><td style="border-radius:999px;background:#df4a22;background-image:linear-gradient(90deg,#df4a22,#d93366 55%,#8f45f0)">
   <a href="{e(link, quote=True)}" style="display:inline-block;padding:15px 40px;font:600 16px {SANS};color:#ffffff;text-decoration:none;letter-spacing:.5px">{e(button)} &rarr;</a></td></tr></table>

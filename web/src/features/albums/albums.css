@@ -18,11 +18,12 @@
 .alb-strip { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 20px; padding: 18px 20px; margin-bottom: 18px; border-radius: var(--r); background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); }
 .alb-strip h1 { margin: 0 0 4px; font-size: 24px; }
 .alb-strip-main p { margin: 0; }
-.alb-slots { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.alb-slot { display: grid; grid-template-columns: 4.5rem minmax(0, 13rem) 5rem; align-items: center; gap: 10px; }
-.alb-label { font-size: 12px; color: var(--ink-3); }
+/* one grid for both rows: the label column fits the longer label ("Default outro") on one line */
+.alb-slots { display: grid; grid-template-columns: max-content minmax(0, 13rem) max-content; align-items: center; gap: 8px 10px; min-width: 0; }
+.alb-slot { display: contents; }
+.alb-label { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
 .alb-slot-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.alb-from { justify-self: start; padding: 1px 8px; border-radius: 999px; font-size: 12px; line-height: 20px; background: color-mix(in srgb, var(--leon) 12%, transparent); color: var(--ink-2); }
+.alb-from { justify-self: start; white-space: nowrap; padding: 1px 8px; border-radius: 999px; font-size: 12px; line-height: 20px; background: color-mix(in srgb, var(--leon) 12%, transparent); color: var(--ink-2); }
 .alb-from-own { background: color-mix(in srgb, var(--pei) 18%, transparent); color: var(--pei-ink); }
 @media (max-width: 760px) {
   .alb-strip { grid-template-columns: auto minmax(0, 1fr); }

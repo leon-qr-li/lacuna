@@ -41,7 +41,7 @@ export function ProjectCrumb() {
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
           data-testid="project-menu"
-          title={t("项目")}
+          title={t("节目")}
         >
           <ProjectAvatar p={cur} size={22} />
           <span className="prj-crumb-name">{cur.name}</span>
@@ -55,8 +55,8 @@ export function ProjectCrumb() {
           </span>
         </button>
         {open && (
-          <div className="prj-menu" role="menu" aria-label={t("项目")}>
-            <div className="prj-menu-head">{t("我的项目")}</div>
+          <div className="prj-menu" role="menu" aria-label={t("节目")}>
+            <div className="prj-menu-head">{t("我的节目")}</div>
             {sp.mine.map((p) => (
               <button
                 key={p.id}
@@ -78,12 +78,12 @@ export function ProjectCrumb() {
             {sp.mine.length > 1 && (
               <button type="button" role="menuitem" className="prj-menu-item" onClick={() => go("#/projects")}>
                 <span className="prj-check" aria-hidden="true" />
-                {t("所有项目")}
+                {t("所有节目")}
               </button>
             )}
             <button type="button" role="menuitem" className="prj-menu-item" onClick={() => go("#/project")} data-testid="project-settings-link">
               <span className="prj-check" aria-hidden="true" />
-              {t("项目设置")}
+              {t("节目设置")}
             </button>
             <button
               type="button"
@@ -96,7 +96,7 @@ export function ProjectCrumb() {
               data-testid="project-new"
             >
               <span className="prj-check" aria-hidden="true" />
-              {t("＋ 新项目")}
+              {t("＋ 新节目")}
             </button>
           </div>
         )}

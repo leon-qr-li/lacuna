@@ -85,7 +85,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
         </form>
       )}
       <p className="muted small prj-hint">
-        {t("对方能看到这个项目的所有剧集、专辑和素材，看不到你的其他项目。管理：管协作者、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。")}
+        {t("对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理：管协作者、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。")}
         {manage && !p.can_invite_new && ` ${t("还没有 LACUNA 账号的人，请 LACUNA 管理员邀请。")}`}
       </p>
       {note && (
@@ -113,7 +113,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
             {manage && m.email !== me ? (
               <>
                 <select
-                  aria-label={t("{email} 在这个项目的角色", { email: m.email })}
+                  aria-label={t("{email} 在这个节目的角色", { email: m.email })}
                   value={m.role}
                   disabled={!!busy}
                   onChange={(e) => void act("role", () => spacesApi.member(id, m.email, e.target.value as SpaceRole).then(() => spacesApi.people(id)))}
@@ -130,7 +130,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
                   disabled={!!busy}
                   onClick={async () => {
                     const ok = await confirmDialog({
-                      message: t("把 {email} 移出「{name}」？对方就看不到这个项目了，已经做的内容留着。", { email: m.email, name: p.name }),
+                      message: t("把 {email} 移出「{name}」？对方就看不到这个节目了，已经做的内容留着。", { email: m.email, name: p.name }),
                       confirmLabel: t("移出"),
                       danger: true,
                     });

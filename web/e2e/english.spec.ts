@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-// English engine: the show's language (项目设置) is the import form's default; each import can change it.
+// English engine: the show's language (节目设置) is the import form's default; each import can change it.
 test("show language: English becomes the import form's default", async ({ page }) => {
   await page.goto("/#/project");
   const lang = page.getByTestId("show-language");

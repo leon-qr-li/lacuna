@@ -46,8 +46,6 @@ export const en: Dict = {
   已保存: "Saved",
   "正在打开节目设置…": "Opening show settings…",
   节目设置: "Show settings",
-  "这个项目做的节目。导入、AI 剪辑、show notes 和海报都按这里来。":
-    "The show this project makes. Imports, LACUNA's editing, show notes and covers follow these settings.",
   先介绍一下你的节目: "First, tell LACUNA about your show",
   "填节目名和主持人，每位主持人一条分轨。以后可以在「节目」里改，也能设剪辑风格。":
     "Enter the show name and its hosts (one track each). You can change them later under Show, and set an editing style there too.",
@@ -57,5 +55,5 @@ export const en: Dict = {
   "一行一个，比如：王家卫、花样年华、PULSE": "One per line, e.g. Wong Kar-wai, In the Mood for Love, PULSE",
   "节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。":
     "Names of people, films and segments the show often mentions. When the transcript mis-hears one as something that sounds alike, it is corrected to this spelling; the recording comes first, nothing that sounds different is forced.",
-  "每个项目最多 {n} 位主持人（每人一条分轨）。": "A project can have at most {n} hosts (one track each).",
+  "每个节目最多 {n} 位主持人（每人一条分轨）。": "A show can have at most {n} hosts (one track each).",
 };

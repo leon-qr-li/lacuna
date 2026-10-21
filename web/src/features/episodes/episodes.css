@@ -19,3 +19,7 @@
 .btn-danger-outline { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, transparent); background: transparent; }
 .btn-danger-outline:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
 
+
+.home-title { display: flex; align-items: center; gap: 14px; }
+.home .home-sec { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 10px; } .home .home-sec h2.sub { margin: 0; font-size: 16px; font-weight: 650; color: var(--ink); }
+.ep-cover-img { object-fit: cover; background: var(--hover); box-shadow: 0 6px 16px rgb(0 0 0 / 0.18); }

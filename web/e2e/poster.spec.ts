@@ -83,4 +83,12 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   await page.reload();
   await expect(page.getByTestId("poster-cover")).toBeVisible();
   await expect(page.getByTestId("poster-card")).toHaveCount(5);
+
+  // the home page's episode tile now shows the chosen cover instead of the letter
+  await page.goto("/#/");
+  await page.reload();
+  const tile = page.getByTestId("episode-poster").first();
+  await expect(tile).toBeVisible();
+  await expect(tile).toHaveAttribute("src", new RegExp(`/poster/${d.chosen}\\.png`));
+  expect(await tile.evaluate((e: HTMLImageElement) => e.naturalWidth)).toBeGreaterThan(0);
 });

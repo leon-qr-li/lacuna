@@ -114,10 +114,10 @@ test("media library → credits → music on the episode → series rule", async
   await expect(mid.getByRole("button", { name: "保存" })).toBeDisabled();
 
   // remember the intro as the project default, then it is offered once the episode has none
-  await page.getByRole("button", { name: "设为整个项目的默认片头片尾" }).click();
+  await page.getByRole("button", { name: "设为整个节目的默认片头片尾" }).click();
   await expect(page.getByText("已记住")).toBeVisible();
   await row(page, "intro").getByRole("button", { name: "去掉" }).click();
-  await expect(page.getByTestId("series-suggestion")).toContainText("这个项目有默认的片头片尾");
+  await expect(page.getByTestId("series-suggestion")).toContainText("这个节目有默认的片头片尾");
   await page.getByRole("button", { name: "用默认片头片尾" }).click();
   await expect(row(page, "intro")).toHaveCount(1);
   await expect(page.getByTestId("series-suggestion")).toHaveCount(0);

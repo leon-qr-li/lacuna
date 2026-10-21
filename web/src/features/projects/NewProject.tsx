@@ -45,10 +45,10 @@ export function NewProjectDialog({ onClose }: { onClose: () => void }) {
           if (name.trim() && !busy) void create();
         }}
       >
-        <h2 id="prj-new-title">{t("新项目")}</h2>
-        <p>{t("一档播客、一个客户、一个栏目都可以是一个项目。每个项目有自己的剧集、专辑和素材。")}</p>
+        <h2 id="prj-new-title">{t("新节目")}</h2>
+        <p>{t("一档播客、一个客户、一个栏目都可以是一个节目。每个节目有自己的剧集、专辑和素材。")}</p>
         <label className="prj-field">
-          <span className="prj-label">{t("项目名")}</span>
+          <span className="prj-label">{t("节目名")}</span>
           <input ref={input} value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder={t("比如：周末电影院")} data-testid="project-name" />
         </label>
         {err && <p className="error small">{err}</p>}
@@ -57,7 +57,7 @@ export function NewProjectDialog({ onClose }: { onClose: () => void }) {
             {t("取消")}
           </button>
           <button type="submit" className="btn btn-primary" disabled={!name.trim() || busy} data-testid="project-create">
-            <BusyLabel busy={busy} label={t("建好项目")} />
+            <BusyLabel busy={busy} label={t("建好节目")} />
           </button>
         </div>
       </form>

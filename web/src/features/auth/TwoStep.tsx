@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import qrcode from "qrcode-generator";
 import { t } from "../../i18n";
 
@@ -34,11 +34,34 @@ export function TwoStepQR({ uri, secret }: { uri: string; secret: string }) {
   );
 }
 
-/** Six boxes over one real input (paste and autofill work as usual). */
-export function CodeInput({ value, onChange, label }: { value: string; onChange: (s: string) => void; label?: string }) {
+/** Six boxes over one real input (paste and autofill work as usual). A click on a box selects that digit,
+ *  so typing replaces it; `wrong` (the last failed try) empties the boxes and puts the cursor back in the first. */
+export function CodeInput({ value, onChange, label, wrong }: { value: string; onChange: (s: string) => void; label?: string; wrong?: unknown }) {
   const ref = useRef<HTMLInputElement>(null);
+  const [at, setAt] = useState<number | null>(null); // the selected box, null: the next empty one
+  useEffect(() => {
+    if (!wrong) return;
+    onChange("");
+    setAt(null);
+    ref.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wrong]);
+  const pick = (clientX: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const i = Math.max(0, Math.min(5, Math.floor(((clientX - r.left) / r.width) * 6)));
+    if (i < value.length) {
+      el.setSelectionRange(i, i + 1);
+      setAt(i);
+    } else {
+      el.setSelectionRange(value.length, value.length);
+      setAt(null);
+    }
+  };
+  const cur = at ?? Math.min(value.length, 5);
   return (
-    <div className="auth-code" onClick={() => ref.current?.focus()}>
+    <div className="auth-code">
       <input
         ref={ref}
         inputMode="numeric"
@@ -47,10 +70,34 @@ export function CodeInput({ value, onChange, label }: { value: string; onChange:
         value={value}
         aria-label={label ?? t("验证码")}
         data-testid="auth-code"
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
+        onPointerUp={(e) => pick(e.clientX)}
+        onKeyDown={(e) => {
+          if (at !== null && /^\d$/.test(e.key)) {
+            // typing over the selected digit: replace it, then move to the next box
+            e.preventDefault();
+            const next = value.slice(0, at) + e.key + value.slice(at + 1);
+            onChange(next);
+            const n = at + 1;
+            requestAnimationFrame(() => {
+              if (n < next.length) {
+                ref.current?.setSelectionRange(n, n + 1);
+                setAt(n);
+              } else {
+                ref.current?.setSelectionRange(next.length, next.length);
+                setAt(null);
+              }
+            });
+          } else if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Backspace" || e.key === "Delete") {
+            setAt(null);
+          }
+        }}
+        onChange={(e) => {
+          setAt(null);
+          onChange(e.target.value.replace(/\D/g, "").slice(0, 6));
+        }}
       />
       {Array.from({ length: 6 }, (_, i) => (
-        <span key={i} className={i === Math.min(value.length, 5) ? "is-cur" : ""}>
+        <span key={i} className={i === cur ? "is-cur" : ""} data-testid="auth-code-box">
           {value[i] ?? ""}
         </span>
       ))}
@@ -59,7 +106,7 @@ export function CodeInput({ value, onChange, label }: { value: string; onChange:
 }
 
 /** A two-step code from the app, or (after a click) one of the recovery codes. */
-export function SecondFactor({ value, onChange }: { value: string; onChange: (s: string) => void }) {
+export function SecondFactor({ value, onChange, wrong }: { value: string; onChange: (s: string) => void; wrong?: unknown }) {
   const [recovery, setRecovery] = useState(false);
   return (
     <>
@@ -78,7 +125,7 @@ export function SecondFactor({ value, onChange }: { value: string; onChange: (s:
           </span>
         </label>
       ) : (
-        <CodeInput value={value} onChange={onChange} label={t("两步验证码")} />
+        <CodeInput value={value} onChange={onChange} label={t("两步验证码")} wrong={wrong} />
       )}
       <div className="auth-hint">
         <span>{recovery ? t("每个恢复码只能用一次。") : t("手机上验证器 App 里 LACUNA 这一项的 6 位数字。")}</span>

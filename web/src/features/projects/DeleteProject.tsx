@@ -53,10 +53,10 @@ export function DeleteProjectDialog({ p, here, onClose }: { p: MySpace; here: bo
       >
         <h2 id="prj-del-title">{t("永久删除「{name}」", { name: p.name })}</h2>
         <p>
-          {t("这个项目里的所有剧集、专辑、素材、导出文件和协作者都会被删除，不能恢复。学到的规则和剪辑力度是你自己的，会留下。")}
+          {t("这个节目里的所有剧集、专辑、素材、导出文件和协作者都会被删除，不能恢复。学到的规则和剪辑力度是你自己的，会留下。")}
         </p>
         <label className="prj-field">
-          <span className="prj-label">{t("输入项目名称「{name}」确认", { name: p.name })}</span>
+          <span className="prj-label">{t("输入节目名称「{name}」确认", { name: p.name })}</span>
           <input ref={input} value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" data-testid="project-delete-name" />
         </label>
         {err && <p className="error small">{err}</p>}

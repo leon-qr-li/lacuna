@@ -82,7 +82,7 @@ def register(app, ctx) -> None:
 
     @app.post("/api/library/assets/{asset_id}/scope")
     def library_scope(asset_id: str, body: ScopeBody):
-        """「挪到某一集」 (move) / 「设为整个项目」 (share) / 「也加到另一集」 (add) / 「放进专辑」 (album)."""
+        """「挪到某一集」 (move) / 「设为整个节目」 (share) / 「也加到另一集」 (add) / 「放进专辑」 (album)."""
         asset_or_404(library, asset_id)
         if body.action == "album":
             album_or_404(body.album)

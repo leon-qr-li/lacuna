@@ -93,7 +93,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
       {has("basic") && (
         <>
           <label className="show-field">
-            <span>{t("项目名")}</span>
+            <span>{t("节目名")}</span>
             <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder={t("比如：周末电影院")} data-testid="show-name" />
           </label>
           <label className="show-field">
@@ -203,7 +203,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
             </div>
           ) : (
             <small className="muted" data-testid="show-hosts-max">
-              {t("每个项目最多 {n} 位主持人（每人一条分轨）。", { n: show.max_hosts })}
+              {t("每个节目最多 {n} 位主持人（每人一条分轨）。", { n: show.max_hosts })}
             </small>
           )}
           {!compact && <small className="muted">{t("改名字不影响已经导入的剧集；新导入的剧集用新名字。")}</small>}

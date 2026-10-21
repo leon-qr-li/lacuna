@@ -415,7 +415,7 @@ function Code({ ticket, who, go, next }: FormProps & { ticket: string; who: stri
     <form onSubmit={submit}>
       <h1>{t("两步验证")}</h1>
       <p className="auth-sub">{t("打开手机上的验证器 App，填 LACUNA 这一项现在显示的 6 位数字。")}</p>
-      <SecondFactor value={code} onChange={setCode} />
+      <SecondFactor value={code} onChange={setCode} wrong={err} />
       <Err err={err} />
       <button className="auth-btn" disabled={busy || code.length < 6}>
         <BusyLabel busy={busy} label={t("登录")} busyLabel={t("登录中…")} />
@@ -442,7 +442,7 @@ function Enroll({ view, go, next }: FormProps & { view: Extract<View, { v: "enro
       <h1>{t("设置两步验证")}</h1>
       <p className="auth-sub">{t("LACUNA 在网上运行，每个账号都要开两步验证：登录时除了密码，还要手机上的 6 位数字。只需设置一次。")}</p>
       <TwoStepQR uri={view.uri} secret={view.secret} />
-      <CodeInput value={code} onChange={setCode} label={t("两步验证码")} />
+      <CodeInput value={code} onChange={setCode} label={t("两步验证码")} wrong={err} />
       <Err err={err} />
       <button className="auth-btn" disabled={busy || code.length < 6}>
         <BusyLabel busy={busy} label={t("确认并继续")} busyLabel={t("确认中…")} />

@@ -48,7 +48,7 @@ export function SystemTermsCard() {
         <span className="muted small">{t("{n} 个词", { n: data.terms.length })}</span>
       </div>
       <p className="muted small">
-        {t("所有项目的文字稿都会按这些词自动校对，比如 ChatGPT。一行一个。")}
+        {t("所有节目的文字稿都会按这些词自动校对，比如 ChatGPT。一行一个。")}
         {!data.can_edit && " " + t("只有管理员能修改。")}
       </p>
       <textarea

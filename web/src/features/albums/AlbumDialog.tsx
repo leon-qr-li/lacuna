@@ -88,7 +88,7 @@ export function AlbumDialog({ album, view, loose, preset, onClose, onSaved }: {
     asking.current = true;
     const ok = await confirmDialog({
       title: t("删除专辑「{name}」？", { name: album.name }),
-      message: t("里面的剧集不会删，会变成「不在专辑里」；只给这个专辑用的素材会变成整个项目都能用。"),
+      message: t("里面的剧集不会删，会变成「不在专辑里」；只给这个专辑用的素材会变成整个节目都能用。"),
       confirmLabel: t("删除专辑"),
       danger: true,
     });
@@ -159,7 +159,7 @@ export function AlbumDialog({ album, view, loose, preset, onClose, onSaved }: {
                 data-testid={`album-${role}`}
               >
                 <option value="">
-                  {fromProject(role) ? t("沿用项目：{name}", { name: fromProject(role)! }) : t("沿用项目（项目也没有设）")}
+                  {fromProject(role) ? t("沿用节目：{name}", { name: fromProject(role)! }) : t("沿用节目（节目也没有设）")}
                 </option>
                 {options(role).map((a) => (
                   <option key={a.id} value={a.id}>
@@ -170,7 +170,7 @@ export function AlbumDialog({ album, view, loose, preset, onClose, onSaved }: {
             </label>
           ))}
         </div>
-        <p className="small muted alb-hint">{t("专辑设了片头片尾，就用专辑的，不用项目的；以后放进这个专辑的新剧集会自动带上。")}</p>
+        <p className="small muted alb-hint">{t("专辑设了片头片尾，就用专辑的，不用节目的；以后放进这个专辑的新剧集会自动带上。")}</p>
         {!album && !!loose?.length && (
           <fieldset className="alb-field alb-pick">
             <legend className="alb-label">{t("把这些剧集放进来（可不选）")}</legend>

@@ -101,7 +101,7 @@ export function AlbumStrip({ album, view, onEdit }: { album: Album; view: Albums
       <div className="alb-slot">
         <span className="alb-label">{label}</span>
         <span className="alb-slot-name">{name ?? t("没有设")}</span>
-        {own || project ? <span className={`alb-from${own ? " alb-from-own" : ""}`}>{own ? t("本专辑") : t("沿用项目")}</span> : <span />}
+        {own || project ? <span className={`alb-from${own ? " alb-from-own" : ""}`}>{own ? t("本专辑") : t("沿用节目")}</span> : <span />}
       </div>
     );
   };
@@ -149,7 +149,7 @@ function AlbumShelf({ album }: { album: Album }) {
         const r = await libraryApi.uploadAsset(f, kind, "", "", album.id);
         done.push(
           r.duplicate && r.asset.shared
-            ? t("素材库里已经有这首（整个项目都能用）：{name}", { name: r.asset.name })
+            ? t("素材库里已经有这首（整个节目都能用）：{name}", { name: r.asset.name })
             : t("已加到这个专辑：{name}", { name: r.asset.name }),
         );
       } catch (e) {
@@ -179,7 +179,7 @@ function AlbumShelf({ album }: { album: Album }) {
           ))}
         </ul>
       ) : (
-        <p className="muted small">{t("还没有只给这个专辑用的素材；整个项目的素材这里的剧集都能用。")}</p>
+        <p className="muted small">{t("还没有只给这个专辑用的素材；整个节目的素材这里的剧集都能用。")}</p>
       )}
       <div className="row gap8 wrap">
         <button type="button" className="btn btn-outline" disabled={busy || !lib} onClick={() => input.current?.click()} data-testid="album-upload">

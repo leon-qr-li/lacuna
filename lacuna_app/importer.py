@@ -185,7 +185,7 @@ class Importer:
         if not hosts:
             raise ImportError_(tr("先在「节目」里填好主持人"))
         if len(paths) > show_mod.MAX_HOSTS:
-            raise ImportError_(tr("每个项目最多 {n} 位主持人，一集最多导入 {n} 条分轨，收到 {got} 条", n=show_mod.MAX_HOSTS, got=len(paths)))
+            raise ImportError_(tr("每个节目最多 {n} 位主持人，一集最多导入 {n} 条分轨，收到 {got} 条", n=show_mod.MAX_HOSTS, got=len(paths)))
         if len(paths) != len(hosts):
             raise ImportError_(tr("要 {n} 条分轨（每位主持人一条），收到 {got} 条", n=len(hosts), got=len(paths)))
         tracks = {tag: check_track(p) for (tag, _), p in zip(hosts, paths)}
@@ -456,7 +456,7 @@ class Importer:
         if p.is_file():          # a resumed import: what the model said, under today's rule (sounds alike)
             fixes = [f for f in read_json(p).get("fixes", []) if tf.sounds_alike(str(f.get("wrong", "")), str(f.get("right", "")))]
         else:
-            self._progress(job, "features", 0.0, tr("按项目设置校对专有名词"))
+            self._progress(job, "features", 0.0, tr("按节目设置校对专有名词"))
             fixer = self.term_fixer if self.term_fixer is not None else tf.TranscriptFixer()
             g = tf.glossary_for(self.ws.root, job.get("title") or "", [name for _, name in hosts])
             fixes, complete = fixer.propose_all(lines, g, on_usage=lambda u: self._log_usage(job["id"], u))

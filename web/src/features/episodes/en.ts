@@ -22,4 +22,5 @@ export const en: Dict = {
   "学到的习惯和规则都会保留；公共素材和别的剧集也在用的素材留着；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。":
     "Learned habits and rules are kept, and so are public assets and assets other episodes use. Finished exports (the exports folder) and your original recordings stay untouched.",
   "一起删掉了 {n} 个本集素材：{names}": " Also deleted {n} of its own assets: {names}",
+  "首页": "Home",
 };

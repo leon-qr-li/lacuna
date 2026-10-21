@@ -15,7 +15,7 @@ for (const theme of ["light", "dark"] as const) {
     await page.evaluate((t) => localStorage.setItem("lacuna.theme", t), theme);
     await page.reload();
     const card = page.getByTestId("habits-card");
-    await expect(card).toContainText("包括别人邀请你协作的项目");
+    await expect(card).toContainText("包括别人邀请你协作的节目");
     await expect(card.getByRole("radio", { name: "正常" })).toHaveAttribute("aria-checked", "true");
     // the button turns on at once; the reload below must wait until the server has saved it
     const saved = page.waitForResponse((r) => r.url().endsWith("/api/habits") && r.request().method() === "PUT");
@@ -25,7 +25,9 @@ for (const theme of ["light", "dark"] as const) {
     expect((await scan(page)).bad).toEqual([]);
     await page.reload();
     await expect(page.getByTestId("habits-card").getByRole("radio", { name: "狠剪" })).toHaveAttribute("aria-checked", "true");
-    await expect(card.getByRole("link", { name: "去看学到的规则" })).toHaveAttribute("href", "#/learning");
+    // the link opens 学到的规则 on its 已生效 tab
+    await card.getByRole("link", { name: "去看学到的规则" }).click();
+    await expect(page.getByRole("tab", { name: /已生效/ })).toHaveAttribute("aria-selected", "true");
   });
 }
 

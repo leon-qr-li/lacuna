@@ -65,7 +65,7 @@ def test_tags_stay_with_their_hosts(tmp_path):
     ({"show_name": "X", "hosts": []}, "主持人"),
     ({"show_name": "X", "hosts": [{"name": "A"}, {"name": "a"}]}, "同名"),
     ({"show_name": "X", "hosts": [{"name": "A"}, {"name": " "}]}, "名字"),
-    ({"show_name": "X", "hosts": [{"name": str(i)} for i in range(5)]}, "每个项目最多 4 位主持人"),
+    ({"show_name": "X", "hosts": [{"name": str(i)} for i in range(5)]}, "每个节目最多 4 位主持人"),
 ])
 def test_refuses_what_would_break_imports(tmp_path, body, msg):
     app = create_app(make_workspace(tmp_path / "ws"), MockEditorAdapter(), web_dist=tmp_path / "none")
