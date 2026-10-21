@@ -379,8 +379,9 @@ def test_invite_email_language_is_the_inviters_pick(tmp_path, mailer):
     # design A 「夜航信笺」: the same in HTML, with the logo inline (cid:), never a link to the site
     assert "Accept the invitation" in mail["html"] and f'href="{out["link"]}"' in mail["html"]
     assert "邀请" not in mail["html"] and "Mind the gaps. Keep the voice." in mail["html"]
-    if mail["inline"]:
-        assert 'src="cid:lacuna-logo"' in mail["html"] and mail["inline"][0]["png"]
+    # every attached picture is shown by cid: and every cid: shown is attached
+    assert {a["content_id"] for a in mail["inline"]} == set(re.findall(r'src="cid:([\w-]+)"', mail["html"]))
+    assert all(a["png"] for a in mail["inline"])
     # the sign-up page learns the email's language
     assert TestClient(c.app).post("/api/auth/invite", json={"token": invite_token(out["link"])}).json()["lang"] == "en"
     # the inviter's own interface language is untouched
@@ -395,7 +396,7 @@ def test_invite_email_names_the_project_and_role(tmp_path):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "洛城二三事", "editor")
     assert m["subject"] == "Leon 邀请你加入「洛城二三事」"
     assert "你被邀请以「剪辑」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
-    assert "<br>「洛城二三事」" in m["html"]
+    assert "<br>「洛城二三事」" in m["html"] or "cid:lacuna-head" in m["html"]   # the HTML header or its picture
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "viewer")
     assert m["subject"] == "Leon invited you to “PULSE”" and "as Listener" in m["html"]
@@ -435,13 +436,28 @@ def test_a_refused_designed_mail_still_sends_the_plain_one(tmp_path, mailer):
     assert out["mailed"] and out["link"] in m.outbox[-1]["text"] and not m.outbox[-1]["html"]
 
 
-def test_invite_email_keeps_white_text_in_gmail_dark_mode():
-    """Gmail on phones turns light text dark in dark mode; the header title, the wordmark and the button text
-    sit in the screen + difference blend layers that undo it (Gmail only: ``u + .body``)."""
+def test_invite_email_header_and_button_are_pictures(monkeypatch):
+    """Gmail's dark mode on phones turns white text dark (the title vanished on the navy band, Leon 2026-10-21) but
+    never recolours a picture: the dark band and the 接受邀请 pill go as inline PNGs. Without a CJK font they fall
+    back to the HTML ones."""
     from lacuna_app import invite_mail
     from lacuna_app.i18n import speaking
+    if not invite_mail._cjk_fonts():
+        pytest.skip("Noto Sans CJK not installed (the Docker image has it)")
     with speaking("zh"):
-        h = invite_mail.render("leon@example.com", "https://x/invite/t")["html"]
-    assert '<body class="body"' in h and "u+.body .gm-screen" in h and "mix-blend-mode:difference" in h
-    assert h.count('class="gm-screen"') == 3
-    assert invite_mail.white("LACUNA") in h and invite_mail.white("Leon 邀请你使用 LACUNA") in h
+        m = invite_mail.render("leon@example.com", "https://x/invite/t", "洛城二三事", "editor")
+    cids = [a["content_id"] for a in m["inline"]]
+    assert cids == ["lacuna-head", "lacuna-button"]
+    assert all(a["content"][:8] == b"\x89PNG\r\n\x1a\n" for a in m["inline"])
+    assert 'src="cid:lacuna-head"' in m["html"] and 'alt="Leon 邀请你加入「洛城二三事」"' in m["html"]
+    assert 'href="https://x/invite/t"><img src="cid:lacuna-button"' in m["html"] and 'alt="接受邀请"' in m["html"]
+    assert invite_mail._wrap("Leon 邀请你加入\n「洛城二三事」", 28, 504) == ["Leon 邀请你加入", "「洛城二三事」"]
+    assert all(len(l) <= 40 for l in invite_mail._wrap("Leon invited you to " + "a long show name " * 4, 28, 504))
+    # no CJK font: the HTML header and button, with the logo
+    monkeypatch.setattr(invite_mail, "_cjk_fonts", lambda: [])
+    invite_mail.header_png.cache_clear(); invite_mail.button_png.cache_clear()
+    with speaking("zh"):
+        m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "editor")
+    invite_mail.header_png.cache_clear(); invite_mail.button_png.cache_clear()
+    assert "cid:lacuna-head" not in m["html"] and "接受邀请 &rarr;" in m["html"]
+    assert [a["content_id"] for a in m["inline"]] == (["lacuna-logo"] if invite_mail.logo_png() else [])
