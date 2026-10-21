@@ -220,7 +220,7 @@ def register(app, ctx) -> None:
         role = role or "editor"
         if role not in SPACE_RANK:
             raise AuthError(tr("没有这个角色"))
-        return {"space": space, "space_role": role}
+        return {"space": space, "space_role": role, "space_name": spaces.title(space)}
 
     app.state.invite_space = invite_space
 
