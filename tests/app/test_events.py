@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import contextvars
-import json
 import threading
-import time
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from lacuna_app import create_app
+from lacuna_app import db as sitedb
 from lacuna_app.editor import MockEditorAdapter
 from lacuna_app.events import ACTOR, Actor, EventLog, clean_props, track
 from lacuna_app.routes.events import match
@@ -59,7 +58,7 @@ def test_signup_and_login_use_an_internal_id_never_the_email(tmp_path):
     assert uid.startswith("u_")
     assert [r["ev"] for r in evs(log, uid=uid)] == ["user.signup", "user.login", "user.login"]
     assert evs(log, ev="user.signup")[0]["props"] == {"invited": False}
-    raw = "".join(f.read_text(encoding="utf-8") for f in (ws / "events").glob("*.jsonl"))
+    raw = "".join(log.db.query("SELECT group_concat(uid || sid || ev || props, '') AS t FROM events")[0]["t"] or "")
     assert "@" not in raw and "leon" not in raw
 
 
@@ -88,7 +87,7 @@ def test_other_shows_are_logged_with_their_own_show_id(tmp_path):
     assert beta.post("/api/albums", json={"name": "第一季"}).status_code == 200
     row = evs(log, ev="album.create")[0]
     assert (row["uid"], row["sid"]) == (log.uid("beta@example.com"), sid)
-    assert (ws / "events").is_dir() and not (ws / "spaces" / sid / "events").exists()   # one log per site
+    assert (ws / "lacuna.db").is_file() and not (ws / "spaces" / sid / "lacuna.db").exists()   # one log per site
 
 
 def test_deleting_an_account_makes_its_events_anonymous(tmp_path):
@@ -96,13 +95,13 @@ def test_deleting_an_account_makes_its_events_anonymous(tmp_path):
     join(leon, "bob@example.com")
     uid = log.uid("bob@example.com")
     assert leon.delete("/api/auth/users/bob@example.com").status_code == 200
-    assert "bob@example.com" not in log.ids
-    assert "bob" not in (ws / "events" / "ids.json").read_text()
+    assert log.uid("bob@example.com") is None
+    assert not log.db.query("SELECT * FROM users WHERE id = ?", (uid,))
     assert evs(log, uid=uid)                     # the counts stay, unlinked from the person
 
 
 def test_track_follows_the_request_into_worker_threads(tmp_path):
-    log = EventLog(tmp_path)
+    log = EventLog(sitedb.at(tmp_path), lambda e: None)
     token = ACTOR.set(Actor(log, "u_1", "main"))
     try:
         t = threading.Thread(target=contextvars.copy_context().run, args=(track, "import.done", "EP9"),
@@ -115,12 +114,9 @@ def test_track_follows_the_request_into_worker_threads(tmp_path):
     assert [(r["uid"], r["ep"], r["props"]) for r in log.rows()] == [("u_1", "EP9", {"audio_s": 3600.0})]
 
 
-def test_bad_names_are_refused_and_old_months_dropped(tmp_path):
-    log = EventLog(tmp_path)
+def test_bad_names_are_refused_and_old_rows_dropped(tmp_path):
+    log = EventLog(sitedb.at(tmp_path), lambda e: None, clock=lambda: 1_000.0)
     assert log.add("Not A Name", "u_1") is None
-    (tmp_path / "events").mkdir()
-    (tmp_path / "events" / "2020-01.jsonl").write_text(json.dumps({"ts": 1, "ev": "x.y"}) + "\n")
-    (tmp_path / "events" / "ids.json").write_text(json.dumps({"ids": {}}))
-    EventLog(tmp_path, clock=time.time)
-    assert not (tmp_path / "events" / "2020-01.jsonl").exists()
-    assert (tmp_path / "events" / "ids.json").exists()
+    log.add("edit.undo", "u_1")
+    EventLog(sitedb.at(tmp_path), lambda e: None, clock=lambda: 1_000.0 + 500 * 86400)
+    assert log.rows() == []

@@ -9,7 +9,11 @@ workspace. Decision: docs/decisions/2026-10-19-workspaces.md.
 Roles inside a workspace: admin (members, rename, delete episodes for good), editor (all editing work),
 viewer (listen and read only). Site owner and admins (auth.py) manage every workspace.
 
-File: ``<root>/auth/spaces.json`` (atomic writes, store.py).
+Storage: the site database (lacuna_app/db.py), tables shows + show_members. ``<root>/auth/spaces.json``,
+used before, is read into it once and left in place for 30 days.
+
+Site owner and admins see the list of shows but not what is in them, unless a show's manager turns on
+「允许 LACUNA 支持查看」: then, for SUPPORT_S, they may open it read-only (decision 2026-10-21-roles).
 
 Each project has a square picture (uploaded, ``<root>/auth/pictures/<id>.png``) or else its own solid colour
 (``color``, picked at creation so projects look different). A project manager can archive it: it moves to
@@ -25,16 +29,19 @@ import time
 from pathlib import Path
 from typing import Callable
 
+from . import db as sitedb
 from . import show
 from .auth import AuthError
 from .i18n import tr
-from .store import atomic_write_json, read_json
+from .store import read_json
 
 MAIN = "main"
 SPACE_RANK = {"viewer": 1, "editor": 2, "admin": 3}
 # a project's colour while it has no picture: solid, readable under white text in both themes, far apart
 COLORS = ("#E2583E", "#3D7BF0", "#1F9D74", "#9A55E8", "#E0A21A", "#D93E7F", "#2AA5B8", "#6C7A3A", "#C9682D", "#5A5FD6")
 PICTURE_PX = 256
+SUPPORT_S = 7 * 86400
+KEEP_OLD_S = 30 * 86400
 
 
 class Spaces:
@@ -43,16 +50,32 @@ class Spaces:
         self.file = self.root / "auth" / "spaces.json"
         self.now = clock
         self.lock = threading.RLock()
-        data = read_json(self.file) if self.file.exists() else None
-        self.spaces: dict[str, dict] = {s["id"]: s for s in (data or {}).get("spaces", [])}
+        self.db = sitedb.at(self.root)
+        self.staff: Callable[[str], bool] = lambda email: False    # site owner / admin (set by routes/spaces.py)
+        if self.db.meta("shows_from_json") is None:
+            data = read_json(self.file) if self.file.exists() else None
+            self.spaces: dict[str, dict] = {s["id"]: s for s in (data or {}).get("spaces", [])}
+            self._save()
+            self.db.set_meta("shows_from_json", str(self.now()))
+        self.spaces = {r["id"]: sitedb.loads(r["data"]) for r in self.db.query("SELECT data, id FROM shows")}
+        moved = float(self.db.meta("shows_from_json") or 0)
+        if moved and self.now() - moved > KEEP_OLD_S:
+            for f in (self.file, self.file.with_name("spaces.json.bak")):
+                f.unlink(missing_ok=True)
         if any("color" not in x for x in self.spaces.values()):       # projects from before colours
             for x in sorted(self.spaces.values(), key=lambda x: x.get("created", 0)):
                 x.setdefault("color", self._free_color())
             self._save()
 
     def _save(self) -> None:
-        self.file.parent.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(self.file, {"spaces": list(self.spaces.values())})
+        with self.db.tx() as c:
+            c.execute("DELETE FROM show_members")
+            c.execute("DELETE FROM shows")
+            c.executemany("INSERT INTO shows (id, name, created, created_by, archived, data) VALUES (?,?,?,?,?,?)",
+                          [(x["id"], x["name"], x["created"], self.creator(x["id"]), int(bool(x.get("archived"))),
+                            sitedb.dumps(x)) for x in self.spaces.values()])
+            c.executemany("INSERT INTO show_members (show_id, email, role) VALUES (?,?,?)",
+                          [(x["id"], e, r) for x in self.spaces.values() for e, r in x["members"].items()])
 
     def adopt(self, users: list[dict]) -> None:
         """First start with workspaces: the existing folder becomes "main", with every existing account in
@@ -91,8 +114,39 @@ class Spaces:
         return self.root if sid == MAIN else self.root / "spaces" / sid
 
     def role(self, sid: str | None, email: str | None) -> str | None:
+        """Their role in the show; site staff get "viewer" while the show allows LACUNA support to look."""
         s = self.spaces.get(sid or "")
-        return s["members"].get(email or "") if s else None
+        if not s:
+            return None
+        r = s["members"].get(email or "")
+        if r is None and email and self.support_until(sid) and self.staff(email):
+            return "viewer"
+        return r
+
+    def support_until(self, sid: str | None) -> float | None:
+        """While 「允许 LACUNA 支持查看」 is on: until when (it turns itself off after SUPPORT_S)."""
+        until = (self.spaces.get(sid or "") or {}).get("support_until")
+        return until if until and until > self.now() else None
+
+    def set_support(self, sid: str, on: bool, by: str) -> None:
+        with self.lock:
+            s = self._get(sid)
+            if on:
+                s["support_until"] = self.now() + SUPPORT_S
+                s["support_by"] = by
+            else:
+                s.pop("support_until", None)
+                s.pop("support_by", None)
+            self._save()
+
+    def owned(self, email: str) -> int:
+        """How many shows this person made (archived ones too): what their plan's show limit counts."""
+        return sum(1 for sid in self.spaces if self.creator(sid) == email)
+
+    def collaborators(self, sid: str) -> int:
+        """People in the show besides the one who made it: what the maker's plan's collaborator limit counts."""
+        c = self.creator(sid)
+        return sum(1 for e in self._get(sid)["members"] if e != c)
 
     def title(self, sid: str) -> str:
         """What people see as the project's name: its show name once set, else the name it was made with."""
@@ -123,9 +177,11 @@ class Spaces:
         return {"color": s.get("color") or COLORS[0], "picture": url, "archived": bool(s.get("archived"))}
 
     def mine(self, email: str, detail: bool = False) -> list[dict]:
-        rows = [{"id": s["id"], "name": self.title(s["id"]), "role": s["members"][email],
-                 "by": (s.get("added_by") or {}).get(email)} | self.look(s["id"]) | (self.summary(s["id"]) if detail else {})
-                for s in self.spaces.values() if email in s["members"]]
+        """Their shows, plus (site staff) the shows that currently allow LACUNA support to look."""
+        rows = [{"id": s["id"], "name": self.title(s["id"]), "role": self.role(s["id"], email),
+                 "by": (s.get("added_by") or {}).get(email), "support": email not in s["members"]}
+                | self.look(s["id"]) | (self.summary(s["id"]) if detail else {})
+                for s in self.spaces.values() if self.role(s["id"], email)]
         return sorted(rows, key=lambda r: (r["id"] != MAIN, r["name"].lower()))
 
     def current(self, email: str, wanted: str | None) -> str | None:
@@ -134,7 +190,7 @@ class Spaces:
         if wanted and self.role(wanted, email):
             return wanted
         mine = self.mine(email)
-        live = [m for m in mine if not m["archived"]] or mine
+        live = [m for m in mine if not m["archived"] and not m["support"]] or mine
         return live[0]["id"] if live else None
 
     def overview(self) -> list[dict]:

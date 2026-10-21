@@ -113,12 +113,14 @@ class InviteBody(BaseModel):
     space: str | None = None        # workspace to join (routes/spaces.py): "new" = a workspace of their own
     space_role: str | None = None
     lang: str | None = None         # the email's language (zh / en); default the inviter's interface
+    plan: str | None = None         # lacuna_app/plans.py; default 基础版
 
 
 class UserBody(BaseModel):
     role: str | None = None
     disabled: bool | None = None
     reset_2fa: bool = False
+    plan: str | None = None
 
 
 def register(app, ctx) -> None:
@@ -293,6 +295,8 @@ def register(app, ctx) -> None:
         email = at_least(request, "admin")
         check = getattr(app.state, "invite_space", None)     # set by routes/spaces.py
         extra = run(lambda: check(email, body.space, body.space_role)) if check else None
+        if body.plan:
+            extra = (extra or {}) | {"plan": body.plan}
         out = run(lambda: auth.invite(email, body.email, body.role, origin(request), extra, body.lang))
         access(out["email"], True)
         return {**out, **people()}
@@ -308,7 +312,7 @@ def register(app, ctx) -> None:
     @app.post("/api/auth/users/{email}")
     def update_user(email: str, body: UserBody, request: Request):
         actor = at_least(request, "admin")
-        run(lambda: auth.update_user(actor, email.lower(), body.role, body.disabled, body.reset_2fa))
+        run(lambda: auth.update_user(actor, email.lower(), body.role, body.disabled, body.reset_2fa, body.plan))
         return people()
 
     @app.delete("/api/auth/users/{email}")

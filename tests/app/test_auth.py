@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from lacuna_app import create_app
 from lacuna_app.auth import Auth, AuthError, MailError, ResendMailer, hash_password, verify_password
 from lacuna_app.editor import MockEditorAdapter
+from tests.app import site_db
 from tests.app.e2e.auth import FakeMailer
 
 PW = "correct horse battery"
@@ -87,7 +88,7 @@ def test_sessions_survive_restart_and_store_no_secrets(tmp_path, mailer):
     c2 = TestClient(create_app(ws, MockEditorAdapter(), web_dist=tmp_path / "none", mailer=mailer))
     c2.cookies.set("lacuna_session", token)
     assert c2.get("/api/episodes").status_code == 200
-    stored = (ws / "auth" / "users.json").read_text() + (ws / "auth" / "sessions.json").read_text()
+    stored = site_db.stored(ws)
     assert PW not in stored and token not in stored
 
 

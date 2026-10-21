@@ -6,7 +6,9 @@ import json
 from fastapi.testclient import TestClient
 
 from lacuna_app import create_app
+from lacuna_app import db as sitedb
 from lacuna_app.editor import MockEditorAdapter
+from tests.app import site_db
 from tests.app.e2e.auth import FakeMailer
 from tests.app.synth import EPISODE, make_workspace
 
@@ -22,7 +24,8 @@ def setup(tmp_path):
 
 
 def join(leon, email, **space):
-    link = leon.post("/api/auth/invites", json={"email": email, **space}).json()["link"]
+    """A new account through an invite; 专业版 unless `plan` says otherwise (test_plans.py tests the limits)."""
+    link = leon.post("/api/auth/invites", json={"email": email, "plan": "pro", **space}).json()["link"]
     c = TestClient(leon.app)
     assert c.post("/api/auth/register", json={"invite": link.rsplit("/", 1)[1], "password": PW}).status_code == 200
     return c
@@ -104,8 +107,8 @@ def test_switching_and_membership(tmp_path):
     assert leon.post("/api/spaces/main/members", json={"email": "who@example.com", "role": "editor"}).status_code == 404
     # deleting the account removes it from every workspace
     leon.delete("/api/auth/users/beta@example.com")
-    data = json.loads((ws / "auth" / "spaces.json").read_text())
-    assert all("beta@example.com" not in s["members"] for s in data["spaces"])
+    assert all("beta@example.com" not in s["members"] for s in site_db.shows(ws))
+    assert not sitedb.at(ws).query("SELECT * FROM show_members WHERE email = 'beta@example.com'")
 
 
 def test_learned_rules_stay_in_their_workspace(tmp_path):
@@ -121,7 +124,7 @@ def test_desktop_without_accounts_is_untouched(tmp_path):
     ws = make_workspace(tmp_path / "ws")
     c = TestClient(create_app(ws, MockEditorAdapter(), web_dist=tmp_path / "none", mailer=FakeMailer()))
     assert ids(c) == [EPISODE]
-    assert not (ws / "auth" / "spaces.json").exists()
+    assert not site_db.shows(ws)
 
 
 def test_existing_accounts_adopted_on_upgrade(tmp_path):
@@ -137,8 +140,8 @@ def test_existing_accounts_adopted_on_upgrade(tmp_path):
 
 def test_new_owner_after_users_file_deleted_gets_main(tmp_path):
     ws, leon = setup(tmp_path)
-    (ws / "auth" / "users.json").unlink()            # the documented way back in when locked out
-    (ws / "auth" / "users.json.bak").unlink(missing_ok=True)
+    with sitedb.at(ws).tx() as c:                     # the documented way back in when locked out
+        c.execute("DELETE FROM users")
     c = TestClient(create_app(ws, MockEditorAdapter(), web_dist=tmp_path / "none", mailer=FakeMailer()))
     c.post("/api/auth/register", json={"email": "new@example.com", "password": PW})
     assert c.get("/api/spaces").json()["current"]["id"] == "main" and ids(c) == [EPISODE]

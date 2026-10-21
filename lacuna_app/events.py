@@ -1,10 +1,10 @@
 """First-party event log: what people do in LACUNA, kept on our own server for the admin pages (batch 3).
 
-One row per event: ``ts, uid, sid, ep, ev, props``. ``uid`` is an internal id per account (never the email),
+One row per event: ``ts, uid, sid, ep, ev, props``. ``uid`` is the account's internal id (never the email),
 ``sid`` the show (workspace) id, ``ep`` the episode id. ``props`` holds only numbers, booleans and short
 enum-like words (a category, an action): no transcript text, file names, emails or IP addresses.
-Rows go to ``<root>/events/<YYYY-MM>.jsonl``; months older than ``KEEP_MONTHS`` are dropped at start.
-Deleting an account forgets its uid, so its past events become anonymous.
+Rows go to the site database (``events`` table); rows older than ``KEEP_MONTHS`` are dropped at start.
+Deleting an account deletes the only link from its uid to the person, so its past events become anonymous.
 
 Who is acting comes from ``ACTOR``, set per request by ``routes/events.py`` (contextvars, so it follows the
 request into thread pools and import jobs that copy the context). ``track()`` anywhere in the app logs
@@ -13,20 +13,14 @@ for the current actor and never raises.
 from __future__ import annotations
 
 import contextvars
-import json
 import math
 import re
-import secrets
-import threading
 import time
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Callable
 
-from .store import atomic_write_json, read_json
+from . import db as sitedb
 
-EVENTS_DIR = "events"
-IDS_FILE = "ids.json"
 KEEP_MONTHS = 13
 NAME = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$")
 WORD = re.compile(r"^[A-Za-z0-9_.:-]{1,48}$")
@@ -61,74 +55,36 @@ def clean_props(props: dict[str, Any]) -> dict[str, Any]:
 
 
 class EventLog:
-    def __init__(self, root: Path, clock: Callable[[], float] = time.time):
-        self.dir = Path(root) / EVENTS_DIR
+    """Rows in the site database's ``events`` table (lacuna_app/db.py). `uid_of` gives an account's
+    internal id (Auth.user_id); a deleted account's id no longer leads to anyone."""
+
+    def __init__(self, database: sitedb.DB, uid_of: Callable[[str | None], str | None],
+                 clock: Callable[[], float] = time.time):
+        self.db = database
+        self.uid = uid_of
         self.now = clock
-        self.lock = threading.Lock()
-        f = self.dir / IDS_FILE
-        self.ids: dict[str, str] = dict(read_json(f).get("ids", {})) if f.is_file() else {}
         self._prune()
-
-    # -- accounts
-    def uid(self, email: str | None) -> str | None:
-        """The account's internal id (made on first use, kept in events/ids.json)."""
-        if not email:
-            return None
-        with self.lock:
-            if email not in self.ids:
-                self.ids[email] = "u_" + secrets.token_hex(6)
-                self._save_ids()
-            return self.ids[email]
-
-    def forget(self, email: str) -> None:
-        """The account was deleted: its past events stay, but nothing links them to the person any more."""
-        with self.lock:
-            if self.ids.pop(email, None) is not None:
-                self._save_ids()
-
-    def _save_ids(self) -> None:
-        self.dir.mkdir(parents=True, exist_ok=True)
-        atomic_write_json(self.dir / IDS_FILE, {"ids": self.ids})
-
-    # -- rows
-    def _month_file(self, ts: float) -> Path:
-        return self.dir / (time.strftime("%Y-%m", time.gmtime(ts)) + ".jsonl")
 
     def add(self, ev: str, uid: str | None, sid: str | None = None, ep: str | None = None, **props) -> dict | None:
         if not NAME.match(ev):
             return None
-        ts = self.now()
-        row = {"ts": round(ts, 3), "uid": uid, "sid": sid, "ep": (ep or None) and str(ep)[:64], "ev": ev,
+        row = {"ts": round(self.now(), 3), "uid": uid, "sid": sid, "ep": (ep or None) and str(ep)[:64], "ev": ev,
                "props": clean_props(props)}
-        line = json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
-        with self.lock:
-            self.dir.mkdir(parents=True, exist_ok=True)
-            with open(self._month_file(ts), "a", encoding="utf-8") as fh:
-                fh.write(line)
+        with self.db.tx() as c:
+            c.execute("INSERT INTO events (ts, uid, sid, ep, ev, props) VALUES (?,?,?,?,?,?)",
+                      (row["ts"], uid, sid, row["ep"], ev, sitedb.dumps(row["props"])))
         return row
 
     def rows(self, since: float = 0.0) -> list[dict]:
-        out: list[dict] = []
-        for f in sorted(self.dir.glob("*.jsonl")):
-            with open(f, encoding="utf-8") as fh:
-                for line in fh:
-                    try:
-                        r = json.loads(line)
-                    except ValueError:
-                        continue          # a torn last line after a crash: skip it
-                    if r.get("ts", 0) >= since:
-                        out.append(r)
-        return out
+        return [{"ts": r["ts"], "uid": r["uid"], "sid": r["sid"], "ep": r["ep"], "ev": r["ev"],
+                 "props": sitedb.loads(r["props"])}
+                for r in self.db.query("SELECT * FROM events WHERE ts >= ? ORDER BY id", (since,))]
 
     def _prune(self) -> None:
-        if not self.dir.is_dir():
-            return
-        t = time.gmtime(self.now())
-        n = t.tm_year * 12 + t.tm_mon - 1 - KEEP_MONTHS
-        oldest = f"{n // 12:04d}-{n % 12 + 1:02d}"
-        for f in self.dir.glob("*.jsonl"):
-            if re.match(r"^\d{4}-\d{2}$", f.stem) and f.stem < oldest:
-                f.unlink(missing_ok=True)
+        """Raw events older than KEEP_MONTHS go (the admin pages keep their own totals)."""
+        cutoff = self.now() - KEEP_MONTHS * 31 * 86400
+        with self.db.tx() as c:
+            c.execute("DELETE FROM events WHERE ts < ?", (cutoff,))
 
 
 def track(ev: str, ep: str | None = None, **props) -> None:

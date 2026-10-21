@@ -138,9 +138,8 @@ class EventsMiddleware:
 
 def install(app, ctx, auth: Auth, spaces) -> EventLog:
     """Called by routes/spaces.py right after it adds the workspace dispatcher (so this runs outside it)."""
-    log: EventLog = ctx.provide("events", lambda: EventLog(ctx.ws.root))
+    log: EventLog = ctx.provide("events", lambda: EventLog(auth.db, auth.user_id))
     auth.on_joined.append(lambda email, invite: log.add("user.signup", log.uid(email), None, invited=invite is not None))
-    auth.on_deleted.append(log.forget)
     app.add_middleware(EventsMiddleware, log=log, auth=auth, spaces=spaces)
     return log
 
