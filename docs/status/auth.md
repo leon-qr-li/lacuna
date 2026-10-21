@@ -42,3 +42,10 @@ desktop (设置 → 账号与安全). The 设置 card 账号与邮件 is now spl
   Cloudflare Access's email sign-in drops a URL's #fragment, so a new invitee landed on the plain login page.
   Old `#/` links still open. A link opened where someone is signed in now says so (「退出并接受邀请」 /
   「继续用 …」) instead of dropping it. Tests: `web/e2e/auth.spec.ts`, `tests/app/test_auth_invites_2fa.py`.
+
+## 2026-10-21 batch 3
+Accounts, sessions, invites and settings now live in the site database (lacuna.db; decision
+`sqlite-site-data`). Locked out with no email: delete the rows of the `users` table (sqlite3 lacuna.db
+"DELETE FROM users") and the app asks for a new first account. New: plans per account, role names
+站长 / 站点管理员 / 用户, Turnstile + new-device email + 申请试用 (decision `app-sign-in`); see
+docs/status/batch3-framework.md.

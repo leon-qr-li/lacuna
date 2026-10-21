@@ -24,6 +24,10 @@ and print no emails or IPs.
 - **A deploy didn't go live**: the Deploy run says so after 30 min. Either a long import/export was running
   (it goes live when that finishes) or the new version failed its health check and the server went back
   to the previous one (`/var/lib/lacuna/deploy.json` + `failed-start.log` on the server). Fix forward with a PR.
+- **Open the site door** (Cloudflare Access off, the app's own sign-in + Turnstile in front; decision
+  `2026-10-21-app-sign-in`): only after Leon types 「关掉 Access」. Write `open` in `deploy/site-door.txt`
+  (PR, merge), then Provision `recreate`. The Cloudflare token needs Account → Turnstile → Edit. Back:
+  write `access`, merge, Provision `recreate`. A plain `apply` never changes the door.
 - **Server broken / lost**: Provision `recreate` builds a new one on the same data volume.
 - **Data volume lost**: restore the newest restic snapshot (below) onto a fresh volume, or restore the
   newest DO volume snapshot (DigitalOcean → Volumes → Snapshots) and recreate.

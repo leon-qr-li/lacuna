@@ -17,6 +17,11 @@ What it sets up
 - Cloudflare: a remotely managed tunnel to the app, the DNS record, an Access application with an email
   allow-list group (one-time email codes), an R2 bucket for backups, and two narrow API tokens for the
   server (backup bucket only; Access groups only, for in-app invites).
+- The site door (decision 2026-10-21-app-sign-in), deploy/site-door.txt: "access" (default) keeps Cloudflare
+  Access in front of the site; "open" lets everyone reach the app's own sign-in (password + two-step code +
+  Turnstile + new-device email) and adds a Turnstile widget. Takes effect with `recreate` only (the server's
+  env and the Access policy change together); back to "access" + `recreate` puts Access back in front.
+  Staging stays behind Access either way.
 - Staging (decision staging-site): preview.<domain>, a second container on the same server with its own data
   folder (/data/preview, a fresh copy of the real workspace each time a new preview version arrives), its
   own DNS record and Access application with the same invite list. Costs nothing extra.
@@ -60,6 +65,9 @@ PREVIEW_NAME = "lacuna-preview"     # the staging container (deploy/host/lacuna-
 ACCESS_POLICY = "LACUNA invited people"
 DEPLOY_POLICY = "LACUNA deploy checks"
 VERSION_POLICY = "LACUNA version (public)"
+OPEN_POLICY = "LACUNA open door"
+DOOR_FILE = HERE / "site-door.txt"
+TURNSTILE_WIDGET = "LACUNA sign-in"
 VERSION_PATH = "/api/version"       # answers the version string only (lacuna_app/cloud.py VERSION_PATH)
 APP_PORT = 8765
 TOKEN_BACKUP = "lacuna-server-backup"
@@ -249,13 +257,17 @@ class Cloudflare:
         return self.r("POST", f"/accounts/{a}/access/policies", {"name": name, **body})["id"]
 
     def application(self, group_id: str | None, idp_id: str | None, apply: bool, domain: str | None = None,
-                    name: str = ACCESS_APP) -> str | None:
+                    name: str = ACCESS_APP, open_door: bool = False) -> str | None:
         """The Access application in front of the site (or the staging site); returns its audience tag
-        (CF_ACCESS_AUD). Both sites let in the same invite list and the deploy checks."""
+        (CF_ACCESS_AUD). Both sites let in the same invite list and the deploy checks. `open_door`: everyone
+        passes (bypass) and the app's own sign-in is the door."""
         domain = domain or self.domain
         a = self.account
-        people = self.policy(ACCESS_POLICY, {"decision": "allow", "include": [{"group": {"id": group_id}}],
-                                             "session_duration": "24h"}, apply and bool(group_id))
+        if open_door:
+            people = self.policy(OPEN_POLICY, {"decision": "bypass", "include": [{"everyone": {}}]}, apply)
+        else:
+            people = self.policy(ACCESS_POLICY, {"decision": "allow", "include": [{"group": {"id": group_id}}],
+                                                 "session_duration": "24h"}, apply and bool(group_id))
         checks = self.policy(DEPLOY_POLICY, {"decision": "non_identity",
                                              "include": [{"any_valid_service_token": {}}]}, apply)
         apps = self.r("GET", f"/accounts/{a}/access/apps") or []
@@ -304,6 +316,27 @@ class Cloudflare:
             log(f"created the Access application {name} version")
 
     # ---- R2 + scoped tokens for the server
+    def turnstile(self, apply: bool) -> tuple[str, str] | None:
+        """The Turnstile widget for the sign-in page: (site key, secret); made once, then reused."""
+        a = self.account
+        try:
+            widgets = self.r("GET", f"/accounts/{a}/challenges/widgets") or []
+        except ProvisionError as e:
+            raise ProvisionError("the Cloudflare token needs the permission Account → Turnstile → Edit "
+                                 "(dash.cloudflare.com → My Profile → API Tokens) to open the site door") from e
+        w = next((x for x in widgets if x.get("name") == TURNSTILE_WIDGET), None)
+        if not apply:
+            log("Turnstile widget: " + ("ok" if w else "would be created"))
+            return None
+        if w:
+            w = self.r("GET", f"/accounts/{a}/challenges/widgets/{w['sitekey']}")
+        else:
+            w = self.r("POST", f"/accounts/{a}/challenges/widgets",
+                       {"name": TURNSTILE_WIDGET, "domains": [self.domain], "mode": "managed"})
+            log("created the Turnstile widget")
+        mask(w["secret"])
+        return w["sitekey"], w["secret"]
+
     def bucket(self, apply: bool) -> None:
         a = self.account
         try:
@@ -625,8 +658,18 @@ def need(name: str) -> str:
     return v
 
 
-def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
+def site_door(path: Path | None = None) -> str:
+    """deploy/site-door.txt: "access" (Cloudflare Access in front, the default) or "open"."""
+    path = path or DOOR_FILE
+    door = path.read_text().strip().lower() if path.is_file() else "access"
+    if door not in ("access", "open"):
+        raise ProvisionError(f"{path.name} must say access or open, not {door!r}")
+    return door
+
+
+def run(mode: str, cf: Cloudflare, do: DigitalOcean, door: str | None = None) -> dict:
     apply = mode in ("apply", "recreate")
+    door = door or site_door()
     if apply:      # every secret up front, so a missing one stops the run before anything is created
         for name in ("BACKUP_PASSWORD", "ANTHROPIC_API_KEY", "RESEND_API_KEY"):
             need(name)
@@ -642,7 +685,16 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
     cf.dns(tunnel_id, apply, cf.preview)
     idp = cf.one_time_pin(apply)
     group = cf.group(emails, apply)
-    aud = cf.application(group, idp, apply)
+    servers = do.droplets()
+    # the door changes only with `recreate`, together with the server's env: an Access policy that lets
+    # everyone through in front of a server that still expects Access would shut everyone out
+    opening = door == "open" and mode in ("recreate", "plan")
+    human = cf.turnstile(mode == "recreate") if opening else None
+    if door == "open" and mode == "apply" and servers:
+        log("site door: open is set, takes effect with recreate (Access stays as it is)")
+        aud = cf.application(group, idp, False)
+    else:
+        aud = cf.application(group, idp, apply, open_door=opening)
     preview_aud = cf.application(group, idp, apply, cf.preview, PREVIEW_APP)
     cf.version_door(apply)
     cf.version_door(apply, cf.preview, PREVIEW_APP)
@@ -652,7 +704,6 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
     do.firewall(apply)
     size = do.size()
 
-    servers = do.droplets()
     if len(servers) > 1:
         raise ProvisionError("more than one server is tagged lacuna; remove the extra one in DigitalOcean")
     build = apply and (not servers or mode == "recreate")
@@ -664,9 +715,12 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean) -> dict:
                "CF_ACCOUNT_ID": cf.account, "CF_ACCESS_GROUP_ID": group, "CF_ACCESS_API_TOKEN": cf.invites_token(),
                "LACUNA_PUBLIC_URL": f"https://{DOMAIN}", "LACUNA_OWNER_EMAIL": emails[0], "ANTHROPIC_API_KEY": need("ANTHROPIC_API_KEY"),
                "RESEND_API_KEY": need("RESEND_API_KEY")}
+    if human:
+        app_env |= {"LACUNA_ACCESS": "off", "TURNSTILE_SITE_KEY": human[0], "TURNSTILE_SECRET_KEY": human[1]}
     # staging: its own Access audience and address; no Access token, so an invite tried out there never
     # changes who can reach the real site
-    preview_env = {k: v for k, v in app_env.items() if k != "CF_ACCESS_API_TOKEN"} | {
+    preview_env = {k: v for k, v in app_env.items()
+                   if k not in ("CF_ACCESS_API_TOKEN", "LACUNA_ACCESS", "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY")} | {
         "CF_ACCESS_AUD": preview_aud, "LACUNA_PUBLIC_URL": f"https://{cf.preview}", "LACUNA_STAGING": "1"}
     backup_env = cf.backup_credentials() | {"RESTIC_PASSWORD": need("BACKUP_PASSWORD")}
     files = {
