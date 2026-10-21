@@ -58,7 +58,7 @@ for (const theme of ["light", "dark"] as const) {
     await row.getByRole("button", { name: "恢复" }).click();
     await expect(page.getByRole("status")).toContainText("已恢复到剧集列表");
     await expect(page.getByText("没有归档的剧集。")).toBeVisible();
-    await page.getByRole("link", { name: "剧集" }).click();
+    await page.locator(".topbar").getByRole("link", { name: "首页", exact: true }).click();
     await expect(cards).toHaveCount(1);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/home_${theme}.png` });
   });

@@ -318,5 +318,5 @@ def test_wrong_number_of_tracks(ws, rec):
 def test_at_most_four_tracks(ws, rec):
     _show(ws, "Ana", "Bo")
     imp = importer(ws)
-    with pytest.raises(ImportError_, match="每个项目最多 4 位主持人，一集最多导入 4 条分轨，收到 5 条"):
+    with pytest.raises(ImportError_, match="每个节目最多 4 位主持人，一集最多导入 4 条分轨，收到 5 条"):
         imp.start("EP002", "", [str(rec["Leon"])] * 5)

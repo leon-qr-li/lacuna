@@ -30,12 +30,12 @@ export function SettingsLink() {
 type Section = "general" | "edit" | "projects" | "account" | "members" | "mail" | "ai";
 const SECTIONS: { id: Section; group: "me" | "admin"; label: string; about: string }[] = [
   { id: "general", group: "me", label: t("通用"), about: t("界面主题、语言和版本。") },
-  { id: "edit", group: "me", label: t("剪辑习惯"), about: t("你平时下手多重，每个项目都按这个来。") },
-  { id: "projects", group: "me", label: t("我的项目"), about: t("你建的和受邀加入的项目。") },
+  { id: "edit", group: "me", label: t("剪辑习惯"), about: t("你平时下手多重，每个节目都按这个来。") },
+  { id: "projects", group: "me", label: t("我的节目"), about: t("你建的和受邀加入的节目。") },
   { id: "account", group: "me", label: t("账号与安全"), about: t("登录、密码、两步验证和登录过的设备。") },
   { id: "members", group: "admin", label: t("成员与邀请"), about: t("邀请新账号、管理成员角色。") },
   { id: "mail", group: "admin", label: t("邮件发件人"), about: t("邀请邮件和验证码从哪个地址发出。") },
-  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有项目的文字稿都按它校对的专有名词。") },
+  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有节目的文字稿都按它校对的专有名词。") },
 ];
 const sectionFromHash = (): Section => {
   const m = /^#\/settings\/([\w-]+)/.exec(window.location.hash)?.[1];
@@ -151,7 +151,7 @@ export function SettingsView() {
                   <h2>{t("这台电脑")}</h2>
                   <ul className="plain small">
                     <li>{t("系统：")}{info.platform}</li>
-                    <li>{t("项目：")}{info.workspace}</li>
+                    <li>{t("节目：")}{info.workspace}</li>
                     <li data-testid="ffmpeg-state">ffmpeg：{info.ffmpeg && info.ffprobe ? t("已就绪") : t("没找到（导入和导出会失败）")}</li>
                     <li>{t("语音识别模型：")}{info.models ? t("已下载") : t("第一次导入时自动下载（约 400 MB）")}</li>
                   </ul>

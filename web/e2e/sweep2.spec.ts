@@ -57,7 +57,7 @@ test("music page: adding a file the library already has as shared says so", asyn
   await page.goto(`/#/ep/${encodeURIComponent(EP)}/music`);
   await expect(page.getByRole("heading", { name: "配乐", exact: true })).toBeVisible();
   await page.getByTestId("episode-upload").getByLabel("选择音乐文件").setInputFiles(file("odyssey_theme.mp3"));
-  await expect(page.getByText("素材库里已经有这首（整个项目都能用），这一集直接能用：odyssey_theme.mp3")).toBeVisible();
+  await expect(page.getByText("素材库里已经有这首（整个节目都能用），这一集直接能用：odyssey_theme.mp3")).toBeVisible();
   const lib = (await (await page.request.get("/api/library")).json()).assets as { shared: boolean }[];
   expect(lib).toHaveLength(1);
   expect(lib[0].shared).toBe(true);

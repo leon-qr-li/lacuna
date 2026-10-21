@@ -80,15 +80,15 @@ class _Dispatch:
             return JSONResponse({"detail": msg}, status_code=403)(scope, receive, send)
 
         if sid is None:
-            return await deny(tr("你还没有项目。先建一个项目，或者请别人邀请你协作。"))
+            return await deny(tr("你还没有节目。先建一个节目，或者请别人邀请你协作。"))
         role = self.spaces.role(sid, email)
         method = scope["method"]
         if role == "viewer" and method not in ("GET", "HEAD"):
-            return await deny(tr("你在这个项目里只能试听和查看，不能修改。"))
+            return await deny(tr("你在这个节目里只能试听和查看，不能修改。"))
         if self.spaces.archived(sid) and method not in ("GET", "HEAD"):
-            return await deny(tr("这个项目已归档，只能查看。恢复后才能修改。"))
+            return await deny(tr("这个节目已归档，只能查看。恢复后才能修改。"))
         if role != "admin" and method == "DELETE" and FOR_GOOD.match(path):
-            return await deny(tr("只有项目管理员能彻底删除剧集。"))
+            return await deny(tr("只有节目管理员能彻底删除剧集。"))
         # whose learned rules and 剪辑力度 apply: the signed-in person's own, in every project (habits.py)
         token = habits.HOME.set(habits.home_for(self.spaces.root, email))
         try:
@@ -224,11 +224,11 @@ def register(app, ctx) -> None:
 
     def may_manage(email: str, sid: str) -> None:
         if not (site_admin(email) or spaces.role(sid, email) == "admin"):
-            raise HTTPException(403, tr("只有项目管理员能改这个项目"))
+            raise HTTPException(403, tr("只有节目管理员能改这个节目"))
 
     def live(sid: str) -> None:
         if spaces.archived(sid):
-            raise HTTPException(403, tr("这个项目已归档，只能查看。恢复后才能修改。"))
+            raise HTTPException(403, tr("这个节目已归档，只能查看。恢复后才能修改。"))
 
     def may_delete(email: str, sid: str) -> bool:
         """Deleting for good: the project's creator or LACUNA's owner, never the main project."""
@@ -239,7 +239,7 @@ def register(app, ctx) -> None:
         if not space or space == "new":
             return {"space": "new"}
         if space not in spaces.spaces:
-            raise AuthError(tr("没有这个项目"), 404)
+            raise AuthError(tr("没有这个节目"), 404)
         role = role or "editor"
         if role not in SPACE_RANK:
             raise AuthError(tr("没有这个角色"))
@@ -265,7 +265,7 @@ def register(app, ctx) -> None:
     def switch(body: SwitchBody, request: Request):
         email = me(request)
         if not spaces.role(body.id, email):
-            raise HTTPException(403, tr("你不在这个项目里"))
+            raise HTTPException(403, tr("你不在这个节目里"))
         res = JSONResponse(overview(request, email, body.id))
         res.set_cookie(SPACE_COOKIE, body.id, max_age=365 * 86400, httponly=True, samesite="strict", path="/",
                        secure=auth.cloud)
@@ -304,7 +304,7 @@ def register(app, ctx) -> None:
     def people(sid: str) -> dict:
         s = spaces.spaces.get(sid)
         if not s:
-            raise HTTPException(404, tr("没有这个项目"))
+            raise HTTPException(404, tr("没有这个节目"))
         return {"id": sid, "name": spaces.title(sid),
                 "members": [{"email": e, "role": r} for e, r in sorted(s["members"].items())],
                 "invites": [{"id": i["id"], "email": i["email"], "role": i.get("space_role") or "editor",
@@ -318,7 +318,7 @@ def register(app, ctx) -> None:
     def list_people(sid: str, request: Request):
         email = me(request)
         if not spaces.role(sid, email) and not site_admin(email):
-            raise HTTPException(403, tr("你不在这个项目里"))
+            raise HTTPException(403, tr("你不在这个节目里"))
         return people_for(email, sid)
 
     @app.post("/api/spaces/{sid}/invite")
@@ -366,10 +366,10 @@ def register(app, ctx) -> None:
     def picture(sid: str, request: Request):
         email = me(request)
         if sid not in spaces.spaces or not (spaces.role(sid, email) or site_admin(email)):
-            raise HTTPException(404, tr("没有这个项目"))
+            raise HTTPException(404, tr("没有这个节目"))
         f = spaces.picture_file(sid)
         if not f.is_file():
-            raise HTTPException(404, tr("这个项目还没有图片"))
+            raise HTTPException(404, tr("这个节目还没有图片"))
         # the address carries ?v=<mtime>, so a new picture is a new address
         return FileResponse(f, media_type="image/png", headers={"Cache-Control": "private, max-age=31536000"})
 
@@ -409,15 +409,15 @@ def register(app, ctx) -> None:
         deleting person's own store; learned rules and 剪辑力度 are theirs already (habits.py)."""
         email = me(request)
         if sid not in spaces.spaces:
-            raise HTTPException(404, tr("没有这个项目"))
+            raise HTTPException(404, tr("没有这个节目"))
         if not may_delete(email, sid):
-            raise HTTPException(403, tr("只有项目的创建者或 LACUNA 的所有者能永久删除项目"))
+            raise HTTPException(403, tr("只有节目的创建者或 LACUNA 的所有者能永久删除节目"))
         if not spaces.archived(sid):
-            raise HTTPException(409, tr("先把项目归档，才能永久删除"))
+            raise HTTPException(409, tr("先把节目归档，才能永久删除"))
         if body.confirm.strip() != spaces.title(sid):
-            raise HTTPException(422, tr("项目名称不对，没有删除"))
+            raise HTTPException(422, tr("节目名称不对，没有删除"))
         if not [m for m in spaces.mine(email) if m["id"] != sid]:
-            raise HTTPException(409, tr("这是你唯一的项目。先新建一个项目，再删除这个"))
+            raise HTTPException(409, tr("这是你唯一的节目。先新建一个节目，再删除这个"))
         learned = spaces.path(sid) / LEARN_DIR
         if learned.is_dir():
             keep = habits.home_for(spaces.root, email) / LEARN_DIR / "from_projects" / \

@@ -16,6 +16,12 @@ All nine picked items built, with tests:
 8. Episode card actions as a footer row (no overlap with the title). e2e albums.spec.
 9. Top bar without Undo/Redo/Export, toast 撤销 — decision `top-bar-no-undo`. e2e undo.ts helper.
 
+Shipped: PR #160 squash-merged (2e05676), live on prod 2026-10-21 01:12Z; Leon said 验收通过 01:39Z.
+
+## Polish round (2026-10-21, same thread)
+Eight items from Leon's validation, one PR straight to prod (pre-launch flow: no staging) — decisions
+`polish-round` and `show-not-project` (the interface now says 节目 / Show instead of 项目 / Project).
+
 ## Next
-- Leon's E2E on staging, then squash merge. Findings go to the next batch.
+- Leon validates the polish round on prod.
 - Still on the pre-launch list: the 4-host editing test with real audio.

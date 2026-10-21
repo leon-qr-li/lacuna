@@ -403,8 +403,12 @@ export function EditLanes({
         <h2>{t("剪辑时间线")}</h2>
         <Help />
         <p className="muted small legend" data-testid="ml-legend">
-          <span className="lg lg-cut" /> {t("剪切点")}　<span className="lg lg-lift" /> {t("单轨删减")}
-          <span className="lg lg-restored" /> {t("已恢复")}　<span className="lg lg-pending" /> {t("待批准")}　<span className="lg ml-lg-sel" /> {t("你选中的")}
+          {([["lg-cut", t("剪切点")], ["lg-lift", t("单轨删减")], ["lg-restored", t("已恢复")], ["lg-pending", t("待批准")], ["ml-lg-sel", t("你选中的")]] as const).map(([c, label]) => (
+            <span className="lg-item" key={c}>
+              <span className={`lg ${c}`} />
+              {label}
+            </span>
+          ))}
         </p>
       </div>
       {top}

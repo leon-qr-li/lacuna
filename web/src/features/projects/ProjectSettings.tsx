@@ -21,6 +21,14 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "people", label: t("协作者") },
 ];
 
+const ABOUT: Record<Tab, string> = {
+  basic: t("节目的名字、图片、语言、介绍和专有名词。"),
+  hosts: t("每位主持人一条分轨，最多 4 位。"),
+  music: t("新剧集默认用的片头片尾。"),
+  publish: t("show notes 和发布资料的默认做法。"),
+  people: t("谁能看、谁能剪这个节目。"),
+};
+
 const tabFromHash = (): Tab => {
   const m = /^#\/project\/([\w-]+)/.exec(window.location.hash)?.[1];
   return TABS.some((x) => x.id === m) ? (m as Tab) : "basic";
@@ -47,38 +55,44 @@ export function ProjectSettings() {
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
-  if (!show) return <PageLoading label={t("正在打开项目设置…")} shape="list" />;
+  if (!show) return <PageLoading label={t("正在打开节目设置…")} shape="list" />;
   const cur = sp?.current;
   return (
-    <main className="show-page prj-settings">
+    <main className="home settings prj-settings">
       <div className="home-hero">
-        <h1>{t("项目设置")}</h1>
-        <p className="muted">{t("这个项目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和海报都按这里来。")}</p>
+        <h1>{t("节目设置")}</h1>
+        <p className="muted">{t("这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和海报都按这里来。")}</p>
       </div>
-      <div className="prj-tabs" role="tablist" aria-label={t("项目设置")}>
-        {TABS.filter((x) => x.id !== "people" || cur).map((x) => (
-          <a
-            key={x.id}
-            role="tab"
-            aria-selected={tab === x.id}
-            className="prj-tab"
-            href={`#/project/${x.id}`}
-            data-testid={`project-tab-${x.id}`}
-          >
-            {x.label}
-          </a>
-        ))}
+      <div className="set-layout">
+        <nav className="set-nav" aria-label={t("节目设置")}>
+          {[{ g: t("基本"), ids: ["basic", "hosts", "music", "publish"] }, { g: t("团队"), ids: cur ? ["people"] : [] }].filter((x) => x.ids.length).map(({ g, ids }) => (
+            <div className="set-nav-group" key={g}>
+              <div className="set-nav-label">{g}</div>
+              {TABS.filter((x) => ids.includes(x.id) && (x.id !== "people" || cur)).map((x) => (
+                <a key={x.id} className="set-nav-item" href={`#/project/${x.id}`} aria-current={tab === x.id ? "page" : undefined} data-testid={`project-tab-${x.id}`}>
+                  {x.label}
+                </a>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="set-main">
+          <div className="set-head">
+            <h2>{TABS.find((x) => x.id === tab)?.label}</h2>
+            <p className="muted small">{ABOUT[tab]}</p>
+          </div>
+          {cur?.archived && <ArchivedNote p={cur} />}
+          <section className="card" role="tabpanel">
+            {tab === "basic" && cur && <ProjectLook p={cur} />}
+            {(tab === "basic" || tab === "hosts" || tab === "publish") && (
+              <ShowForm key={tab} show={show} parts={[tab]} onSaved={() => void loadProjects(true)} />
+            )}
+            {tab === "basic" && cur?.role === "admin" && !cur.archived && <ArchiveZone p={cur} />}
+            {tab === "music" && <ProjectMusic />}
+            {tab === "people" && cur && <Collaborators id={cur.id} me={me} manage={cur.role === "admin"} />}
+          </section>
+        </div>
       </div>
-      {cur?.archived && <ArchivedNote p={cur} />}
-      <section className="card" role="tabpanel">
-        {tab === "basic" && cur && <ProjectLook p={cur} />}
-        {(tab === "basic" || tab === "hosts" || tab === "publish") && (
-          <ShowForm key={tab} show={show} parts={[tab]} onSaved={() => void loadProjects(true)} />
-        )}
-        {tab === "basic" && cur?.role === "admin" && !cur.archived && <ArchiveZone p={cur} />}
-        {tab === "music" && <ProjectMusic />}
-        {tab === "people" && cur && <Collaborators id={cur.id} me={me} manage={cur.role === "admin"} />}
-      </section>
     </main>
   );
 }
@@ -104,8 +118,8 @@ function ProjectLook({ p }: { p: MySpace }) {
     <div className="prj-look" data-testid="project-look">
       <ProjectAvatar p={p} size={88} />
       <div className="prj-look-body">
-        <strong>{t("项目图片")}</strong>
-        <span className="muted small">{t("方形图片，会自动裁成正方形。没有图片时用这个项目自己的颜色。")}</span>
+        <strong>{t("节目图片")}</strong>
+        <span className="muted small">{t("方形图片，会自动裁成正方形。没有图片时用这个节目自己的颜色。")}</span>
         {manage && (
           <div className="prj-look-actions">
             <button type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => file.current?.click()} data-testid="project-picture-upload">
@@ -142,7 +156,7 @@ function ArchiveZone({ p }: { p: MySpace }) {
   const archive = async () => {
     const ok = await confirmDialog({
       title: t("归档「{name}」？", { name: p.name }),
-      message: t("归档后项目移到「已归档」，所有协作者都只能查看、不能修改。随时可以恢复。"),
+      message: t("归档后节目移到「已归档」，所有协作者都只能查看、不能修改。随时可以恢复。"),
       confirmLabel: t("归档"),
     });
     if (!ok) return;
@@ -155,8 +169,8 @@ function ArchiveZone({ p }: { p: MySpace }) {
   return (
     <div className="prj-danger-zone">
       <div>
-        <strong>{t("归档项目")}</strong>
-        <p className="muted small">{t("不再做的项目可以归档：只读，放进「已归档」。永久删除要先归档。")}</p>
+        <strong>{t("归档节目")}</strong>
+        <p className="muted small">{t("不再做的节目可以归档：只读，放进「已归档」。永久删除要先归档。")}</p>
         {err && <p className="error small">{err}</p>}
       </div>
       <button type="button" className="btn btn-outline" onClick={() => void archive()} data-testid="project-archive-btn">
@@ -171,7 +185,7 @@ function ArchivedNote({ p }: { p: MySpace }) {
   const [err, setErr] = useState<string | null>(null);
   return (
     <div className="prj-readonly" data-testid="project-readonly">
-      <span>{t("这个项目已归档，只能查看。恢复后才能修改。")}</span>
+      <span>{t("这个节目已归档，只能查看。恢复后才能修改。")}</span>
       {p.role === "admin" && (
         <button
           type="button"
@@ -251,7 +265,7 @@ export function InvitePage() {
     <main className="show-page prj-settings">
       <div className="home-hero">
         <h1>{t("邀请协作「{name}」", { name: cur.name })}</h1>
-        <p className="muted">{t("只能邀请到项目这一层。对方剪的时候用对方自己的剪辑习惯。")}</p>
+        <p className="muted">{t("只能邀请到节目这一层。对方剪的时候用对方自己的剪辑习惯。")}</p>
       </div>
       <section className="card">
         <Collaborators id={cur.id} me={me} manage={cur.role === "admin"} />

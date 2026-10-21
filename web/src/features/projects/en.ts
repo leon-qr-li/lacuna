@@ -5,28 +5,28 @@ export const en: Dict = {
   "邀请已经发到 {email}": "Invite sent to {email}",
   "没能发邮件，把下面的链接发给 {email}": "Couldn't send the email; send {email} the link below",
   "邀请": "Invite",
-  "对方能看到这个项目的所有剧集、专辑和素材，看不到你的其他项目。管理：管协作者、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。":
-    "They see every episode, album and media file in this project, not your other projects. Manage: collaborators and deleting episodes for good. Edit: all editing work. Listen: listen and read only.",
+  "对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理：管协作者、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。":
+    "They see every episode, album and media file in this show, not your other shows. Manage: collaborators and deleting episodes for good. Edit: all editing work. Listen: listen and read only.",
   "还没有 LACUNA 账号的人，请 LACUNA 管理员邀请。": "People without a LACUNA account are invited by a LACUNA admin.",
   "邀请链接": "Invite link",
   "协作者": "Collaborators",
   "（你）": " (you)",
   "{role} · 待接受": "{role} · pending",
-  "新项目": "New project",
-  "一档播客、一个客户、一个栏目都可以是一个项目。每个项目有自己的剧集、专辑和素材。":
-    "A podcast, a client or a segment can each be a project. Every project has its own episodes, albums and media.",
-  "项目名": "Project name",
-  "建好项目": "Create project",
-  "我的项目": "My projects",
-  "所有项目": "All projects",
-  "项目设置": "Project settings",
-  "＋ 新项目": "+ New project",
+  "新节目": "New show",
+  "一档播客、一个客户、一个栏目都可以是一个节目。每个节目有自己的剧集、专辑和素材。":
+    "A podcast, a client or a segment can each be a show. Every show has its own episodes, albums and media.",
+  "节目名": "Show name",
+  "建好节目": "Create show",
+  "我的节目": "My shows",
+  "所有节目": "All shows",
+  "节目设置": "Show settings",
+  "＋ 新节目": "+ New show",
   "基本信息": "Basics",
   "主持人": "Hosts",
   "片头片尾": "Intro & outro",
-  "正在打开项目设置…": "Opening project settings…",
-  "这个项目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和海报都按这里来。":
-    "This project's name, hosts and defaults. Imports, LACUNA's editing, show notes and covers follow them.",
+  "正在打开节目设置…": "Opening show settings…",
+  "这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和海报都按这里来。":
+    "This show's name, hosts and defaults. Imports, LACUNA's editing, show notes and covers follow them.",
   "新导入的剧集自动带上。专辑可以设自己的片头片尾，覆盖这里的。":
     "New imports get them automatically. An album can set its own intro and outro, which replace these.",
   "现在用自己的片头片尾的专辑：{names}": "Albums with their own intro or outro: {names}",
@@ -34,46 +34,53 @@ export const en: Dict = {
   "去素材库添加": "Add some in Library",
   "没有登录账号时不需要邀请协作。": "Without accounts there is no one to invite.",
   "邀请协作「{name}」": "Invite collaborators to “{name}”",
-  "只能邀请到项目这一层。对方剪的时候用对方自己的剪辑习惯。":
-    "Invites are to a whole project. Collaborators edit with their own editing habits.",
+  "只能邀请到节目这一层。对方剪的时候用对方自己的剪辑习惯。":
+    "Invites are to a whole show. Collaborators edit with their own editing habits.",
   "今天": "today",
-  "正在打开项目…": "Opening projects…",
-  "{n} 集 · {m} 个专辑": "{n} episodes · {m} albums",
+  "正在打开节目…": "Opening shows…",
+  "{n} 个专辑": { one: "{n} album", other: "{n} albums" },
   "最近 {day}": "Last edited {day}",
   "{n} 位协作者": "{n} collaborators",
   "{who} 邀请你 · {role}": "Invited by {who} · {role}",
-  "现在在这个项目": "You're here",
-  "每个项目有自己的剧集、专辑和素材。别人邀请你协作的项目也在这里。":
-    "Every project has its own episodes, albums and media. Projects others invited you to are here too.",
+  "现在在这个节目": "You're here",
+  "每个节目有自己的剧集、专辑和素材。别人邀请你协作的节目也在这里。":
+    "Every show has its own episodes, albums and media. Shows others invited you to are here too.",
   "邀请协作": "Invite collaborators",
   "语言": "Language",
   "介绍一下「{name}」": "Tell LACUNA about “{name}”",
-  "建你的第一个项目": "Create your first project",
-  "一档播客、一个客户、一个栏目都可以是一个项目。填名字和主持人，每位主持人一条分轨；这些以后都能在项目设置里改。":
-    "A podcast, a client or a segment can each be a project. Fill in the name and hosts, one track per host; you can change all of it later in project settings.",
+  "建你的第一个节目": "Create your first show",
+  "一档播客、一个客户、一个栏目都可以是一个节目。填名字和主持人，每位主持人一条分轨；这些以后都能在节目设置里改。":
+    "A podcast, a client or a segment can each be a show. Fill in the name and hosts, one track per host; you can change all of it later in show settings.",
   "已归档": "Archived",
   "已归档 · 只读": "Archived · read-only",
   "恢复": "Restore",
   "永久删除": "Delete for good",
-  "这是你唯一的项目。先新建一个项目，再删除这个。": "This is your only project. Create another project first, then delete this one.",
-  "归档的项目只能查看，所有协作者都不能修改。恢复后一切照旧。":
-    "Archived projects are read-only for every collaborator. Restoring brings everything back as it was.",
+  "这是你唯一的节目。先新建一个节目，再删除这个。": "This is your only show. Create another show first, then delete this one.",
+  "归档的节目只能查看，所有协作者都不能修改。恢复后一切照旧。":
+    "Archived shows are read-only for every collaborator. Restoring brings everything back as it was.",
   "永久删除「{name}」": "Delete “{name}” for good",
-  "这个项目里的所有剧集、专辑、素材、导出文件和协作者都会被删除，不能恢复。学到的规则和剪辑力度是你自己的，会留下。":
-    "Every episode, album, media file, export and collaborator in this project will be deleted. This can't be undone. Your learned rules and editing strength are your own and stay.",
-  "输入项目名称「{name}」确认": "Type the project name “{name}” to confirm",
-  "项目图片": "Project picture",
-  "方形图片，会自动裁成正方形。没有图片时用这个项目自己的颜色。":
-    "A square picture; others are cropped to a square. Without one, the project uses its own colour.",
+  "这个节目里的所有剧集、专辑、素材、导出文件和协作者都会被删除，不能恢复。学到的规则和剪辑力度是你自己的，会留下。":
+    "Every episode, album, media file, export and collaborator in this show will be deleted. This can't be undone. Your learned rules and editing strength are your own and stay.",
+  "输入节目名称「{name}」确认": "Type the show name “{name}” to confirm",
+  "节目图片": "Show picture",
+  "方形图片，会自动裁成正方形。没有图片时用这个节目自己的颜色。":
+    "A square picture; others are cropped to a square. Without one, the show uses its own colour.",
   "换一张图片": "Change picture",
   "上传图片": "Upload picture",
   "改用颜色": "Use colour instead",
   "归档「{name}」？": "Archive “{name}”?",
-  "归档后项目移到「已归档」，所有协作者都只能查看、不能修改。随时可以恢复。":
-    "The project moves to Archived, where every collaborator can view but not change it. You can restore it any time.",
+  "归档后节目移到「已归档」，所有协作者都只能查看、不能修改。随时可以恢复。":
+    "The show moves to Archived, where every collaborator can view but not change it. You can restore it any time.",
   "归档": "Archive",
-  "归档项目": "Archive project",
-  "不再做的项目可以归档：只读，放进「已归档」。永久删除要先归档。":
-    "Archive a project you're done with: it becomes read-only and moves to Archived. A project must be archived before it can be deleted for good.",
-  "这个项目已归档，只能查看。恢复后才能修改。": "This project is archived and read-only. Restore it to make changes.",
+  "归档节目": "Archive show",
+  "不再做的节目可以归档：只读，放进「已归档」。永久删除要先归档。":
+    "Archive a show you're done with: it becomes read-only and moves to Archived. A show must be archived before it can be deleted for good.",
+  "这个节目已归档，只能查看。恢复后才能修改。": "This show is archived and read-only. Restore it to make changes.",
+  "基本": "General",
+  "团队": "Team",
+  "节目的名字、图片、语言、介绍和专有名词。": "The show's name, picture, language, description and proper nouns.",
+  "每位主持人一条分轨，最多 4 位。": "One track per host, up to 4.",
+  "新剧集默认用的片头片尾。": "The intro and outro new episodes get by default.",
+  "show notes 和发布资料的默认做法。": "How show notes and the publishing pack are done by default.",
+  "谁能看、谁能剪这个节目。": "Who can view and who can edit this show.",
 };

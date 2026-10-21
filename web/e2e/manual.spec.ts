@@ -49,6 +49,11 @@ test.describe.serial("manual editing", () => {
     const lg = (await page.getByTestId("ml-legend").boundingBox())!;
     const title = (await page.getByTestId("edit-lanes").getByRole("heading", { name: "剪辑时间线" }).boundingBox())!;
     expect(Math.abs(lg.y + lg.height / 2 - (title.y + title.height / 2))).toBeLessThan(6);
+    // the legend's items sit at even gaps
+    const items = await page.getByTestId("ml-legend").locator(".lg-item").evaluateAll((els) => els.map((e) => e.getBoundingClientRect()));
+    expect(items).toHaveLength(5);
+    const gaps = items.slice(1).map((r, i) => r.left - items[i].right);
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThan(1);
     // a click elsewhere closes the menu, a right-click on the selection opens it again
     await page.getByTestId("edit-lanes").getByRole("heading").click();
     await expect(menu).toHaveCount(0);

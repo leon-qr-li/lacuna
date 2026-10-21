@@ -18,8 +18,8 @@ export function ShowSetup() {
   if (!show?.needs_setup) return null;
   return (
     <section className="card show-setup" data-testid="show-setup">
-      <h2>{show.show_name ? t("介绍一下「{name}」", { name: show.show_name }) : t("建你的第一个项目")}</h2>
-      <p className="muted">{t("一档播客、一个客户、一个栏目都可以是一个项目。填名字和主持人，每位主持人一条分轨；这些以后都能在项目设置里改。")}</p>
+      <h2>{show.show_name ? t("介绍一下「{name}」", { name: show.show_name }) : t("建你的第一个节目")}</h2>
+      <p className="muted">{t("一档播客、一个客户、一个栏目都可以是一个节目。填名字和主持人，每位主持人一条分轨；这些以后都能在节目设置里改。")}</p>
       <ShowForm show={show} compact onSaved={() => void loadProjects(true)} />
     </section>
   );

@@ -40,7 +40,7 @@ async function dropFiles(page: Page, target: Locator, files: string[]) {
 
 test("import: drag both tracks in → progress with time left → straight into review", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("这个项目里还没有剧集")).toBeVisible();
+  await expect(page.getByText("这个节目里还没有剧集")).toBeVisible();
   await page.getByRole("button", { name: "导入新一集" }).click();
   await expect(page.getByTestId("import-id")).toHaveValue("EP001");
   await page.getByTestId("import-title").fill("EP001 · 导入测试");
@@ -148,7 +148,7 @@ test("archive the imported episode, then delete it for good", async ({ page }) =
   expect((await page.request.get("/api/episodes/EP001")).status()).toBe(404);
   // the id is free again: the next import suggests EP001 and starts from scratch
   await page.goto("/#/");
-  await expect(page.getByText("这个项目里还没有剧集")).toBeVisible();
+  await expect(page.getByText("这个节目里还没有剧集")).toBeVisible();
 });
 
 test("import: a show whose hosts aren't Leon + Pei (a new project) lists its tracks on the task card", async ({ page }) => {

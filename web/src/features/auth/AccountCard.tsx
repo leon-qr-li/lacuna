@@ -175,7 +175,7 @@ function TwoStepRow({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => v
       ) : mode === "setup" && setup ? (
         <div>
           <TwoStepQR uri={setup.uri} secret={setup.secret} />
-          <CodeInput value={code} onChange={setCode} label={t("两步验证码")} />
+          <CodeInput value={code} onChange={setCode} label={t("两步验证码")} wrong={msg && !msg.ok ? msg : null} />
           <div className="row gap8 account-wrap">
             <button
               className="btn btn-primary"
@@ -198,7 +198,7 @@ function TwoStepRow({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => v
         </div>
       ) : mode ? (
         <div>
-          <SecondFactor value={code} onChange={setCode} />
+          <SecondFactor value={code} onChange={setCode} wrong={msg && !msg.ok ? msg : null} />
           <div className="row gap8 account-wrap">
             <button
               className={mode === "off" ? "btn btn-outline account-danger" : "btn btn-primary"}
@@ -392,8 +392,8 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
           ))}
         </select>
         {spaces.length > 0 && (
-          <select aria-label={t("加入哪个项目")} value={space} onChange={(e) => setSpace(e.target.value)} data-testid="invite-space">
-            <option value="new">{t("给对方新建一个项目")}</option>
+          <select aria-label={t("加入哪个节目")} value={space} onChange={(e) => setSpace(e.target.value)} data-testid="invite-space">
+            <option value="new">{t("给对方新建一个节目")}</option>
             {spaces.map((s) => (
               <option key={s.id} value={s.id}>
                 {t("加入「{name}」", { name: s.name })}
@@ -402,7 +402,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
           </select>
         )}
         {space !== "new" && (
-          <select aria-label={t("在项目里的角色")} value={spaceRole} onChange={(e) => setSpaceRole(e.target.value as SpaceRole)}>
+          <select aria-label={t("在节目里的角色")} value={spaceRole} onChange={(e) => setSpaceRole(e.target.value as SpaceRole)}>
             {(["admin", "editor", "viewer"] as SpaceRole[]).map((r) => (
               <option key={r} value={r}>
                 {SPACE_ROLE[r]}

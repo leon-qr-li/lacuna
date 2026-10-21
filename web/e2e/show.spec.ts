@@ -37,7 +37,7 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   await p.goto("/");
   const setup = p.getByTestId("show-setup");
   await expect(setup).toBeVisible();
-  await expect(setup.getByRole("heading")).toHaveText("建你的第一个项目");
+  await expect(setup.getByRole("heading")).toHaveText("建你的第一个节目");
   await expect(p.getByText("导入新一集")).toHaveCount(0);
   await expect(p.locator("body")).not.toContainText("Leon");
   await expect(p.locator("body")).not.toContainText("洛城");
@@ -68,7 +68,7 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   await p.getByRole("button", { name: "+ 加一位主持人" }).click();
   await p.getByLabel("第 4 位主持人的名字").fill("Dee");
   await expect(p.getByRole("button", { name: "+ 加一位主持人" })).toHaveCount(0);
-  await expect(p.getByTestId("show-hosts-max")).toHaveText("每个项目最多 4 位主持人（每人一条分轨）。");
+  await expect(p.getByTestId("show-hosts-max")).toHaveText("每个节目最多 4 位主持人（每人一条分轨）。");
   await p.getByTestId("show-save").click();
   await expect(p.getByText("已保存")).toBeVisible();
   const s = await (await p.request.get("/api/show")).json();

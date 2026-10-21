@@ -1,6 +1,9 @@
 """Core: health, episodes, streamed audio, edits, review, manual ops, undo/redo, chat proposals."""
 from __future__ import annotations
 
+import re
+from urllib.parse import quote
+
 from fastapi import HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
@@ -12,6 +15,7 @@ from ..chat_learning import remember_text
 from ..episode import ConflictError
 from ..episode_index import EpisodeIndex
 from ..levels import chat_volume
+from ..store import POSTER_FILE, read_json
 from .archive import archive_of
 
 
@@ -48,10 +52,21 @@ def register(app, ctx) -> None:
     def health():
         return {"ok": True, "workspace": str(ws.root)} | editor_status(adapter) | dictation.status()
 
+    def poster_url(eid: str) -> str | None:
+        """The chosen cover's preview (routes/poster.py) for the episode's tile, or None (no cover chosen)."""
+        try:
+            f = ws.episode_dir(eid) / POSTER_FILE
+            chosen = read_json(f).get("chosen") if f.is_file() else None
+            if not (isinstance(chosen, str) and re.fullmatch(r"v\d+", chosen)):
+                return None
+            return f"/api/episodes/{quote(eid)}/poster/{chosen}.png?v={f.stat().st_mtime_ns}"
+        except Exception:        # noqa: BLE001 - a bad poster file only costs the tile its picture
+            return None
+
     @app.get("/api/episodes")
     def list_episodes():
         hidden = archive_of(ctx).archived()     # archived episodes live on the 已归档 page
-        rows = [r for r in index.rows() if r["id"] not in hidden]
+        rows = [r | {"poster": poster_url(r["id"])} for r in index.rows() if r["id"] not in hidden]
         return {"episodes": rows, "archived": len(hidden)} | editor_status(adapter)
 
     @app.get("/api/episodes/{episode_id}")

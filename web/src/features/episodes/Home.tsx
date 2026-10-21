@@ -11,7 +11,8 @@ import { AlbumStrip } from "../albums/AlbumPage";
 import { AlbumRow } from "../albums/AlbumRow";
 import { MoveToAlbum } from "../albums/MoveToAlbum";
 import { ProjectCrumb } from "../projects/ProjectMenu";
-import { loadProjects } from "../projects/api";
+import { loadProjects, useProjects } from "../projects/api";
+import { ProjectAvatar } from "../projects/Avatar";
 import { albumHref, useAlbums, type Album } from "../albums/api";
 import { EpisodeCard } from "./EpisodeCard";
 import { episodesApi } from "./api";
@@ -29,6 +30,7 @@ export function Home({ nav }: { nav: ReactNode }) {
   const [undo, setUndo] = useState<EpisodeListItem | null>(null);
   const show = useShow();
   const names = hostList(show);
+  const proj = useProjects()?.current;
   const albums = useAlbums();
   // 新建专辑 (preset: the episode whose card asked) or 专辑设置 of the one album shown inline
   const [dialog, setDialog] = useState<{ album?: Album; preset?: string } | null>(null);
@@ -125,7 +127,10 @@ export function Home({ nav }: { nav: ReactNode }) {
       </header>
       <main className="home">
         <div className="home-hero">
-          <h1>{t("剧集")}</h1>
+          <h1 className="home-title">
+            {proj && <ProjectAvatar p={proj} size={40} />}
+            {proj?.name ?? show?.show_name ?? t("剧集")}
+          </h1>
           <p className="muted">
             {names
               ? t("导入 {names} 的分轨，AI 先剪第一刀，你来过目、试听、导出。", { names })
@@ -144,7 +149,7 @@ export function Home({ nav }: { nav: ReactNode }) {
         )}
         {err && <p className="error">{err}</p>}
         {list?.length === 0 && !show?.needs_setup && (
-          <p className="muted">{t("这个项目里还没有剧集。点「导入新一集」，选每位主持人的分轨。")}</p>
+          <p className="muted">{t("这个节目里还没有剧集。点「导入新一集」，选每位主持人的分轨。")}</p>
         )}
         {!list && !err && <EpisodeListSkeleton />}
         {(() => {
@@ -158,6 +163,7 @@ export function Home({ nav }: { nav: ReactNode }) {
                     {t("＋ 新专辑")}
                   </button>
                 )}
+                {!!all.length && <div className="home-sec"><h2 className="sub">{t("剧集")}</h2><span className="muted small">{t("{n} 集", { n: all.length })}</span></div>}
                 {cards(all)}
               </>
             );
@@ -167,6 +173,9 @@ export function Home({ nav }: { nav: ReactNode }) {
             const only = v.albums[0];
             return (
               <>
+                <div className="home-sec">
+                  <h2 className="sub">{t("专辑")}</h2>
+                </div>
                 <AlbumStrip album={only} view={v} onEdit={() => setDialog({ album: only })} />
                 <p className="row gap8 home-new-album">
                   <a className="btn btn-ghost btn-small" href={albumHref(only.id)}>
@@ -176,6 +185,10 @@ export function Home({ nav }: { nav: ReactNode }) {
                     {t("＋ 新专辑")}
                   </button>
                 </p>
+                <div className="home-sec">
+                  <h2 className="sub">{t("剧集")}</h2>
+                  <span className="muted small">{t("{n} 集", { n: all.length })}</span>
+                </div>
                 {cards(all)}
               </>
             );

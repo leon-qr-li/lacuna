@@ -286,7 +286,7 @@ function PlacementRow({ p, taken, onSave, onRemove, onPreview, previewing }: {
 const GROUPS: ["episode" | "album" | "project", (album: string | null) => string][] = [
   ["episode", () => t("只这一集")],
   ["album", (album) => (album ? t("专辑「{name}」", { name: album }) : t("本专辑"))],
-  ["project", () => t("整个项目")],
+  ["project", () => t("整个节目")],
 ];
 
 function AddPlacement({ assets, albumName, kindRoles, pick, onAdd }: {
@@ -599,7 +599,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
           <span className="grow">
             {m.series_suggestion.name
               ? t("专辑「{name}」有默认的片头片尾，要用在这一集吗？", { name: m.series_suggestion.name })
-              : t("这个项目有默认的片头片尾，要用在这一集吗？")}
+              : t("这个节目有默认的片头片尾，要用在这一集吗？")}
             {(m.series_suggestion.intro || m.series_suggestion.outro) && (
               <span className="small muted series-files">
                 {[
@@ -706,8 +706,8 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
               {t("设为专辑「{name}」的默认片头片尾", { name: albumName })}
             </button>
           )}
-          <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.saveSeries(id, "project"), t("已记住：这个项目以后的新剧集都用这个片头片尾"))}>
-            {t("设为整个项目的默认片头片尾")}
+          <button type="button" className="btn btn-outline" onClick={() => void run(libraryApi.saveSeries(id, "project"), t("已记住：这个节目以后的新剧集都用这个片头片尾"))}>
+            {t("设为整个节目的默认片头片尾")}
           </button>
         </div>
       )}

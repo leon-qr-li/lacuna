@@ -394,7 +394,7 @@ def test_invite_email_names_the_project_and_role(tmp_path):
     with speaking("zh"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "洛城二三事", "editor")
     assert m["subject"] == "Leon 邀请你加入「洛城二三事」"
-    assert "你被邀请以「剪辑」身份加入这个项目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
+    assert "你被邀请以「剪辑」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
     assert "<br>「洛城二三事」" in m["html"]
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "viewer")
@@ -403,6 +403,23 @@ def test_invite_email_names_the_project_and_role(tmp_path):
     with speaking("zh"):
         esc = invite_mail.render("a@b.c", "https://x/invite/t", "<b>x</b>", "admin")["html"]
     assert "<b>x</b>" not in esc and "&lt;b&gt;x&lt;/b&gt;" in esc
+
+
+def test_invite_email_walks_through_the_six_steps():
+    """Copy A 「六步流程」: an episode from import to publish, in the designed mail and the plain one alike."""
+    from lacuna_app import invite_mail
+    from lacuna_app.i18n import speaking
+    with speaking("zh"):
+        m = invite_mail.render("leon@example.com", "https://x/invite/t")
+    assert m["text"].index("你会有一个自己的节目。") < m["text"].index("1. 导入分轨：") < m["text"].index("6. 导出发布：")
+    assert all(h in m["html"] for h, _ in invite_mail.steps()) and "Show notes 与封面" in m["text"]
+    with speaking("en"):
+        m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "editor")
+        heads = [h for h, _ in invite_mail.steps()]
+    assert heads[0] == "Import tracks" and heads[-1] == "Export & publish"
+    assert "6. Export &amp; publish" not in m["text"] and "6. Export & publish: The finished audio" in m["text"] and "Export &amp; publish" in m["html"]
+    assert m["text"].index("as Editor") < m["text"].index("1. Import tracks")
+    assert "：" not in m["text"] and "（" not in m["text"]
 
 
 def test_a_refused_designed_mail_still_sends_the_plain_one(tmp_path, mailer):

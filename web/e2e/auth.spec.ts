@@ -192,6 +192,19 @@ test("two-step sign-in: turn it on in 设置, then sign in with the phone code o
   await page.getByTestId("auth-code").fill(totp(secret) === "000000" ? "111111" : "000000");
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("两步验证码不对");
+  // a wrong code empties the boxes and puts the cursor back in the first one
+  const code = page.getByTestId("auth-code");
+  await expect(code).toHaveValue("");
+  await expect(code).toBeFocused();
+  // a click on a box selects that digit, so typing replaces it (no backspacing through the rest)
+  await page.keyboard.type("123456");
+  const box = (await page.getByTestId("auth-code-box").nth(2).boundingBox())!;
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.keyboard.type("9");
+  await expect(code).toHaveValue("129456");
+  await expect(page.getByTestId("auth-code-box").nth(3)).toHaveClass(/is-cur/);
+  await page.keyboard.type("0");
+  await expect(code).toHaveValue("129056");
   await page.getByRole("button", { name: "手机不在身边？用恢复码" }).click();
   await page.getByTestId("auth-recovery").fill(recovery[0]);
   await page.getByRole("button", { name: "登录", exact: true }).click();

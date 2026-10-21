@@ -159,7 +159,7 @@ function NewImport({
     const free = hosts.map((h) => h.tag).filter((w) => !live.current[w]);
     if (files.length > hosts.length)
       setErr(
-        t("这个项目有 {n} 位主持人，只用了前 {n} 条分轨（每个项目最多 4 位主持人，每人一条）。", { n: hosts.length }),
+        t("这个节目有 {n} 位主持人，只用了前 {n} 条分轨（每个节目最多 4 位主持人，每人一条）。", { n: hosts.length }),
       );
     for (const [who, f] of assign(files.slice(0, hosts.length), free, hosts)) put(who, f);
   };

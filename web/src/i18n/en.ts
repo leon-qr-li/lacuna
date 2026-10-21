@@ -9,8 +9,8 @@ export const en: Dict = {
     "Import {names}'s separate tracks. AI makes the first cut, then you review, listen and export.",
   "导入每位主持人的分轨，AI 先剪第一刀，你来过目、试听、导出。":
     "Import each host's separate track. AI makes the first cut, then you review, listen and export.",
-  "这个项目里还没有剧集。点「导入新一集」，选每位主持人的分轨。":
-    "No episodes in this project yet. Click “Import an episode” and pick each host's track.",
+  "这个节目里还没有剧集。点「导入新一集」，选每位主持人的分轨。":
+    "No episodes in this show yet. Click “Import an episode” and pick each host's track.",
   "无法打开：": "Can't open: ",
   " · 演示数据": " · demo data",
   "{n} 处待过目": { one: "{n} to review", other: "{n} to review" },

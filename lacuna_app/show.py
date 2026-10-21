@@ -173,7 +173,7 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
         if not hosts:
             raise ShowError(tr("至少要有一位主持人"))
         if len(hosts) > MAX_HOSTS:
-            raise ShowError(tr("每个项目最多 {n} 位主持人", n=MAX_HOSTS))
+            raise ShowError(tr("每个节目最多 {n} 位主持人", n=MAX_HOSTS))
     out["hosts"] = hosts[:MAX_HOSTS]
     return out
 

@@ -2,8 +2,8 @@ import type { Dict } from "../../i18n";
 
 export const en: Dict = {
   "删除专辑「{name}」？": "Delete the album “{name}”?",
-  "里面的剧集不会删，会变成「不在专辑里」；只给这个专辑用的素材会变成整个项目都能用。":
-    "Its episodes stay and move to “Not in an album”; media only for this album becomes available to the whole project.",
+  "里面的剧集不会删，会变成「不在专辑里」；只给这个专辑用的素材会变成整个节目都能用。":
+    "Its episodes stay and move to “Not in an album”; media only for this album becomes available to the whole show.",
   "删除专辑": "Delete album",
   "专辑设置": "Album settings",
   "新建专辑": "New album",
@@ -16,10 +16,10 @@ export const en: Dict = {
   "简介（可不填）": "About (optional)",
   "默认片头": "Default intro",
   "默认片尾": "Default outro",
-  "沿用项目：{name}": "Use the project's: {name}",
-  "沿用项目（项目也没有设）": "Use the project's (none set)",
-  "专辑设了片头片尾，就用专辑的，不用项目的；以后放进这个专辑的新剧集会自动带上。":
-    "An album's intro and outro replace the project's; new episodes in this album get them automatically.",
+  "沿用节目：{name}": "Use the show's: {name}",
+  "沿用节目（节目也没有设）": "Use the show's (none set)",
+  "专辑设了片头片尾，就用专辑的，不用节目的；以后放进这个专辑的新剧集会自动带上。":
+    "An album's intro and outro replace the show's; new episodes in this album get them automatically.",
   "把这些剧集放进来（可不选）": "Put these episodes in it (optional)",
   "建好专辑": "Create album",
   "没有这个专辑，可能已经删了。": "This album doesn't exist; it may have been deleted.",
@@ -29,15 +29,15 @@ export const en: Dict = {
     "No episodes in this album yet. Import a new one, or use “Move to album” on an episode card.",
   "没有设": "Not set",
   "本专辑": "This album",
-  "沿用项目": "From project",
+  "沿用节目": "From show",
   "专辑": "Albums",
-  "{n} 集": "{n} episodes",
-  "素材库里已经有这首（整个项目都能用）：{name}": "Already in the library (available to the whole project): {name}",
+  "{n} 集": { one: "{n} episode", other: "{n} episodes" },
+  "素材库里已经有这首（整个节目都能用）：{name}": "Already in the library (available to the whole show): {name}",
   "已加到这个专辑：{name}": "Added to this album: {name}",
   "这个专辑的素材": "Media for this album",
   "去素材库管理": "Manage in Library",
-  "还没有只给这个专辑用的素材；整个项目的素材这里的剧集都能用。":
-    "No media just for this album yet; its episodes can use all of the project's media.",
+  "还没有只给这个专辑用的素材；整个节目的素材这里的剧集都能用。":
+    "No media just for this album yet; its episodes can use all of the show's media.",
   "给这个专辑添加素材": "Add media to this album",
   "＋ 新专辑": "+ New album",
   "把「{title}」移到专辑": "Move “{title}” to an album",

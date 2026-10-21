@@ -20,8 +20,8 @@ function InviteLink() {
 // the project menu itself sits after LACUNA at the top left (ProjectCrumb, in each top bar)
 export const feature: Feature = {
   pages: [
-    { path: "projects", title: t("所有项目"), render: () => <ProjectsPage /> },
-    { path: "project", title: t("项目设置"), render: () => <ProjectSettings /> },
+    { path: "projects", title: t("所有节目"), render: () => <ProjectsPage /> },
+    { path: "project", title: t("节目设置"), render: () => <ProjectSettings /> },
     { path: "invite", title: t("邀请协作"), render: () => <InvitePage /> },
   ],
   nav: [{ order: 26, path: "invite", render: () => <InviteLink />, on: ["home", "page"] }],

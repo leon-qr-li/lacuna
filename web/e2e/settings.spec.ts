@@ -9,7 +9,7 @@ test("设置: version, key and machine status; no update controls", async ({ pag
   await expect(page.getByRole("heading", { name: "设置" })).toBeVisible();
   // design C: a left nav, 个人 then 管理 (a local copy without sign-in: its one user is the admin)
   const nav = page.getByRole("navigation", { name: "设置" });
-  await expect(nav.getByRole("group", { name: "个人" }).getByRole("link")).toHaveText(["通用", "剪辑习惯", "我的项目"]);
+  await expect(nav.getByRole("group", { name: "个人" }).getByRole("link")).toHaveText(["通用", "剪辑习惯", "我的节目"]);
   await expect(nav.getByRole("group", { name: "管理" })).toContainText("仅管理员");
   await expect(nav.getByRole("link", { name: "通用" })).toHaveAttribute("aria-current", "page");
   await expect(page.getByTestId("app-version")).toHaveText("开发版");

@@ -29,7 +29,7 @@ export function ScopeBadge({ a, eps, albums }: { a: Asset; eps: EpisodeRef[]; al
   if (a.shared)
     return (
       <span className="badge scope-badge scope-shared" data-testid="asset-scope">
-        {t("整个项目")}
+        {t("整个节目")}
       </span>
     );
   return (
@@ -114,7 +114,7 @@ export function ScopeActions({ a, eps, albums, disabled, onChange }: {
       )}
       {!a.shared && (
         <button type="button" className="btn btn-small btn-outline" disabled={disabled} onClick={() => set("share")}>
-          {t("设为整个项目")}
+          {t("设为整个节目")}
         </button>
       )}
     </div>
@@ -128,7 +128,7 @@ export function ScopeTarget({ eps, albums, value, onChange }: { eps: EpisodeRef[
     <label className="row gap8 small">
       {t("给谁用")}
       <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={t("新文件加到哪里")} data-testid="scope-target">
-        <option value="">{t("整个项目")}</option>
+        <option value="">{t("整个节目")}</option>
         {albums.length > 0 && (
           <optgroup label={t("一个专辑")}>
             {albums.map((x) => (
@@ -159,7 +159,7 @@ export function ScopeFilter({ eps, albums, value, onChange }: { eps: EpisodeRef[
       {t("显示")}
       <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={t("按范围筛选")}>
         <option value="">{t("全部")}</option>
-        <option value="shared">{t("整个项目")}</option>
+        <option value="shared">{t("整个节目")}</option>
         {albums.length > 0 && (
           <optgroup label={t("专辑")}>
             {albums.map((x) => (
@@ -198,7 +198,7 @@ export function EpisodeUpload({ id, kinds, onAdded }: { id: string; kinds: Recor
         last = r.asset;
         done.push(
           r.duplicate && r.asset.shared
-            ? t("素材库里已经有这首（整个项目都能用），这一集直接能用：{name}", { name: r.asset.name })
+            ? t("素材库里已经有这首（整个节目都能用），这一集直接能用：{name}", { name: r.asset.name })
             : t("已加到这一集：{name}", { name: r.asset.name }),
         );
       } catch (e) {
@@ -220,7 +220,7 @@ export function EpisodeUpload({ id, kinds, onAdded }: { id: string; kinds: Recor
           </option>
         ))}
       </select>
-      <span className="small muted">{t("只属于这一集；在素材库可以改成整个专辑或整个项目都能用。")}</span>
+      <span className="small muted">{t("只属于这一集；在素材库可以改成整个专辑或整个节目都能用。")}</span>
       <input
         ref={input}
         type="file"

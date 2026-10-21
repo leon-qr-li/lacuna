@@ -70,5 +70,6 @@
 .ml-menu-item:disabled { opacity: 0.5; cursor: default; }
 .ml-menu-sep { height: 1px; margin: 3px 6px; background: var(--line); }
 /* the legend sits at the right of the title row (no row of its own: the tracks keep their height) */
-.ml-head .legend { margin-left: auto; flex-wrap: nowrap; gap: 4px 6px; font-size: 11.5px; white-space: nowrap; }
+.ml-head .legend { margin-left: auto; flex-wrap: nowrap; gap: 16px; font-size: 11.5px; white-space: nowrap; }
+.ml-head .lg-item { display: inline-flex; align-items: center; gap: 5px; }
 @media (max-width: 900px) { .ml-head .legend { display: none; } }

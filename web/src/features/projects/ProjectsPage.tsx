@@ -24,7 +24,7 @@ export function ProjectsPage() {
   const [making, setMaking] = useState(false);
   const [deleting, setDeleting] = useState<MySpace | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  if (sp === undefined) return <PageLoading label={t("正在打开项目…")} shape="list" />;
+  if (sp === undefined) return <PageLoading label={t("正在打开节目…")} shape="list" />;
   const mine = sp?.mine ?? [];
   const live = mine.filter((p) => !p.archived);
   const archived = mine.filter((p) => p.archived);
@@ -38,7 +38,7 @@ export function ProjectsPage() {
   };
   const tryDelete = async (p: MySpace) => {
     if (mine.length < 2) {
-      await noticeDialog(t("这是你唯一的项目。先新建一个项目，再删除这个。"));
+      await noticeDialog(t("这是你唯一的节目。先新建一个节目，再删除这个。"));
       return;
     }
     setDeleting(p);
@@ -50,14 +50,15 @@ export function ProjectsPage() {
         <span className="prj-card-body">
           <strong>{p.name}</strong>
           <span className="muted small">
-            {p.albums ? t("{n} 集 · {m} 个专辑", { n: p.episodes ?? 0, m: p.albums }) : t("{n} 集", { n: p.episodes ?? 0 })}
+            {t("{n} 集", { n: p.episodes ?? 0 })}
+            {!!p.albums && ` · ${t("{n} 个专辑", { n: p.albums })}`}
           </span>
           <span className="muted small">
             {t("最近 {day}", { day: day(p.updated) })}
             {(p.people ?? 1) > 1 && ` · ${t("{n} 位协作者", { n: p.people! })}`}
           </span>
           {p.by && <span className="prj-by small">{t("{who} 邀请你 · {role}", { who: p.by, role: SPACE_ROLE[p.role] })}</span>}
-          {p.id === sp?.current?.id && <span className="prj-here small">{t("现在在这个项目")}</span>}
+          {p.id === sp?.current?.id && <span className="prj-here small">{t("现在在这个节目")}</span>}
         </span>
       </button>
       {p.archived && (p.role === "admin" || p.can_delete) && (
@@ -79,14 +80,14 @@ export function ProjectsPage() {
   return (
     <main className="home prj-page">
       <div className="home-hero">
-        <h1>{t("我的项目")}</h1>
-        <p className="muted">{t("每个项目有自己的剧集、专辑和素材。别人邀请你协作的项目也在这里。")}</p>
+        <h1>{t("我的节目")}</h1>
+        <p className="muted">{t("每个节目有自己的剧集、专辑和素材。别人邀请你协作的节目也在这里。")}</p>
       </div>
       <ul className="prj-grid" data-testid="project-list">
         {live.map(card)}
         <li>
           <button type="button" className="prj-card prj-card-new" onClick={() => setMaking(true)} data-testid="project-new-card">
-            {t("＋ 新项目")}
+            {t("＋ 新节目")}
           </button>
         </li>
       </ul>
@@ -94,7 +95,7 @@ export function ProjectsPage() {
       {!!archived.length && (
         <section className="prj-archive" data-testid="project-archive">
           <h2>{t("已归档")}</h2>
-          <p className="muted small">{t("归档的项目只能查看，所有协作者都不能修改。恢复后一切照旧。")}</p>
+          <p className="muted small">{t("归档的节目只能查看，所有协作者都不能修改。恢复后一切照旧。")}</p>
           <ul className="prj-grid">{archived.map(card)}</ul>
         </section>
       )}

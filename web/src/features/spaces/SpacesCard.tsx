@@ -33,15 +33,15 @@ export function SpacesCard() {
   };
   const managed = sp.all ?? [];
   return (
-    <section className="card account-card spaces-card" aria-label={t("项目")}>
+    <section className="card account-card spaces-card" aria-label={t("节目")}>
       <div className="card-head">
-        <h2>{t("项目")}</h2>
+        <h2>{t("节目")}</h2>
         <span className="badge badge-confirmed" data-testid="space-current">
           {t("现在在：{name}（{role}）", { name: sp.current.name, role: SPACE_ROLE[sp.current.role] })}
         </span>
       </div>
       <p className="muted small">
-        {t("剧集、素材库和学到的规则都属于项目，只有它的成员能看到。管理：管成员、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。")}
+        {t("剧集、素材库和学到的规则都属于节目，只有它的成员能看到。管理：管成员、彻底删除剧集；剪辑：所有剪辑工作；只听：只能试听和查看。")}
       </p>
       {managed.map((s) => (
         <SpaceBlock key={s.id} s={s} current={s.id === sp.current!.id} busy={busy} act={act} />
@@ -58,9 +58,9 @@ export function SpacesCard() {
             });
           }}
         >
-          <input className="grow" placeholder={t("新项目的名字")} aria-label={t("新项目的名字")} value={newName} onChange={(e) => setNewName(e.target.value)} />
+          <input className="grow" placeholder={t("新节目的名字")} aria-label={t("新节目的名字")} value={newName} onChange={(e) => setNewName(e.target.value)} />
           <button className="btn btn-outline" disabled={!!busy || !newName.trim()}>
-            <BusyLabel busy={busy === "create"} label={t("新建项目")} />
+            <BusyLabel busy={busy === "create"} label={t("新建节目")} />
           </button>
         </form>
       )}
@@ -85,7 +85,7 @@ function SpaceBlock({ s, current, busy, act }: {
   return (
     <div className="space-block" data-testid={`space-${s.id}`}>
       <div className="space-title">
-        <input value={name} aria-label={t("项目名字")} onChange={(e) => setName(e.target.value)} />
+        <input value={name} aria-label={t("节目名字")} onChange={(e) => setName(e.target.value)} />
         {name.trim() !== s.name && (
           <button className="btn btn-outline btn-small" disabled={!!busy} onClick={() => act("rename", () => spacesApi.rename(s.id, name))}>
             {t("改名")}
@@ -101,7 +101,7 @@ function SpaceBlock({ s, current, busy, act }: {
             </div>
             <div className="people-actions">
               <select
-                aria-label={t("{email} 在这个项目的角色", { email: m.email })}
+                aria-label={t("{email} 在这个节目的角色", { email: m.email })}
                 value={m.role}
                 disabled={!!busy}
                 onChange={(e) => act("role", () => spacesApi.member(s.id, m.email, e.target.value as SpaceRole))}
@@ -116,7 +116,7 @@ function SpaceBlock({ s, current, busy, act }: {
                 className="btn btn-outline btn-small"
                 disabled={!!busy}
                 onClick={async () => {
-                  if (!(await confirmDialog({ message: t("把 {email} 移出「{name}」？对方就看不到这个项目了，已经做的内容留着。", { email: m.email, name: s.name }), confirmLabel: t("移出") }))) return;
+                  if (!(await confirmDialog({ message: t("把 {email} 移出「{name}」？对方就看不到这个节目了，已经做的内容留着。", { email: m.email, name: s.name }), confirmLabel: t("移出") }))) return;
                   act("rm", () => spacesApi.member(s.id, m.email, null));
                 }}
               >

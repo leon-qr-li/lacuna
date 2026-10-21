@@ -13,6 +13,6 @@ function ShowLink() {
 // 节目设置 became 项目设置 (features/projects, #/project); an old #/show link opens it. The hidden
 // loader stays so every screen gets the host colours.
 export const feature: Feature = {
-  pages: [{ path: "show", title: t("项目设置"), render: () => <ShowView /> }],
+  pages: [{ path: "show", title: t("节目设置"), render: () => <ShowView /> }],
   nav: [{ order: 25, path: "show", render: () => <ShowLink />, on: ["home", "episode", "page"] }],
 };
