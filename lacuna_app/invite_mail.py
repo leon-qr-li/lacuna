@@ -6,6 +6,7 @@ behind sign-in. Chinese or English (``speaking``), as the inviter picked; the pl
 from __future__ import annotations
 
 import html
+import secrets
 from functools import lru_cache
 
 from .i18n import tr
@@ -126,6 +127,20 @@ def header_png(title: str, kicker: str) -> bytes | None:
 BUTTON_CID = "lacuna-button"
 
 
+def unique_marks(body: str) -> str:
+    """Gmail groups mails with the same subject into one conversation and folds whatever repeats an earlier
+    mail into "…" (Leon 2026-10-21: a second invite showed only the dots). A different invisible mark in every
+    block makes each mail's content its own, so nothing is folded; readers and screen readers see nothing."""
+    nonce = secrets.token_hex(6)
+    marks = iter(range(1, 1000))
+    mark = lambda: (f'<span style="display:none!important;mso-hide:all;font-size:0;line-height:0;max-height:0;'
+                    f'max-width:0;opacity:0;overflow:hidden;color:transparent">{nonce}{next(marks)}</span>')
+    for tag in ("<p ", "<td ", "<div "):
+        parts = body.split(tag)
+        body = parts[0] + "".join(f"{tag}{p.replace('>', '>' + mark(), 1)}" for p in parts[1:])
+    return body
+
+
 @lru_cache(maxsize=8)
 def button_png(label: str) -> tuple[bytes, int] | None:
     """The 接受邀请 pill as a picture (2x) and its width in CSS px, for the same reason as the header."""
@@ -222,7 +237,7 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
  <div style="margin-top:10px;font:12px/1.6 {SANS};color:#a0a3b8">{e(ignore)}<br>LACUNA Studio · lacunastudio.app</div>
 </td></tr></table>
 </td></tr></table></body></html>"""
-    return {"subject": subject, "text": text, "html": body, "inline": inline + ([] if head else inline_logo())}
+    return {"subject": subject, "text": text, "html": unique_marks(body), "inline": inline + ([] if head else inline_logo())}
 
 
 def inline_logo() -> list[dict]:

@@ -464,3 +464,21 @@ def test_invite_email_header_and_button_are_pictures(monkeypatch):
     invite_mail.header_png.cache_clear(); invite_mail.button_png.cache_clear()
     assert "cid:lacuna-head" not in m["html"] and "接受邀请 &rarr;" in m["html"]
     assert [a["content_id"] for a in m["inline"]] == (["lacuna-logo"] if invite_mail.logo_png() else [])
+
+
+def test_two_invite_emails_never_repeat_each_other_for_gmail_to_fold():
+    """Gmail folds content repeated from an earlier mail of the same conversation into "…" (Leon 2026-10-21):
+    every block of every mail carries its own invisible mark, so two invites are never alike."""
+    import re
+    from lacuna_app import invite_mail, notice_mail
+    from lacuna_app.i18n import speaking
+    with speaking("zh"):
+        a = invite_mail.render("leon@example.com", "https://x/invite/t", None, None)["html"]
+        b = invite_mail.render("leon@example.com", "https://x/invite/t", None, None)["html"]
+        n = notice_mail.new_device("a@b.c", "Chrome · macOS", "now", None, "https://x")["html"]
+    marks = lambda h: re.findall(r'color:transparent">([0-9a-f]{12}\d+)</span>', h)
+    assert len(marks(a)) > 10 and not set(marks(a)) & set(marks(b))
+    assert len(set(marks(a))) == len(marks(a)) and marks(n)
+    strip = lambda h: re.sub(r'<span style="display:none!important;mso-hide:all[^>]*>[0-9a-f]+</span>', "", h)
+    assert strip(a) == strip(b)            # the marks are the only difference
+    assert "接受邀请" in a

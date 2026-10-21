@@ -27,7 +27,7 @@ test("申请试用 → the owner's email and list → invite with a plan; 套餐
   // someone without an account asks on the sign-in page
   const guest = await (await browser.newContext()).newPage();
   await guest.goto("/");
-  await expect(guest.getByText("从录音到发布，一个工作台。")).toBeVisible();
+  await expect(guest.getByText("从剪辑到发布，一个工作台。")).toBeVisible();
   await guest.getByTestId("auth-ask").click();
   await expect(guest.getByRole("heading", { name: "申请试用" })).toBeVisible();
   await guest.getByTestId("auth-email").fill("ava@example.com");

@@ -12,7 +12,7 @@ import re
 
 from .i18n import tr
 from .invite_mail import (BUTTON_CID, HEAD_CID, LOGO_CID, SANS, SERIF, button_png, header_png, inline_logo,
-                          logo_png)
+                          logo_png, unique_marks)
 
 # browser and system from a User-Agent, for "Chrome · macOS" (no version numbers, nothing identifying)
 BROWSERS = (("Edg/", "Edge"), ("OPR/", "Opera"), ("Firefox/", "Firefox"), ("Chrome/", "Chrome"), ("Safari/", "Safari"))
@@ -81,7 +81,7 @@ def render(subject: str, lead: str, rows: list[tuple[str, str]], button: str, li
  <div style="margin-top:8px;font:12px {SANS};color:#a0a3b8">LACUNA Studio · lacunastudio.app</div>
 </td></tr></table>
 </td></tr></table></body></html>"""
-    return {"subject": subject, "text": text, "html": body, "inline": inline + ([] if head else inline_logo())}
+    return {"subject": subject, "text": text, "html": unique_marks(body), "inline": inline + ([] if head else inline_logo())}
 
 
 def new_device(email: str, device: str, when: str, where: str | None, link: str) -> dict:
