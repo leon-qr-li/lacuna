@@ -65,7 +65,8 @@ def register(app, ctx) -> None:
 
         def send():
             try:
-                auth.mailer.send(auth.config["sender"], owner["email"], m["subject"], m["text"], html=m["html"])
+                auth.mailer.send(auth.config["sender"], owner["email"], m["subject"], m["text"], html=m["html"],
+                                 inline=m["inline"])
             except (MailError, OSError) as e:
                 print(f"LACUNA: access-request mail failed: {e}", flush=True)
         if ctx.option("mail_inline"):

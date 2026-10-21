@@ -502,6 +502,9 @@ EN: dict[str, str | tuple[str, str]] = {
     "新设备登录了你的 LACUNA 账号": "New sign-in to your LACUNA account",
     "有人刚刚在一台新设备上登录了 {email}。": "Someone just signed in to {email} on a new device.",
     "检查登录设备": "Review your devices",
+    "通知 · NOTICE": "NOTICE",
+    "安全提醒 · SECURITY": "SECURITY",
+    "试用申请 · REQUEST": "ACCESS REQUEST",
     "是你本人就不用管。不是你的话，马上改密码，并在 设置 → 账号与安全 里退出这台设备。":
         "If this was you, there's nothing to do. If not, change your password now and sign that device out in Settings → Account & security.",
     "想用 LACUNA 做什么": "What they'd like LACUNA to do",

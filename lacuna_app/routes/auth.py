@@ -159,17 +159,13 @@ def register(app, ctx) -> None:
         def send():
             try:
                 auth.mailer.send(auth.config["sender"], email, m["subject"], m["text"], html=m["html"],
-                                 inline=notice_mail_inline())
+                                 inline=m["inline"])
             except Exception as e:      # noqa: BLE001 - mail is best-effort here
                 print(f"LACUNA: new-device mail failed: {e}", flush=True)
         if ctx.option("mail_inline"):
             send()
         else:
             threading.Thread(target=send, name="new-device-mail", daemon=True).start()
-
-    def notice_mail_inline() -> list[dict]:
-        from ..invite_mail import inline_logo
-        return inline_logo()
 
     def finish(out: dict, request: Request | None = None) -> JSONResponse:
         """A step result; when it holds a session, set the cookie and keep the token out of the body."""

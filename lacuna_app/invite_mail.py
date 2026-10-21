@@ -47,11 +47,99 @@ def who_of(email: str) -> str:
     return name[:1].upper() + name[1:] if name[:1].isascii() else name
 
 
-def white(inner: str) -> str:
-    """White text on the dark header / button, kept white in Gmail's dark mode on phones, which otherwise turns
-    light text dark (Leon 2026-10-21: the title vanished on the navy band). Two black layers blended
-    screen + difference cancel Gmail's change; elsewhere (``u + .body`` only matches Gmail) nothing changes."""
-    return f'<span class="gm-screen" style="display:inline-block"><span class="gm-diff" style="display:inline-block">{inner}</span></span>'
+HEAD_CID = "lacuna-head"
+HEAD_W, HEAD_PAD = 600, 48
+CJK_FONT_DIRS = ("/usr/share/fonts/opentype/noto", "/usr/share/fonts/noto-cjk", "/usr/share/fonts/google-noto-cjk")
+
+
+def _cjk_fonts() -> list[str]:
+    """Noto Sans CJK's files (the Docker image installs fonts-noto-cjk; only the sans ones, so resvg never falls
+    back to the serif), or [] when there are none."""
+    from pathlib import Path
+    for d in CJK_FONT_DIRS:
+        files = sorted(str(f) for f in Path(d).glob("NotoSansCJK*"))
+        if files:
+            return files
+    return []
+
+
+def _png(svg: str, w: int, h: int, fonts: list[str]) -> bytes | None:
+    """SVG -> PNG at 2x with Inter and Noto Sans CJK only; None on any failure (the HTML version stands in)."""
+    from .poster import FONTS
+    try:
+        import resvg_py
+        return bytes(resvg_py.svg_to_bytes(svg_string=svg, width=w * 2, height=h * 2, skip_system_fonts=True,
+                                           font_dirs=[str(FONTS)], font_files=fonts, font_family="Inter",
+                                           sans_serif_family="Inter"))
+    except Exception:          # noqa: BLE001 - a picture never stops an invite
+        return None
+
+
+def _wrap(text: str, size: float, width: float) -> list[str]:
+    """Greedy line breaks by estimated width: CJK a full em, Latin about 0.6 em; Latin words stay whole."""
+    import re
+    lines: list[str] = []
+    for part in text.split("\n"):
+        line, w = "", 0.0
+        for tok in re.findall(r"[A-Za-z0-9@._'’-]+|\s+|.", part):
+            tw = sum(size if ord(c) > 0x2e7f else size * 0.6 for c in tok)
+            if line and w + tw > width and not tok.isspace():
+                lines.append(line.rstrip())
+                line, w = "", 0.0
+            if not (tok.isspace() and not line):
+                line, w = line + tok, w + tw
+        lines.append(line.rstrip())
+    return lines
+
+
+@lru_cache(maxsize=32)
+def header_png(title: str, kicker: str) -> bytes | None:
+    """The dark header band as one picture (2x): logo, wordmark, sunset rule, kicker and title. Gmail's dark mode
+    on phones recolours text (white turned dark on the navy band, Leon 2026-10-21) but never a picture. None when
+    it can't be drawn (no CJK font, resvg missing): the mail then uses the HTML header."""
+    fonts = _cjk_fonts()
+    if not fonts:
+        return None
+    e = html.escape
+    size, lh = 28, 38
+    lines = _wrap(title, size, HEAD_W - 2 * HEAD_PAD)
+    t0 = 36 + 40 + 28 + 2 + 28 + 12 + 10            # logo row, rule, kicker, gap
+    h = t0 + lh * len(lines) + 30
+    logo = LOGO_SVG.replace('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">',
+                            f'<svg x="{HEAD_PAD}" y="36" width="40" height="40" viewBox="0 0 64 64">')
+    sans = "Inter, Noto Sans CJK SC"
+    title_svg = "".join(f'<text x="{HEAD_PAD}" y="{t0 + lh * i + 29}" font-size="{size}" font-weight="700" fill="#ffffff">{e(l)}</text>'
+                        for i, l in enumerate(lines))
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{HEAD_W}" height="{h}" viewBox="0 0 {HEAD_W} {h}" font-family="{sans}">
+<defs><radialGradient id="hbg" cx="{HEAD_W * 0.85}" cy="0" r="{HEAD_W * 1.2}" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#2a1f5c"/><stop offset="0.55" stop-color="#0b0e26"/><stop offset="1" stop-color="#0b0e26"/></radialGradient>
+<linearGradient id="hrule" x1="0" x2="1"><stop offset="0" stop-color="#FFC24B"/><stop offset="0.4" stop-color="#FF7A3D"/>
+<stop offset="0.75" stop-color="#FF4F7B"/><stop offset="1" stop-color="#A35CFF"/></linearGradient></defs>
+<rect width="{HEAD_W}" height="{h}" fill="url(#hbg)"/>{logo}
+<text x="{HEAD_PAD + 52}" y="61" font-size="15" letter-spacing="3" fill="#ffffff"><tspan font-weight="700">LACUNA</tspan><tspan fill="#9aa0c8"> STUDIO</tspan></text>
+<rect x="{HEAD_PAD}" y="104" width="{HEAD_W - 2 * HEAD_PAD}" height="2" rx="1" fill="url(#hrule)"/>
+<text x="{HEAD_PAD}" y="146" font-size="12" font-weight="600" letter-spacing="3" fill="#ffb48c">{e(kicker)}</text>
+{title_svg}</svg>"""
+    return _png(svg, HEAD_W, h, fonts)
+
+
+BUTTON_CID = "lacuna-button"
+
+
+@lru_cache(maxsize=8)
+def button_png(label: str) -> tuple[bytes, int] | None:
+    """The 接受邀请 pill as a picture (2x) and its width in CSS px, for the same reason as the header."""
+    fonts = _cjk_fonts()
+    if not fonts:
+        return None
+    text = f"{label} \u2192"
+    w = int(sum(16 if ord(c) > 0x2e7f else 10 for c in text) + 80)
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="52" viewBox="0 0 {w} 52" font-family="Inter, Noto Sans CJK SC">
+<defs><linearGradient id="bg" x1="0" x2="1"><stop offset="0" stop-color="#df4a22"/><stop offset="0.55" stop-color="#d93366"/><stop offset="1" stop-color="#8f45f0"/></linearGradient></defs>
+<rect width="{w}" height="52" rx="26" fill="url(#bg)"/>
+<text x="{w / 2}" y="32" text-anchor="middle" font-size="16" font-weight="600" letter-spacing=".5" fill="#ffffff">{html.escape(text)}</text></svg>"""
+    png = _png(svg, w, 52, fonts)
+    return (png, w) if png else None
 
 
 def steps() -> list[tuple[str, str]]:
@@ -89,6 +177,11 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
                         tr("{button}（{valid}）", button=button, valid=valid) + "\n" + link, ignore, "Mind the gaps. Keep the voice.\nLACUNA Studio · lacunastudio.app"])
     e = html.escape
     title = e(subject).replace("「", "<br>「", 1) if project else e(subject)
+    # the dark band and the button as pictures: Gmail's dark mode on phones turns their white text dark
+    head = header_png(subject.replace("「", "\n「", 1) if project else subject, kicker)
+    btn = button_png(button)
+    inline = ([{"filename": "header.png", "content": head, "content_id": HEAD_CID}] if head else []) + \
+        ([{"filename": "button.png", "content": btn[0], "content_id": BUTTON_CID}] if btn else [])
     row_html = "".join(
         f'<tr><td style="padding:12px 0;border-top:1px solid #ececf3;font:14px {SANS};color:#8a8da6;width:110px">{e(k)}</td>'
         f'<td style="padding:12px 0;border-top:1px solid #ececf3;font:600 14px {SANS};color:#14162e;word-break:break-all">{e(v)}</td></tr>'
@@ -99,24 +192,28 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
         for i, (h, d) in enumerate(flow, 1))
     logo = (f'<td><img src="cid:{LOGO_CID}" width="40" height="40" alt="LACUNA" style="display:block;border-radius:10px"></td>'
             if logo_png() else "")
-    body = f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>{e(subject)}</title><style>body{{margin:0}} u+.body .gm-screen{{background:#000;mix-blend-mode:screen}} u+.body .gm-diff{{background:#000;mix-blend-mode:difference}} @media (max-width:620px){{.wrap{{width:100%!important}} .pad{{padding-left:24px!important;padding-right:24px!important}} .h1{{font-size:24px!important}}}}</style></head>
-<body class="body" style="margin:0;padding:0;background:#f1f1f6"><div style="display:none;max-height:0;overflow:hidden">{e(subject)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1f6"><tr><td align="center" style="padding:40px 12px">
-<table class="wrap" role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(9,11,31,.12)">
-<tr><td class="pad" style="background:#0b0e26;background-image:radial-gradient(120% 140% at 85% 0%,#2a1f5c 0%,#0b0e26 55%);padding:36px 48px 32px">
+    header = (f'<tr><td style="padding:0;background:#0b0e26;line-height:0"><img src="cid:{HEAD_CID}" width="600" alt="{e(subject)}" '
+              f'style="display:block;width:100%;height:auto;border:0"></td></tr>') if head else f"""<tr><td class="pad" style="background:#0b0e26;background-image:radial-gradient(120% 140% at 85% 0%,#2a1f5c 0%,#0b0e26 55%);padding:36px 48px 32px">
  <table role="presentation" cellpadding="0" cellspacing="0"><tr>{logo}
- <td style="padding-left:{12 if logo else 0}px;font:700 15px {SANS};letter-spacing:3px;color:#ffffff">{white("LACUNA")} <span style="font-weight:400;color:#9aa0c8">STUDIO</span></td></tr></table>
+ <td style="padding-left:{12 if logo else 0}px;font:700 15px {SANS};letter-spacing:3px;color:#ffffff">LACUNA <span style="font-weight:400;color:#9aa0c8">STUDIO</span></td></tr></table>
  <div style="height:2px;margin-top:28px;background:#FF7A3D;background-image:linear-gradient(90deg,#FFC24B 0%,#FF7A3D 40%,#FF4F7B 75%,#A35CFF 100%);border-radius:2px"></div>
  <div style="margin-top:28px;font:600 12px {SANS};letter-spacing:3px;color:#ffb48c">{e(kicker)}</div>
- <div class="h1" style="margin-top:10px;font:700 28px/1.35 {SANS};color:#ffffff">{white(title)}</div>
-</td></tr>
+ <div class="h1" style="margin-top:10px;font:700 28px/1.35 {SANS};color:#ffffff">{title}</div>
+</td></tr>"""
+    button_html = (f' <p style="margin:32px 0 14px"><a href="{e(link, quote=True)}"><img src="cid:{BUTTON_CID}" width="{btn[1]}" height="52" '
+                   f'alt="{e(button)}" style="display:block;border:0"></a></p>') if btn else f""" <table role="presentation" cellpadding="0" cellspacing="0" style="margin:32px 0 14px"><tr><td style="border-radius:999px;background:#df4a22;background-image:linear-gradient(90deg,#df4a22,#d93366 55%,#8f45f0)">
+  <a href="{e(link, quote=True)}" style="display:inline-block;padding:15px 40px;font:600 16px {SANS};color:#ffffff;text-decoration:none;letter-spacing:.5px">{e(button)} &rarr;</a></td></tr></table>"""
+    body = f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>{e(subject)}</title><style>body{{margin:0}} @media (max-width:620px){{.wrap{{width:100%!important}} .pad{{padding-left:24px!important;padding-right:24px!important}} .h1{{font-size:24px!important}}}}</style></head>
+<body style="margin:0;padding:0;background:#f1f1f6"><div style="display:none;max-height:0;overflow:hidden">{e(subject)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1f6"><tr><td align="center" style="padding:40px 12px">
+<table class="wrap" role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(9,11,31,.12)">
+{header}
 <tr><td class="pad" style="padding:36px 48px 8px">
  <p style="margin:0 0 12px;font:16px/1.75 {SANS};color:#3a3d55">{e(lead + about)}</p>
  <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px">{steps_html}</table>
  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #ececf3">{row_html}</table>
- <table role="presentation" cellpadding="0" cellspacing="0" style="margin:32px 0 14px"><tr><td style="border-radius:999px;background:#df4a22;background-image:linear-gradient(90deg,#df4a22,#d93366 55%,#8f45f0)">
-  <a href="{e(link, quote=True)}" style="display:inline-block;padding:15px 40px;font:600 16px {SANS};color:#ffffff;text-decoration:none;letter-spacing:.5px">{white(e(button) + " &rarr;")}</a></td></tr></table>
+{button_html}
  <p style="margin:0;font:13px {SANS};color:#8a8da6">{e(valid)}</p>
  <p style="margin:24px 0 0;font:12px/1.6 {SANS};color:#a0a3b8">{e(fallback)}<br><a href="{e(link, quote=True)}" style="color:#b8460f;word-break:break-all">{e(link)}</a></p>
 </td></tr>
@@ -125,7 +222,7 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
  <div style="margin-top:10px;font:12px/1.6 {SANS};color:#a0a3b8">{e(ignore)}<br>LACUNA Studio · lacunastudio.app</div>
 </td></tr></table>
 </td></tr></table></body></html>"""
-    return {"subject": subject, "text": text, "html": body}
+    return {"subject": subject, "text": text, "html": body, "inline": inline + ([] if head else inline_logo())}
 
 
 def inline_logo() -> list[dict]:
