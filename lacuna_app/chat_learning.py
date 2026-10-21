@@ -97,6 +97,7 @@ class ChatAsks:
             by.setdefault(a["id"], []).append(a)
         out = []
         from .learning import reviewer
+        from .archive import episode_label
         who = reviewer(self.ws)
         for aid, group in by.items():
             group.sort(key=lambda a: a.get("at", ""))
@@ -111,7 +112,7 @@ class ChatAsks:
             detail = (tr("你直接让 LACUNA 加的（{date}），没走确认流程。从下一期的 AI 初剪开始照做。",
                          date=last.get("at", "")[:10]) if "direct" in sources else
                       tr("{how}，出自 {episodes} 的对话（{n} 句）。采用后从下一期的 AI 初剪开始照做。",
-                         how=how, episodes=join_list(eps), n=n))
+                         how=how, episodes=join_list([episode_label(e) for e in eps]), n=n))
             out.append(Rule(
                 f"ask:{aid}", "ask", last["title"], detail,
                 f"{who}'s standing request (from the chat): {last['instruction']}",

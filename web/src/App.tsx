@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
-import type { EditInfo, Episode } from "./api";
+import type { EditInfo, Episode, RequestError } from "./api";
 import { api } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
 import { ChatFab } from "./features/chat-dock/ChatDock";
@@ -19,6 +19,8 @@ import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
 import { Home } from "./features/episodes/Home";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
+import { Presence } from "./features/coedit/Presence";
+import { useCoedit } from "./features/coedit/useCoedit";
 import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
 
@@ -141,12 +143,19 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         if (msg) flash(typeof msg === "function" ? msg(next) : msg, opts);
         return true;
       } catch (e) {
+        if ((e as RequestError).stale) {
+          // someone else changed it first (features/coedit): show the latest, say why nothing happened
+          api.episode(id).then(setEp, () => undefined);
+          flash((e as Error).message);
+          return false;
+        }
         flash(t("操作失败：{message}", { message: (e as Error).message }));
         return false;
       }
     },
-    [],
+    [id],
   );
+  const { others } = useCoedit(id, ep, setEp, flash);
 
   const undo = () => {
     setToast(null);
@@ -155,12 +164,12 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const redo = () => ep?.can_redo && run(api.redo(id, player.time), t("已重做：{redo_label}", { redo_label: ep.redo_label }));
   const review = (e: EditInfo, action: "keep" | "restore" | "apply") =>
     run(
-      api.review(id, e.id, action, player.time),
+      api.review(id, e.id, action, player.time, ep?.rev),
       action === "restore" ? (e.status === "restored" ? t("已确认不删") : t("已恢复原话")) : action === "keep" ? t("已保留") : t("已重新应用"),
     );
   const approveAll = () =>
     run(
-      api.reviewAll(id, "approve", player.time),
+      api.reviewAll(id, "approve", player.time, undefined, ep?.rev),
       (n) => t("已全部通过 {changed} 处，Ctrl+Z 可撤销", { changed: (n as Episode & { changed: number }).changed }),
       { undo: true },
     );
@@ -230,6 +239,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
               {ep.demo ? t("第一刀（演示）已完成 · {n} 处待你过目", { n: ep.pending_review }) : t("第一刀已完成 · {n} 处待你过目", { n: ep.pending_review })}
             </span>
           )}
+          <Presence others={others} />
           <span className="grow" />
           {next && <NextStep href={href(next.mode)} label={next.label} />}
         </div>

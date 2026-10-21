@@ -7,7 +7,7 @@ from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
 from .. import import_tracks, upload_parts
-from ..archive import retired_ids
+from ..archive import free_deleted_ids
 from ..importer import ImportBusy, ImportError_, Importer, check_track
 from ..server import next_episode_id
 from ..store import META_FILE, PathError, read_json
@@ -84,8 +84,11 @@ def register(app, ctx) -> None:
 
     @app.get("/api/imports")
     def imports():
-        return {"jobs": importer.status(), "next_id": next_episode_id(ws.episode_ids() + [j["id"] for j in importer.status()]
-                                                                  + sorted(retired_ids(ws)))}
+        try:
+            free_deleted_ids(ws)
+        except OSError:
+            pass
+        return {"jobs": importer.status(), "next_id": next_episode_id(ws.episode_ids() + [j["id"] for j in importer.status()])}
 
     @app.post("/api/imports")
     def start_import(body: ImportBody):

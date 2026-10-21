@@ -17,6 +17,14 @@ const KIND_LABEL: Record<string, string> = {
   ask: t("你说过的"),
 };
 
+/** A learning source as Leon reads it: a deleted episode's evidence is filed as "EP003@2026-10-21-a1b2". */
+export function sourceLabel(e: string): string {
+  const ep = e.replace(/\.hand_edit$/, "");
+  const gone = /@\d{4}-\d{2}-\d{2}-[0-9a-f]{4}$/;
+  const name = gone.test(ep) ? t("{ep}（已删）", { ep: ep.replace(gone, "") }) : ep;
+  return e.endsWith(".hand_edit") ? t("{ep}（你手剪的成品）", { ep: name }) : name;
+}
+
 const STATE_LABEL: Record<string, string> = { candidate: t("待你确认"), approved: t("已生效"), rejected: t("已不采用") };
 
 function effect(r: LearnedRule): string {
@@ -107,7 +115,7 @@ export function LearningView() {
       <h1>{t("学到的规则")}</h1>
       <p className="muted">
         {t("来源：{sources}。", {
-          sources: s.episodes.length ? joinList(s.episodes.map((e) => (e.endsWith(".hand_edit") ? t("{ep}（你手剪的成品）", { ep: e.replace(".hand_edit", "") }) : e))) : t("还没有"),
+          sources: s.episodes.length ? joinList(s.episodes.map(sourceLabel)) : t("还没有"),
         })}{" "}
         {t("审阅里逐条决定 {considered} 个；所有来源合计保留 {kept}、恢复或没删 {restored}、补删 {added}。", { considered: s.considered, kept: s.kept, restored: s.restored, added: s.added })}
       </p>
@@ -179,7 +187,7 @@ function RuleCard({ r, busy, decide }: { r: LearnedRule; busy: boolean; decide: 
                 <span className="muted">
                   {" "}
                   {x.verdict === "said"
-                    ? t("你在 {ep} 的对话里说的（{reason}）", { ep: x.episode, reason: x.reason })
+                    ? t("你在 {ep} 的对话里说的（{reason}）", { ep: sourceLabel(x.episode), reason: x.reason })
                     : x.verdict === "restored" || x.verdict === "declined" ? t("你留下了") : t("你删了")}
                   {x.episode.endsWith(".hand_edit") ? t("（手剪成品）") : ""}
                 </span>

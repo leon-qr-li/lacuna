@@ -13,6 +13,7 @@ from ..i18n import tr
 class PublishEditBody(BaseModel):
     markdown: str | None = Field(None, max_length=200_000, description="Leon's Markdown; null = back to generated")
     title: str | None = Field(None, max_length=200)
+    rev: int | None = Field(None, description="the pack version the page showed; stale -> 409 (coedit.py)")
 
 
 class NameBody(BaseModel):
@@ -62,7 +63,7 @@ def register(app, ctx) -> None:
     @app.put("/api/episodes/{episode_id}/publish")
     def publish_edit(episode_id: str, body: PublishEditBody):
         ep = get(episode_id)
-        return publish_change(ep, lambda: publisher.edit(ep, body.markdown, body.title))
+        return publish_change(ep, lambda: publisher.edit(ep, body.markdown, body.title, body.rev))
 
     @app.post("/api/episodes/{episode_id}/publish/names")
     def publish_name(episode_id: str, body: NameBody):

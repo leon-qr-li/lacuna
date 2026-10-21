@@ -1,5 +1,5 @@
-"""Episode / learning bugs found by the full scan of 2026-10-18: a deleted episode's id is retired
-(its learning evidence stays filed under it), and a request racing 永久删除 can't keep it alive."""
+"""Episode / learning bugs found by the full scan of 2026-10-18: a deleted episode's learning evidence
+stays (filed away under a name of its own, so the id is free again), and a request racing 永久删除 can't keep it alive."""
 import json
 from pathlib import Path
 
@@ -23,15 +23,17 @@ def delete(c, episode_id):
     assert c.delete(f"/api/episodes/{episode_id}").status_code == 200
 
 
-def test_a_deleted_episodes_id_is_never_proposed_or_taken_again(tmp_path):
+def test_a_deleted_episodes_id_is_free_again(tmp_path):
+    """Decision 2026-10-21-free-episode-ids: deleting files the evidence away, so the id is proposed
+    and taken again (it used to be retired for good)."""
     ws = make_ai_workspace(tmp_path / "ws", "EP003")
     c = client(ws)
     assert c.get("/api/imports").json()["next_id"] == "EP004"
     delete(c, "EP003")
-    assert c.get("/api/imports").json()["next_id"] == "EP004"       # used to propose EP003 again
+    assert c.get("/api/imports").json()["next_id"] == "EP001"        # nothing left: numbering starts over
     rec = write_recordings(tmp_path / "rec")
     r = c.post("/api/imports", json={"id": "EP003", "title": "新的一集", "tracks": [str(rec["Leon"]), str(rec["Pei"])]})
-    assert r.status_code == 422 and "EP003" in r.json()["detail"]
+    assert r.status_code == 200, r.text
 
 
 def test_the_deleted_episodes_verdicts_stay_in_its_snapshot(tmp_path):
@@ -42,8 +44,12 @@ def test_the_deleted_episodes_verdicts_stay_in_its_snapshot(tmp_path):
     c.post(f"/api/episodes/{AI_EPISODE}/edits/{first['id']}/review", json={"action": "restore"})
     delete(c, AI_EPISODE)
     c.get("/api/learning")
-    snap = json.loads((ws / "learning" / "decisions" / f"{AI_EPISODE}.json").read_text(encoding="utf-8"))
-    assert any(d["edit_id"] == first["id"] and d["verdict"] == "restored" for d in snap["decisions"])
+    assert not (ws / "learning" / "decisions" / f"{AI_EPISODE}.json").exists()
+    [f] = (ws / "learning" / "decisions").glob(f"{AI_EPISODE}@*.json")
+    snap = json.loads(f.read_text(encoding="utf-8"))
+    assert snap["episode"] == f.name[:-5]
+    assert any(d["edit_id"] == first["id"] and d["verdict"] == "restored" and d["episode"] == snap["episode"]
+               for d in snap["decisions"])
 
 
 def test_a_request_while_deleting_does_not_keep_the_episode_alive(tmp_path, monkeypatch):

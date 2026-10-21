@@ -243,9 +243,17 @@ EN: dict[str, str | tuple[str, str]] = {
     "不是音频文件：{name}": "Not an audio file: {name}",
     "生成审阅（核对音频）": "Building the review (checking audio)",
     "生成审阅（精修剪辑点）": "Building the review (refining cut points)",
+    "{episode_id}（已删）": "{episode_id} (deleted)",
+    "其他成员": "Another member",
+    "{name} 刚刚修改了这一处。页面已更新为最新内容，请确认后再操作。":
+        "{name} just changed this edit. The page now shows the latest version; please check it before you continue.",
+    "此步骤之后，{name} 修改过同一处，无法撤销或重做此步骤。":
+        "{name} changed the same edit after this step, so it can't be undone or redone.",
+    "{name} 刚刚修改了发布资料。页面已更新为最新内容，你的本次修改未保存，请在最新内容上重新修改。":
+        "{name} just changed the publishing details. The page now shows the latest version; your change was not saved, please make it again on the latest version.",
+    "{name} 刚刚修改了节目设置。页面已更新为最新内容，你的本次修改未保存，请在最新内容上重新修改。":
+        "{name} just changed the show settings. The page now shows the latest version; your change was not saved, please make it again on the latest version.",
     "已经有一集叫 {episode_id}，换个编号": "There's already an episode called {episode_id}; pick another ID",
-    "{episode_id} 是删掉的一集用过的编号（学到的习惯还记在它名下），换个编号":
-        "{episode_id} belonged to a deleted episode (its learned habits are still filed under it); pick another ID",
     "{a} 和 {b} 选了同一个文件": "{a} and {b} have the same file",
     "先在「节目」里填好主持人": "Add the hosts under Show first",
     "要 {n} 条分轨（每位主持人一条），收到 {got} 条": "{n} tracks are needed (one per host), got {got}",

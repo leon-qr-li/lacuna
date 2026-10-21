@@ -4,7 +4,8 @@ import { copyRich, copyText, markdownToHtml } from "../../markdown";
 import { publishApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
-import { confirmDialog } from "../dialog/Dialog";
+import { confirmDialog, noticeDialog } from "../dialog/Dialog";
+import type { RequestError } from "../../api";
 
 /** 发布资料: title, one-line blurb, show notes (Markdown, approved D40 format), chapters and the
  *  names to check, all for the version of the cut that will be published. */
@@ -13,6 +14,8 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const [err, setErr] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  // the text this person typed when someone else saved first: shown under the latest to copy from
+  const [mine, setMine] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const timer = useRef<number | null>(null);
   const shown = useRef<string | null>(id); // the episode on screen; null once the page is gone
@@ -56,6 +59,23 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
       if (msg) flash(msg);
       return true;
     } catch (e) {
+      if ((e as RequestError).stale) {
+        // someone else saved first (features/coedit): show theirs, keep what this person typed
+        try {
+          const v = await publishApi.publish(id);
+          if (shown.current === id) {
+            setView(v);
+            if (editing) {
+              setMine(draft);
+              setDraft(v.pack?.markdown ?? "");
+            }
+          }
+        } catch {
+          /* the notice still says what happened */
+        }
+        await noticeDialog((e as Error).message);
+        return false;
+      }
       flash(t("操作失败：{message}", { message: (e as Error).message }));
       return false;
     } finally {
@@ -150,7 +170,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
               <div className="row wrap gap8">
                 <span className="muted small">{t("换一个：")}</span>
                 {pack.alt_titles.map((alt) => (
-                  <button key={alt} type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => act(publishApi.editPublish(id, { title: alt }), t("标题已换"))}>
+                  <button key={alt} type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => act(publishApi.editPublish(id, { title: alt, rev: pack.rev }), t("标题已换"))}>
                     {alt}
                   </button>
                 ))}
@@ -193,7 +213,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
                       {t("编辑")}
                     </button>
                     {pack.edited && (
-                      <button type="button" className="linkish small" disabled={busy} onClick={async () => (await confirmDialog({ message: t("丢掉你手改的内容，恢复成生成的版本？"), confirmLabel: t("恢复"), danger: true })) && act(publishApi.editPublish(id, { markdown: null }), t("已恢复成生成的版本"))}>
+                      <button type="button" className="linkish small" disabled={busy} onClick={async () => (await confirmDialog({ message: t("丢掉你手改的内容，恢复成生成的版本？"), confirmLabel: t("恢复"), danger: true })) && act(publishApi.editPublish(id, { markdown: null, rev: pack.rev }), t("已恢复成生成的版本"))}>
                         {t("恢复成生成的版本")}
                       </button>
                     )}
@@ -205,11 +225,23 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
                       type="button"
                       className="btn btn-primary btn-small"
                       disabled={busy}
-                      onClick={async () => (await act(publishApi.editPublish(id, { markdown: draft }), t("已保存"))) && setEditing(false)}
+                      onClick={async () => {
+                        if (await act(publishApi.editPublish(id, { markdown: draft, rev: pack.rev }), t("已保存"))) {
+                          setEditing(false);
+                          setMine(null);
+                        }
+                      }}
                     >
                       {t("保存")}
                     </button>
-                    <button type="button" className="btn btn-outline btn-small" onClick={() => setEditing(false)}>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-small"
+                      onClick={() => {
+                        setEditing(false);
+                        setMine(null);
+                      }}
+                    >
                       {t("取消")}
                     </button>
                   </>
@@ -217,7 +249,15 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
               </span>
             </div>
             {editing ? (
-              <textarea className="md-edit mono" aria-label="Markdown" value={draft} onChange={(e) => setDraft(e.target.value)} />
+              <>
+                <textarea className="md-edit mono" aria-label="Markdown" value={draft} onChange={(e) => setDraft(e.target.value)} />
+                {mine !== null && (
+                  <details open className="publish-mine" data-testid="publish-mine">
+                    <summary className="small">{t("你刚才没保存的版本（可从这里复制需要的部分）")}</summary>
+                    <textarea className="md-edit mono" readOnly aria-label={t("你刚才没保存的版本（可从这里复制需要的部分）")} value={mine} />
+                  </details>
+                )}
+              </>
             ) : (
               <article className="md" data-testid="show-notes" dangerouslySetInnerHTML={{ __html: html }} />
             )}

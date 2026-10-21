@@ -41,9 +41,11 @@ export interface Show {
   /** the signed-in editor's 剪辑力度 */
   my_level: CutLevel;
   max_hosts: number;
+  /** goes up at every save (co-editing: a save from an older version is refused) */
+  rev?: number;
 }
 
-export type ShowInput = Pick<Show, "show_name" | "about" | "language" | "footer" | "hosts" | "publish" | "terms">;
+export type ShowInput = Pick<Show, "show_name" | "about" | "language" | "footer" | "hosts" | "publish" | "terms" | "rev">;
 
 export const showApi = {
   get: () => req<Show>("GET", "/api/show"),

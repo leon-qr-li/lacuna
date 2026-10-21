@@ -565,7 +565,11 @@ class Publisher:
         return d
 
     def save(self, ep: Episode, pack: dict) -> None:
+        from .coedit import stamp
         pack["markdown"] = untable(pack["markdown"])
+        pack["rev"] = int(pack.get("rev") or 0) + 1          # co-editing: a stale page's save is refused
+        pack.pop("by", None), pack.pop("by_name", None)
+        pack.update(stamp())
         atomic_write_json(self.path(ep), pack, protected=tuple(Path(m.path) for m in ep.media.values()))
         notes = self.notes_path(ep.id)
         notes.parent.mkdir(parents=True, exist_ok=True)
@@ -650,10 +654,16 @@ class Publisher:
             self.save(ep, pack)
             return pack
 
-    def edit(self, ep: Episode, markdown: str | None = None, title: str | None = None) -> dict:
-        """Save Leon's Markdown (None with no title = back to the generated text) or switch the title."""
+    def edit(self, ep: Episode, markdown: str | None = None, title: str | None = None,
+             rev: int | None = None) -> dict:
+        """Save Leon's Markdown (None with no title = back to the generated text) or switch the title.
+        `rev`: the pack version the page showed; someone saved since -> StaleError (coedit.py)."""
+        from .coedit import StaleError
         with ep.lock:
             pack = self._need(ep)
+            if rev is not None and int(pack.get("rev") or 0) != rev:
+                raise StaleError(tr("{name} 刚刚修改了发布资料。页面已更新为最新内容，你的本次修改未保存，请在最新内容上重新修改。",
+                                    name=pack.get("by_name") or tr("其他成员")))
             d = pack["draft"]
             if title is not None:
                 title = title.strip()[:200]
@@ -749,6 +759,7 @@ class Publisher:
             "gone": pack.get("gone", []), "notes": pack.get("notes", []), "adapter": pack["adapter"],
             "usage": pack.get("usage") or {}, "generated_at": pack["generated_at"],
             "library": music.library,
+            "rev": int(pack.get("rev") or 0),
         }
         return out
 

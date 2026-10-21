@@ -94,9 +94,14 @@ def load(root: str | Path) -> dict:
 def save(root: str | Path, data: dict) -> dict:
     """Validate and store `data` (a full profile from the 节目设置 page); returns what was stored."""
     root = Path(root)
+    from .coedit import current
     before = load(root)
-    clean = normalise(data, strict=True, before=before)
+    clean = normalise({k: v for k, v in data.items() if k not in ("rev", "by_name")}, strict=True, before=before)
     clean["setup_done"] = True
+    clean["rev"] = before.get("rev", 0) + 1
+    clean.pop("by_name", None)
+    if (who := current()) is not None:
+        clean["by_name"] = who["name"]
     atomic_write_json(root / FILE, clean)
     return clean
 
@@ -121,6 +126,10 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
            "show_name": _text(data.get("show_name"), 80), "about": _text(data.get("about"), 200),
            "language": data.get("language") if data.get("language") in LANGUAGES else "zh",
            "footer": str(data.get("footer") or "").strip()[:600]}
+    # co-editing (coedit.py): the stored version and who saved it, so a stale 节目设置 page can't overwrite
+    out["rev"] = data["rev"] if isinstance(data.get("rev"), int) and data["rev"] >= 0 else 0
+    if isinstance(data.get("by_name"), str):
+        out["by_name"] = data["by_name"][:80]
     pub = data.get("publish") if isinstance(data.get("publish"), dict) else {}
     out["publish"] = {"ximalaya": bool(pub.get("ximalaya")), "album": _text(pub.get("album"), 80)}
     # a form that doesn't send the terms (yet) keeps the stored ones
@@ -182,7 +191,7 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
 
 def view(profile: dict) -> dict:
     """What the interface gets (GET /api/show)."""
-    return profile | {"needs_setup": not profile.get("setup_done"), "colors": list(COLORS),
+    return profile | {"rev": profile.get("rev", 0), "needs_setup": not profile.get("setup_done"), "colors": list(COLORS),
                       "cut_levels": list(CUT_LEVELS), "cut_adjusts": list(habits.ADJUSTS), "my_level": habits.level(),
                       "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES)}
 

@@ -616,7 +616,9 @@ class Learning:
         """Count this episode's first cut as accepted as delivered; its review clicks were tests."""
         st = self._state()
         eps = set(st.get("accepted_as_is", []))
-        (eps.add if on else eps.discard)(check_id(episode_id))
+        if (check_id(episode_id) in eps) == on:
+            return
+        (eps.add if on else eps.discard)(episode_id)
         st["accepted_as_is"] = sorted(eps)
         self._save(st)
 

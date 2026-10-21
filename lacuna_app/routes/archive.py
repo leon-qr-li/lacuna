@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
 
-from ..archive import Archive, ArchiveError
+from ..archive import Archive, ArchiveError, free_deleted_ids
 from ..learning import Learning
 from .library import library_of
 from ..i18n import tr
@@ -18,6 +18,10 @@ def archive_of(ctx) -> Archive:
 def register(app, ctx) -> None:
     archive = archive_of(ctx)
     archive.empty_trash()
+    try:
+        free_deleted_ids(ctx.ws)       # ids retired before deleting freed them (one-time, then a no-op)
+    except OSError:
+        pass
 
     def known(episode_id: str) -> None:
         ctx.peek(episode_id)          # 400 bad id / 404 no such episode
@@ -56,7 +60,9 @@ def register(app, ctx) -> None:
 
     def keep_learning(episode_id: str) -> None:
         # the review verdicts 「学到的规则」 learns from, snapshotted before the folder goes
-        ctx.provide("learning", lambda: Learning(ctx.ws)).overview([ctx.peek(episode_id)])
+        learning = ctx.provide("learning", lambda: Learning(ctx.ws))
+        learning.overview([ctx.peek(episode_id)])
+        learning.accept_as_is(episode_id, False)     # already in the snapshot; a new episode with this id starts fresh
 
     def release(episode_id: str) -> None:
         with ctx.lock:

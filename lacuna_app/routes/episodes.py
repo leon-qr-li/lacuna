@@ -25,10 +25,12 @@ class PlayheadBody(BaseModel):
 
 class ReviewBody(PlayheadBody):
     action: str = Field(pattern="^(keep|restore|apply)$")
+    rev: int | None = Field(None, description="the episode version the page showed (coedit.py); stale -> 409")
 
 
 class BatchReviewBody(PlayheadBody):
     action: str = Field(pattern="^(approve|keep|restore)$")
+    rev: int | None = Field(None, description="the episode version the page showed (coedit.py); stale -> 409")
     ids: list[str] | None = Field(None, max_length=5000, description="defaults to every edit still pending review")
 
 
@@ -118,12 +120,22 @@ def register(app, ctx) -> None:
     @app.post("/api/episodes/{episode_id}/edits/{eid}/review")
     def review(episode_id: str, eid: str, body: ReviewBody):
         ep = get(episode_id)
-        return mutate(ep, body.playhead, lambda: ep.review(eid, body.action))
+
+        def run():
+            with ep.lock:
+                ep.check_fresh([eid], body.rev)
+                ep.review(eid, body.action)
+        return mutate(ep, body.playhead, run)
 
     @app.post("/api/episodes/{episode_id}/review")
     def review_batch(episode_id: str, body: BatchReviewBody):
         ep = get(episode_id)
-        return mutate(ep, body.playhead, lambda: {"changed": ep.review_all(body.action, body.ids)})
+
+        def run():
+            with ep.lock:
+                ep.check_fresh(body.ids if body.ids is not None else ep.pending_ids(), body.rev)
+                return {"changed": ep.review_all(body.action, body.ids)}
+        return mutate(ep, body.playhead, run)
 
     @app.post("/api/episodes/{episode_id}/ops")
     def apply_op(episode_id: str, body: OpBody):
