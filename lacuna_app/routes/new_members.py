@@ -27,6 +27,7 @@ def register(app, ctx) -> None:
         return auth.db.meta(KEY) != "0"          # on unless the owner turned it off
 
     app.state.owner_approval = on
+    auth.beta = on                               # invite mails carry the BETA plan card while it is on
 
     def owner(request: Request) -> str:
         email = auth.who(request.cookies.get(COOKIE))

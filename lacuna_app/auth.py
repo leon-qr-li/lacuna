@@ -107,6 +107,12 @@ def _sha(s: str) -> str:
     return hashlib.sha256(s.encode()).hexdigest()
 
 
+def clean_name(name: str | None) -> dict:
+    """{"name": ...} for the name someone gave (spaces folded, 40 characters at most), {} for none."""
+    n = " ".join(str(name or "").split())[:40]
+    return {"name": n} if n else {}
+
+
 def norm_email(email: str) -> str:
     e = (email or "").strip().lower()
     if not EMAIL_RE.match(e) or len(e) > 254:
@@ -206,6 +212,8 @@ class Auth:
         self._seen_saved = now
         # other features follow accounts: joined(email, invite or None for the owner), deleted(email)
         self.on_joined: list[Callable[[str, dict | None], None]] = []
+        # the site is in beta (routes/new_members.py: 「新成员需站长批准」 on): invite mails say so
+        self.beta: Callable[[], bool] = lambda: False
         self.on_deleted: list[Callable[[str], None]] = []
         self.setup_code: str | None = None
         if self.cloud and not self.users:
@@ -304,6 +312,18 @@ class Auth:
                 self._save_sessions()
         return s["email"]
 
+    def name(self, email: str | None) -> str | None:
+        """The name the person gave (sign-up or 账号), or None."""
+        return (self.users.get(email or "") or {}).get("name") or None
+
+    def set_name(self, email: str, name: str) -> None:
+        got = clean_name(name)
+        if not got:
+            raise AuthError(tr("请填你的名字"))
+        with self.lock:
+            self.users[email].update(got)
+            self._save_users()
+
     def role(self, email: str | None) -> str | None:
         u = self.users.get(email or "")
         return u["role"] if u else None
@@ -312,7 +332,8 @@ class Auth:
         email = self.who(token)
         u = self.users.get(email or "")
         return {"accounts": self.has_accounts(), "setup": not self.users and not self.skip_setup,
-                "email": email, "role": u["role"] if u else None, "plan": (u.get("plan") or plans.DEFAULT) if u else None,
+                "email": email, "name": (u.get("name") or None) if u else None,
+                "role": u["role"] if u else None, "plan": (u.get("plan") or plans.DEFAULT) if u else None,
                 "twofa": bool(u and u.get("totp")), "require_2fa": self.require_2fa, "cloud": self.cloud,
                 "first": not self.users, "setup_code": bool(self.setup_code) and not self.users,
                 "mail": self.mail_status() if u and u["role"] == "owner" else None}
@@ -571,7 +592,7 @@ class Auth:
 
     # -- accounts
     def register_first(self, email: str, password: str, setup_code: str | None, remember: bool,
-                       agent: str = "", proven: str | None = None) -> dict:
+                       agent: str = "", proven: str | None = None, name: str = "") -> dict:
         """The owner's account, on the first run (no invite; in the cloud, the setup code, unless Cloudflare
         Access already proved the request comes from `proven`, the owner's email, and that is the email given)."""
         email = norm_email(email)
@@ -583,7 +604,7 @@ class Auth:
                 raise AuthError(tr("初始化码不对：在服务器上的 auth/setup-code.txt 里"), 403)
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
                                  "role": "owner", "verified": False, "id": new_user_id(), "plan": plans.PRO,
-                                 "plan_free": True}
+                                 "plan_free": True, **clean_name(name)}
             self._save_users()
             if self.setup_code:
                 (self.dir / SETUP_FILE).unlink(missing_ok=True)
@@ -598,14 +619,15 @@ class Auth:
             raise AuthError(tr("这个邀请链接已经失效（用过了、过期了或被撤回了）。请向邀请你的人要一个新的。"), 404)
         return i
 
-    def register_invite(self, token: str, password: str, remember: bool, agent: str = "") -> dict:
+    def register_invite(self, token: str, password: str, remember: bool, agent: str = "", name: str = "") -> dict:
         check_password(password)
         with self.lock:
             i = self.invite_info(token)
             email = i["email"]
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
                                  "role": i["role"], "verified": True, "invited_by": i["by"], "id": new_user_id(),
-                                 "plan": plans.check(i.get("plan") or plans.DEFAULT), "lang": i.get("lang")}
+                                 "plan": plans.check(i.get("plan") or plans.DEFAULT), "lang": i.get("lang"),
+                                 **clean_name(name)}
             del self.invites[i["hash"]]
             self._save_users()
         for f in self.on_joined:
@@ -737,7 +759,9 @@ class Auth:
         try:
             from . import invite_mail       # design A 「夜航信笺」
             with speaking(lang):
-                m = invite_mail.render(actor, link, project, extra.get("space_role"))
+                m = invite_mail.render(actor, link, project, extra.get("space_role"),
+                                       plan=extra.get("plan") or plans.DEFAULT, beta=self.beta(),
+                                       inviter_name=(self.users.get(actor) or {}).get("name"))
             try:
                 self.mailer.send(self.config["sender"], email, m["subject"], m["text"], html=m["html"],
                                  inline=m["inline"])

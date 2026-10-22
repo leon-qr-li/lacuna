@@ -12,6 +12,8 @@ export interface AuthStatus {
   /** no account yet: the app opens on "create the first account" */
   setup: boolean;
   email: string | null;
+  /** the name the person gave (null for accounts made before it was asked) */
+  name?: string | null;
   role: Role | null;
   /** two-step sign-in is on for this account */
   twofa: boolean;
@@ -103,11 +105,14 @@ export const authApi = {
       `/api/access-requests/${encodeURIComponent(id)}`,
       { action, lang: uiLang },
     ),
-  registerFirst: (email: string, password: string, setup_code: string | null) =>
-    req<Step>("POST", "/api/auth/register", { email, password, setup_code, remember: true }),
-  registerInvite: (invite: string, password: string) =>
-    req<Step>("POST", "/api/auth/register", { invite, password, remember: true }),
-  invite: (token: string) => req<{ email: string; role: Role; by: string; exp: number; lang?: Lang | null }>("POST", "/api/auth/invite", { token }),
+  registerFirst: (email: string, password: string, setup_code: string | null, name = "") =>
+    req<Step>("POST", "/api/auth/register", { email, password, setup_code, remember: true, name }),
+  registerInvite: (invite: string, password: string, name = "") =>
+    req<Step>("POST", "/api/auth/register", { invite, password, remember: true, name }),
+  /** the signed-in person's name (what others see) */
+  setName: (name: string) => req<{ name: string }>("POST", "/api/auth/name", { name }),
+  invite: (token: string) =>
+    req<{ email: string; role: Role; by: string; by_name?: string | null; exp: number; lang?: Lang | null }>("POST", "/api/auth/invite", { token }),
   secondStep: (ticket: string, code: string) => req<Step>("POST", "/api/auth/2fa", { ticket, code }),
   enroll: (ticket: string, code: string) => req<Step>("POST", "/api/auth/2fa/enroll", { ticket, code }),
   sendCode: (email: string) => req<{ sent: true }>("POST", "/api/auth/code", { email, purpose: "reset" }),

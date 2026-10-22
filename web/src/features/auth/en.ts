@@ -209,4 +209,10 @@ export const en: Dict = {
     "Collaborator request: {by} invited them to “{show}”",
   "批准并发邀请":
     "Approve and invite",
+  "你的名字":
+    "Your name",
+  "搭档和邀请邮件里会显示这个名字":
+    "Shown to your collaborators and in invite emails",
+  "请填你的名字":
+    "Please enter your name",
 };

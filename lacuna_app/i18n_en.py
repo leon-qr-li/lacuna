@@ -566,4 +566,24 @@ EN: dict[str, str | tuple[str, str]] = {
     "你邀请 {email} 加入「{show}」的申请这次没有通过，没有发出邀请。":
         "Your request to invite {email} to “{show}” wasn't approved this time, so no invite was sent.",
     "对方以后也可以自己在 LACUNA 登录页申请试用。": "They can also ask for access themselves on the LACUNA sign-in page.",
+    # invite mail, compact design A with the plan card
+    "免费体验 · 1 小时音频": "Free trial · 1 hour of audio",
+    "一次性试用 · 所有功能都能用": "One-time trial · every feature included",
+    "基础版 · 每月 4 小时音频": "Basic · 4 hours of audio a month",
+    "所有功能都能用 · 额度每月重置": "Every feature included · hours reset monthly",
+    "专业版 · 每月 12 小时音频": "Pro · 12 hours of audio a month",
+    "从导入录音到发布上线，一期节目的每一步都在 LACUNA 完成：":
+        "Every step of an episode, from importing the recording to publishing it, happens in LACUNA:",
+    "你将加入的节目": "THE SHOW YOU'LL JOIN",
+    "用节目主人的套餐和额度，你不用另外付费": "It runs on the show owner's plan and hours; nothing for you to pay",
+    "你的 BETA 套餐": "YOUR BETA PLAN",
+    "你的套餐": "YOUR PLAN",
+    "beta 期间免费": "Free during the beta",
+    "注册时需要手机上的验证器 App（如 Google Authenticator）。链接 7 天内有效，只能用一次。":
+        "You'll need an authenticator app on your phone (e.g. Google Authenticator) to sign up. The link works once, for 7 days.",
+    "按钮打不开？复制链接：": "Button not working? Copy the link:",
+    "不认识邀请人？忽略这封邮件即可，不会创建账号。": "Don't know who sent this? Ignore it: no account is created.",
+    "BETA 邀请函": "BETA INVITATION",
+    "邀请人 {email}": "Invited by {email}",
+    "请填你的名字": "Please enter your name",
 }

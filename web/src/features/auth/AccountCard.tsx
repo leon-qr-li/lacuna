@@ -97,6 +97,43 @@ export function AccountCard() {
   );
 }
 
+/** 你的名字: what collaborators and invite emails show (new-user batch Q12). */
+function NameRow({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
+  const [name, setName] = useState(st.name ?? "");
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const save = () =>
+    authApi.setName(name).then(
+      (r) => {
+        setSt({ ...st, name: r.name });
+        setSaved(true);
+        setErr(null);
+      },
+      (e) => setErr(String((e as Error).message)),
+    );
+  return (
+    <div className="account-row" data-testid="account-name">
+      <label className="grow">
+        <span className="small muted">{t("你的名字")}</span>
+        <input
+          value={name}
+          maxLength={40}
+          onChange={(e) => {
+            setName(e.target.value);
+            setSaved(false);
+          }}
+          placeholder={t("搭档和邀请邮件里会显示这个名字")}
+        />
+      </label>
+      <button type="button" className="btn btn-outline btn-small" disabled={!name.trim() || name.trim() === (st.name ?? "")} onClick={() => void save()}>
+        {t("保存")}
+      </button>
+      {saved && <span className="ok small">{t("已保存")}</span>}
+      {err && <span className="error small">{err}</span>}
+    </div>
+  );
+}
+
 export function SecurityCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
   const { busy, msg, act } = useAct();
   return (
@@ -119,6 +156,7 @@ export function SecurityCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthSta
       <p className="muted small" data-testid="account-email">
         {t("已登录：{email}", { email: st.email })} · <span data-testid="account-role">{ROLE[st.role!]}</span>
       </p>
+      <NameRow st={st} setSt={setSt} />
       <TwoStepRow st={st} setSt={setSt} />
       <PasswordRow />
       <Devices />

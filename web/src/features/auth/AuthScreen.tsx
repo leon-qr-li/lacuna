@@ -320,8 +320,20 @@ function checkNew(pw: string, pw2: string): string | null {
   return null;
 }
 
+/** 你的名字 (new-user batch Q12): what collaborators and invite emails show instead of the email. */
+function NameField({ name, setName, autoFocus }: { name: string; setName: (v: string) => void; autoFocus?: boolean }) {
+  return (
+    <Field label={t("你的名字")} hint={t("搭档和邀请邮件里会显示这个名字")}>
+      <span className="auth-input">
+        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoComplete="name" autoFocus={autoFocus} data-testid="auth-name" required />
+      </span>
+    </Field>
+  );
+}
+
 /** The owner's account, on the first run (in the cloud also the setup code from the server). */
 function First({ status, email, setEmail, next }: FormProps) {
+  const [name, setName] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [setup, setSetup] = useState("");
@@ -333,7 +345,8 @@ function First({ status, email, setEmail, next }: FormProps) {
     e.preventDefault();
     const bad = checkNew(pw, pw2);
     if (bad) return setErr(bad);
-    run(async () => next(await authApi.registerFirst(email, pw, status.setup_code ? setup : null), email.trim().toLowerCase()));
+    if (!name.trim()) return setErr(t("请填你的名字"));
+    run(async () => next(await authApi.registerFirst(email, pw, status.setup_code ? setup : null, name.trim()), email.trim().toLowerCase()));
   };
   return (
     <form onSubmit={submit}>
@@ -350,7 +363,8 @@ function First({ status, email, setEmail, next }: FormProps) {
           </span>
         </Field>
       )}
-      <EmailField email={email} setEmail={setEmail} autoFocus />
+      <NameField name={name} setName={setName} autoFocus />
+      <EmailField email={email} setEmail={setEmail} />
       <NewPassword pw={pw} setPw={setPw} pw2={pw2} setPw2={setPw2} />
       <Err err={err} />
       <button className="auth-btn" disabled={busy}>
@@ -366,10 +380,17 @@ function First({ status, email, setEmail, next }: FormProps) {
   );
 }
 
+/** How the invite email names an inviter without a name (lacuna_app/invite_mail.py who_of): leon@… -> Leon. */
+const inviterName = (email: string) => {
+  const n = email.split("@")[0] || email;
+  return /^[\x00-\x7f]/.test(n) ? n.slice(0, 1).toUpperCase() + n.slice(1) : n;
+};
+
 /** Sign-up from an invite link: the email is fixed by the invite. */
 function FromInvite({ token, go, next }: FormProps & { token: string }) {
-  const [info, setInfo] = useState<{ email: string; by: string } | null>(null);
+  const [info, setInfo] = useState<{ email: string; by: string; by_name?: string | null } | null>(null);
   const [gone, setGone] = useState<string | null>(null);
+  const [name, setName] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const { busy, err, setErr, run } = useSubmit();
@@ -384,8 +405,9 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
     e.preventDefault();
     const bad = checkNew(pw, pw2);
     if (bad) return setErr(bad);
+    if (!name.trim()) return setErr(t("请填你的名字"));
     run(async () => {
-      const s = await authApi.registerInvite(token, pw);
+      const s = await authApi.registerInvite(token, pw, name.trim());
       dropInvite();
       next(s, info!.email);
     });
@@ -405,7 +427,8 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
   return (
     <form onSubmit={submit}>
       <h1>{t("接受邀请")}</h1>
-      <p className="auth-sub">{info ? t("{by} 邀请你加入 LACUNA。设一个密码就能开始。", { by: info.by }) : "…"}</p>
+      <p className="auth-sub">{info ? t("{by} 邀请你加入 LACUNA。设一个密码就能开始。", { by: info.by_name || inviterName(info.by) }) : "…"}</p>
+      <NameField name={name} setName={setName} autoFocus />
       <Field label={t("邮箱")}>
         <span className="auth-input">
           <input value={info?.email ?? ""} readOnly data-testid="auth-email" />

@@ -26,10 +26,11 @@ EDITOR: ContextVar[dict | None] = ContextVar("lacuna_editor", default=None)
 SEEN_S = 20.0          # a page that has not said hello for this long has left
 
 
-def editor_for(email: str) -> dict:
-    """``{"key": <hash>, "name": <what others see>}`` for a signed-in person (no address in files)."""
+def editor_for(email: str, name: str | None = None) -> dict:
+    """``{"key": <hash>, "name": <what others see>}`` for a signed-in person (no address in files): the name
+    they gave, else the part of the address before @."""
     email = email.strip().lower()
-    return {"key": hashlib.sha256(email.encode()).hexdigest()[:16], "name": email.split("@")[0]}
+    return {"key": hashlib.sha256(email.encode()).hexdigest()[:16], "name": (name or "").strip() or email.split("@")[0]}
 
 
 def current() -> dict | None:
