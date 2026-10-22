@@ -586,4 +586,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "BETA 邀请函": "BETA INVITATION",
     "邀请人 {email}": "Invited by {email}",
     "请填你的名字": "Please enter your name",
+    "每位主持人一条分轨": "One track per host",
+    "所有人混在一条录音里": "Everyone mixed in one recording",
+    "不确定": "Not sure",
+    "录音": "Recordings",
 }

@@ -563,6 +563,8 @@ function Forgot({ email, setEmail, go, next }: FormProps) {
 function AskAccess({ status, email, setEmail, go }: FormProps) {
   const [show, setShow] = useState("");
   const [note, setNote] = useState("");
+  // 你的录音 (new-user batch Q9): LACUNA needs one track per host; mixed-only people wait for later
+  const [tracks, setTracks] = useState<"" | "separate" | "mixed" | "unsure">("");
   const [human, setHuman] = useState<string | null>(null);
   const [tries, setTries] = useState(0);
   const [sent, setSent] = useState(false);
@@ -571,7 +573,7 @@ function AskAccess({ status, email, setEmail, go }: FormProps) {
     e.preventDefault();
     run(async () => {
       try {
-        await authApi.requestAccess({ email, show, note, turnstile: human });
+        await authApi.requestAccess({ email, show, note, tracks, turnstile: human });
         setSent(true);
       } finally {
         if (status.turnstile) setTries((n) => n + 1);
@@ -591,7 +593,7 @@ function AskAccess({ status, email, setEmail, go }: FormProps) {
   return (
     <form onSubmit={submit}>
       <h1>{t("申请试用")}</h1>
-      <p className="auth-sub">{t("LACUNA 目前仅限邀请。留下邮箱，通过后我们把邀请发给你：免费体验 1 小时音频，带一集示例。")}</p>
+      <p className="auth-sub">{t("LACUNA 目前在 beta 阶段，仅限邀请。留下邮箱，通过后我们把邀请发给你：beta 期间免费使用基础版，每月 4 小时音频。")}</p>
       <EmailField email={email} setEmail={setEmail} autoFocus />
       <Field label={t("节目名")} hint={t("可不填")}>
         <span className="auth-input">
@@ -603,9 +605,25 @@ function AskAccess({ status, email, setEmail, go }: FormProps) {
           <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3} data-testid="auth-ask-note" />
         </span>
       </Field>
+      <fieldset className="auth-field auth-tracks" data-testid="auth-ask-tracks">
+        <legend className="auth-label">{t("你的录音")}</legend>
+        {(
+          [
+            ["separate", t("每位主持人一条分轨")],
+            ["mixed", t("所有人混在一条录音里")],
+            ["unsure", t("不确定")],
+          ] as const
+        ).map(([v, label]) => (
+          <label key={v} className="check">
+            <input type="radio" name="tracks" value={v} checked={tracks === v} onChange={() => setTracks(v)} required />
+            {label}
+          </label>
+        ))}
+        <small className="muted">{t("LACUNA 需要每位主持人单独一条录音。Riverside、Zencastr 的分轨下载，或 Zoom 的「为每位参与者单独录制音频」都可以。")}</small>
+      </fieldset>
       <Turnstile siteKey={status.turnstile} onToken={setHuman} nonce={tries} />
       <Err err={err} />
-      <button className="auth-btn" disabled={busy || (!!status.turnstile && !human)}>
+      <button className="auth-btn" disabled={busy || !tracks || (!!status.turnstile && !human)}>
         <BusyLabel busy={busy} label={t("提交申请")} busyLabel={t("提交中…")} />
       </button>
       <p className="auth-foot">

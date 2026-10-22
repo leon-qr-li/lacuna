@@ -24,6 +24,7 @@ from ..auth import COOKIE, RANK, Auth, AuthError, MailError, norm_email
 from ..i18n import lang, speaking, tr
 
 DAY = 86400
+TRACKS = ("separate", "mixed", "unsure")
 PER_IP = 5
 
 
@@ -31,6 +32,7 @@ class RequestBody(BaseModel):
     email: str = Field(max_length=254)
     show: str = Field("", max_length=80)
     note: str = Field("", max_length=500)
+    tracks: str | None = None       # 你的录音: separate / mixed / unsure (new-user batch Q9)
     turnstile: str | None = None
     lang: str | None = None
 
@@ -77,7 +79,8 @@ def register(app, ctx) -> None:
             return
         origin = app.state.invite_origin(request) if hasattr(app.state, "invite_origin") else ""
         with speaking(owner.get("lang") or "zh"):
-            m = notice_mail.access_request(row["email"], row["show"], row["note"], f"{origin.rstrip('/')}/#/settings/members")
+            m = notice_mail.access_request(row["email"], row["show"], row["note"], f"{origin.rstrip('/')}/#/settings/members",
+                                           row.get("tracks"))
         mail(owner["email"], m, "access-request")
 
     def received(row: dict) -> None:
@@ -134,7 +137,8 @@ def register(app, ctx) -> None:
                 return {"ok": True}          # already asked today: the same answer, nothing new
             recent.append(now)
         row = {"email": email, "show": " ".join(body.show.split())[:80], "note": body.note.strip()[:500],
-               "created": now, "lang": body.lang if body.lang in ("zh", "en") else None}
+               "created": now, "lang": body.lang if body.lang in ("zh", "en") else None,
+               "tracks": body.tracks if body.tracks in TRACKS else None}
         rid = "ar_" + secrets.token_hex(6)
         with db.tx() as c:
             c.execute("INSERT INTO access_requests (id, email, created, status, data) VALUES (?,?,?,?,?)",

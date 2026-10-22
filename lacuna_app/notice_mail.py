@@ -110,8 +110,13 @@ def new_device(email: str, device: str, when: str, where: str | None, link: str)
                   tr("安全提醒 · SECURITY"))
 
 
-def access_request(email: str, show: str, note: str, link: str) -> dict:
-    rows = [(tr("邮箱"), email), (tr("节目"), show or "—")] + ([(tr("想用 LACUNA 做什么"), note)] if note else [])
+TRACKS = {"separate": lambda: tr("每位主持人一条分轨"), "mixed": lambda: tr("所有人混在一条录音里"),
+          "unsure": lambda: tr("不确定")}
+
+
+def access_request(email: str, show: str, note: str, link: str, tracks: str | None = None) -> dict:
+    rows = [(tr("邮箱"), email), (tr("节目"), show or "—")] + ([(tr("想用 LACUNA 做什么"), note)] if note else []) + \
+        ([(tr("录音"), TRACKS[tracks]())] if tracks in TRACKS else [])
     return render(tr("新的试用申请：{email}", email=email),
                   tr("有人在登录页申请试用 LACUNA。"), rows, tr("去发邀请"), link,
                   tr("在 设置 → 成员与邀请 → 试用申请 里一键发邀请或忽略。"), tr("试用申请 · REQUEST"))

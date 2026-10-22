@@ -77,6 +77,8 @@ export interface AccessRequest {
   created: number;
   lang: Lang | null;
   status: string;
+  /** what the person said about their recordings: one track per host, mixed, or not sure */
+  tracks?: "separate" | "mixed" | "unsure" | null;
   /** "collab": a show admin's 搭档申请 (新成员需站长批准) for the show `space`, asked by `by` */
   kind?: "collab";
   space?: string;
@@ -96,7 +98,7 @@ export const authApi = {
   status: () => req<AuthStatus>("GET", "/api/auth/status"),
   login: (email: string, password: string, remember: boolean, turnstile: string | null = null) =>
     req<Step>("POST", "/api/auth/login", { email, password, remember, turnstile }),
-  requestAccess: (r: { email: string; show: string; note: string; turnstile: string | null }) =>
+  requestAccess: (r: { email: string; show: string; note: string; tracks?: string; turnstile: string | null }) =>
     req<{ ok: true }>("POST", "/api/access-requests", { ...r, lang: uiLang }),
   accessRequests: () => req<{ requests: AccessRequest[] }>("GET", "/api/access-requests"),
   decideRequest: (id: string, action: "invite" | "dismiss") =>

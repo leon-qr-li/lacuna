@@ -159,8 +159,8 @@ export const en: Dict = {
   "收到了": "Request received",
   "我们会尽快看你的申请。通过后，邀请邮件会发到 {email}，按邮件里的链接设个密码就能开始。":
     "We'll look at it soon. Once approved, an invite goes to {email}: set a password from its link and you're in.",
-  "LACUNA 目前仅限邀请。留下邮箱，通过后我们把邀请发给你：免费体验 1 小时音频，带一集示例。":
-    "LACUNA is invite-only for now. Leave your email and we'll send an invite once approved: a free trial with 1 hour of audio and a sample episode.",
+  "LACUNA 目前在 beta 阶段，仅限邀请。留下邮箱，通过后我们把邀请发给你：beta 期间免费使用基础版，每月 4 小时音频。":
+    "LACUNA is in beta and invite-only. Leave your email; once approved, we'll send you an invite: the Basic plan, free during the beta, with 4 hours of audio a month.",
   "节目名": "Show name",
   "可不填": "optional",
   "想用 LACUNA 做什么": "What would you use LACUNA for",
@@ -215,4 +215,18 @@ export const en: Dict = {
     "Shown to your collaborators and in invite emails",
   "请填你的名字":
     "Please enter your name",
+  "你的录音":
+    "Your recordings",
+  "每位主持人一条分轨":
+    "One track per host",
+  "所有人混在一条录音里":
+    "Everyone mixed in one recording",
+  "不确定":
+    "Not sure",
+  "录音：每位主持人一条分轨":
+    "Recordings: one track per host",
+  "录音：混在一条里（LACUNA 现在用不了，建议先放候补）":
+    "Recordings: mixed in one (LACUNA can't use these yet; consider the waitlist)",
+  "录音：不确定（回信时教 TA 怎么查）":
+    "Recordings: not sure (explain how to check when you reply)",
 };

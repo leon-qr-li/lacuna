@@ -461,6 +461,15 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
                     <span className="muted small">{[a.show, when(a.created)].filter(Boolean).join(" · ")}</span>
                   )}
                   {a.note && <span className="small people-note">{a.note}</span>}
+                  {a.tracks && (
+                    <span className={`small ${a.tracks === "mixed" ? "warn" : "muted"}`} data-testid="request-tracks">
+                      {a.tracks === "separate"
+                        ? t("录音：每位主持人一条分轨")
+                        : a.tracks === "mixed"
+                          ? t("录音：混在一条里（LACUNA 现在用不了，建议先放候补）")
+                          : t("录音：不确定（回信时教 TA 怎么查）")}
+                    </span>
+                  )}
                 </div>
                 <div className="people-actions">
                   <button
