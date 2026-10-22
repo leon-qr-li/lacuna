@@ -26,6 +26,8 @@ export interface MySpace {
   can_delete?: boolean;
   /** you are LACUNA support looking in read-only (the show allowed it, decision 2026-10-21-roles) */
   support?: boolean;
+  /** LACUNA 示例节目: your own practice show, not counted against the plan (lacuna_app/sample.py) */
+  sample?: boolean;
 }
 
 /** 邀请协作: a project's collaborators and the invites waiting for them */
@@ -34,8 +36,13 @@ export interface ProjectPeople {
   name: string;
   members: { email: string; role: SpaceRole }[];
   invites: { id: string; email: string; role: SpaceRole; exp: number }[];
-  /** only LACUNA admins may invite someone without an account */
+  /** this person may send a sign-up link to someone without an account (site admins; show admins once
+   *  「新成员需站长批准」 is off) */
   can_invite_new: boolean;
+  /** 新成员需站长批准 is on: someone without an account becomes a 搭档申请 for the site owner */
+  needs_approval?: boolean;
+  /** 搭档申请 for this show still waiting for the site owner */
+  requests?: { id: string; email: string; role: SpaceRole; created: number }[];
   /** 「允许 LACUNA 支持查看」 is on until then (seconds since 1970), null: off */
   support_until: number | null;
   /** the plan of the account that made the show (its limits apply here) */
@@ -44,6 +51,10 @@ export interface ProjectPeople {
   collaborators: number;
   joined?: string;
   invited?: string;
+  /** a 搭档申请 went to the site owner */
+  requested?: string;
+  /** the site already invited them: they join this show when they sign up */
+  joins_later?: string;
   link?: string;
   mailed?: boolean;
   mail_error?: string | null;

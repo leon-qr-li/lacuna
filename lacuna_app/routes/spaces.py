@@ -29,7 +29,8 @@ from .auth import _cookie
 
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
-GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan")
+GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan",
+          "/api/site/", "/api/onboarding")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
@@ -96,7 +97,7 @@ class _Dispatch:
             return await deny(tr("只有节目管理员能改节目设置。"))
         # whose learned rules and 剪辑力度 apply: the signed-in person's own, in every project (habits.py)
         token = habits.HOME.set(habits.home_for(self.spaces.root, email))
-        who = coedit.EDITOR.set(coedit.editor_for(email))       # whose undo steps and saves (coedit.py)
+        who = coedit.EDITOR.set(coedit.editor_for(email, self.auth.name(email)))       # whose undo steps and saves (coedit.py)
         try:
             if sid == MAIN:
                 return await self.app(scope, receive, send)
@@ -217,6 +218,9 @@ def register(app, ctx) -> None:
             spaces.set_member(sid, email, invite.get("space_role") or "editor")
         else:
             spaces.create(email.split("@")[0], email, named=False)
+        for j in invite.get("also") or []:      # shows whose admins invited them while the link waited
+            if j.get("space") in spaces.spaces and j["space"] != sid:
+                spaces.set_member(j["space"], email, j.get("space_role") or "editor")
 
     auth.on_joined.append(joined)
     auth.on_deleted.append(spaces.forget)
@@ -246,11 +250,13 @@ def register(app, ctx) -> None:
         return (auth.users.get(email or "") or {}).get("plan") or plans.DEFAULT
 
     def room_for(sid: str, newcomer: str) -> None:
-        """A new collaborator fits in the plan of the show's maker (someone already in it always does)."""
+        """A new collaborator fits in the plan of the show's maker (someone already in it always does).
+        Invites still waiting for this show take a seat too."""
         if newcomer in spaces.spaces[sid]["members"]:
             return
+        waiting = {i["email"] for i in auth.list_invites() if i.get("space") == sid and i["email"] != newcomer}
         try:
-            plans.check_collaborators(plan_of(spaces.creator(sid)), spaces.collaborators(sid))
+            plans.check_collaborators(plan_of(spaces.creator(sid)), spaces.collaborators(sid) + len(waiting))
         except plans.PlanLimit as e:
             raise HTTPException(403, str(e))
 
@@ -330,6 +336,8 @@ def register(app, ctx) -> None:
         email = me(request)
         may_manage(email, sid)
         live(sid)
+        if spaces.sample(sid):
+            raise HTTPException(403, tr("示例节目只给你自己练手，不能邀请别人"))
         target = body.email.strip().lower()
         if body.role is not None and target not in auth.users:
             raise HTTPException(404, tr("没有这个账号：先在「成员与邀请」里邀请对方"))
@@ -351,7 +359,14 @@ def register(app, ctx) -> None:
                 "can_invite_new": False}
 
     def people_for(email: str, sid: str) -> dict:
-        return people(sid) | {"can_invite_new": site_admin(email)}
+        approval = getattr(app.state, "owner_approval", lambda: True)()
+        return people(sid) | {"can_invite_new": site_admin(email) or not approval, "needs_approval": approval and not site_admin(email),
+                              "requests": collab_asks(sid)}
+
+    def collab_asks(sid: str) -> list[dict]:
+        """搭档申请 for this show still waiting for the site owner."""
+        fn = getattr(app.state, "collab_requests_of", None)
+        return fn(sid) if fn else []
 
     @app.get("/api/spaces/{sid}/people")
     def list_people(sid: str, request: Request):
@@ -375,6 +390,8 @@ def register(app, ctx) -> None:
         email = me(request)
         may_manage(email, sid)
         live(sid)
+        if spaces.sample(sid):
+            raise HTTPException(403, tr("示例节目只给你自己练手，不能邀请别人"))
         target = body.email.strip().lower()
         role = body.role or "editor"
         if role not in SPACE_RANK:
@@ -384,15 +401,30 @@ def register(app, ctx) -> None:
             room_for(sid, target)
             run(lambda: spaces.set_member(sid, target, role, by=email))
             out = {"joined": target}
-        elif site_admin(email):
-            sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request), {"space": sid, "space_role": role, "space_name": spaces.title(sid)}, body.lang))
-            grant = getattr(app.state, "grant_access", None)       # routes/auth.py: Cloudflare Access list
-            if grant:
-                grant(sent["email"], True)
-            out = {"invited": sent["email"], "link": sent["link"], "mailed": sent["mailed"],
-                   "mail_error": sent["mail_error"]}
         else:
-            raise HTTPException(403, tr("这个邮箱还没有 LACUNA 账号。现在只有 LACUNA 管理员能邀请新人注册。"))
+            room_for(sid, target)
+            approval = getattr(app.state, "owner_approval", lambda: True)()      # routes/new_members.py
+            waiting = any(i["email"] == target for i in auth.list_invites())
+            if site_admin(email) or not approval:
+                sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request),
+                                               {"space": sid, "space_role": role, "space_name": spaces.title(sid)},
+                                               body.lang, by_member=True))
+                grant = getattr(app.state, "grant_access", None)       # routes/auth.py: Cloudflare Access list
+                if grant:
+                    grant(sent["email"], True)
+                out = {"invited": sent["email"], "link": sent["link"], "mailed": sent["mailed"],
+                       "mail_error": sent["mail_error"]}
+            elif waiting:
+                # the site already invited them: they join this show too when they sign up
+                auth.add_join(target, sid, role)
+                out = {"joins_later": target}
+            else:
+                # beta (新成员需站长批准): a 搭档申请 for the site owner, who sends the invite (routes/auth_requests.py)
+                ask = getattr(app.state, "collab_request", None)
+                if ask is None:
+                    raise HTTPException(403, tr("这个邮箱还没有 LACUNA 账号。现在只有 LACUNA 管理员能邀请新人注册。"))
+                ask(email, target, sid, role, body.lang, request)
+                out = {"requested": target}
         return people_for(email, sid) | out
 
     @app.delete("/api/spaces/{sid}/invites/{iid}")

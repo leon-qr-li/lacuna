@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Asset, Kind, MusicView as Music, Placement, PlacementPatch, Role } from "./api";
+import { markStep } from "../onboarding/api";
 import { fmt, parseTime } from "../../api";
 import { CREDIT_LABEL } from "./LibraryView";
 import { libraryApi } from "./api";
@@ -458,6 +459,7 @@ function MusicStrip({ m, now, previewing, onListen, onSeek }: {
 export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => void }) {
   const [m, setM] = useState<Music | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [libraryEmpty, setLibraryEmpty] = useState(false);
   const [kindRoles, setKindRoles] = useState<Partial<Record<Kind, Role>>>({});
   const [kinds, setKinds] = useState<Record<string, string>>({});
   const [picked, setPicked] = useState<string | undefined>(); // the file just added on this page
@@ -481,10 +483,18 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
         setKinds(lib.kinds);
         setKindRoles(lib.kind_roles);
         setAlbumName(lib.albums.find((a) => a.id === lib.album)?.name ?? null);
+        // the empty-state card is for a library with nothing at all, not one whose files belong elsewhere
+        if (!lib.assets.length) libraryApi.library().then((all) => setLibraryEmpty(!all.assets.length), () => setLibraryEmpty(false));
+        else setLibraryEmpty(false);
       })
       .catch((e) => setErr(String(e.message ?? e)));
   }, [id]);
   useEffect(load, [load]);
+  // 入门: 加片头和片尾音乐 is done once this episode has both
+  const hasEnds = !!m && m.placements.some((p) => p.role === "intro") && m.placements.some((p) => p.role === "outro");
+  useEffect(() => {
+    if (hasEnds) markStep("music");
+  }, [hasEnds]);
 
   const run = async (p: Promise<Music>, done?: string): Promise<boolean> => {
     try {
@@ -564,6 +574,25 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
 
   if (err) return <p className="error pad">{err}</p>;
   if (!m) return <PageLoading label={t("正在打开配乐…")} />;
+  // nothing to place yet (a new user's empty library): start with adding music, not a dead-end button
+  const empty = libraryEmpty && assets.length === 0 && m.placements.length === 0;
+  const upload = (
+    <EpisodeUpload
+      id={id}
+      kinds={kinds}
+      onAdded={(text, asset) => {
+        setMsg(text);
+        libraryApi
+          .library(id)
+          .then((lib) => {
+            setAssets(lib.assets);
+            setLibraryEmpty(false);
+            if (asset) setPicked(asset.id);
+          })
+          .catch((e) => setErr(String(e.message ?? e)));
+      }}
+    />
+  );
   return (
     <main className="home music">
       <header className="music-hero">
@@ -576,13 +605,22 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             <span className="music-hero-sep">·</span>{t("时间都按成品算；歌都整首放完，有人说话时压低当背景")}
           </p>
         </div>
-        <div className="music-auto">
-          <button type="button" className="btn btn-grad" onClick={() => void run(libraryApi.autoPlace(id))}>
-            {t("按用途自动放好")}
-          </button>
-          <span className="small muted">{t("片头片尾直接放，间奏放在话题之间的停顿。先给建议，试听后再采用。")}</span>
-        </div>
+        {!empty && (
+          <div className="music-auto">
+            <button type="button" className="btn btn-grad" onClick={() => void run(libraryApi.autoPlace(id))}>
+              {t("按用途自动放好")}
+            </button>
+            <span className="small muted">{t("片头片尾直接放，间奏放在话题之间的停顿。先给建议，试听后再采用。")}</span>
+          </div>
+        )}
       </header>
+      {empty && (
+        <section className="card music-empty" data-testid="music-empty">
+          <h2>{t("先加片头和片尾音乐")}</h2>
+          <p className="muted small">{t("素材库还是空的。从电脑添加音乐文件后，就能把它放进这一集。请只用你有权使用的音乐。")}</p>
+          {upload}
+        </section>
+      )}
       {msg && <p className="small note-line" data-testid="music-msg">{msg}</p>}
       {m.draft && (
         <DraftCard
@@ -682,23 +720,14 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
           />
         ))}
       </ul>
-      {m.placements.length === 0 && <p className="muted">{t("这一集还没有配乐。")}</p>}
-      <MusicChatBox onSend={(text) => run(libraryApi.musicChat(id, text))} />
-      <AddPlacement assets={assets} albumName={albumName} kindRoles={kindRoles} pick={picked} onAdd={(body) => run(libraryApi.addPlacement(id, body), t("已放进去，可以点「试听这一处」"))} />
-      <EpisodeUpload
-        id={id}
-        kinds={kinds}
-        onAdded={(text, asset) => {
-          setMsg(text);
-          libraryApi
-            .library(id)
-            .then((lib) => {
-              setAssets(lib.assets);
-              if (asset) setPicked(asset.id);
-            })
-            .catch((e) => setErr(String(e.message ?? e)));
-        }}
-      />
+      {!empty && (
+        <>
+          {m.placements.length === 0 && <p className="muted">{t("这一集还没有配乐。")}</p>}
+          <MusicChatBox onSend={(text) => run(libraryApi.musicChat(id, text))} />
+          <AddPlacement assets={assets} albumName={albumName} kindRoles={kindRoles} pick={picked} onAdd={(body) => run(libraryApi.addPlacement(id, body), t("已放进去，可以点「试听这一处」"))} />
+          {upload}
+        </>
+      )}
       {m.placements.some((p) => p.role === "intro" || p.role === "outro") && (
         <div className="row gap8 wrap" data-testid="save-defaults">
           {albumName && (

@@ -20,13 +20,10 @@ test("本集学到的规则: summary with evidence → adopt / edit / tell LACUN
   await page.getByTestId("proposal").getByRole("button", { name: "批准" }).click(); // a review decision too
   await expect(page.getByText(/已批准并应用/)).toBeVisible();
 
-  // the step sits between 整集试听 and 配乐
+  // not a step of the flow (Q8A): reached from 整集试听 by its link
   const steps = page.getByRole("navigation", { name: "制作流程" }).getByRole("link");
-  const names = await steps.allInnerTexts();
-  const at = (s: string) => names.findIndex((n) => n.includes(s));
-  expect(at("整集试听")).toBeLessThan(at("本集学到的规则"));
-  expect(at("本集学到的规则")).toBeLessThan(at("配乐"));
-  await steps.filter({ hasText: "本集学到的规则" }).click();
+  await expect(steps.filter({ hasText: "本集学到的规则" })).toHaveCount(0);
+  await page.getByTestId("lessons-link").click();
   await expect(page).toHaveURL(/\/lessons$/);
   const lessonsUrl = page.url();
 

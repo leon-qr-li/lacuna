@@ -7,7 +7,7 @@ from http.cookies import SimpleCookie
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import threading
 import time
@@ -71,6 +71,11 @@ class RegisterBody(BaseModel):
     setup_code: str | None = None   # first account in the cloud
     invite: str | None = None       # everyone else
     remember: bool = True
+    name: str = ""                  # what others see (the interface asks for it; new-user batch Q12)
+
+
+class NameBody(BaseModel):
+    name: str = Field(max_length=200)
 
 
 class CodeBody(BaseModel):
@@ -260,14 +265,25 @@ def register(app, ctx) -> None:
     @app.post("/api/auth/invite")
     def invite_info(body: InviteToken):
         i = run(lambda: auth.invite_info(body.token))
-        return {"email": i["email"], "role": i["role"], "by": i["by"], "exp": i["exp"], "lang": i.get("lang")}
+        return {"email": i["email"], "role": i["role"], "by": i["by"], "by_name": auth.name(i["by"]), "exp": i["exp"],
+                "lang": i.get("lang")}
 
     @app.post("/api/auth/register")
     def register_(body: RegisterBody, request: Request):
         if body.invite:
-            return finish(run(lambda: auth.register_invite(body.invite, body.password, body.remember, agent(request))), request)
+            return finish(run(lambda: auth.register_invite(body.invite, body.password, body.remember, agent(request),
+                                                           name=body.name)), request)
         return finish(run(lambda: auth.register_first(body.email or "", body.password, body.setup_code, body.remember,
-                                                      agent(request), proven=owner(request))), request)
+                                                      agent(request), proven=owner(request), name=body.name)), request)
+
+    @app.post("/api/auth/name")
+    def set_name(body: NameBody, request: Request):
+        """The signed-in person's name (设置 → 账号, or once for accounts made before it was asked)."""
+        email = auth.who(request.cookies.get(COOKIE))
+        if not email:
+            raise HTTPException(401, tr("请先登录"))
+        run(lambda: auth.set_name(email, body.name))
+        return {"name": auth.name(email)}
 
     @app.post("/api/auth/code")
     def code(body: CodeBody):

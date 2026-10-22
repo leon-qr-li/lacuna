@@ -6,6 +6,7 @@ import { spacesApi, type SpaceInfo } from "../spaces/api";
 import { BusyLabel } from "../loading/Loading";
 import { t } from "../../i18n";
 import { InviteForm } from "./InviteForm";
+import { NewMembersSwitch } from "./NewMembers";
 import "./auth.css";
 
 const KEY_SOURCE: Record<string, string> = {
@@ -96,6 +97,43 @@ export function AccountCard() {
   );
 }
 
+/** 你的名字: what collaborators and invite emails show (new-user batch Q12). */
+function NameRow({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
+  const [name, setName] = useState(st.name ?? "");
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const save = () =>
+    authApi.setName(name).then(
+      (r) => {
+        setSt({ ...st, name: r.name });
+        setSaved(true);
+        setErr(null);
+      },
+      (e) => setErr(String((e as Error).message)),
+    );
+  return (
+    <div className="account-row" data-testid="account-name">
+      <label className="grow">
+        <span className="small muted">{t("你的名字")}</span>
+        <input
+          value={name}
+          maxLength={40}
+          onChange={(e) => {
+            setName(e.target.value);
+            setSaved(false);
+          }}
+          placeholder={t("搭档和邀请邮件里会显示这个名字")}
+        />
+      </label>
+      <button type="button" className="btn btn-outline btn-small" disabled={!name.trim() || name.trim() === (st.name ?? "")} onClick={() => void save()}>
+        {t("保存")}
+      </button>
+      {saved && <span className="ok small">{t("已保存")}</span>}
+      {err && <span className="error small">{err}</span>}
+    </div>
+  );
+}
+
 export function SecurityCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void }) {
   const { busy, msg, act } = useAct();
   return (
@@ -118,6 +156,7 @@ export function SecurityCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthSta
       <p className="muted small" data-testid="account-email">
         {t("已登录：{email}", { email: st.email })} · <span data-testid="account-role">{ROLE[st.role!]}</span>
       </p>
+      <NameRow st={st} setSt={setSt} />
       <TwoStepRow st={st} setSt={setSt} />
       <PasswordRow />
       <Devices />
@@ -405,6 +444,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
         </div>
       )}
 
+      {role === "owner" && <NewMembersSwitch />}
       {asks.length > 0 && (
         <>
           <h3>{t("试用申请")}</h3>
@@ -413,8 +453,23 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
               <li key={a.id}>
                 <div className="people-who">
                   <strong>{a.email}</strong>
-                  <span className="muted small">{[a.show, when(a.created)].filter(Boolean).join(" · ")}</span>
+                  {a.kind === "collab" ? (
+                    <span className="muted small" data-testid="collab-request">
+                      {t("搭档申请：{by} 邀请 TA 加入「{show}」", { by: a.by ?? "", show: a.show })} · {when(a.created)}
+                    </span>
+                  ) : (
+                    <span className="muted small">{[a.show, when(a.created)].filter(Boolean).join(" · ")}</span>
+                  )}
                   {a.note && <span className="small people-note">{a.note}</span>}
+                  {a.tracks && (
+                    <span className={`small ${a.tracks === "mixed" ? "warn" : "muted"}`} data-testid="request-tracks">
+                      {a.tracks === "separate"
+                        ? t("录音：每位主持人一条分轨")
+                        : a.tracks === "mixed"
+                          ? t("录音：混在一条里（LACUNA 现在用不了，建议先放候补）")
+                          : t("录音：不确定（回信时教 TA 怎么查）")}
+                    </span>
+                  )}
                 </div>
                 <div className="people-actions">
                   <button
@@ -429,7 +484,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
                       })
                     }
                   >
-                    {t("发邀请")}
+                    {a.kind === "collab" ? t("批准并发邀请") : t("发邀请")}
                   </button>
                   <button className="btn btn-outline btn-small" disabled={!!busy} onClick={() => act("ask", async () => setAsks((await authApi.decideRequest(a.id, "dismiss")).requests))}>
                     {t("忽略")}

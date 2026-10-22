@@ -15,6 +15,18 @@ export const LANGUAGE_LABELS: Record<Language, string> = {
   en: t("英文"),
 };
 
+/** podcast platforms a show can publish on (lacuna_app/show.py PLATFORMS) */
+export type Platform = "apple" | "spotify" | "youtube" | "ximalaya" | "xiaoyuzhou" | "other";
+export const PLATFORMS: Platform[] = ["apple", "spotify", "youtube", "ximalaya", "xiaoyuzhou", "other"];
+export const PLATFORM_LABELS: Record<Platform, string> = {
+  apple: "Apple Podcasts",
+  spotify: "Spotify",
+  youtube: "YouTube",
+  ximalaya: t("喜马拉雅"),
+  xiaoyuzhou: t("小宇宙"),
+  other: t("其他平台"),
+};
+
 export interface Host {
   /** one letter, given by the server; never changes (empty for a host not saved yet) */
   tag: string;
@@ -30,7 +42,8 @@ export interface Show {
   language: Language;
   footer: string;
   hosts: Host[];
-  publish: { ximalaya: boolean; album: string };
+  /** `platforms`: where the show is published (picks the 发布 step's hints and tabs; the export suits any platform) */
+  publish: { ximalaya: boolean; album: string; platforms?: Platform[] };
   /** 专有名词 of this project: hints for the transcript's proofreading (lacuna_app/transcript_fix.py) */
   terms?: string[];
   legacy: boolean;

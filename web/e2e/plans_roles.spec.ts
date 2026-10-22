@@ -33,6 +33,7 @@ test("申请试用 → the owner's email and list → invite with a plan; 套餐
   await guest.getByTestId("auth-email").fill("ava@example.com");
   await guest.getByTestId("auth-ask-show").fill("夜航电台");
   await guest.getByTestId("auth-ask-note").fill("two hosts, weekly");
+  await guest.getByTestId("auth-ask-tracks").getByLabel("每位主持人一条分轨").check();
   if (SHOTS) await guest.screenshot({ path: `${SHOTS}/ask.png`, fullPage: true });
   await guest.getByRole("button", { name: "提交申请" }).click();
   await expect(guest.getByTestId("auth-asked")).toContainText("ava@example.com");
@@ -86,6 +87,7 @@ test("申请试用 → the owner's email and list → invite with a plan; 套餐
   // Tia signs up from the link: her plan is the trial, with no collaborators
   const tia = await (await browser.newContext()).newPage();
   await tia.goto(link);
+  await tia.getByTestId("auth-name").fill("Tia");
   await tia.getByTestId("auth-password").fill(PW);
   await tia.getByTestId("auth-password2").fill(PW);
   await tia.getByRole("button", { name: "创建账号" }).click();

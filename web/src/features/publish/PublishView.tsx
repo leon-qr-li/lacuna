@@ -6,6 +6,7 @@ import { fmtDateTime, joinList, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 import { confirmDialog, noticeDialog } from "../dialog/Dialog";
 import type { RequestError } from "../../api";
+import { useShow } from "../show/api";
 
 /** 发布资料: title, one-line blurb, show notes (Markdown, approved D40 format), chapters and the
  *  names to check, all for the version of the cut that will be published. */
@@ -18,6 +19,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const [mine, setMine] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const timer = useRef<number | null>(null);
+  const show = useShow();
   const shown = useRef<string | null>(id); // the episode on screen; null once the page is gone
 
   // one polling chain at most, and none after the page is left or another episode is opened
@@ -114,7 +116,9 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
         <div>
           <h1>{t("发布资料")}</h1>
           <p className="muted small">
-            {t("标题、简介、show notes 和章节，按现在这版剪辑的成品时间。喜马拉雅是唯一发布源，小宇宙会自动同步。")}
+            {show?.publish.ximalaya
+              ? t("标题、简介、show notes 和章节，按现在这版剪辑的成品时间。喜马拉雅是唯一发布源，小宇宙会自动同步。")
+              : t("标题、简介、show notes 和章节，按现在这版剪辑的成品时间。和导出的音频一起上传到你的播客托管平台，Apple Podcasts、Spotify 等会通过 RSS 自动同步。")}
           </p>
         </div>
         <span className="grow" />
@@ -126,7 +130,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
       {!pack && !running && (
         <p className="card">
           {claude
-            ? t("LACUNA 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。")
+            ? t("LACUNA 会读这一集剪完后的文字稿，写标题、简介和 show notes，大约 1–2 分钟。")
             : t("还没接上 AI（{p0}），只能生成按时间切的草稿。", { p0: view.editor_note || t("没找到 AI 密钥") })}
         </p>
       )}

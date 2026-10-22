@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import type { ExportJob } from "../api";
+import { markStep } from "../features/onboarding/api";
 import { api } from "../api";
 import { t } from "../i18n";
 import { BusyLabel, JobProgress } from "../features/loading/Loading";
+import { useCloud } from "../features/auth/cloud";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
 /** Master the current version to MP3/WAV and show the result: the 导出 step page (`inline`), or a button + popover. */
-export function ExportPanel({ id, version, inline = false }: { id: string; version: string; inline?: boolean }) {
+export function ExportPanel({ id, version, inline = false, pending = 0 }: { id: string; version: string; inline?: boolean; pending?: number }) {
+  const cloud = useCloud();
   const [popOpen, setOpen] = useState(false);
   const open = inline || popOpen;
   const [job, setJob] = useState<ExportJob | null>(null);
@@ -77,6 +80,13 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
               <input type="checkbox" checked={wav} onChange={(e) => setWav(e.target.checked)} disabled={running} /> {t("WAV（上传平台用，音质最好）")}
             </label>
           </div>
+          {/* G5: a quiet line, never a block */}
+          {pending > 0 && (
+            <p className="muted small" data-testid="export-pending">
+              {t("还有 {n} 处改动没过目，导出会按现在的样子。", { n: pending })}{" "}
+              <a href={`#/ep/${encodeURIComponent(id)}/review`}>{t("去审阅")}</a>
+            </p>
+          )}
           <button type="button" className="btn btn-primary" onClick={start} disabled={running || (!mp3 && !wav)} data-testid="export-start">
             <BusyLabel busy={running} label={job ? t("重新导出") : t("开始导出")} busyLabel={t("导出中…")} />
           </button>
@@ -95,6 +105,25 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
           {job?.state === "done" && job.result && (
             <div className="export-result" data-testid="export-result">
               {stale && <p className="small warn">{t("这是之前版本的导出，之后又有改动；要最新版请重新导出。")}</p>}
+              <ul className="export-files row gap8 wrap">
+                {Object.entries(job.result.files).map(([fmt, name]) => (
+                  <li key={fmt}>
+                    <a
+                      className="btn btn-primary"
+                      href={`/api/episodes/${encodeURIComponent(id)}/exports/${encodeURIComponent(name)}`}
+                      download
+                      title={name}
+                      data-testid={`export-download-${fmt}`}
+                      onClick={() => markStep("export")}
+                    >
+                      {t("下载 {format}", { format: fmt.toUpperCase() })}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted small">{t("已按播客平台的响度标准处理，可以直接上传到任何播客平台。")}</p>
+              <details className="small">
+                <summary>{t("技术细节")}</summary>
               <dl className="small">
                 <dt>{t("响度")}</dt>
                 <dd>{t("{out}（原始 {in}）", { out: num(rep?.output_lufs, "LUFS"), in: num(rep?.input_lufs, "LUFS") })}</dd>
@@ -112,23 +141,17 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
                   })}
                 </dd>
               </dl>
-              <ul className="export-files">
-                {Object.entries(job.result.files).map(([fmt, name]) => (
-                  <li key={fmt}>
-                    <a href={`/api/episodes/${encodeURIComponent(id)}/exports/${encodeURIComponent(name)}`} download>
-                      {name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              </details>
               {Object.entries(job.result.errors).map(([fmt, msg]) => (
                 <p key={fmt} className="error small">
                   {fmt.toUpperCase()}：{msg}
                 </p>
               ))}
-              <button type="button" className="btn btn-outline btn-small" onClick={() => api.openExports(id).catch(() => {})}>
-                {t("打开导出文件夹")}
-              </button>
+              {cloud === false && (
+                <button type="button" className="btn btn-outline btn-small" onClick={() => api.openExports(id).catch(() => {})}>
+                  {t("打开导出文件夹")}
+                </button>
+              )}
             </div>
           )}
         </div>

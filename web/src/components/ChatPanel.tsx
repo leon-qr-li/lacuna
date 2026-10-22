@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { markStep } from "../features/onboarding/api";
 import { GrowText } from "./GrowText";
 import type { AB, Episode, Health, Proposal, Usage } from "../api";
 import { api, fmt } from "../api";
@@ -106,6 +107,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, 
         remember: (r as RememberReply).remember,
       });
       onEpisode(await api.episode(ep.id));
+      markStep("chat");
     } catch (err) {
       push({ role: "ai", text: t("出错了：{message}", { message: (err as Error).message }) });
     } finally {

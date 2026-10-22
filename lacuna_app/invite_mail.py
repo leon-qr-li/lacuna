@@ -1,6 +1,7 @@
-"""The invite email, design A 「夜航信笺」 (Leon 2026-10-20): a night-sky header with the glowing logo and the
-sunset line, then a white letter with who invites you, the six steps of an episode (copy A 「六步流程」, 2026-10-21), to which project and as what, a gradient 接受邀请 button,
-the 7-day note, the plain link and the slogan. Table layout with inline styles so Gmail, Outlook and phone mail
+"""The invite email, design A 「夜航信笺」 (Leon 2026-10-20), compact with the plan card (Leon 2026-10-22: what
+the beta gives at the very top, short enough not to scroll): a short night-sky header with the logo, the title and
+who sent it, the plan card (or the show they join), the six steps as short titles, a gradient 接受邀请 button,
+the authenticator and 7-day note, the plain link and the slogan. Table layout with inline styles so Gmail, Outlook and phone mail
 apps show it alike; the logo goes along as an inline image (cid:), never as a link to the site, which sits
 behind sign-in. Chinese or English (``speaking``), as the inviter picked; the plain-text part says the same."""
 from __future__ import annotations
@@ -167,10 +168,51 @@ def steps() -> list[tuple[str, str]]:
             (tr("导出发布"), tr("导出成品音频，带上整套发布资料去上线"))]
 
 
-def render(inviter: str, link: str, project: str | None = None, role: str | None = None) -> dict:
-    """{"subject", "text", "html", "preheader"} in the current ``tr`` language. `project`: the project the
-    invite joins (None: the new account gets a project of its own); `role`: their role there."""
-    who = who_of(inviter)
+PLAN_LINES = {
+    # the plan card (Leon 2026-10-22, design A 套餐卡): what the new account gets, at the very top
+    "trial": (lambda: tr("免费体验 · 1 小时音频"), lambda: tr("一次性试用 · 所有功能都能用")),
+    "basic": (lambda: tr("基础版 · 每月 4 小时音频"), lambda: tr("所有功能都能用 · 额度每月重置")),
+    "pro": (lambda: tr("专业版 · 每月 12 小时音频"), lambda: tr("所有功能都能用 · 额度每月重置")),
+}
+
+
+@lru_cache(maxsize=32)
+def compact_header_png(title: str, kicker: str, sub: str) -> bytes | None:
+    """The invite's short dark band as one picture (2x): logo + wordmark with the kicker on the right, the
+    sunset rule, the title and who sent it. Same reason as ``header_png``; None falls back to HTML."""
+    fonts = _cjk_fonts()
+    if not fonts:
+        return None
+    e = html.escape
+    pad, size, lh = 40, 24, 32
+    lines = _wrap(title, size, HEAD_W - 2 * pad)
+    t0 = 24 + 30 + 18 + 2 + 16
+    h = t0 + lh * len(lines) + 4 + 20 + 24
+    logo = LOGO_SVG.replace('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">',
+                            f'<svg x="{pad}" y="24" width="30" height="30" viewBox="0 0 64 64">')
+    title_svg = "".join(f'<text x="{pad}" y="{t0 + lh * i + 24}" font-size="{size}" font-weight="700" fill="#ffffff">{e(l)}</text>'
+                        for i, l in enumerate(lines))
+    sub_y = t0 + lh * len(lines) + 18
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{HEAD_W}" height="{h}" viewBox="0 0 {HEAD_W} {h}" font-family="Inter, Noto Sans CJK SC">
+<defs><radialGradient id="hbg" cx="{HEAD_W * 0.85}" cy="0" r="{HEAD_W * 1.2}" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#2a1f5c"/><stop offset="0.55" stop-color="#0b0e26"/><stop offset="1" stop-color="#0b0e26"/></radialGradient>
+<linearGradient id="hrule" x1="0" x2="1"><stop offset="0" stop-color="#FFC24B"/><stop offset="0.4" stop-color="#FF7A3D"/>
+<stop offset="0.75" stop-color="#FF4F7B"/><stop offset="1" stop-color="#A35CFF"/></linearGradient></defs>
+<rect width="{HEAD_W}" height="{h}" fill="url(#hbg)"/>{logo}
+<text x="{pad + 40}" y="44" font-size="13" letter-spacing="3" fill="#ffffff"><tspan font-weight="700">LACUNA</tspan><tspan fill="#9aa0c8"> STUDIO</tspan></text>
+<text x="{HEAD_W - pad}" y="44" text-anchor="end" font-size="11" font-weight="600" letter-spacing="2.5" fill="#ffb48c">{e(kicker)}</text>
+<rect x="{pad}" y="72" width="{HEAD_W - 2 * pad}" height="2" rx="1" fill="url(#hrule)"/>
+{title_svg}<text x="{pad}" y="{sub_y}" font-size="13" fill="#9aa0c8">{e(sub)}</text></svg>"""
+    return _png(svg, HEAD_W, h, fonts)
+
+
+def render(inviter: str, link: str, project: str | None = None, role: str | None = None,
+           plan: str | None = None, beta: bool = False, inviter_name: str | None = None) -> dict:
+    """{"subject", "text", "html", "inline"} in the current ``tr`` language, compact design A (Leon 2026-10-22:
+    the plan at the very top, no scrolling). `project`: the show the invite joins (None: the new account gets a
+    show of its own and the plan card says what it includes); `role`: their role there; `beta`: the site is in
+    beta (新成员需站长批准 on); `inviter_name`: the name the inviter gave, else the part before @."""
+    who = (inviter_name or "").strip() or who_of(inviter)
     role_label = space_role_label(role) if project else ""
     if project:
         subject = tr("{who} 邀请你加入「{project}」", who=who, project=project)
@@ -178,63 +220,67 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
     else:
         subject = tr("{who} 邀请你使用 LACUNA", who=who)
         lead = tr("你会有一个自己的节目。")
-    about = tr("LACUNA Studio 是一间完整的播客工作室，一期节目从导入录音到发布上线，每一步都在这里完成：")
+    about = tr("从导入录音到发布上线，一期节目的每一步都在 LACUNA 完成：")
     flow = steps()
-    rows = ([(tr("节目"), project)] if project else []) + ([(tr("你的角色"), role_label)] if role_label else []) + \
-        [(tr("邀请人"), inviter)]
+    if project:
+        card_kicker = tr("你将加入的节目")
+        card_title = f"{project} · {role_label}" if role_label else project
+        card_sub = tr("用节目主人的套餐和额度，你不用另外付费")
+    else:
+        line, sub = PLAN_LINES.get(plan or "basic", PLAN_LINES["basic"])
+        card_kicker = tr("你的 BETA 套餐") if beta else tr("你的套餐")
+        card_title = line()
+        card_sub = (tr("beta 期间免费") + " · " + sub()) if beta else sub()
     button = tr("接受邀请")
-    valid = tr("链接 7 天内有效，只能使用一次。")
-    fallback = tr("按钮打不开？把这个链接复制到浏览器：")
-    ignore = tr("如果你不认识邀请人，忽略这封邮件即可，不会为你创建任何账号。")
-    kicker = tr("邀请函 · INVITATION")
+    note = tr("注册时需要手机上的验证器 App（如 Google Authenticator）。链接 7 天内有效，只能用一次。")
+    fallback = tr("按钮打不开？复制链接：")
+    ignore = tr("不认识邀请人？忽略这封邮件即可，不会创建账号。")
+    kicker = tr("BETA 邀请函") if beta else tr("邀请函 · INVITATION")
+    by = tr("邀请人 {email}", email=inviter)
     colon = tr("：")
-    text = "\n\n".join([subject, lead + about, "\n".join(f"{i}. {h}{colon}{d}" for i, (h, d) in enumerate(flow, 1)), "\n".join(f"{k}{colon}{v}" for k, v in rows),
-                        tr("{button}（{valid}）", button=button, valid=valid) + "\n" + link, ignore, "Mind the gaps. Keep the voice.\nLACUNA Studio · lacunastudio.app"])
+    text = "\n\n".join([subject, by, f"{card_kicker}{colon}{card_title}\n{card_sub}", lead + about,
+                        "\n".join(f"{i}. {h}{colon}{d}" for i, (h, d) in enumerate(flow, 1)),
+                        f"{button}\n{link}", note, ignore, "Mind the gaps. Keep the voice.\nLACUNA Studio · lacunastudio.app"])
     e = html.escape
-    title = e(subject).replace("「", "<br>「", 1) if project else e(subject)
-    # the dark band and the button as pictures: Gmail's dark mode on phones turns their white text dark
-    head = header_png(subject.replace("「", "\n「", 1) if project else subject, kicker)
+    head = compact_header_png(subject, kicker, by)
     btn = button_png(button)
     inline = ([{"filename": "header.png", "content": head, "content_id": HEAD_CID}] if head else []) + \
         ([{"filename": "button.png", "content": btn[0], "content_id": BUTTON_CID}] if btn else [])
-    row_html = "".join(
-        f'<tr><td style="padding:12px 0;border-top:1px solid #ececf3;font:14px {SANS};color:#8a8da6;width:110px">{e(k)}</td>'
-        f'<td style="padding:12px 0;border-top:1px solid #ececf3;font:600 14px {SANS};color:#14162e;word-break:break-all">{e(v)}</td></tr>'
-        for k, v in rows)
-    steps_html = "".join(
-        f'<tr><td valign="top" style="padding:9px 14px 9px 0;width:26px"><div style="width:24px;height:24px;border-radius:12px;background:#fff1ea;font:700 12px/24px {SANS};color:#c2410c;text-align:center">{i}</div></td>'
-        f'<td style="padding:9px 0;font:15px/1.6 {SANS};color:#3a3d55"><b style="color:#14162e">{e(h)}</b><br><span style="color:#6b6e88">{e(d)}</span></td></tr>'
-        for i, (h, d) in enumerate(flow, 1))
-    logo = (f'<td><img src="cid:{LOGO_CID}" width="40" height="40" alt="LACUNA" style="display:block;border-radius:10px"></td>'
+    logo = (f'<td><img src="cid:{LOGO_CID}" width="30" height="30" alt="LACUNA" style="display:block;border-radius:8px"></td>'
             if logo_png() else "")
     header = (f'<tr><td style="padding:0;background:#0b0e26;line-height:0"><img src="cid:{HEAD_CID}" width="600" alt="{e(subject)}" '
-              f'style="display:block;width:100%;height:auto;border:0"></td></tr>') if head else f"""<tr><td class="pad" style="background:#0b0e26;background-image:radial-gradient(120% 140% at 85% 0%,#2a1f5c 0%,#0b0e26 55%);padding:36px 48px 32px">
- <table role="presentation" cellpadding="0" cellspacing="0"><tr>{logo}
- <td style="padding-left:{12 if logo else 0}px;font:700 15px {SANS};letter-spacing:3px;color:#ffffff">LACUNA <span style="font-weight:400;color:#9aa0c8">STUDIO</span></td></tr></table>
- <div style="height:2px;margin-top:28px;background:#FF7A3D;background-image:linear-gradient(90deg,#FFC24B 0%,#FF7A3D 40%,#FF4F7B 75%,#A35CFF 100%);border-radius:2px"></div>
- <div style="margin-top:28px;font:600 12px {SANS};letter-spacing:3px;color:#ffb48c">{e(kicker)}</div>
- <div class="h1" style="margin-top:10px;font:700 28px/1.35 {SANS};color:#ffffff">{title}</div>
+              f'style="display:block;width:100%;height:auto;border:0"></td></tr>') if head else f"""<tr><td class="pad" style="background:#0b0e26;background-image:radial-gradient(120% 140% at 85% 0%,#2a1f5c 0%,#0b0e26 55%);padding:24px 40px">
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td><table role="presentation" cellpadding="0" cellspacing="0"><tr>{logo}
+ <td style="padding-left:{10 if logo else 0}px;font:700 13px {SANS};letter-spacing:3px;color:#ffffff">LACUNA <span style="font-weight:400;color:#9aa0c8">STUDIO</span></td></tr></table></td>
+ <td align="right" style="font:600 11px {SANS};letter-spacing:2.5px;color:#ffb48c">{e(kicker)}</td></tr></table>
+ <div style="height:2px;margin-top:18px;background:#FF7A3D;background-image:linear-gradient(90deg,#FFC24B 0%,#FF7A3D 40%,#FF4F7B 75%,#A35CFF 100%);border-radius:2px"></div>
+ <div class="h1" style="margin-top:16px;font:700 24px/1.3 {SANS};color:#ffffff">{e(subject)}</div>
+ <div style="margin-top:4px;font:13px {SANS};color:#9aa0c8">{e(by)}</div>
 </td></tr>"""
-    button_html = (f' <p style="margin:32px 0 14px"><a href="{e(link, quote=True)}"><img src="cid:{BUTTON_CID}" width="{btn[1]}" height="52" '
-                   f'alt="{e(button)}" style="display:block;border:0"></a></p>') if btn else f""" <table role="presentation" cellpadding="0" cellspacing="0" style="margin:32px 0 14px"><tr><td style="border-radius:999px;background:#df4a22;background-image:linear-gradient(90deg,#df4a22,#d93366 55%,#8f45f0)">
-  <a href="{e(link, quote=True)}" style="display:inline-block;padding:15px 40px;font:600 16px {SANS};color:#ffffff;text-decoration:none;letter-spacing:.5px">{e(button)} &rarr;</a></td></tr></table>"""
+    card = f"""<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px"><tr><td style="border:2px solid #e0336d;border-radius:14px;background:#fff6f2;background-image:linear-gradient(135deg,#fff4ee 0%,#fbeefb 100%);padding:16px 20px">
+ <div style="font:700 11px {SANS};letter-spacing:2.5px;color:#c2410c">{e(card_kicker)}</div>
+ <div style="margin-top:4px;font:700 22px/1.3 {SANS};color:#14162e">{e(card_title)}</div>
+ <div style="margin-top:4px;font:13.5px/1.5 {SANS};color:#5a5d78">{e(card_sub)}</div></td></tr></table>"""
+    cells = [f'<td width="50%" style="padding:4px 8px 4px 0;font:14px/1.4 {SANS};color:#14162e"><span style="display:inline-block;width:20px;height:20px;'
+             f'border-radius:10px;background:#fff1ea;font:700 11px/20px {SANS};color:#c2410c;text-align:center;margin-right:8px">{i}</span>{e(h)}</td>'
+             for i, (h, _) in enumerate(flow, 1)]
+    steps_html = "".join(f"<tr>{cells[i]}{cells[i + 1]}</tr>" for i in range(0, len(cells), 2))
+    button_html = (f' <p style="margin:0 0 10px"><a href="{e(link, quote=True)}"><img src="cid:{BUTTON_CID}" width="{btn[1]}" height="52" '
+                   f'alt="{e(button)}" style="display:block;border:0"></a></p>') if btn else f""" <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 10px"><tr><td style="border-radius:999px;background:#df4a22;background-image:linear-gradient(90deg,#df4a22,#d93366 55%,#8f45f0)">
+  <a href="{e(link, quote=True)}" style="display:inline-block;padding:13px 34px;font:600 15px {SANS};color:#ffffff;text-decoration:none">{e(button)} &rarr;</a></td></tr></table>"""
     body = f"""<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>{e(subject)}</title><style>body{{margin:0}} @media (max-width:620px){{.wrap{{width:100%!important}} .pad{{padding-left:24px!important;padding-right:24px!important}} .h1{{font-size:24px!important}}}}</style></head>
-<body style="margin:0;padding:0;background:#f1f1f6"><div style="display:none;max-height:0;overflow:hidden">{e(subject)}</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1f6"><tr><td align="center" style="padding:40px 12px">
+<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only"><title>{e(subject)}</title><style>body{{margin:0}} @media (max-width:620px){{.wrap{{width:100%!important}} .pad{{padding-left:22px!important;padding-right:22px!important}} .h1{{font-size:22px!important}}}}</style></head>
+<body style="margin:0;padding:0;background:#f1f1f6"><div style="display:none;max-height:0;overflow:hidden">{e(card_title)}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f1f6"><tr><td align="center" style="padding:24px 12px">
 <table class="wrap" role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(9,11,31,.12)">
 {header}
-<tr><td class="pad" style="padding:36px 48px 8px">
- <p style="margin:0 0 12px;font:16px/1.75 {SANS};color:#3a3d55">{e(lead + about)}</p>
- <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px">{steps_html}</table>
- <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #ececf3">{row_html}</table>
+<tr><td class="pad" style="padding:24px 40px 26px">
+{card}
+ <p style="margin:0 0 10px;font:14.5px/1.65 {SANS};color:#3a3d55">{e(lead + about)}</p>
+ <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px">{steps_html}</table>
 {button_html}
- <p style="margin:0;font:13px {SANS};color:#8a8da6">{e(valid)}</p>
- <p style="margin:24px 0 0;font:12px/1.6 {SANS};color:#a0a3b8">{e(fallback)}<br><a href="{e(link, quote=True)}" style="color:#b8460f;word-break:break-all">{e(link)}</a></p>
-</td></tr>
-<tr><td class="pad" style="padding:32px 48px 36px">
- <div style="border-top:1px solid #ececf3;padding-top:22px;font:italic 13px {SERIF};color:#5a5d78">Mind the gaps. Keep the voice.</div>
- <div style="margin-top:10px;font:12px/1.6 {SANS};color:#a0a3b8">{e(ignore)}<br>LACUNA Studio · lacunastudio.app</div>
+ <p style="margin:0;font:12.5px/1.6 {SANS};color:#8a8da6">{e(note)}</p>
+ <div style="margin-top:18px;padding-top:14px;border-top:1px solid #ececf3;font:11.5px/1.6 {SANS};color:#a0a3b8">{e(fallback)} <a href="{e(link, quote=True)}" style="color:#b8460f;word-break:break-all">{e(link)}</a><br><i style="font-family:{SERIF};color:#5a5d78">Mind the gaps. Keep the voice.</i> · {e(ignore)} · lacunastudio.app</div>
 </td></tr></table>
 </td></tr></table></body></html>"""
     return {"subject": subject, "text": text, "html": unique_marks(body), "inline": inline + ([] if head else inline_logo())}

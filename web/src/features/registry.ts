@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Episode } from "../api";
+import type { Show } from "./show/api";
 
 /**
  * Feature registry. Each folder `src/features/<name>/` has an `index.tsx` that exports
@@ -25,6 +26,10 @@ export interface EpisodeTab {
   order: number;
   /** Tabs sharing a group show as one step in the episode flow, with sub-tabs (e.g. "publish"). */
   group?: string;
+  /** Shown only for shows where this says so (e.g. 喜马拉雅 tabs for shows published there). */
+  visible?: (show: Show | null) => boolean;
+  /** Not a step of the flow: reached by a link (#/ep/<id>/<mode>), e.g. 本集学到的规则. */
+  offFlow?: boolean;
   render: (p: EpisodeTabProps) => ReactNode;
 }
 

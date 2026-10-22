@@ -14,7 +14,6 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await expect(page.getByRole("link", { name: "发布资料", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page).toHaveURL(/\/publish$/);
   await expect(page.getByRole("heading", { name: "发布资料" })).toBeVisible();
-  await expect(page.getByText(/只发文字/)).toBeVisible();
 
   await page.getByRole("button", { name: "生成发布资料" }).click();
   await expect(page.getByTestId("publish-running")).toBeVisible();

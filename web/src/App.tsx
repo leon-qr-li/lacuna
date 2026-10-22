@@ -3,6 +3,7 @@ import type { EditInfo, Episode, RequestError } from "./api";
 import { api } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
 import { ChatFab } from "./features/chat-dock/ChatDock";
+import { Coach } from "./features/onboarding/Coach";
 import { Icon } from "./components/Icon";
 import { NearbyEdits, nearEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
@@ -10,7 +11,8 @@ import { ReviewView } from "./components/ReviewView";
 import { EditLanes } from "./features/manual/EditLanes";
 import { TranscriptEdit } from "./features/manual/TranscriptEdit";
 import { useManual } from "./features/manual/useManual";
-import { navLinks, pages, tabs } from "./features/registry";
+import { navLinks, pages, tabs as allTabs } from "./features/registry";
+import { useShow } from "./features/show/api";
 import { MissingSources } from "./features/sources/MissingSources";
 import type { NavLink } from "./features/registry";
 import { usePlayer } from "./usePlayer";
@@ -29,7 +31,7 @@ type Mode = string;
 
 function parseHash(): { id: string | null; mode: Mode; page: string | null } {
   const m = /^#\/ep\/([^/]+)(?:\/([\w-]+))?/.exec(window.location.hash);
-  const mode = m?.[2] && (m[2] === "review" || tabs.some((t) => t.mode === m[2])) ? m[2] : "listen";
+  const mode = m?.[2] && (m[2] === "review" || allTabs.some((t) => t.mode === m[2])) ? m[2] : "listen";
   const p = /^#\/([\w-]+)/.exec(window.location.hash)?.[1] ?? null;
   return {
     id: m ? decodeURIComponent(m[1]) : null,
@@ -156,6 +158,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
     [id],
   );
   const { others } = useCoedit(id, ep, setEp, flash);
+  const show = useShow();
 
   const undo = () => {
     setToast(null);
@@ -202,12 +205,14 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const pending = ep?.proposals[0]?.edit ?? null;
   const href = (m: Mode) => `#/ep/${encodeURIComponent(id)}/${m}`;
   // the episode flow: built-in steps, then feature tabs; a tab group (发布) is one step with sub-tabs
+  const tabs = allTabs.filter((x) => !x.visible || x.visible(show));
   const curGroup = tabs.find((t) => t.mode === mode)?.group;
   const steps: { mode: Mode; label: string; on: boolean; badge?: number }[] = [
     { mode: "review", label: t("审阅改动"), on: mode === "review", badge: ep?.pending_review ?? 0 },
     { mode: "listen", label: t("整集试听"), on: mode === "listen" },
   ];
   for (const t of tabs) {
+    if (t.offFlow) continue;
     if (!t.group) steps.push({ mode: t.mode, label: t.label, on: mode === t.mode });
     else if (!steps.some((x) => x.mode === t.group))
       steps.push({ mode: t.group, label: GROUPS[t.group] ?? t.group, on: curGroup === t.group });
@@ -234,10 +239,10 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       </header>
       <div className="ep-head">
         <div className="ep-head-row">
-          {ep && (
-            <span className="chip">
-              {ep.demo ? t("第一刀（演示）已完成 · {n} 处待你过目", { n: ep.pending_review }) : t("第一刀已完成 · {n} 处待你过目", { n: ep.pending_review })}
-            </span>
+          {ep && mode === "listen" && (
+            <a className="small muted ep-lessons-link" href={href("lessons")} data-testid="lessons-link">
+              {t("这一集 LACUNA 学到了什么？")}
+            </a>
           )}
           <Presence others={others} />
           <span className="grow" />
@@ -282,6 +287,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           )}
         </div>
       )}
+      <Coach />
       {/* one audio element shared by both modes: the playhead is common */}
       <audio ref={raw.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (

@@ -12,7 +12,7 @@ export const feature: Feature = {
       order: 35,
       render: ({ id, ep }) => (
         <main className="export-step">
-          <ExportPanel id={id} version={ep.version} inline />
+          <ExportPanel id={id} version={ep.version} inline pending={ep.pending_review} />
         </main>
       ),
     },

@@ -552,4 +552,46 @@ EN: dict[str, str | tuple[str, str]] = {
     "只有节目管理员能改节目设置。": "Only the show's admins can change show settings.",
     "管理员": "Admin",
     "剪辑师": "Editor",
+    # new-user batch: 新成员需站长批准, 搭档申请
+    "只有站长能改这个设置": "Only the site owner can change this setting",
+    "谁邀请的": "Invited by",
+    "新的搭档申请：{email}": "New collaborator request: {email}",
+    "{by} 想邀请 {email} 一起做「{show}」。对方还没有 LACUNA 账号，需要你批准。":
+        "{by} wants to invite {email} to work on “{show}”. They don't have a LACUNA account yet, so it needs your approval.",
+    "去处理": "Review it",
+    "在 设置 → 成员与邀请 → 试用申请 里批准（自动发邀请）或忽略。":
+        "Approve it (the invite goes out automatically) or dismiss it in Settings → Members & invites → Access requests.",
+    "搭档申请 · REQUEST": "Collaborator request · REQUEST",
+    "搭档申请没有通过：{email}": "Collaborator request not approved: {email}",
+    "你邀请 {email} 加入「{show}」的申请这次没有通过，没有发出邀请。":
+        "Your request to invite {email} to “{show}” wasn't approved this time, so no invite was sent.",
+    "对方以后也可以自己在 LACUNA 登录页申请试用。": "They can also ask for access themselves on the LACUNA sign-in page.",
+    # invite mail, compact design A with the plan card
+    "免费体验 · 1 小时音频": "Free trial · 1 hour of audio",
+    "一次性试用 · 所有功能都能用": "One-time trial · every feature included",
+    "基础版 · 每月 4 小时音频": "Basic · 4 hours of audio a month",
+    "所有功能都能用 · 额度每月重置": "Every feature included · hours reset monthly",
+    "专业版 · 每月 12 小时音频": "Pro · 12 hours of audio a month",
+    "从导入录音到发布上线，一期节目的每一步都在 LACUNA 完成：":
+        "Every step of an episode, from importing the recording to publishing it, happens in LACUNA:",
+    "你将加入的节目": "THE SHOW YOU'LL JOIN",
+    "用节目主人的套餐和额度，你不用另外付费": "It runs on the show owner's plan and hours; nothing for you to pay",
+    "你的 BETA 套餐": "YOUR BETA PLAN",
+    "你的套餐": "YOUR PLAN",
+    "beta 期间免费": "Free during the beta",
+    "注册时需要手机上的验证器 App（如 Google Authenticator）。链接 7 天内有效，只能用一次。":
+        "You'll need an authenticator app on your phone (e.g. Google Authenticator) to sign up. The link works once, for 7 days.",
+    "按钮打不开？复制链接：": "Button not working? Copy the link:",
+    "不认识邀请人？忽略这封邮件即可，不会创建账号。": "Don't know who sent this? Ignore it: no account is created.",
+    "BETA 邀请函": "BETA INVITATION",
+    "邀请人 {email}": "Invited by {email}",
+    "请填你的名字": "Please enter your name",
+    "每位主持人一条分轨": "One track per host",
+    "所有人混在一条录音里": "Everyone mixed in one recording",
+    "不确定": "Not sure",
+    "录音": "Recordings",
+    # 入门 and LACUNA 示例节目 (routes/onboarding.py)
+    "示例节目只给你自己练手，不能邀请别人": "The sample show is for your own practice; you can't invite anyone to it",
+    "没有这一步": "There is no such step",
+    "你还没有示例节目": "You don't have a sample show yet",
 }

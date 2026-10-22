@@ -159,8 +159,8 @@ export const en: Dict = {
   "收到了": "Request received",
   "我们会尽快看你的申请。通过后，邀请邮件会发到 {email}，按邮件里的链接设个密码就能开始。":
     "We'll look at it soon. Once approved, an invite goes to {email}: set a password from its link and you're in.",
-  "LACUNA 目前仅限邀请。留下邮箱，通过后我们把邀请发给你：免费体验 1 小时音频，带一集示例。":
-    "LACUNA is invite-only for now. Leave your email and we'll send an invite once approved: a free trial with 1 hour of audio and a sample episode.",
+  "LACUNA 目前在 beta 阶段，仅限邀请。留下邮箱，通过后我们把邀请发给你：beta 期间免费使用基础版，每月 4 小时音频。":
+    "LACUNA is in beta and invite-only. Leave your email; once approved, we'll send you an invite: the Basic plan, free during the beta, with 4 hours of audio a month.",
   "节目名": "Show name",
   "可不填": "optional",
   "想用 LACUNA 做什么": "What would you use LACUNA for",
@@ -193,4 +193,40 @@ export const en: Dict = {
   "时长不限": "unlimited hours",
   "节目不限": "unlimited shows",
   "{n} 个节目": { one: "{n} show", other: "{n} shows" },
+  "关掉「新成员需站长批准」？":
+    "Turn off “New members need owner approval”?",
+  "关掉后，节目管理员可以直接邀请没有账号的人，人数只按套餐限制，不再经过你。正式上线时再关。":
+    "Once off, show admins can invite people without an account directly, limited only by their plan, without going through you. Turn it off at public launch.",
+  "关掉":
+    "Turn off",
+  "新成员需站长批准":
+    "New members need owner approval",
+  "开着（beta）：节目管理员邀请没有账号的人时，会先变成一条「搭档申请」，出现在下面的试用申请里，你批准后才发邀请。":
+    "On (beta): when a show admin invites someone without an account, it becomes a collaborator request in Access requests below; the invite goes out once you approve it.",
+  "已关掉：节目管理员可以直接邀请新人，人数按套餐限制。":
+    "Off: show admins invite new people directly, within their plan's seats.",
+  "搭档申请：{by} 邀请 TA 加入「{show}」":
+    "Collaborator request: {by} invited them to “{show}”",
+  "批准并发邀请":
+    "Approve and invite",
+  "你的名字":
+    "Your name",
+  "搭档和邀请邮件里会显示这个名字":
+    "Shown to your collaborators and in invite emails",
+  "请填你的名字":
+    "Please enter your name",
+  "你的录音":
+    "Your recordings",
+  "每位主持人一条分轨":
+    "One track per host",
+  "所有人混在一条录音里":
+    "Everyone mixed in one recording",
+  "不确定":
+    "Not sure",
+  "录音：每位主持人一条分轨":
+    "Recordings: one track per host",
+  "录音：混在一条里（LACUNA 现在用不了，建议先放候补）":
+    "Recordings: mixed in one (LACUNA can't use these yet; consider the waitlist)",
+  "录音：不确定（回信时教 TA 怎么查）":
+    "Recordings: not sure (explain how to check when you reply)",
 };

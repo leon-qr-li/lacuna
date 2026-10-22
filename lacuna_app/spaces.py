@@ -141,7 +141,15 @@ class Spaces:
 
     def owned(self, email: str) -> int:
         """How many shows this person made (archived ones too): what their plan's show limit counts."""
-        return sum(1 for sid in self.spaces if self.creator(sid) == email)
+        return sum(1 for sid in self.spaces if self.creator(sid) == email and not self.sample(sid))
+
+    def sample(self, sid: str | None) -> str | None:
+        """The language of LACUNA 示例节目 (sample.py) if this is one: it is not counted against any plan."""
+        return (self.spaces.get(sid or "") or {}).get("sample")
+
+    def sample_of(self, email: str) -> str | None:
+        """Their sample show, if they have one."""
+        return next((sid for sid in self.spaces if self.sample(sid) and self.creator(sid) == email), None)
 
     def collaborators(self, sid: str) -> int:
         """People in the show besides the one who made it: what the maker's plan's collaborator limit counts."""
@@ -179,10 +187,11 @@ class Spaces:
     def mine(self, email: str, detail: bool = False) -> list[dict]:
         """Their shows, plus (site staff) the shows that currently allow LACUNA support to look."""
         rows = [{"id": s["id"], "name": self.title(s["id"]), "role": self.role(s["id"], email),
-                 "by": (s.get("added_by") or {}).get(email), "support": email not in s["members"]}
+                 "by": (s.get("added_by") or {}).get(email), "support": email not in s["members"],
+                 "sample": bool(s.get("sample"))}
                 | self.look(s["id"]) | (self.summary(s["id"]) if detail else {})
                 for s in self.spaces.values() if self.role(s["id"], email)]
-        return sorted(rows, key=lambda r: (r["id"] != MAIN, r["name"].lower()))
+        return sorted(rows, key=lambda r: (r["id"] != MAIN, r["sample"], r["name"].lower()))
 
     def current(self, email: str, wanted: str | None) -> str | None:
         """The workspace this person is in: the one they picked if they still belong to it (archived ones
@@ -205,8 +214,9 @@ class Spaces:
             raise AuthError(tr("没有这个节目"), 404)
         return s
 
-    def create(self, name: str, admin: str, named: bool = True) -> dict:
-        """`named` False: the project a new account starts with, whose first visit asks for its name too."""
+    def create(self, name: str, admin: str, named: bool = True, sample: str | None = None) -> dict:
+        """`named` False: the project a new account starts with, whose first visit asks for its name too.
+        `sample`: LACUNA 示例节目 in that language (sample.py fills it in)."""
         name = _name(name)
         with self.lock:
             sid = "sp_" + secrets.token_hex(4)
@@ -214,6 +224,8 @@ class Spaces:
             show.write_new(self.path(sid), name if named else "")  # a new show: the first visit asks for its hosts
             self.spaces[sid] = {"id": sid, "name": name, "created": self.now(), "members": {admin: "admin"},
                                 "created_by": admin, "color": self._free_color()}
+            if sample:
+                self.spaces[sid]["sample"] = sample
             self._save()
             return self.spaces[sid]
 

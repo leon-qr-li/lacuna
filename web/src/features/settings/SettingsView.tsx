@@ -10,6 +10,7 @@ import { HabitsCard } from "../habits/HabitsCard";
 import { SystemTermsCard } from "../transcript-fix/SystemTermsCard";
 import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
+import { OnboardingCard } from "../onboarding/OnboardingCard";
 
 const KEY_SOURCE: Record<string, string> = {
   env: t("环境变量"),
@@ -140,6 +141,7 @@ export function SettingsView() {
           {cur.id === "general" && (
             <>
               <ThemeSetting />
+              <OnboardingCard />
               <section className="card" aria-label={t("版本")}>
                 <div className="card-head">
                   <h2>{t("版本")}</h2>

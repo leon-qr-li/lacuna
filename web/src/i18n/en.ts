@@ -194,4 +194,32 @@ export const en: Dict = {
   "重新应用这个删除": "Apply this cut again",
   "不删，保持原话": "Don't cut, keep the words",
   "下一处": "Next",
+  "下载 {format}":
+    "Download {format}",
+  "已按播客平台的响度标准处理，可以直接上传到任何播客平台。":
+    "Mastered to podcast loudness standards, ready to upload to any podcast platform.",
+  "技术细节":
+    "Technical details",
+  "这一集 LACUNA 学到了什么？":
+    "What did LACUNA learn from this episode?",
+  "已看":
+    "Reviewed",
+  "剩下的全部保留（{n} 处）":
+    "Keep all the rest ({n})",
+  "另外收紧了 {n} 处停顿和口头禅，共 {s} 秒；整集试听时听到问题直接说。":
+    "Also tightened {n} pauses and filler words, {s} s in all; if something sounds off when you play the episode, just say so.",
+  "建议删，还没有应用：":
+    "Suggested cut, not applied yet:",
+  "已恢复原话。":
+    "Original words restored.",
+  "A · 原话":
+    "A · Original",
+  "保留":
+    "Keep",
+  "还有 {n} 处改动没过目，导出会按现在的样子。":
+    {"one": "1 edit hasn't been looked at; the export uses it as it is now.", "other": "{n} edits haven't been looked at; the export uses them as they are now."},
+  "去审阅":
+    "Review them",
+  "节目至少要留一个管理员":
+    "A show always keeps at least one admin",
 };

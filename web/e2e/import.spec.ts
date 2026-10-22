@@ -91,28 +91,24 @@ test("import: drag both tracks in → progress with time left → straight into 
   await items.nth(1).click();
   await expect(page.getByText("这段题外话和主线无关，后面没有再提")).toBeVisible();
 
-  // back home (no auto-redirect): the task shows as done with a link to the review
+  // back home (no auto-redirect): the episode card says what is left; the finished task card is gone (H8)
   await page.locator("a.brand").click();
-  await expect(page.getByTestId("import-job")).toHaveAttribute("data-state", "done");
-  await expect(page.getByTestId("import-job")).toContainText("2 处需要你过目");
   await expect(page.locator(".ep-list")).toContainText("EP001 · 导入测试");
-  await page.getByRole("link", { name: "开始审阅" }).click();
+  await expect(page.locator(".ep-list")).toContainText("2 处待过目");
+  await expect(page.getByTestId("import-job")).toHaveCount(0);
+  await page.locator(".ep-list a").filter({ hasText: "EP001" }).first().click();
+  await page.getByRole("link", { name: /审阅改动/ }).click();
   await expect(page).toHaveURL(/#\/ep\/EP001\/review$/);
 
-  // the task follows the review (验收 V3): once everything is looked at, the episode card says so
-  // and the task card goes, instead of still asking for "2 处需要你过目"
+  // the card follows the review: once everything is looked at, it says so
   await items.first().click();
   await page.keyboard.press("k");
-  await expect(page.getByTestId("dock-progress")).toHaveText("已过目 1 / 2");
-  await page.locator("a.brand").click();
-  await expect(page.getByTestId("import-job")).toContainText("1 处需要你过目");
-  await page.getByRole("link", { name: "开始审阅" }).click();
+  await expect(page.getByTestId("review-progress")).toContainText("已看 1 / 2");
   await items.nth(1).click();
   await page.keyboard.press("k");
-  await expect(page.getByTestId("dock-progress")).toHaveText("已过目 2 / 2");
+  await expect(page.getByTestId("review-progress")).toContainText("已看 2 / 2");
   await page.locator("a.brand").click();
-  await expect(page.locator(".ep-list")).toContainText("EP001 · 导入测试");
-  await expect(page.getByTestId("import-job")).toHaveCount(0);
+  await expect(page.locator(".ep-list")).toContainText("都过目了");
   await expect(page.getByRole("heading", { name: "导入任务" })).toHaveCount(0);
 });
 

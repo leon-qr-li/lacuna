@@ -56,4 +56,34 @@ export const en: Dict = {
   "节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。":
     "Names of people, films and segments the show often mentions. When the transcript mis-hears one as something that sounds alike, it is corrected to this spelling; the recording comes first, nothing that sounds different is forced.",
   "每个节目最多 {n} 位主持人（每人一条分轨）。": "A show can have at most {n} hosts (one track each).",
+  "LACUNA 需要每位主持人单独一条录音。Riverside、Zencastr 的分轨下载，或 Zoom 的「为每位参与者单独录制音频」都可以。":
+    "LACUNA needs a separate recording for each host. Separate-track downloads from Riverside or Zencastr, or Zoom's “Record a separate audio file for each participant”, all work.",
+  "喜马拉雅":
+    "Ximalaya",
+  "小宇宙":
+    "Xiaoyuzhou",
+  "其他平台":
+    "Other",
+  "节目发布在哪儿":
+    "Where the show is published",
+  "导出的成品适合任何播客平台。这里选的平台决定「发布」这一步给你哪些提示。":
+    "The export works on any podcast platform. The platforms you pick here decide which hints the Publish step shows.",
+  "节目资料卡":
+    "Show profile",
+  "让 LACUNA 更懂这个节目":
+    "Help LACUNA get to know this show",
+  "不用了":
+    "No thanks",
+  "这个节目聊什么，比如「两位主持人聊刚看过的电影」":
+    "What the show is about, e.g. \"two hosts talk about a film they just saw\"",
+  "常提到的名字":
+    "Names that come up a lot",
+  "人名、片名、品牌，用顿号或逗号隔开；文字稿会照这个写法":
+    "People, titles, brands, separated by commas; the transcript spells them this way",
+  "片头片尾音乐":
+    "Intro and outro music",
+  "在节目设置里选好，每一集都会自动放上":
+    "Pick them in show settings and every episode gets them",
+  "提示：在首页的节目资料卡里写一句节目简介，LACUNA 剪第一刀时会更懂这个节目。":
+    "Tip: add a one-line description in the show profile on Home, so LACUNA knows the show better when it makes the first cut.",
 };

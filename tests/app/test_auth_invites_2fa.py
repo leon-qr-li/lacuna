@@ -398,8 +398,9 @@ def test_invite_email_names_the_project_and_role(tmp_path):
     with speaking("zh"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "洛城二三事", "editor")
     assert m["subject"] == "Leon 邀请你加入「洛城二三事」"
-    assert "你被邀请以「剪辑师」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人：leon@example.com" in m["text"]
-    assert "<br>「洛城二三事」" in m["html"] or "cid:lacuna-head" in m["html"]   # the HTML header or its picture
+    assert "你被邀请以「剪辑师」身份加入这个节目。" in m["html"] and "洛城二三事" in m["text"] and "邀请人 leon@example.com" in m["text"]
+    assert "Leon 邀请你加入「洛城二三事」</div>" in m["html"] or "cid:lacuna-head" in m["html"]   # the HTML header or its picture
+    assert "洛城二三事 · 剪辑师" in m["html"]                       # the card says which show and as what
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "viewer")
     assert m["subject"] == "Leon invited you to “PULSE”" and "as Listener" in m["html"]
@@ -407,6 +408,22 @@ def test_invite_email_names_the_project_and_role(tmp_path):
     with speaking("zh"):
         esc = invite_mail.render("a@b.c", "https://x/invite/t", "<b>x</b>", "admin")["html"]
     assert "<b>x</b>" not in esc and "&lt;b&gt;x&lt;/b&gt;" in esc
+
+
+def test_invite_email_puts_the_plan_at_the_top():
+    """Leon 2026-10-22: the beta invite says what the plan is, prominently, before anything else."""
+    from lacuna_app import invite_mail
+    from lacuna_app.i18n import speaking
+    with speaking("zh"):
+        m = invite_mail.render("leon@example.com", "https://x/invite/t", plan="basic", beta=True, inviter_name="Leon Li")
+    assert m["subject"] == "Leon Li 邀请你使用 LACUNA"
+    card = m["html"].index("基础版 · 每月 4 小时音频")
+    assert "你的 BETA 套餐" in m["html"] and "beta 期间免费 · 所有功能都能用 · 额度每月重置" in m["html"]
+    assert card < m["html"].index("你会有一个自己的节目。") < m["html"].index("cid:lacuna-button" if "cid:lacuna-button" in m["html"] else "接受邀请")
+    assert "验证器 App" in m["html"] and m["text"].index("基础版") < m["text"].index("1. 导入分轨")
+    with speaking("en"):
+        m = invite_mail.render("leon@example.com", "https://x/invite/t", plan="trial")
+    assert "Free trial · 1 hour of audio" in m["html"] and "BETA" not in m["html"]
 
 
 def test_invite_email_walks_through_the_six_steps():

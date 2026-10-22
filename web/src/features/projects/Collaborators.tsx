@@ -46,15 +46,24 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
     if (!r) return;
     setEmail("");
     if (r.joined) setNote(t("{email} 已经加进来了", { email: r.joined }));
+    else if (r.requested) setNote(t("已提交给 LACUNA 团队，批准后会自动给 {email} 发邀请", { email: r.requested }));
+    else if (r.joins_later) setNote(t("{email} 已经收到 LACUNA 的邀请，注册后会直接加入这个节目", { email: r.joins_later }));
     else if (r.invited) {
       setNote(r.mailed ? t("邀请已经发到 {email}", { email: r.invited }) : t("没能发邮件，把下面的链接发给 {email}", { email: r.invited }));
       if (!r.mailed && r.link) setLink(r.link);
     }
   };
   if (!p) return err ? <p className="error small">{err}</p> : null;
+  // 免费体验 can't have collaborators: no form that can't work, just what an upgrade gives
+  const noSeats = p.plan === "trial";
   return (
     <div className="prj-collab" data-testid="collaborators">
-      {manage && (
+      {manage && noSeats && (
+        <p className="card small" data-testid="invite-upgrade">
+          {t("免费体验不能邀请协作者。升级到基础版后可以邀请 2 位搭档一起剪。")}
+        </p>
+      )}
+      {manage && !noSeats && (
         <form
           className="prj-invite"
           onSubmit={(e) => {
@@ -86,7 +95,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
       )}
       <p className="muted small prj-hint">
         {t("对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理员：管协作者、改节目设置、归档和永久删除；剪辑师：导入和所有剪辑工作；只听：只能试听和查看。")}
-        {manage && !p.can_invite_new && ` ${t("还没有 LACUNA 账号的人，请 LACUNA 管理员邀请。")}`}
+        {manage && !noSeats && p.needs_approval && ` ${t("还没有 LACUNA 账号的人，邀请会先交给 LACUNA 团队批准。")}`}
       </p>
       {note && (
         <p className="ok small" role="status">
@@ -143,6 +152,15 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
             ) : (
               <span className="prj-role">{SPACE_ROLE[m.role]}</span>
             )}
+          </li>
+        ))}
+        {(p.requests ?? []).map((r) => (
+          <li key={r.id} className="prj-pending" data-testid="pending-request">
+            <span className="prj-avatar" aria-hidden="true">
+              {r.email.slice(0, 1).toUpperCase()}
+            </span>
+            <span className="prj-who">{r.email}</span>
+            <span className="prj-role">{t("{role} · 等 LACUNA 批准", { role: SPACE_ROLE[r.role] })}</span>
           </li>
         ))}
         {p.invites.map((i) => (
