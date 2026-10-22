@@ -15,6 +15,7 @@ from ..chat_learning import remember_text
 from ..episode import ConflictError
 from ..episode_index import EpisodeIndex
 from ..levels import chat_volume
+from .. import sample
 from ..store import POSTER_FILE, read_json
 from .archive import archive_of
 
@@ -160,6 +161,8 @@ def register(app, ctx) -> None:
     @app.post("/api/episodes/{episode_id}/chat")
     def chat(episode_id: str, body: ChatBody):
         if (out := chat_volume(get(episode_id), body.text, body.playhead)) is not None:   # "我的声音太低", no AI call
+            return out
+        if (out := sample.tour_chat(get(episode_id), body.text, body.playhead)) is not None:   # the tour's line, scripted
             return out
         if (ask := remember_text(body.text)) is not None:      # "记住：……" -> a draft rule to confirm
             return remember(ctx, get(episode_id), ask, body.playhead)

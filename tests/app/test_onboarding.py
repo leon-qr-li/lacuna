@@ -121,3 +121,31 @@ def test_a_collaborator_gets_the_short_version(tmp_path):
     got = alex.get("/api/onboarding").json()
     assert got["steps"] == ["review", "chat"]
     assert got["collab"]["by"] == "Leon"
+
+
+def test_the_tour_line_in_the_sample_is_answered_without_the_ai(tmp_path):
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    before = sam.get("/api/episodes/SAMPLE_01").json()["duration"]
+    out = sam.post("/api/episodes/SAMPLE_01/chat", json={"text": "把阿乔问演员名字的那两句删掉", "playhead": 40}).json()
+    assert out["adapter"] == "sample" and "问演员名字的两句" in out["reply"]
+    pid = out["proposal"]["id"]
+    ep = sam.post(f"/api/episodes/SAMPLE_01/proposals/{pid}/approve", json={"playhead": 40}).json()
+    assert 5 <= before - ep["duration"] <= 8      # about 1:55 → 1:49
+    # said again once they are gone: the normal path (no scripted answer)
+    again = sam.post("/api/episodes/SAMPLE_01/chat", json={"text": "把阿乔问演员名字的那两句删掉", "playhead": 40}).json()
+    assert again.get("adapter") != "sample"
+
+
+def test_the_tour_position_is_kept_and_reset(tmp_path):
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    assert sam.get("/api/onboarding").json()["tour"] is None
+    assert sam.put("/api/onboarding", json={"tour": "music3"}).json()["tour"] == "music3"
+    assert sam.put("/api/onboarding", json={"tour": "Bad Step!"}).status_code == 422
+    assert sam.post("/api/onboarding/sample/reset").json()["tour"] is None
+    # before / after: the first 30 s as recorded and the same stretch of the cut
+    ab = sam.get("/api/episodes/SAMPLE_01/tour/raw").json()
+    assert ab["before"]["duration"] == 30.0 and ab["after"]["duration"] == 30.0

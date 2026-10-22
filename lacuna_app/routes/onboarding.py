@@ -15,7 +15,7 @@ import re
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .. import sample
 from ..auth import COOKIE, Auth
@@ -37,6 +37,7 @@ class MarkBody(BaseModel):
 class FlagsBody(BaseModel):
     hidden: bool | None = None
     welcomed: bool | None = None
+    tour: str | None = Field(None, pattern=r"^([a-z0-9]{1,12}|)$")   # where the sample tour is ("" = finished / left)
 
 
 class SampleBody(BaseModel):
@@ -88,7 +89,7 @@ def register(app, ctx) -> None:
                 collab = {"show": spaces.title(sid), "by": auth.name(by) or (by or "").split("@")[0]}
         sid = spaces.sample_of(email)
         steps = COLLAB_STEPS if collab else STEPS
-        return {"done": rec["done"], "hidden": rec["hidden"], "welcomed": rec["welcomed"],
+        return {"done": rec["done"], "hidden": rec["hidden"], "welcomed": rec["welcomed"], "tour": rec.get("tour"),
                 "steps": list(steps), "sample_steps": list(SAMPLE_STEPS), "collab": collab,
                 "sample": {"id": sid, "lang": spaces.sample(sid), "episode": sample.EPISODE} if sid else None}
 
@@ -115,6 +116,8 @@ def register(app, ctx) -> None:
             rec["hidden"] = body.hidden
         if body.welcomed is not None:
             rec["welcomed"] = body.welcomed
+        if body.tour is not None:
+            rec["tour"] = body.tour
         save(email, rec)
         return view(email)
 
@@ -152,6 +155,7 @@ def register(app, ctx) -> None:
         sample.reset(root, spaces.path(sid), spaces.sample(sid))
         rec = record(email)
         rec["done"] = [s for s in rec["done"] if not s.startswith("sample.")]
+        rec["tour"] = None
         save(email, rec)
         return into(email, sid)
 

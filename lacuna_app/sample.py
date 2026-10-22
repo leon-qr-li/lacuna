@@ -22,6 +22,7 @@ import numpy as np
 import soundfile as sf
 
 from . import show
+from .i18n import tr
 from .store import atomic_write_json
 
 VERSION = 2
@@ -105,6 +106,60 @@ CUTS = {
 LONG_PAUSE = 8      # the turn after which the long pause is tightened
 COUGH = (12, 2.0, 0.45)  # host 0 coughs while host 1 says turn 12: seconds into the turn, how long
 MUSIC = Path(__file__).with_name("sample_music")   # CC0 tracks with licenses.json (trimmed copies)
+
+
+# the sentence the tour fills in (step 4): LACUNA's answer is scripted, so it never depends on the AI or quota
+TOUR_CHAT = {"zh": "把阿乔问演员名字的那两句删掉", "en": "Cut Alex's two lines about the actor's name"}  # i18n-ignore
+TOUR_LINES = (8, 9)     # the turns it removes
+
+
+def _plain(text: str) -> str:
+    return "".join(c for c in text.lower() if c.isalnum())
+
+
+def tour_chat(ep, text: str, playhead: float) -> dict | None:
+    """The tour's chat line in the sample episode → a proposal cutting those two lines (no AI call)."""
+    from .editor import Proposal
+
+    meta = getattr(ep, "meta", {}) or {}
+    lang = meta.get("language")
+    if meta.get("source") != "sample" or lang not in TOUR_CHAT or _plain(text) != _plain(TOUR_CHAT[lang]):
+        return None
+    first, last = (SCRIPT[lang][i][1] for i in TOUR_LINES)
+    want = [c for c in (first + last) if c != " "] if lang == "zh" else (first + " " + last).split()
+    with ep.lock:
+        cuts = ep.cuts_for(ep.enabled)
+        words = [w for w in ep.words(0.0, 1e9) if w[0] == HOSTS[lang][1]]
+        seq = [w[3] for w in words]
+        at = next((k for k in range(len(seq)) if seq[k:k + len(want)] == want), None)
+        if at is None:
+            return None
+        a = to_tl_s(ep, words[at][1], cuts)
+        b = to_tl_s(ep, words[at + len(want) - 1][2], cuts)
+    if b - a < 0.5:     # already cut
+        return None
+
+    class Scripted:
+        name = "sample"
+
+        def propose(self, ctx):
+            return Proposal(tr("好的：删掉 {a}–{b} {who}问演员名字的两句，共 {s} 秒，前后接得上。",
+                               a=_mmss(a), b=_mmss(b), who=HOSTS[lang][1], s=f"{b - a:.1f}"),
+                            action="cut", start=round(a - 0.05, 3), end=round(b + 0.25, 3),
+                            title=tr("删掉{who}问演员名字的两句", who=HOSTS[lang][1]), reason=tr("按你的指令删掉"),
+                            confidence=1.0)
+
+    return ep.chat(text, playhead, Scripted())
+
+
+def to_tl_s(ep, base_s: float, cuts) -> float:
+    from .episode import to_tl
+
+    return to_tl(int(base_s * ep.sr), cuts) / ep.sr
+
+
+def _mmss(s: float) -> str:
+    return f"{int(s // 60)}:{int(s % 60):02d}"
 
 
 def master(root: str | Path, lang: str) -> Path:
