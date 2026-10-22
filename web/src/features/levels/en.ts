@@ -41,4 +41,13 @@ export const en: Dict = {
   "最响的地方会被轻轻压住": "The loudest peaks will be gently limited",
   "已自动调平 {db} dB，和人声相称；「音量（dB）」是在这之上的微调。":
     "Levelled automatically by {db} dB to sit with the voices; “Volume (dB)” fine-tunes on top of that.",
+  "没有破音": "No clipping",
+  "对比这里：原始 / 调整后": "Compare here: original / adjusted",
+  "调整后": "Adjusted",
+  "−30 轻": "−30 quiet",
+  "目标 {n}": "target {n}",
+  "响 −6 LUFS": "loud −6 LUFS",
+  "调整前 → 调整后": "Before → after",
+  "音量": "Volume",
+  "✓ 就是建议值": "✓ At the suggested value",
 };

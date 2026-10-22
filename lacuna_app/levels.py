@@ -35,7 +35,7 @@ from lacuna_core import SourcePool
 from lacuna_core.master import LoudnessMeter
 
 from . import declip
-from .episode import APPLIED, DISCARDED, PROPOSED, ConflictError, Episode, to_tl
+from .episode import APPLIED, DISCARDED, PROPOSED, ConflictError, Episode, to_base, to_tl
 from .i18n import tr
 from .store import atomic_write_json, read_json, now_iso as _now
 
@@ -253,6 +253,15 @@ def view(ep: Episode) -> dict:
     even = all(t["suggested_gain_db"] is None or abs(t["suggested_gain_db"] - t["gain_db"]) < 0.5 for t in tracks)
     return {"target_lufs": TARGET_LUFS, "tracks": tracks, "even": even,
             "min_db": GAIN_MIN, "max_db": GAIN_MAX}
+
+
+def ab(ep: Episode, at_s: float, ctx_s: float = 8.0) -> dict:
+    """「原始 / 调整后」 on the 声音 page: the same moment without and with the volume edits."""
+    with ep.lock:
+        gains = frozenset(i for i in ep.enabled
+                          if (e := ep.edits[i]).ops and all(o["op"] == "track_gain" for o in e.ops))
+        b = to_base(int(max(at_s, 0.0) * ep.sr), ep.cuts_for(ep.enabled))
+        return ep.ab(ep.enabled - gains, ep.enabled, (b, b), ctx_s=ctx_s, max_s=2 * ctx_s)
 
 
 # ===================================================================== chat: "我的声音太低"

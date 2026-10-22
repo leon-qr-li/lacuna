@@ -235,6 +235,21 @@ def test_levels_api(tmp_path):
     assert not c.get(f"/api/episodes/{EP}/levels").json()["even"]
 
 
+def test_levels_ab_is_the_same_moment_without_and_with_the_gains(tmp_path):
+    ws = uneven_workspace(tmp_path, pei_db=-10.0)
+    c = api(ws)
+    c.post(f"/api/episodes/{EP}/levels/auto", json={})
+    r = c.get(f"/api/episodes/{EP}/levels/ab?at=20").json()
+    a, b = r["before"], r["after"]
+    assert a["start"] == b["start"] == pytest.approx(12.0) and a["duration"] == b["duration"] == pytest.approx(16.0)
+
+    def rms(url):
+        x, _ = sf.read(__import__("io").BytesIO(c.get(url).content))
+        return float(np.sqrt(np.mean(np.square(x))))
+    assert rms(a["url"]) != pytest.approx(rms(b["url"]), rel=0.05)   # the gains are only in 调整后
+    assert c.get(f"/api/episodes/{EP}/levels/ab?at=-1").status_code == 422
+
+
 # ------------------------------------------------------------------ import
 
 @pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg not installed")

@@ -6,23 +6,43 @@
 .levels-head > div { flex: 1 1 320px; display: flex; flex-direction: column; gap: 4px; }
 .levels-head p { margin: 0; }
 .levels-tracks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.levels-track { display: grid; grid-template-columns: 12px minmax(130px, 1fr) minmax(260px, 2fr); grid-template-areas: "dot name ctl" ". extra extra"; gap: 4px 14px; align-items: center; padding: 14px 16px; border-radius: 16px; background: var(--hover); }
-.levels-dot { grid-area: dot; width: 12px; height: 12px; border-radius: 50%; background: var(--leon); }
+.levels-track { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; border-radius: 16px; background: var(--hover); border: 1px solid var(--line-2); }
+.levels-tracks:not(.levels-many) { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+.levels-top { display: flex; flex-direction: column; gap: 10px; }
+.levels-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--leon); flex: none; }
 .levels-track-1 .levels-dot { background: var(--pei); }
-.levels-name { grid-area: name; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.levels-ctl { grid-area: ctl; display: flex; align-items: center; gap: 8px; }
-.levels-slider { flex: 1 1 auto; display: flex; min-width: 120px; }
+.levels-name { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; min-width: 0; }
+.levels-meter { display: flex; flex-direction: column; gap: 4px; }
+.levels-meter-bar { position: relative; height: 10px; border-radius: 6px; background: var(--line-2); overflow: visible; }
+.levels-meter-now { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: var(--leon); transition: width .3s; }
+.levels-track-1 .levels-meter-now { background: var(--pei); }
+.levels-meter-raw { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); opacity: .85; border-radius: 1px; }
+.levels-meter-target { position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; background: var(--ok, #3fb37f); border-radius: 1px; }
+.levels-meter-scale { display: flex; justify-content: space-between; font-size: 11px; }
+.levels-key-target { color: var(--ok, #3fb37f); }
+.levels-waves { display: grid; grid-template-columns: 1fr; gap: 3px; }
+.levels-wave { display: flex; align-items: center; gap: 1px; height: 26px; }
+.levels-wave i { flex: 1 1 0; min-width: 1px; border-radius: 1px; background: var(--leon); }
+.levels-track-1 .levels-wave i { background: var(--pei); }
+.levels-wave.is-before i { opacity: .38; }
+.levels-adjust { display: flex; flex-direction: column; gap: 6px; }
+.levels-ctl { display: flex; align-items: center; gap: 8px; }
+.levels-ctl .sq { min-width: 36px; }
+.levels-slider { flex: 1 1 auto; display: flex; min-width: 100px; }
 .levels-slider input { width: 100%; accent-color: var(--primary); }
 .levels-val { min-width: 76px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
-.levels-extra { grid-area: extra; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.levels-extra:empty { display: none; }
+.levels-extra { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 28px; }
+.levels-clip { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line-2); }
+.levels-clip.warn { border-color: var(--warn); background: var(--warn-soft); }
+.levels-clip .ok, .levels-extra .ok { color: var(--ok, #3fb37f); }
+.levels-extra .warn { color: var(--warn); }
 .levels-note { margin: 0; }
 .levels-clips.warn { border-color: var(--warn); background: var(--warn-soft); }
 .levels-clips p { margin: 0; }
 .levels-cliprow { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 .levels-times { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .levels-listen { display: flex; flex-direction: column; gap: 8px; }
+.levels-compare { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.levels-compare > div { align-self: stretch; }
 .levels-listen p { margin: 0 4px; }
-@media (max-width: 640px) {
-  .levels-track { grid-template-columns: 12px 1fr; grid-template-areas: "dot name" "ctl ctl" "extra extra"; }
-}
+
