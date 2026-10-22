@@ -57,6 +57,7 @@ test("first run: create the owner account, then the app opens", async ({ page })
   await expect(page.getByText("Mind the gaps. Keep the voice.")).toBeVisible();
   await shot(page, "first_run");
   await page.getByTestId("auth-email").fill("leon@example.com");
+  await page.getByTestId("auth-name").fill("Leon");
   await page.getByTestId("auth-password").fill("short");
   await expect(page.getByText("密码强度：太短")).toBeVisible();
   await page.getByTestId("auth-password2").fill("short");
@@ -138,6 +139,7 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await expect(p.getByRole("heading", { name: "接受邀请" })).toBeVisible();
   await expect(p.getByTestId("auth-email")).toHaveValue("pei@example.com");
   await shot(p, "invite");
+  await p.getByTestId("auth-name").fill("Pei");
   await p.getByTestId("auth-password").fill(PW);
   await p.getByTestId("auth-password2").fill(PW);
   await p.getByRole("button", { name: "创建账号" }).click();
@@ -241,6 +243,7 @@ test("cloud: the first sign-in sets up two-step before the app opens", async ({ 
   await expect(page.getByRole("heading", { name: "创建你的账号" })).toBeVisible();
   await expect(page.getByText("这是 LACUNA 的第一个账号，也就是所有者：之后由你邀请别人。")).toBeVisible();
   await page.getByTestId("auth-email").fill("leon@example.com");
+  await page.getByTestId("auth-name").fill("Leon");
   await page.getByTestId("auth-password").fill(PW);
   await page.getByTestId("auth-password2").fill(PW);
   await page.getByRole("button", { name: "创建账号" }).click();

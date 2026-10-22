@@ -8,6 +8,7 @@ import { t } from "../i18n";
 import { Skel } from "../features/loading/Loading";
 import { reviewAction } from "../features/review-keys/keys";
 import { ShortcutsButton } from "../features/review-keys/Shortcuts";
+import { SpeedButton } from "../features/review-speed/SpeedButton";
 import { useReviewRate } from "../features/review-speed/speed";
 import { needsSpace } from "../words";
 import "./ReviewView.css";
@@ -106,15 +107,13 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
 
   const routineCount = ep.routine.reduce((n, r) => n + r.count, 0);
   const routineSecs = ep.routine.reduce((n, r) => n + r.seconds, 0);
-  // the heading says what the cut took away: "删掉 18 秒 · 跑题"
-  const heading = (e: EditInfo) => (e.speech_s ? t("删掉 {s} 秒 · {title}", { s: e.speech_s.toFixed(e.speech_s < 10 ? 1 : 0), title: e.title }) : e.title);
 
   // 审阅改动, slim version A (new-user batch E1): what was cut (the struck words), how it sounds (A / B),
   // keep or restore, and 剩下的全部保留; everything else went (chips, notes, the dock, the chat box).
   return (
     <div className="review rv-slim">
       <div className="rv-top" data-testid="review-progress">
-        <span className="small">
+        <span className="small" data-testid="review-count">
           {t("已看")} <strong>{done}</strong> / {all.length}
         </span>
         <div className="meter" aria-hidden="true">
@@ -149,7 +148,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                 <span className="mono small">{fmt(e.t)}</span>
                 <span className="grow">{e.title}</span>
                 <span className="small rstate">
-                  {e.status === "restored" ? (e.approved ? t("已恢复") : t("未应用")) : e.approved ? "✓" : ""}
+                  {e.status === "restored" ? (e.approved ? t("不删 ✓") : t("未应用")) : e.approved ? "✓" : ""}
                 </span>
               </button>
             </li>
@@ -168,7 +167,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
         ) : (
           <section className="card rv-card">
             <header className="rv-head">
-              <h1 data-testid="review-title">{heading(cur)}</h1>
+              <h1 data-testid="review-title">{cur.title}</h1>
               <span className="grow" />
               <button type="button" className="btn btn-ghost btn-round" onClick={() => go(-1)} disabled={idx <= 0} title={t("上一处（←）")} aria-label={t("上一处")}>
                 <Icon name="chevl" size={16} />
@@ -191,7 +190,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
               </div>
             )}
             {lines && lines.length > 0 && (
-              <div className="prose rv-lines" aria-label={t("原文对照")}>
+              <div className="prose rv-lines" role="region" aria-label={t("原文对照")}>
                 {lines.map((l, i) => (
                   <p key={i} className="line">
                     <span className={`spk spk-${ep.tracks.findIndex((t) => t.name === l.speaker)}`}>{l.speaker}</span>
@@ -210,6 +209,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
                   onPauseMain();
                   markStep("ab");
                 }} compact rate={speed.rate} />
+              <SpeedButton rate={speed.rate} onChange={speed.setRate} />
               <span className="grow" />
               {cur.status === "applied" ? (
                 <>

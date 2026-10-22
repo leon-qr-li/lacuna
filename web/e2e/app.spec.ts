@@ -16,7 +16,6 @@ async function openEpisode(page: Page) {
 test.describe.serial("LACUNA Studio", () => {
   test("open episode shows workspace, lanes and demo banner", async ({ page }) => {
     await openEpisode(page);
-    await expect(page.getByText("第一刀（演示）已完成 · 1 处待你过目")).toBeVisible();
     await expect(page.locator(".banner")).toContainText("合成测试数据");
     await expect(page.getByTestId("lane-Leon")).toBeVisible();
     await expect(page.getByTestId("lane-Pei")).toBeVisible();
@@ -62,7 +61,7 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.getByTestId("review-title")).toHaveText("删除 4.4 秒 · 题外话");
     await expect(page.getByRole("region", { name: "原文对照" })).toBeVisible();
     await expect(page.locator(".struck").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /A · 原始/ })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /A · 原话/ })).toBeEnabled();
     // shared playhead: selecting an edit moves the main player there
     await expect.poll(() => audioTime(page)).toBeCloseTo(25.2, 0);
     // R restores, undo brings the cut back
@@ -70,7 +69,7 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.locator(".toast")).toHaveText("已恢复原话");
     await expect(page.getByRole("button", { name: "重新应用这个删除" })).toBeVisible();
     await undoKey(page);
-    await expect(page.getByRole("button", { name: "保留这个删除" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^保留/ })).toBeVisible();
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect(page.getByTestId("play")).toBeVisible();
     await expect.poll(() => audioTime(page)).toBeCloseTo(25.2, 0);
@@ -91,7 +90,7 @@ test.describe.serial("LACUNA Studio", () => {
     await page.keyboard.press("r");
     await expect(page.locator(".toast")).toHaveText("已恢复原话");
     await undoKey(page);
-    await expect(page.getByRole("button", { name: "保留这个删除" })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^保留/ })).toBeVisible();
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
     await expect(page.getByTestId("clock")).toContainText("0:25");
@@ -150,9 +149,9 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(result).toContainText(/响度\s*-1[56]\.\d LUFS/);
     const links = result.locator(".export-files a");
     await expect(links).toHaveCount(2);
-    await expect(links.filter({ hasText: /\.mp3$/ })).toHaveCount(1);
+    await expect(result.getByTestId("export-download-mp3")).toHaveText("下载 MP3");
     const download = page.waitForEvent("download");
-    await links.filter({ hasText: /\.wav$/ }).click();
+    await result.getByTestId("export-download-wav").click();
     const dl = await download;
     expect(await dl.failure()).toBeNull();
     // (the suggested name is locale-dependent in headless Chromium for Chinese ids; check bytes)

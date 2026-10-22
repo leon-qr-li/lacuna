@@ -35,6 +35,7 @@ test("Leon's workspace keeps his show; a new workspace sets up its own", async (
   const p = await ctx.newPage();
   expect((await p.request.post("/api/auth/register", { data: { invite: inv.link.split("/").at(-1), password: PW } })).ok()).toBeTruthy();
   await p.goto("/");
+  await p.getByTestId("welcome-own").click();                     // the welcome first (new-user batch)
   const setup = p.getByTestId("show-setup");
   await expect(setup).toBeVisible();
   await expect(setup.getByRole("heading")).toHaveText("建你的第一个节目");

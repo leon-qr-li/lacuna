@@ -54,7 +54,7 @@ test("welcome → sample show with the coach → own show → checklist", async 
   expect(ob.done).toEqual(expect.arrayContaining(["sample.ab", "sample.decide"]));
   // 重置示例: the first cut as it was, the coach from the start
   await coach.getByTestId("coach-reset").click();
-  await sam.getByRole("dialog").getByRole("button", { name: "重置示例" }).click();
+  await sam.getByTestId("dialog").getByRole("button", { name: "重置示例" }).click();
   await expect(sam.getByTestId("coach")).toContainText("0/5");
 
   // their own show: the welcome again until it is set up; 建我的节目 opens the form
@@ -87,7 +87,7 @@ test("welcome → sample show with the coach → own show → checklist", async 
   const st = sam.getByTestId("onboard-settings");
   await st.getByTestId("onboard-show").click();
   await st.getByTestId("sample-drop").click();
-  await sam.getByRole("dialog").getByRole("button", { name: "删除" }).click();
+  await sam.getByTestId("dialog").getByRole("button", { name: "删除" }).click();
   await expect(st.getByTestId("sample-open")).toHaveText("添加示例节目");
   await sam.goto("/#/");
   await expect(sam.getByTestId("onboard-card")).toBeVisible();

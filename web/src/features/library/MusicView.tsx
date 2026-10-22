@@ -459,6 +459,7 @@ function MusicStrip({ m, now, previewing, onListen, onSeek }: {
 export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => void }) {
   const [m, setM] = useState<Music | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [libraryEmpty, setLibraryEmpty] = useState(false);
   const [kindRoles, setKindRoles] = useState<Partial<Record<Kind, Role>>>({});
   const [kinds, setKinds] = useState<Record<string, string>>({});
   const [picked, setPicked] = useState<string | undefined>(); // the file just added on this page
@@ -482,6 +483,9 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
         setKinds(lib.kinds);
         setKindRoles(lib.kind_roles);
         setAlbumName(lib.albums.find((a) => a.id === lib.album)?.name ?? null);
+        // the empty-state card is for a library with nothing at all, not one whose files belong elsewhere
+        if (!lib.assets.length) libraryApi.library().then((all) => setLibraryEmpty(!all.assets.length), () => setLibraryEmpty(false));
+        else setLibraryEmpty(false);
       })
       .catch((e) => setErr(String(e.message ?? e)));
   }, [id]);
@@ -571,7 +575,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   if (err) return <p className="error pad">{err}</p>;
   if (!m) return <PageLoading label={t("正在打开配乐…")} />;
   // nothing to place yet (a new user's empty library): start with adding music, not a dead-end button
-  const empty = assets.length === 0 && m.placements.length === 0;
+  const empty = libraryEmpty && assets.length === 0 && m.placements.length === 0;
   const upload = (
     <EpisodeUpload
       id={id}
@@ -582,6 +586,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
           .library(id)
           .then((lib) => {
             setAssets(lib.assets);
+            setLibraryEmpty(false);
             if (asset) setPicked(asset.id);
           })
           .catch((e) => setErr(String(e.message ?? e)));

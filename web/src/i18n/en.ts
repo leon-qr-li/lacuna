@@ -202,8 +202,6 @@ export const en: Dict = {
     "Technical details",
   "这一集 LACUNA 学到了什么？":
     "What did LACUNA learn from this episode?",
-  "删掉 {s} 秒 · {title}":
-    "Cut {s} s · {title}",
   "已看":
     "Reviewed",
   "剩下的全部保留（{n} 处）":
