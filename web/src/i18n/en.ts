@@ -218,4 +218,10 @@ export const en: Dict = {
     "A · Original",
   "保留":
     "Keep",
+  "还有 {n} 处改动没过目，导出会按现在的样子。":
+    {"one": "1 edit hasn't been looked at; the export uses it as it is now.", "other": "{n} edits haven't been looked at; the export uses them as they are now."},
+  "去审阅":
+    "Review them",
+  "节目至少要留一个管理员":
+    "A show always keeps at least one admin",
 };

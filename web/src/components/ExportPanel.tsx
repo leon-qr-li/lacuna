@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ExportJob } from "../api";
+import { markStep } from "../features/onboarding/api";
 import { api } from "../api";
 import { t } from "../i18n";
 import { BusyLabel, JobProgress } from "../features/loading/Loading";
@@ -8,7 +9,7 @@ import { useCloud } from "../features/auth/cloud";
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
 /** Master the current version to MP3/WAV and show the result: the 导出 step page (`inline`), or a button + popover. */
-export function ExportPanel({ id, version, inline = false }: { id: string; version: string; inline?: boolean }) {
+export function ExportPanel({ id, version, inline = false, pending = 0 }: { id: string; version: string; inline?: boolean; pending?: number }) {
   const cloud = useCloud();
   const [popOpen, setOpen] = useState(false);
   const open = inline || popOpen;
@@ -79,6 +80,13 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
               <input type="checkbox" checked={wav} onChange={(e) => setWav(e.target.checked)} disabled={running} /> {t("WAV（上传平台用，音质最好）")}
             </label>
           </div>
+          {/* G5: a quiet line, never a block */}
+          {pending > 0 && (
+            <p className="muted small" data-testid="export-pending">
+              {t("还有 {n} 处改动没过目，导出会按现在的样子。", { n: pending })}{" "}
+              <a href={`#/ep/${encodeURIComponent(id)}/review`}>{t("去审阅")}</a>
+            </p>
+          )}
           <button type="button" className="btn btn-primary" onClick={start} disabled={running || (!mp3 && !wav)} data-testid="export-start">
             <BusyLabel busy={running} label={job ? t("重新导出") : t("开始导出")} busyLabel={t("导出中…")} />
           </button>
@@ -106,6 +114,7 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
                       download
                       title={name}
                       data-testid={`export-download-${fmt}`}
+                      onClick={() => markStep("export")}
                     >
                       {t("下载 {format}", { format: fmt.toUpperCase() })}
                     </a>

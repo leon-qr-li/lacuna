@@ -30,7 +30,7 @@ from .auth import _cookie
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
 GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan",
-          "/api/site/")
+          "/api/site/", "/api/onboarding")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
@@ -336,6 +336,8 @@ def register(app, ctx) -> None:
         email = me(request)
         may_manage(email, sid)
         live(sid)
+        if spaces.sample(sid):
+            raise HTTPException(403, tr("示例节目只给你自己练手，不能邀请别人"))
         target = body.email.strip().lower()
         if body.role is not None and target not in auth.users:
             raise HTTPException(404, tr("没有这个账号：先在「成员与邀请」里邀请对方"))
@@ -388,6 +390,8 @@ def register(app, ctx) -> None:
         email = me(request)
         may_manage(email, sid)
         live(sid)
+        if spaces.sample(sid):
+            raise HTTPException(403, tr("示例节目只给你自己练手，不能邀请别人"))
         target = body.email.strip().lower()
         role = body.role or "editor"
         if role not in SPACE_RANK:

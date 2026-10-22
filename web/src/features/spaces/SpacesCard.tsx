@@ -99,6 +99,14 @@ function SpaceBlock({ s, current, busy, act }: {
             <div className="people-who">
               <strong>{m.email}</strong>
             </div>
+            {/* the show's only admin can't be removed or demoted (H4): a show always keeps one */}
+            {m.role === "admin" && s.members.filter((x) => x.role === "admin").length === 1 ? (
+              <div className="people-actions">
+                <span className="muted small" title={t("节目至少要留一个管理员")} data-testid="sole-admin">
+                  {SPACE_ROLE.admin}
+                </span>
+              </div>
+            ) : (
             <div className="people-actions">
               <select
                 aria-label={t("{email} 在这个节目的角色", { email: m.email })}
@@ -123,6 +131,7 @@ function SpaceBlock({ s, current, busy, act }: {
                 {t("移出")}
               </button>
             </div>
+            )}
           </li>
         ))}
       </ul>

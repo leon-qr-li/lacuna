@@ -3,6 +3,7 @@ import type { EditInfo, Episode, RequestError } from "./api";
 import { api } from "./api";
 import { ChatPanel } from "./components/ChatPanel";
 import { ChatFab } from "./features/chat-dock/ChatDock";
+import { Coach } from "./features/onboarding/Coach";
 import { Icon } from "./components/Icon";
 import { NearbyEdits, nearEdits } from "./components/NearbyEdits";
 import { PlayerBar } from "./components/PlayerBar";
@@ -286,6 +287,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           )}
         </div>
       )}
+      <Coach />
       {/* one audio element shared by both modes: the playhead is common */}
       <audio ref={raw.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (

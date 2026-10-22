@@ -26,6 +26,8 @@ export interface MySpace {
   can_delete?: boolean;
   /** you are LACUNA support looking in read-only (the show allowed it, decision 2026-10-21-roles) */
   support?: boolean;
+  /** LACUNA 示例节目: your own practice show, not counted against the plan (lacuna_app/sample.py) */
+  sample?: boolean;
 }
 
 /** 邀请协作: a project's collaborators and the invites waiting for them */

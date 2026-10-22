@@ -590,4 +590,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "所有人混在一条录音里": "Everyone mixed in one recording",
     "不确定": "Not sure",
     "录音": "Recordings",
+    # 入门 and LACUNA 示例节目 (routes/onboarding.py)
+    "示例节目只给你自己练手，不能邀请别人": "The sample show is for your own practice; you can't invite anyone to it",
+    "没有这一步": "There is no such step",
+    "你还没有示例节目": "You don't have a sample show yet",
 }

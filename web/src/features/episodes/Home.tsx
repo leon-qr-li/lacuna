@@ -4,6 +4,10 @@ import { api } from "../../api";
 import { t } from "../../i18n";
 import { hostList, useShow } from "../show/api";
 import { ShowSetup } from "../show/ShowView";
+import { Welcome, NameAsk } from "../onboarding/Welcome";
+import { Checklist } from "../onboarding/Checklist";
+import { Coach } from "../onboarding/Coach";
+import { ProfileCard } from "../show/ProfileCard";
 import { EpisodeListSkeleton } from "../loading/Loading";
 import { ImportPanel } from "../import/ImportPanel";
 import { AlbumDialog } from "../albums/AlbumDialog";
@@ -59,7 +63,7 @@ export function Home({ nav }: { nav: ReactNode }) {
     }
     if (seen) return;
     void loadProjects().then((sp) => {
-      if ((sp?.mine.length ?? 0) > 1 && !window.location.hash) window.location.hash = "#/projects";
+      if ((sp?.mine.filter((m) => !m.sample).length ?? 0) > 1 && !window.location.hash) window.location.hash = "#/projects";
     });
   }, []);
   useEffect(() => {
@@ -126,18 +130,27 @@ export function Home({ nav }: { nav: ReactNode }) {
         {nav}
       </header>
       <main className="home">
-        <div className="home-hero">
-          <h1 className="home-title">
-            {proj && <ProjectAvatar p={proj} size={40} />}
-            {proj?.name ?? show?.show_name ?? t("剧集")}
-          </h1>
-          <p className="muted">
-            {names
-              ? t("导入 {names} 的分轨，AI 先剪第一刀，你来过目、试听、导出。", { names })
-              : t("导入每位主持人的分轨，AI 先剪第一刀，你来过目、试听、导出。")}
-          </p>
-        </div>
-        <ShowSetup />
+        <NameAsk />
+        {!show?.needs_setup && (
+          <div className="home-hero">
+            <h1 className="home-title">
+              {proj && <ProjectAvatar p={proj} size={40} />}
+              {proj?.name ?? show?.show_name ?? t("剧集")}
+            </h1>
+            <p className="muted">
+              {names
+                ? t("导入 {names} 的分轨，AI 先剪第一刀，你来过目、试听、导出。", { names })
+                : t("导入每位主持人的分轨，AI 先剪第一刀，你来过目、试听、导出。")}
+            </p>
+          </div>
+        )}
+        <Checklist show={show} episodes={list} />
+        <ProfileCard show={show} episodes={list?.length ?? 0} />
+        {show?.needs_setup ? (
+          <Welcome>
+            <ShowSetup />
+          </Welcome>
+        ) : null}
         {!show?.needs_setup && (
           <ImportPanel
             episodes={list}
@@ -219,6 +232,7 @@ export function Home({ nav }: { nav: ReactNode }) {
           </p>
         )}
       </main>
+      <Coach />
       {dialog && albums.view && (
         <AlbumDialog
           album={dialog.album}
