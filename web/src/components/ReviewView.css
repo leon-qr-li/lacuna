@@ -1,0 +1,20 @@
+/* 审阅改动, slim version A: a top bar, a slim list, one card (new-user batch E1) */
+.rv-slim { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); grid-template-areas: "top top" "nav main"; gap: 18px 20px; }
+.rv-slim .review-nav { grid-area: nav; max-width: none; gap: 10px; padding: 12px 10px; }
+.rv-slim .review-main { grid-area: main; }
+.rv-top { grid-area: top; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.rv-top .meter { flex: 1 1 160px; max-width: 320px; }
+.rv-top [data-testid="review-keep-rest"] { margin-left: auto; }
+.rdot { flex: none; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--muted); align-self: center; }
+.ritem.is-done .rdot { background: var(--ok); border-color: var(--ok); }
+.ritem.is-restored .rdot { background: var(--warn); border-color: var(--warn); }
+.ritem.is-current .rdot { border-color: var(--on-primary); }
+.rv-routine { margin: 4px 8px 0; line-height: 1.6; }
+.rv-card { display: flex; flex-direction: column; gap: 14px; }
+.rv-slim .rv-head { flex-direction: row; align-items: center; gap: 6px; padding: 0; }
+.rv-slim .rv-head h1 { margin: 0; font-size: 20px; }
+.rv-reason { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink-2); }
+.rv-reason .rv-k { margin-right: 6px; }
+.rv-act { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.rv-act kbd { margin-left: 2px; padding: 0 5px; border-radius: 5px; font: 500 11px var(--mono); background: color-mix(in srgb, currentColor 14%, transparent); }
+@media (max-width: 760px) { .rv-slim { grid-template-columns: 1fr; grid-template-areas: "top" "main" "nav"; } }

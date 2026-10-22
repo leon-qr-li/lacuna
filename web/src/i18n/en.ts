@@ -202,4 +202,20 @@ export const en: Dict = {
     "Technical details",
   "这一集 LACUNA 学到了什么？":
     "What did LACUNA learn from this episode?",
+  "删掉 {s} 秒 · {title}":
+    "Cut {s} s · {title}",
+  "已看":
+    "Reviewed",
+  "剩下的全部保留（{n} 处）":
+    "Keep all the rest ({n})",
+  "另外收紧了 {n} 处停顿和口头禅，共 {s} 秒；整集试听时听到问题直接说。":
+    "Also tightened {n} pauses and filler words, {s} s in all; if something sounds off when you play the episode, just say so.",
+  "建议删，还没有应用：":
+    "Suggested cut, not applied yet:",
+  "已恢复原话。":
+    "Original words restored.",
+  "A · 原话":
+    "A · Original",
+  "保留":
+    "Keep",
 };
