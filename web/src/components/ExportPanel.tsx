@@ -3,11 +3,13 @@ import type { ExportJob } from "../api";
 import { api } from "../api";
 import { t } from "../i18n";
 import { BusyLabel, JobProgress } from "../features/loading/Loading";
+import { useCloud } from "../features/auth/cloud";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
 /** Master the current version to MP3/WAV and show the result: the 导出 step page (`inline`), or a button + popover. */
 export function ExportPanel({ id, version, inline = false }: { id: string; version: string; inline?: boolean }) {
+  const cloud = useCloud();
   const [popOpen, setOpen] = useState(false);
   const open = inline || popOpen;
   const [job, setJob] = useState<ExportJob | null>(null);
@@ -95,6 +97,24 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
           {job?.state === "done" && job.result && (
             <div className="export-result" data-testid="export-result">
               {stale && <p className="small warn">{t("这是之前版本的导出，之后又有改动；要最新版请重新导出。")}</p>}
+              <ul className="export-files row gap8 wrap">
+                {Object.entries(job.result.files).map(([fmt, name]) => (
+                  <li key={fmt}>
+                    <a
+                      className="btn btn-primary"
+                      href={`/api/episodes/${encodeURIComponent(id)}/exports/${encodeURIComponent(name)}`}
+                      download
+                      title={name}
+                      data-testid={`export-download-${fmt}`}
+                    >
+                      {t("下载 {format}", { format: fmt.toUpperCase() })}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted small">{t("已按播客平台的响度标准处理，可以直接上传到任何播客平台。")}</p>
+              <details className="small">
+                <summary>{t("技术细节")}</summary>
               <dl className="small">
                 <dt>{t("响度")}</dt>
                 <dd>{t("{out}（原始 {in}）", { out: num(rep?.output_lufs, "LUFS"), in: num(rep?.input_lufs, "LUFS") })}</dd>
@@ -112,23 +132,17 @@ export function ExportPanel({ id, version, inline = false }: { id: string; versi
                   })}
                 </dd>
               </dl>
-              <ul className="export-files">
-                {Object.entries(job.result.files).map(([fmt, name]) => (
-                  <li key={fmt}>
-                    <a href={`/api/episodes/${encodeURIComponent(id)}/exports/${encodeURIComponent(name)}`} download>
-                      {name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              </details>
               {Object.entries(job.result.errors).map(([fmt, msg]) => (
                 <p key={fmt} className="error small">
                   {fmt.toUpperCase()}：{msg}
                 </p>
               ))}
-              <button type="button" className="btn btn-outline btn-small" onClick={() => api.openExports(id).catch(() => {})}>
-                {t("打开导出文件夹")}
-              </button>
+              {cloud === false && (
+                <button type="button" className="btn btn-outline btn-small" onClick={() => api.openExports(id).catch(() => {})}>
+                  {t("打开导出文件夹")}
+                </button>
+              )}
             </div>
           )}
         </div>

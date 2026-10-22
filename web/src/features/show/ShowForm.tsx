@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { RequestError } from "../../api";
-import { t } from "../../i18n";
+import { lang as uiLang, t } from "../../i18n";
 import { noticeDialog } from "../dialog/Dialog";
 import { BusyLabel } from "../loading/Loading";
-import { LANGUAGE_LABELS, LANGUAGES, setShow, showApi, type CutAdjust, type Host, type HostColor, type Language, type Show } from "./api";
+import { LANGUAGE_LABELS, LANGUAGES, PLATFORM_LABELS, PLATFORMS, setShow, showApi, type CutAdjust, type Host, type HostColor, type Language, type Platform, type Show } from "./api";
 
 const COLOR_LABELS: Record<HostColor, string> = {
   blue: t("蓝"),
@@ -35,6 +35,15 @@ const splitTerms = (s: string) =>
     .map((x) => x.trim())
     .filter(Boolean);
 
+/** What a recording has to be: one file per host (said on the first setup and on every import). */
+export function TrackNote() {
+  return (
+    <small className="muted" data-testid="track-note">
+      {t("LACUNA 需要每位主持人单独一条录音。Riverside、Zencastr 的分轨下载，或 Zoom 的「为每位参与者单独录制音频」都可以。")}
+    </small>
+  );
+}
+
 /** The show's name and hosts (+ in full mode: editing style, show-notes footer, 喜马拉雅). `compact`
  *  is the first-run setup of a new workspace: only what an import needs. */
 export type ShowPart = "basic" | "hosts" | "publish";
@@ -44,10 +53,12 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
   const has = (p: ShowPart) => !parts || parts.includes(p);
   const [name, setName] = useState(show.show_name);
   const [about, setAbout] = useState(show.about);
-  const [language, setLanguage] = useState<Language>(show.language ?? "zh");
+  // a show nobody has set up yet speaks the interface's language (an English user gets English recognition)
+  const [language, setLanguage] = useState<Language>(compact && !show.hosts.length ? uiLang : (show.language ?? "zh"));
   const [footer, setFooter] = useState(show.footer);
   const [hosts, setHosts] = useState<Host[]>(show.hosts.length ? show.hosts : [newHost(show, [])]);
   const [album, setAlbum] = useState(show.publish.album);
+  const [platforms, setPlatforms] = useState<Platform[]>(show.publish.platforms ?? []);
   // 专有名词: one per line (or comma separated); hints for the transcript's proofreading, the audio wins
   const [terms, setTerms] = useState((show.terms ?? []).join("\n"));
   const [busy, setBusy] = useState(false);
@@ -64,6 +75,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
     setFooter(s.footer);
     setHosts(s.hosts.length ? s.hosts : [newHost(s, [])]);
     setAlbum(s.publish.album);
+    setPlatforms(s.publish.platforms ?? []);
     setTerms((s.terms ?? []).join("\n"));
     setRev(s.rev);
   };
@@ -82,7 +94,9 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
         language,
         footer,
         hosts,
-        publish: { ximalaya: show.publish.ximalaya || !!album.trim(), album },
+        publish: compact
+          ? { ximalaya: show.publish.ximalaya, album, platforms: show.publish.platforms ?? [] }
+          : { ximalaya: platforms.includes("ximalaya"), album, platforms },
         ...(compact ? {} : { terms: splitTerms(terms) }),
         rev,
       });
@@ -162,6 +176,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
       {has("hosts") && (
         <div className="show-field">
           <span>{t("主持人（每人一条分轨）")}</span>
+          {compact && <TrackNote />}
           <ul className="show-hosts">
             {hosts.map((h, i) => (
               <li key={h.tag || `new-${i}`} className="show-host" data-testid="show-host">
@@ -245,10 +260,32 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
             <span>{t("show notes 结尾")}</span>
             <textarea value={footer} maxLength={600} onChange={(e) => setFooter(e.target.value)} placeholder={t("每期 show notes 最后的一段话（可不填）")} />
           </label>
-          <label className="show-field">
-            <span>{t("喜马拉雅专辑名")}</span>
-            <input value={album} maxLength={80} onChange={(e) => setAlbum(e.target.value)} placeholder={t("用喜马拉雅发布时填，「上传喜马拉雅」页会提醒你选这个专辑")} />
-          </label>
+          <fieldset className="show-field show-platforms" data-testid="show-platforms">
+            <legend>{t("节目发布在哪儿")}</legend>
+            <div className="row gap8 wrap">
+              {PLATFORMS.map((p) => (
+                <label key={p} className="check">
+                  <input
+                    type="checkbox"
+                    checked={platforms.includes(p)}
+                    onChange={(e) => {
+                      setSaved(false);
+                      setPlatforms((ps) => (e.target.checked ? PLATFORMS.filter((x) => x === p || ps.includes(x)) : ps.filter((x) => x !== p)));
+                    }}
+                    data-testid={`platform-${p}`}
+                  />
+                  {PLATFORM_LABELS[p]}
+                </label>
+              ))}
+            </div>
+            <small className="muted">{t("导出的成品适合任何播客平台。这里选的平台决定「发布」这一步给你哪些提示。")}</small>
+          </fieldset>
+          {platforms.includes("ximalaya") && (
+            <label className="show-field">
+              <span>{t("喜马拉雅专辑名")}</span>
+              <input value={album} maxLength={80} onChange={(e) => setAlbum(e.target.value)} placeholder={t("用喜马拉雅发布时填，「上传喜马拉雅」页会提醒你选这个专辑")} />
+            </label>
+          )}
         </>
       )}
       {err && <p className="error">{err}</p>}

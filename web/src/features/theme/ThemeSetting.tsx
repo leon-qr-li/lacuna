@@ -47,7 +47,7 @@ export function ThemeSetting() {
       <div className="set-row">
         <div>
           <strong>{t("界面语言")}</strong>
-          <p className="muted small">{t("切换后页面会刷新。节目内容（转写、show notes）仍是中文。")}</p>
+          <p className="muted small">{t("切换后页面会刷新。节目内容（转写、show notes）用节目自己的语言。")}</p>
         </div>
         <div className="seg" role="radiogroup" aria-label={t("界面语言")}>
           {langs.map(([v, label]) => (

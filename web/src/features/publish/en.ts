@@ -11,8 +11,8 @@ export const en: Dict = {
     "Title, blurb, show notes and chapters, timed to the current cut. Ximalaya is the single place to publish; Xiaoyuzhou syncs from it automatically.",
   "重新生成": "Regenerate",
   "生成发布资料": "Generate publish pack",
-  "LACUNA 会读这一集剪完后的转写（只发文字），写标题、简介和 show notes，大约 1–2 分钟，花费约 $0.2–0.3。":
-    "LACUNA reads the edited transcript (text only) and writes the title, blurb and show notes. About 1–2 minutes, roughly $0.2–0.3.",
+  "LACUNA 会读这一集剪完后的文字稿，写标题、简介和 show notes，大约 1–2 分钟。":
+    "LACUNA reads this episode's edited transcript and writes a title, summary and show notes. It takes about 1–2 minutes.",
   "还没接上 AI（{p0}），只能生成按时间切的草稿。": "AI isn't connected ({p0}), so only a time-based draft can be generated.",
   "没找到 AI 密钥": "no AI key found",
   "没生成出来：{error}。可以再点一次「生成发布资料」。": "Generation failed: {error}. You can click “Generate publish pack” again.",
@@ -61,4 +61,6 @@ export const en: Dict = {
   "规则草稿（AI 没接上）": "Rule-based draft (AI not connected)",
   " · 约 ${p0}": " · about ${p0}",
   "· 生成于 {time}": "· generated {time}",
+  "标题、简介、show notes 和章节，按现在这版剪辑的成品时间。和导出的音频一起上传到你的播客托管平台，Apple Podcasts、Spotify 等会通过 RSS 自动同步。":
+    "Title, summary, show notes and chapters, timed to the current cut. Upload them with the exported audio to your podcast host; Apple Podcasts, Spotify and others pick it up through RSS.",
 };

@@ -56,4 +56,16 @@ export const en: Dict = {
   "节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。":
     "Names of people, films and segments the show often mentions. When the transcript mis-hears one as something that sounds alike, it is corrected to this spelling; the recording comes first, nothing that sounds different is forced.",
   "每个节目最多 {n} 位主持人（每人一条分轨）。": "A show can have at most {n} hosts (one track each).",
+  "LACUNA 需要每位主持人单独一条录音。Riverside、Zencastr 的分轨下载，或 Zoom 的「为每位参与者单独录制音频」都可以。":
+    "LACUNA needs a separate recording for each host. Separate-track downloads from Riverside or Zencastr, or Zoom's “Record a separate audio file for each participant”, all work.",
+  "喜马拉雅":
+    "Ximalaya",
+  "小宇宙":
+    "Xiaoyuzhou",
+  "其他平台":
+    "Other",
+  "节目发布在哪儿":
+    "Where the show is published",
+  "导出的成品适合任何播客平台。这里选的平台决定「发布」这一步给你哪些提示。":
+    "The export works on any podcast platform. The platforms you pick here decide which hints the Publish step shows.",
 };

@@ -194,4 +194,12 @@ export const en: Dict = {
   "重新应用这个删除": "Apply this cut again",
   "不删，保持原话": "Don't cut, keep the words",
   "下一处": "Next",
+  "下载 {format}":
+    "Download {format}",
+  "已按播客平台的响度标准处理，可以直接上传到任何播客平台。":
+    "Mastered to podcast loudness standards, ready to upload to any podcast platform.",
+  "技术细节":
+    "Technical details",
+  "这一集 LACUNA 学到了什么？":
+    "What did LACUNA learn from this episode?",
 };

@@ -9,6 +9,7 @@ export const feature: Feature = {
       mode: "ximalaya",
       label: t("喜马拉雅版"),
       group: "publish",
+      visible: (show) => !!show?.publish.ximalaya,
       order: 45,
       render: ({ id, ep, flash }) => <XimalayaView id={id} version={ep.version} flash={flash} />,
     },

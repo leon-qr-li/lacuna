@@ -51,8 +51,11 @@ LEGACY: dict = {
          "style": "Somewhat strict with her clear stumbles, but gentler than with Leon; keep some of her tics."},
     ],
     "footer": "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*",  # i18n-ignore
-    "publish": {"ximalaya": True, "album": "洛城二三事"},  # i18n-ignore
+    "publish": {"ximalaya": True, "album": "洛城二三事", "platforms": ["ximalaya", "xiaoyuzhou"]},  # i18n-ignore
 }
+
+# podcast platforms a show can say it publishes on (节目设置 → 发布); "other" = anything not listed
+PLATFORMS = ("apple", "spotify", "youtube", "ximalaya", "xiaoyuzhou", "other")
 
 NEW: dict = {
     "version": VERSION,
@@ -63,7 +66,7 @@ NEW: dict = {
     "language": "zh",
     "hosts": [],
     "footer": "",
-    "publish": {"ximalaya": False, "album": ""},
+    "publish": {"ximalaya": False, "album": "", "platforms": []},
 }
 
 
@@ -132,6 +135,15 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
         out["by_name"] = data["by_name"][:80]
     pub = data.get("publish") if isinstance(data.get("publish"), dict) else {}
     out["publish"] = {"ximalaya": bool(pub.get("ximalaya")), "album": _text(pub.get("album"), 80)}
+    # where the show is published (any podcast platform works with the export; this only picks which
+    # hints and tabs the 发布 step shows). A profile from before the picker: 喜马拉雅 + 小宇宙 if it had 喜马拉雅.
+    raw_pf = pub.get("platforms")
+    if not isinstance(raw_pf, list):
+        old_pf = ((before or {}).get("publish") or {}).get("platforms")
+        raw_pf = old_pf if isinstance(old_pf, list) else (["ximalaya", "xiaoyuzhou"] if out["publish"]["ximalaya"] else [])
+    else:
+        out["publish"]["ximalaya"] = "ximalaya" in raw_pf
+    out["publish"]["platforms"] = [p for p in PLATFORMS if p in raw_pf]
     # a form that doesn't send the terms (yet) keeps the stored ones
     raw = data.get("terms") if "terms" in data else (before or {}).get("terms")
     terms, seen = [], set()
@@ -193,7 +205,7 @@ def view(profile: dict) -> dict:
     """What the interface gets (GET /api/show)."""
     return profile | {"rev": profile.get("rev", 0), "needs_setup": not profile.get("setup_done"), "colors": list(COLORS),
                       "cut_levels": list(CUT_LEVELS), "cut_adjusts": list(habits.ADJUSTS), "my_level": habits.level(),
-                      "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES)}
+                      "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES), "platforms": list(PLATFORMS)}
 
 
 def tracks(profile: dict) -> list[tuple[str, str]]:

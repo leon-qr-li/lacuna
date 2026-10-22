@@ -49,8 +49,8 @@ export const en: Dict = {
   "语言": "Language",
   "介绍一下「{name}」": "Tell LACUNA about “{name}”",
   "建你的第一个节目": "Create your first show",
-  "一档播客、一个客户、一个栏目都可以是一个节目。填名字和主持人，每位主持人一条分轨；这些以后都能在节目设置里改。":
-    "A podcast, a client or a segment can each be a show. Fill in the name and hosts, one track per host; you can change all of it later in show settings.",
+  "一档播客、一个客户、一个栏目都可以是一个节目。填名字和主持人；这些以后都能在节目设置里改。":
+    "A podcast, a client or a segment can each be a show. Fill in the name and hosts; you can change all of it later in show settings.",
   "已归档": "Archived",
   "已归档 · 只读": "Archived · read-only",
   "恢复": "Restore",

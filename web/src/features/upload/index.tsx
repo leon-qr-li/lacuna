@@ -9,6 +9,7 @@ export const feature: Feature = {
       mode: "upload",
       label: t("上传喜马拉雅"),
       group: "publish",
+      visible: (show) => !!show?.publish.ximalaya,
       order: 60,
       render: ({ id, ep, flash }) => <UploadView id={id} version={ep.version} flash={flash} />,
     },

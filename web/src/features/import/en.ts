@@ -12,8 +12,8 @@ export const en: Dict = {
   "⇅ 对调 {a} 和 {b}": "⇅ Swap {a} and {b}",
   "正在读入 {name} · {pct}%": "Reading {name} · {pct}%",
   "换一个": "Replace",
-  "原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给 LACUNA 的 AI 做第一刀。长录音要跑一阵，可以关掉这页，进度不会丢。":
-    "The original recordings are read-only. Transcription and analysis run on this computer; only text and numbers go to LACUNA's AI for the first cut. Long recordings take a while: you can close this page without losing progress.",
+  "原始录音只读，只在 LACUNA 的服务器上处理，不交给第三方；AI 只看文字稿和停顿等数字，拿不到录音。关掉页面不影响进度。":
+    "Your recordings stay untouched and are processed only on LACUNA's servers, never shared with third parties. The AI reads the transcript and timing, never the audio. You can close this page.",
   "AI 第一刀（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。":
     "First cut (AI not connected, pauses tightened only): {edits} edits, {review} for you to review.",
   这一集说的语言: "Language of this episode",

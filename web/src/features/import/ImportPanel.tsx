@@ -6,6 +6,7 @@ import { JobProgress } from "../loading/Loading";
 import type { JobStep } from "../loading/Loading";
 import { importApi, uploadTrack, type ImportJobView, type PickedTrack } from "./api";
 import { hostList, LANGUAGE_LABELS, LANGUAGES, useShow, type Host, type Language, type Show } from "../show/api";
+import { TrackNote } from "../show/ShowForm";
 import "./import.css";
 
 const RUNNING = new Set(["queued", "running"]);
@@ -337,8 +338,9 @@ function NewImport({
           </button>
         )}
       </div>
+      <TrackNote />
       <p className="muted small">
-        {t("原始录音只读，不会被改动。逐字识别和分析都在这台电脑上做，只有文字和数字会发给 LACUNA 的 AI 做第一刀。长录音要跑一阵，可以关掉这页，进度不会丢。")}
+        {t("原始录音只读，只在 LACUNA 的服务器上处理，不交给第三方；AI 只看文字稿和停顿等数字，拿不到录音。关掉页面不影响进度。")}
       </p>
       {err && <p className="error small">{err}</p>}
       <div className="row gap8">

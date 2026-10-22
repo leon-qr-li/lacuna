@@ -7,6 +7,7 @@ import { t } from "../../i18n";
 import { BusyLabel, PageLoading } from "../loading/Loading";
 import { confirmDialog } from "../dialog/Dialog";
 import { inScope, ScopeActions, ScopeBadge, ScopeFilter, ScopeTarget } from "./Scope";
+import { useCloud } from "../auth/cloud";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: t("已确认"),
@@ -246,6 +247,7 @@ function AssetRow({ a, kinds, eps, albums, onChange, onRemoved, claude }: { a: A
   );
 }
 
+  const cloud = useCloud();
 export function LibraryView() {
   const [lib, setLib] = useState<Lib | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -311,21 +313,25 @@ export function LibraryView() {
     >
       <div className="row gap8 wrap">
         <h1 className="grow">{t("素材库")}</h1>
-        <button
-          type="button"
-          className="btn btn-outline"
-          onClick={() =>
-            void libraryApi.scanLibrary().then((r) => {
-              setLib((l) => ({ ...r, lookup: l?.lookup ?? lib.lookup, episodes: l?.episodes ?? lib.episodes }));
-              setNote(r.added.length ? t("新加入 {length} 个文件", { length: r.added.length }) : t("文件夹里没有新文件"));
-            })
-          }
-        >
-          {t("扫描文件夹")}
-        </button>
-        <button type="button" className="btn btn-outline" onClick={() => void libraryApi.openLibrary()}>
-          {t("打开文件夹")}
-        </button>
+        {cloud === false && (
+          <>
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() =>
+                void libraryApi.scanLibrary().then((r) => {
+                  setLib((l) => ({ ...r, lookup: l?.lookup ?? lib.lookup, episodes: l?.episodes ?? lib.episodes }));
+                  setNote(r.added.length ? t("新加入 {length} 个文件", { length: r.added.length }) : t("文件夹里没有新文件"));
+                })
+              }
+            >
+              {t("扫描文件夹")}
+            </button>
+            <button type="button" className="btn btn-outline" onClick={() => void libraryApi.openLibrary()}>
+              {t("打开文件夹")}
+            </button>
+          </>
+        )}
       </div>
       <DropZone kinds={lib.kinds} eps={lib.episodes} albums={lib.albums} dragging={dragging} onFiles={(f, k, e) => void addFiles(f, k, e)} />
       {uploads.length > 0 && (
@@ -344,9 +350,12 @@ export function LibraryView() {
           ))}
         </ul>
       )}
-      <p className="muted small">
-        {t("文件会复制到素材库文件夹")} <span className="mono">{lib.folder}</span>{t("，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 LACUNA。")}
-      </p>
+      {cloud === false && (
+        <p className="muted small">
+          {t("文件会复制到素材库文件夹")} <span className="mono">{lib.folder}</span>{t("，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 LACUNA。")}
+        </p>
+      )}
+      {cloud && <p className="muted small">{t("音乐保存在 LACUNA 的服务器上，原文件不动。查曲名时只把文件名、标签和你的备注发给 LACUNA 的 AI。")}</p>}
       {note && <p className="small">{note}</p>}
       {lib.assets.length === 0 && <p className="muted">{t("素材库还是空的。把片头、配乐或台词片段拖进来就行。")}</p>}
       {lib.assets.length > 0 && <ScopeFilter eps={lib.episodes} albums={lib.albums} value={filter} onChange={setFilter} />}
