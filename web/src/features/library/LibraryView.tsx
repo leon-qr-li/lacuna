@@ -247,8 +247,8 @@ function AssetRow({ a, kinds, eps, albums, onChange, onRemoved, claude }: { a: A
   );
 }
 
-  const cloud = useCloud();
 export function LibraryView() {
+  const cloud = useCloud();
   const [lib, setLib] = useState<Lib | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [uploads, setUploads] = useState<Upload[]>([]);
