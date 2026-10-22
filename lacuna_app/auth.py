@@ -709,11 +709,14 @@ class Auth:
                       key=lambda r: -r["created"])
 
     def invite(self, actor: str, email: str, role: str, origin: str, extra: dict | None = None,
-               lang: str | None = None) -> dict:
+               lang: str | None = None, by_member: bool = False) -> dict:
         """A one-time sign-up link for `email`; emailed when Resend can, always returned for copying.
-        `lang` (zh / en) is the email's language, picked by the inviter; default the inviter's interface."""
+        `lang` (zh / en) is the email's language, picked by the inviter; default the inviter's interface.
+        `by_member`: a show's admin inviting a collaborator into that show (routes/spaces.py checks the show
+        and the plan), so a plain account may give the plain "member" role."""
         email = norm_email(email)
-        self._grantable(actor, role)
+        if not (by_member and role == "member" and actor in self.users):
+            self._grantable(actor, role)
         if (extra or {}).get("plan") not in (None, *plans.PLANS):
             raise AuthError(tr("没有这个套餐"))
         if email in self.users:
@@ -744,6 +747,20 @@ class Auth:
         except MailError as e:
             why = str(e)
         return {"link": link, "mailed": mailed, "mail_error": why, "email": email, "role": role}
+
+    def add_join(self, email: str, space: str, space_role: str) -> bool:
+        """`email` has a sign-up link waiting: they also join `space` when they use it (a show admin invited
+        someone the site already invited). False when there is no such link."""
+        email = norm_email(email)
+        now = self.now()
+        with self.lock:
+            found = [i for i in self.invites.values() if i["email"] == email and i["exp"] > now]
+            if not found:
+                return False
+            also = [j for j in found[0].get("also", []) if j.get("space") != space]
+            found[0]["also"] = also + [{"space": space, "space_role": space_role}]
+            self._save_users()
+        return True
 
     def revoke_invite(self, iid: str) -> list[str]:
         """Withdraws the invite; returns the email(s) it was for."""

@@ -7,7 +7,6 @@ export const en: Dict = {
   "邀请": "Invite",
   "对方能看到这个节目的所有剧集、专辑和素材，看不到你的其他节目。管理员：管协作者、改节目设置、归档和永久删除；剪辑师：导入和所有剪辑工作；只听：只能试听和查看。":
     "They see every episode, album and asset of this show, none of your other shows. Admin: manages collaborators, show settings, archive and delete; Editor: imports and all editing; Listen: listens and views only.",
-  "还没有 LACUNA 账号的人，请 LACUNA 管理员邀请。": "People without a LACUNA account are invited by a LACUNA admin.",
   "邀请链接": "Invite link",
   "协作者": "Collaborators",
   "（你）": " (you)",
@@ -100,4 +99,14 @@ export const en: Dict = {
   "打开 7 天": "Turn on for 7 days",
   "你在以 LACUNA 支持的身份只读查看这个节目。": "You're viewing this show read-only as LACUNA support.",
   "只有节目的管理员能改这些设置，你可以查看。": "Only the show's admins can change these settings; you can view them.",
+  "已提交给 LACUNA 团队，批准后会自动给 {email} 发邀请":
+    "Sent to the LACUNA team for approval. Once approved, {email} gets the invite automatically",
+  "{email} 已经收到 LACUNA 的邀请，注册后会直接加入这个节目":
+    "{email} already has an invite to LACUNA and will join this show on signing up",
+  "免费体验不能邀请协作者。升级到基础版后可以邀请 2 位搭档一起剪。":
+    "The free trial can't invite collaborators. Upgrade to Basic to edit with up to 2 co-hosts.",
+  "还没有 LACUNA 账号的人，邀请会先交给 LACUNA 团队批准。":
+    "During the beta, inviting someone without a LACUNA account needs LACUNA's approval first.",
+  "{role} · 等 LACUNA 批准":
+    "{role} · awaiting approval",
 };

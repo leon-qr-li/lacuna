@@ -75,6 +75,11 @@ export interface AccessRequest {
   created: number;
   lang: Lang | null;
   status: string;
+  /** "collab": a show admin's 搭档申请 (新成员需站长批准) for the show `space`, asked by `by` */
+  kind?: "collab";
+  space?: string;
+  space_role?: string;
+  by?: string;
 }
 
 export interface People {

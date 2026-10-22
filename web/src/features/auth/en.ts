@@ -193,4 +193,20 @@ export const en: Dict = {
   "时长不限": "unlimited hours",
   "节目不限": "unlimited shows",
   "{n} 个节目": { one: "{n} show", other: "{n} shows" },
+  "关掉「新成员需站长批准」？":
+    "Turn off “New members need owner approval”?",
+  "关掉后，节目管理员可以直接邀请没有账号的人，人数只按套餐限制，不再经过你。正式上线时再关。":
+    "Once off, show admins can invite people without an account directly, limited only by their plan, without going through you. Turn it off at public launch.",
+  "关掉":
+    "Turn off",
+  "新成员需站长批准":
+    "New members need owner approval",
+  "开着（beta）：节目管理员邀请没有账号的人时，会先变成一条「搭档申请」，出现在下面的试用申请里，你批准后才发邀请。":
+    "On (beta): when a show admin invites someone without an account, it becomes a collaborator request in Access requests below; the invite goes out once you approve it.",
+  "已关掉：节目管理员可以直接邀请新人，人数按套餐限制。":
+    "Off: show admins invite new people directly, within their plan's seats.",
+  "搭档申请：{by} 邀请 TA 加入「{show}」":
+    "Collaborator request: {by} invited them to “{show}”",
+  "批准并发邀请":
+    "Approve and invite",
 };

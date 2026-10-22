@@ -4,6 +4,10 @@
 one request per email per day, ``PER_IP`` per address per day. The site owner gets an email, the person who asked a 「已收到申请」 one; the owner
 and site admins see the list in 设置 → 成员与邀请 and send the invite (or dismiss it) with one click.
 The answer never says whether the email already has an account.
+
+搭档申请 (new-user batch, routes/new_members.py): while 「新成员需站长批准」 is on, a show admin who invites
+someone without an account files a request here (``kind: "collab"``, the show and who asked). Inviting it sends
+the sign-up link into that show; dismissing it mails the show admin.
 """
 from __future__ import annotations
 
@@ -83,6 +87,33 @@ def register(app, ctx) -> None:
             m = notice_mail.request_received(row["email"], row["show"], when)
         mail(row["email"], m, "request-received")
 
+    def collab_request(by: str, email: str, sid: str, role: str, mail_lang: str | None, request: Request) -> None:
+        """A show admin's 搭档申请 (routes/spaces.py): one waiting request per person and show."""
+        spaces = ctx.provide("spaces")
+        now = auth.now()
+        for r in rows():
+            if r.get("kind") == "collab" and r["email"] == email and r.get("space") == sid:
+                return
+        row = {"email": email, "show": spaces.title(sid), "note": "", "created": now, "kind": "collab",
+               "space": sid, "space_role": role, "by": by,
+               "lang": mail_lang if mail_lang in ("zh", "en") else None}
+        with db.tx() as c:
+            c.execute("INSERT INTO access_requests (id, email, created, status, data) VALUES (?,?,?,?,?)",
+                      ("ar_" + secrets.token_hex(6), email, now, "new", sitedb.dumps(row)))
+        owner = next((u for u in auth.users.values() if u["role"] == "owner"), None)
+        if owner:
+            origin = app.state.invite_origin(request) if hasattr(app.state, "invite_origin") else ""
+            with speaking(owner.get("lang") or "zh"):
+                m = notice_mail.collab_request(email, row["show"], by, f"{origin.rstrip('/')}/#/settings/members")
+            mail(owner["email"], m, "collab-request")
+
+    def collab_requests_of(sid: str) -> list[dict]:
+        return [{"id": r["id"], "email": r["email"], "role": r.get("space_role") or "editor", "created": r["created"]}
+                for r in rows() if r.get("kind") == "collab" and r.get("space") == sid and r["email"] not in auth.users]
+
+    app.state.collab_request = collab_request
+    app.state.collab_requests_of = collab_requests_of
+
     @app.post("/api/access-requests")
     def ask(body: RequestBody, request: Request):
         check = getattr(app.state, "human_check", None)
@@ -129,7 +160,10 @@ def register(app, ctx) -> None:
         out: dict = {}
         if body.action == "invite":
             try:
-                sent = auth.invite(actor, row["email"], "member", app.state.invite_origin(request), {"space": "new"},
+                where = {"space": "new"}
+                if row.get("kind") == "collab":       # a 搭档申请: into that show (plan seats checked again)
+                    where = app.state.invite_space(actor, row.get("space"), row.get("space_role"))
+                sent = auth.invite(actor, row["email"], "member", app.state.invite_origin(request), where,
                                    body.lang or row.get("lang"))
             except AuthError as e:
                 raise HTTPException(e.status, str(e))
@@ -140,4 +174,9 @@ def register(app, ctx) -> None:
         with db.tx() as c:
             c.execute("UPDATE access_requests SET status = ? WHERE id = ?",
                       ("invited" if body.action == "invite" else "dismissed", rid))
+        if body.action == "dismiss" and row.get("kind") == "collab" and row.get("by") in auth.users:
+            asker = auth.users[row["by"]]
+            with speaking(asker.get("lang") or row.get("lang") or "zh"):
+                m = notice_mail.collab_declined(row["email"], row.get("show") or "")
+            mail(asker["email"], m, "collab-declined")
         return {"requests": [r for r in rows() if r["email"] not in auth.users], **out}

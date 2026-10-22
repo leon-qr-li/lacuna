@@ -6,6 +6,7 @@ import { spacesApi, type SpaceInfo } from "../spaces/api";
 import { BusyLabel } from "../loading/Loading";
 import { t } from "../../i18n";
 import { InviteForm } from "./InviteForm";
+import { NewMembersSwitch } from "./NewMembers";
 import "./auth.css";
 
 const KEY_SOURCE: Record<string, string> = {
@@ -405,6 +406,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
         </div>
       )}
 
+      {role === "owner" && <NewMembersSwitch />}
       {asks.length > 0 && (
         <>
           <h3>{t("试用申请")}</h3>
@@ -413,7 +415,13 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
               <li key={a.id}>
                 <div className="people-who">
                   <strong>{a.email}</strong>
-                  <span className="muted small">{[a.show, when(a.created)].filter(Boolean).join(" · ")}</span>
+                  {a.kind === "collab" ? (
+                    <span className="muted small" data-testid="collab-request">
+                      {t("搭档申请：{by} 邀请 TA 加入「{show}」", { by: a.by ?? "", show: a.show })} · {when(a.created)}
+                    </span>
+                  ) : (
+                    <span className="muted small">{[a.show, when(a.created)].filter(Boolean).join(" · ")}</span>
+                  )}
                   {a.note && <span className="small people-note">{a.note}</span>}
                 </div>
                 <div className="people-actions">
@@ -429,7 +437,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
                       })
                     }
                   >
-                    {t("发邀请")}
+                    {a.kind === "collab" ? t("批准并发邀请") : t("发邀请")}
                   </button>
                   <button className="btn btn-outline btn-small" disabled={!!busy} onClick={() => act("ask", async () => setAsks((await authApi.decideRequest(a.id, "dismiss")).requests))}>
                     {t("忽略")}

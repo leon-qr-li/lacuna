@@ -552,4 +552,18 @@ EN: dict[str, str | tuple[str, str]] = {
     "只有节目管理员能改节目设置。": "Only the show's admins can change show settings.",
     "管理员": "Admin",
     "剪辑师": "Editor",
+    # new-user batch: 新成员需站长批准, 搭档申请
+    "只有站长能改这个设置": "Only the site owner can change this setting",
+    "谁邀请的": "Invited by",
+    "新的搭档申请：{email}": "New collaborator request: {email}",
+    "{by} 想邀请 {email} 一起做「{show}」。对方还没有 LACUNA 账号，需要你批准。":
+        "{by} wants to invite {email} to work on “{show}”. They don't have a LACUNA account yet, so it needs your approval.",
+    "去处理": "Review it",
+    "在 设置 → 成员与邀请 → 试用申请 里批准（自动发邀请）或忽略。":
+        "Approve it (the invite goes out automatically) or dismiss it in Settings → Members & invites → Access requests.",
+    "搭档申请 · REQUEST": "Collaborator request · REQUEST",
+    "搭档申请没有通过：{email}": "Collaborator request not approved: {email}",
+    "你邀请 {email} 加入「{show}」的申请这次没有通过，没有发出邀请。":
+        "Your request to invite {email} to “{show}” wasn't approved this time, so no invite was sent.",
+    "对方以后也可以自己在 LACUNA 登录页申请试用。": "They can also ask for access themselves on the LACUNA sign-in page.",
 }

@@ -29,7 +29,8 @@ from .auth import _cookie
 
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
-GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan")
+GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan",
+          "/api/site/")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
@@ -217,6 +218,9 @@ def register(app, ctx) -> None:
             spaces.set_member(sid, email, invite.get("space_role") or "editor")
         else:
             spaces.create(email.split("@")[0], email, named=False)
+        for j in invite.get("also") or []:      # shows whose admins invited them while the link waited
+            if j.get("space") in spaces.spaces and j["space"] != sid:
+                spaces.set_member(j["space"], email, j.get("space_role") or "editor")
 
     auth.on_joined.append(joined)
     auth.on_deleted.append(spaces.forget)
@@ -246,11 +250,13 @@ def register(app, ctx) -> None:
         return (auth.users.get(email or "") or {}).get("plan") or plans.DEFAULT
 
     def room_for(sid: str, newcomer: str) -> None:
-        """A new collaborator fits in the plan of the show's maker (someone already in it always does)."""
+        """A new collaborator fits in the plan of the show's maker (someone already in it always does).
+        Invites still waiting for this show take a seat too."""
         if newcomer in spaces.spaces[sid]["members"]:
             return
+        waiting = {i["email"] for i in auth.list_invites() if i.get("space") == sid and i["email"] != newcomer}
         try:
-            plans.check_collaborators(plan_of(spaces.creator(sid)), spaces.collaborators(sid))
+            plans.check_collaborators(plan_of(spaces.creator(sid)), spaces.collaborators(sid) + len(waiting))
         except plans.PlanLimit as e:
             raise HTTPException(403, str(e))
 
@@ -351,7 +357,14 @@ def register(app, ctx) -> None:
                 "can_invite_new": False}
 
     def people_for(email: str, sid: str) -> dict:
-        return people(sid) | {"can_invite_new": site_admin(email)}
+        approval = getattr(app.state, "owner_approval", lambda: True)()
+        return people(sid) | {"can_invite_new": site_admin(email) or not approval, "needs_approval": approval and not site_admin(email),
+                              "requests": collab_asks(sid)}
+
+    def collab_asks(sid: str) -> list[dict]:
+        """搭档申请 for this show still waiting for the site owner."""
+        fn = getattr(app.state, "collab_requests_of", None)
+        return fn(sid) if fn else []
 
     @app.get("/api/spaces/{sid}/people")
     def list_people(sid: str, request: Request):
@@ -384,15 +397,30 @@ def register(app, ctx) -> None:
             room_for(sid, target)
             run(lambda: spaces.set_member(sid, target, role, by=email))
             out = {"joined": target}
-        elif site_admin(email):
-            sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request), {"space": sid, "space_role": role, "space_name": spaces.title(sid)}, body.lang))
-            grant = getattr(app.state, "grant_access", None)       # routes/auth.py: Cloudflare Access list
-            if grant:
-                grant(sent["email"], True)
-            out = {"invited": sent["email"], "link": sent["link"], "mailed": sent["mailed"],
-                   "mail_error": sent["mail_error"]}
         else:
-            raise HTTPException(403, tr("这个邮箱还没有 LACUNA 账号。现在只有 LACUNA 管理员能邀请新人注册。"))
+            room_for(sid, target)
+            approval = getattr(app.state, "owner_approval", lambda: True)()      # routes/new_members.py
+            waiting = any(i["email"] == target for i in auth.list_invites())
+            if site_admin(email) or not approval:
+                sent = run(lambda: auth.invite(email, target, "member", app.state.invite_origin(request),
+                                               {"space": sid, "space_role": role, "space_name": spaces.title(sid)},
+                                               body.lang, by_member=True))
+                grant = getattr(app.state, "grant_access", None)       # routes/auth.py: Cloudflare Access list
+                if grant:
+                    grant(sent["email"], True)
+                out = {"invited": sent["email"], "link": sent["link"], "mailed": sent["mailed"],
+                       "mail_error": sent["mail_error"]}
+            elif waiting:
+                # the site already invited them: they join this show too when they sign up
+                auth.add_join(target, sid, role)
+                out = {"joins_later": target}
+            else:
+                # beta (新成员需站长批准): a 搭档申请 for the site owner, who sends the invite (routes/auth_requests.py)
+                ask = getattr(app.state, "collab_request", None)
+                if ask is None:
+                    raise HTTPException(403, tr("这个邮箱还没有 LACUNA 账号。现在只有 LACUNA 管理员能邀请新人注册。"))
+                ask(email, target, sid, role, body.lang, request)
+                out = {"requested": target}
         return people_for(email, sid) | out
 
     @app.delete("/api/spaces/{sid}/invites/{iid}")
