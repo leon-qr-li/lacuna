@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from lacuna_app import create_app
+from lacuna_app import create_app, sample
 from lacuna_app.editor import MockEditorAdapter
 from tests.app.e2e.auth import FakeMailer
 from tests.app.synth import make_workspace
@@ -81,11 +81,38 @@ def test_the_sample_show_is_free_resettable_and_removable(tmp_path):
     again = sam.get("/api/episodes/SAMPLE_01").json()
     assert next(e for e in again["edits"] if e["id"] == first["id"])["status"] == "applied"
     # the shared recording is outside the show's folder, and stays when the sample is deleted
-    raw = tmp_path / "ws" / "sample" / "v1" / "en" / "raw"
+    raw = tmp_path / "ws" / "sample" / f"v{sample.VERSION}" / "en" / "raw"
     assert sorted(p.name for p in raw.iterdir()) == ["Alex.wav", "Sam.wav"]
     assert sam.delete("/api/onboarding/sample").json()["sample"] is None
     assert all(not m["sample"] for m in sam.get("/api/spaces").json()["mine"])
     assert raw.is_dir()
+
+
+def test_the_sample_matches_the_tour(tmp_path):
+    """The bubble tour's numbers: 2:12 raw, five first-cut spots (three to review: a restart, a tangent, a
+    corrected score; one 呃 and one pause routine), 2:12 → about 1:55, and three CC0 tracks in the library."""
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    ep = sam.get("/api/episodes/SAMPLE_01").json()
+    assert 130 <= ep["raw_duration"] <= 133
+    assert 112 <= ep["duration"] <= 117
+    edits = ep["edits"]
+    assert len(edits) == 5
+    assert ep["pending_review"] == 3
+    review = sorted((e for e in edits if e["consequential"]), key=lambda e: e["t"])
+    assert [e["category"] for e in review] == ["filler", "content", "filler"]
+    assert review[0]["t"] < 6 and 20 < review[1]["t"] < 32 and 36 < review[2]["t"] < 46
+    assert sorted(e["category"] for e in edits if not e["consequential"]) == ["filler", "pause"]
+    # the lines the tour points at are in the transcript
+    lines = sam.get(f"/api/episodes/SAMPLE_01/manual/transcript?v={ep['version']}&t0=0&t1=200").json()
+    said = "".join(w[0] for ln in (lines["lines"] if isinstance(lines, dict) else lines) for w in ln["words"])
+    for line in ("那个演员叫什么来着", "等一下我喝口水"):
+        assert line in said
+    lib = sam.get("/api/library").json()["assets"]
+    assert sorted(a["credit"]["title"] for a in lib) == ["Happy African Village", "Safari Time", "Uptown Fatness"]
+    assert all(a["shared"] and a["credit"]["status"] == "confirmed" for a in lib)
+    assert {a["kind"] for a in lib} == {"intro", "outro", "bed"}
 
 
 def test_a_collaborator_gets_the_short_version(tmp_path):
