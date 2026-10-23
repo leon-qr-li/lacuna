@@ -194,3 +194,29 @@ def test_the_tour_sentences_match_the_interface():
     web = (Path(__file__).resolve().parents[2] / "web" / "src" / "features" / "tour" / "en.ts").read_text("utf-8")
     for d in (sample.TOUR_CHAT, sample.TOUR_MUSIC):
         assert f'"{d["zh"]}": "{d["en"]}"' in web
+
+
+def test_a_new_sample_starts_the_tour_from_step_1(tmp_path):
+    """Leon 2026-10-23: the tour didn't start for a "new" person: the tour's place from an earlier sample
+    (deleted in 设置, or the account deleted and the same email invited again) was still kept."""
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    sam.post("/api/onboarding/mark", json={"step": "sample.decide"})
+    sam.put("/api/onboarding", json={"tour": ""})                 # finished
+    # deleted in 设置, then added again: the tour from the start
+    got = sam.delete("/api/onboarding/sample").json()
+    assert got["tour"] is None and "sample.decide" not in got["done"]
+    sam.put("/api/onboarding", json={"tour": "~music3"})          # (left halfway with no sample: still a fresh start)
+    got = sam.post("/api/onboarding/sample", json={"lang": "zh"}).json()
+    assert got["tour"] is None and got["sample"]
+    # the account deleted, the same email invited again: a new person (welcome page, new sample, tour from step 1)
+    old = got["sample"]["id"]
+    sam.put("/api/onboarding", json={"tour": "~music3", "welcomed": True})
+    assert leon.delete("/api/auth/users/sam@example.com").status_code == 200
+    again = join(leon, "sam@example.com")
+    got = again.get("/api/onboarding").json()
+    assert got["sample"] is None and got["tour"] is None and got["welcomed"] is False and got["done"] == []
+    assert old not in {s["id"] for s in leon.get("/api/spaces").json()["all"]}
+    got = again.post("/api/onboarding/sample", json={"lang": "zh"}).json()
+    assert got["sample"]["id"] != old and got["tour"] is None

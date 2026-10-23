@@ -1,0 +1,47 @@
+[
+  {
+    "title": "Uptown Fatness",
+    "artist": "John Bartmann",
+    "album": "Making Soundtracks Is Easy",
+    "kind": "intro",
+    "file": "John_Bartmann_-_Uptown_Fatness.mp3",
+    "track_page_url": "https://freemusicarchive.org/music/John_Bartmann/making-soundtracks-is-easy/uptown-fatness/",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "checked_at": "2026-10-22T20:36:49Z",
+    "original_duration_s": 133.52,
+    "original_sha256": "87b5956dd4326985ef3c6cc7a5fda61bdb318f93084ec0f4a1f4b28f4e39684b",
+    "edit": "first 32 s, 3 s fade-out, re-encoded 128 kbps MP3, tags stripped (CC0 allows changes)",
+    "sha256": "b3594e4078ffa86df2880ba24cde4eb8a25072b5658822e2dc8a33c2a5735d36"
+  },
+  {
+    "title": "Happy African Village",
+    "artist": "John Bartmann",
+    "album": "Public Domain Soundtrack Music: Album One",
+    "kind": "outro",
+    "file": "John_Bartmann_-_Happy_African_Village.mp3",
+    "track_page_url": "https://freemusicarchive.org/music/John_Bartmann/Public_Domain_Soundtrack_Music_Album_One/happy-african-village/",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "checked_at": "2026-10-22T20:36:49Z",
+    "original_duration_s": 134.84,
+    "original_sha256": "7c99f8e18b4e161dc08f445ae58bbb53826d26a52014756917eae389c44aa90e",
+    "edit": "first 45 s, 3 s fade-out, re-encoded 128 kbps MP3, tags stripped (CC0 allows changes)",
+    "sha256": "1b11d782d073755a328c6d9c1c7214af3986e197ec4df0e6252d291ec3a66501"
+  },
+  {
+    "title": "Safari Time",
+    "artist": "John Bartmann",
+    "album": "Audio Drama Soundtracks: Album Four",
+    "kind": "bed",
+    "file": "John_Bartmann_-_Safari_Time.mp3",
+    "track_page_url": "https://freemusicarchive.org/music/John_Bartmann/audio-drama-soundtracks-album-four/safari-time-1/",
+    "license": "CC0 1.0",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "checked_at": "2026-10-22T20:36:49Z",
+    "original_duration_s": 120.25,
+    "original_sha256": "a8445bc636b1efb9be580b90f30ff2133d0e5a9846410005b733816e05a7252b",
+    "edit": "first 60 s, 3 s fade-out, re-encoded 128 kbps MP3, tags stripped (CC0 allows changes)",
+    "sha256": "1f88f84a70102f079573e887730e82a9e349f00af8c91f620da4453f1954b50e"
+  }
+]
