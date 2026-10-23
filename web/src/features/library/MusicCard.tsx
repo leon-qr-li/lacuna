@@ -373,7 +373,14 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
   const fromP = () => Object.fromEntries(fields.map((f) => [f.k, show(p[f.k], f.time)])) as Record<Tune, string>;
   const key = fields.map((f) => p[f.k]).join("|");
   const [d, setD] = useState(fromP);
-  useEffect(() => setD(fromP()), [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  const seen = useRef(fromP());
+  useEffect(() => {
+    // a save elsewhere on the card refreshes p: reset only the fields whose saved value changed, so a number
+    // being typed in another field is kept
+    const now = fromP();
+    setD((x) => Object.fromEntries(fields.map((f) => [f.k, now[f.k] !== seen.current[f.k] ? now[f.k] : x[f.k]])) as Record<Tune, string>);
+    seen.current = now;
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
   const parsed = (f: FieldDef) => (f.time ? parseTime(d[f.k]) : d[f.k].trim() === "" ? null : Number(d[f.k]));
   const changed = fields.filter((f) => d[f.k] !== show(p[f.k], f.time));
   const bad = changed.some((f) => {
