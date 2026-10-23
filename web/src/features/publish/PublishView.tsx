@@ -122,7 +122,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
           </p>
         </div>
         <span className="grow" />
-        <button type="button" className={pack ? "btn btn-outline" : "btn btn-primary"} onClick={generate} disabled={busy || running}>
+        <button type="button" className={pack ? "btn btn-outline" : "btn btn-primary"} onClick={generate} disabled={busy || running} data-tour="publish-generate">
           <BusyLabel busy={running} label={pack ? t("重新生成") : t("生成发布资料")} busyLabel={t("生成中…")} />
         </button>
       </div>
@@ -160,7 +160,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
             </p>
           ))}
 
-          <section className="card" aria-label={t("标题")}>
+          <section className="card" aria-label={t("标题")} data-tour="publish-title-card">
             <div className="card-head">
               <strong>{t("标题")}</strong>
               <button type="button" className="btn btn-outline btn-small" onClick={() => copy("text", pack.title, t("标题已复制"))}>

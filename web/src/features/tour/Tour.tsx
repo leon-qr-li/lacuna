@@ -1,6 +1,7 @@
-// The bubble tour engine (new-user batch, tour v3): a mask with one lit hole, a ring and a bubble. Only the hole
-// can be clicked on a do step; a 知道了 step blocks it too (unless `free`). The place reached is kept on the
-// server (onboarding `tour`), so leaving and coming back resumes it. Only in LACUNA 示例节目.
+// The bubble tour engine (new-user batch, tour v3): a mask with one lit hole, a ring and a bubble. A locked demo
+// (Leon 2026-10-23, "像 PPT"): nothing on the page can be clicked, LACUNA does every step itself (its `enter`) and
+// the person only presses 知道了. The place reached is kept on the server (onboarding `tour`), so leaving and
+// coming back resumes it. Only in LACUNA 示例节目.
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { AB, Episode } from "../../api";
@@ -109,31 +110,34 @@ function save(step: string) {
 function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: string; player: Player; at: string }) {
   const [cur, setCur] = useState(() => Math.max(0, STEPS.findIndex((s) => s.id === at)));
   const [finished, setFinished] = useState(at === DONE);
-  const [marks, setMarks] = useState<Marks | null>(null);
+  // the spots on the current cut: a step only begins once they are fetched for this version
+  const [got, setGot] = useState<{ v: string; m: Marks | null } | null>(null);
+  const marks = got?.v === ep.version ? got.m : null;
+  const fresh = got?.v === ep.version;
   const step = finished ? null : STEPS[cur];
   const memo = useRef<Record<string, unknown>>({});
-  const clicked = useRef(new Set<string>());
   const [, setTick] = useState(0);
+  const mounted = useRef(true);
+  useEffect(() => () => void (mounted.current = false), []);
 
   useEffect(() => {
-    req<Marks>("GET", `/api/episodes/${encodeURIComponent(id)}/tour/marks`).then(setMarks, () => setMarks(null));
+    const v = ep.version;
+    req<Marks>("GET", `/api/episodes/${encodeURIComponent(id)}/tour/marks`).then((m) => setGot({ v, m }), () => setGot({ v, m: null }));
   }, [id, ep.version]);
 
   const ctx = useRef<Ctx>(null as unknown as Ctx);
-  ctx.current = { ep, id, mode, marks, player, memo: memo.current, clicked: clicked.current };
+  const m0 = memo.current;
+  ctx.current = { ep, id, mode, marks, player, memo: m0, alive: () => mounted.current && memo.current === m0 };
   const h: Hosts = { a: marks?.hosts[0] ?? ep.tracks[0]?.name ?? "", b: marks?.hosts[1] ?? ep.tracks[1]?.name ?? "" };
 
-  // keep: the step went on by itself because a play button was clicked (A / B): let that one play
-  const go = useCallback((i: number, keep = false) => {
-    if (!keep) stopAudio(); // every new step starts quiet: the page is masked, so nothing else could stop it
+  const go = useCallback((i: number) => {
+    stopAudio(); // every new step starts quiet: the page is masked, so nothing else could stop it
     memo.current = {};
-    clicked.current = new Set();
     if (i >= STEPS.length) {
       setFinished(true);
       save(DONE);
       return;
     }
-    STEPS[i].init?.({ ...ctx.current, memo: memo.current, clicked: clicked.current });
     setCur(i);
     save(STEPS[i].id);
   }, []);
@@ -143,48 +147,25 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   const entered = useRef<string | null>(null); // the step whose enter has run: only then is it checked
   useEffect(() => {
     if (!step) return;
-    // a "下一步" step is done on the next page; any other step is shown on its own page
-    const moved = !step.clicks && !!step.done?.(ctx.current);
-    if (mode !== step.mode && !moved) {
+    if (mode !== step.mode) {
       window.location.hash = `#/ep/${encodeURIComponent(id)}/${step.mode}`;
       return;
     }
-    if (entered.current === step.id) return;
+    if (entered.current === step.id || !fresh) return;
     const s = step;
-    // resumed here (not reached by go): note the baseline now
-    if (s.init && !Object.keys(memo.current).length) s.init(ctx.current);
     const k = window.setTimeout(() => {
-      s.enter?.(ctx.current);
       entered.current = s.id;
+      void s.enter?.(ctx.current);
     }, 150);
     return () => window.clearTimeout(k);
-  }, [step, mode, id]);
+  }, [step, mode, id, fresh]);
 
-  // clicks the step waits for
+  // a step LACUNA is still doing: 知道了 waits for it (checked a few times a second)
   useEffect(() => {
-    if (!step?.clicks) return;
-    const sels = step.clicks;
-    const on = (e: MouseEvent) => {
-      const el = e.target as Element | null;
-      for (const s of sels) if (el?.closest?.(s)) clicked.current.add(s);
-    };
-    document.addEventListener("click", on, true);
-    return () => document.removeEventListener("click", on, true);
-  }, [step]);
-
-  // a do step: check it a few times a second
-  useEffect(() => {
-    if (!step || (!step.done && !step.clicks)) return;
-    const s = step;
-    const k = window.setInterval(() => {
-      if (entered.current !== s.id) return;
-      const c = ctx.current;
-      const all = (s.clicks ?? []).every((x) => c.clicked.has(x));
-      if (all && (s.done ? s.done(c) : true)) go(cur + 1, !!s.clicks);
-      else setTick((n) => n + 1);
-    }, 250);
+    if (!step?.done) return;
+    const k = window.setInterval(() => setTick((n) => n + 1), 250);
     return () => window.clearInterval(k);
-  }, [step, go, cur]);
+  }, [step]);
 
   const exit = async () => {
     const left = STEPS.length - cur;
@@ -298,7 +279,13 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
 
   const all = STEPS.filter((s) => s.ch === step.ch);
   const k = all.indexOf(step) + 1;
-  const isDo = !!(step.done || step.clicks);
+  // LACUNA got stuck (a page that never came, a click that missed): after a while 知道了 lets the person on
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    const k = window.setTimeout(() => setLate(true), 30_000);
+    return () => window.clearTimeout(k);
+  }, []);
+  const busy = !late && !!step.done && !step.done(ctx.current);
   const W = typeof window === "undefined" ? 0 : window.innerWidth;
   const H = typeof window === "undefined" ? 0 : window.innerHeight;
   // the four shades around the hole catch every click outside it; React's handler stops the page's own
@@ -318,7 +305,7 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
         <div key={i} className="tour-shade" style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
       ))}
       {hole && <div className="tour-ring" style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }} />}
-      {hole && !isDo && !step.free && <div className="tour-block" style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }} />}
+      {hole && <div className="tour-block" style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }} />}
       {box && <div className="tour-box" style={{ left: box.x, top: box.y, width: box.w, height: box.h }} data-testid="tour-box" />}
       <Pill ch={step.ch} onExit={onExit} />
       <div
@@ -335,18 +322,10 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
         <h3>{step.title(h)}</h3>
         <p>{rich(step.body(h))}</p>
         <div className="tour-foot">
-          {isDo && <span className="tour-hint">{step.hint?.(h)}</span>}
-          {(!isDo || step.alsoOk) && (
-            <button type="button" className="btn btn-primary btn-small" onClick={onNext} data-testid="tour-ok" autoFocus>
-              {t("知道了")}
-            </button>
-          )}
-          <span className="grow" />
-          {isDo && !step.alsoOk && (
-            <button type="button" className="linkbtn small" onClick={onNext} data-testid="tour-skip-step">
-              {t("跳过这一步")}
-            </button>
-          )}
+          <button type="button" className="btn btn-primary btn-small" onClick={onNext} disabled={busy} data-testid="tour-ok" autoFocus>
+            {t("知道了")}
+          </button>
+          {busy && <span className="tour-hint">{step.hint?.(h) ?? t("LACUNA 正在操作…")}</span>}
         </div>
       </div>
     </div>
@@ -443,8 +422,8 @@ function Done({ ep, id, onExit }: { ep: Episode; id: string; onExit: () => Promi
     () => [
       t("剪辑 {a} → {b}", { a: fmt(ep.raw_duration ?? ep.duration), b: fmt(ep.duration) }),
       t("成品含配乐 {c}", { c: fmt(mix?.duration ?? ep.duration) }),
-      t("你审阅了 {n} 处", { n: reviewed }),
-      t("你动手剪了 {n} 处", { n: manual }),
+      t("审阅了 {n} 处", { n: reviewed }),
+      t("手动剪了 {n} 处", { n: manual }),
       t("配乐 {n} 段", { n: mix?.n ?? 0 }),
     ],
     [ep, mix, reviewed, manual],
@@ -487,8 +466,8 @@ function Done({ ep, id, onExit }: { ep: Episode; id: string; onExit: () => Promi
           <button type="button" className="btn btn-outline" onClick={() => void again()} data-testid="tour-again-run">
             {t("再走一遍示例")}
           </button>
-          <button type="button" className="btn btn-outline" onClick={() => void leave(() => (window.location.hash = `#/ep/${encodeURIComponent(id)}/publish`))} data-testid="tour-publish">
-            {t("去看看「发布」")}
+          <button type="button" className="btn btn-outline" onClick={() => void leave(() => (window.location.hash = `#/ep/${encodeURIComponent(id)}/listen`))} data-testid="tour-try">
+            {t("自己在示例里试试")}
           </button>
         </div>
         <p className="small muted">{t("示例节目会留在你的节目列表里，可以随便点；不想要了在 设置 → 通用 里删除。")}</p>

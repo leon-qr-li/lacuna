@@ -178,6 +178,7 @@ export function EditLanes({
     const on = (e: Event) => {
       const { a, b } = (e as CustomEvent<{ a: number; b: number }>).detail;
       setSel({ a, b, from: "lanes" });
+      setMenuOpen(true);
     };
     window.addEventListener(SELECT_EVENT, on);
     return () => window.removeEventListener(SELECT_EVENT, on);

@@ -620,8 +620,9 @@ class Publisher:
         with ep.lock:
             version = ep.version_key()
             duration = music.to_final(ep.timeline_for(ep.enabled).length / ep.sr)
-        writer = self.factory()
-        stage(tr("LACUNA 在写标题和 show notes") if writer.name == "claude" else tr("生成草稿（AI 没接上）"))
+        from .sample import sample_publisher
+        writer = sample_publisher(ep) or self.factory()
+        stage(tr("LACUNA 在写标题和 show notes") if writer.name in ("claude", "sample") else tr("生成草稿（AI 没接上）"))
         out = writer.write(ep, segs, music, names, duration)
         if out.usage:
             self.on_usage(ep.id, out.usage)

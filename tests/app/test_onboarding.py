@@ -143,6 +143,31 @@ def test_the_tour_line_in_the_sample_is_answered_without_the_ai(tmp_path):
     assert again.get("adapter") != "sample"
 
 
+def test_the_sample_publish_pack_and_covers_come_without_the_ai(tmp_path):
+    """The tour's 发布 chapter (locked demo, Leon 2026-10-23): fixed words and covers, no AI key needed."""
+    import time
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    sam.post("/api/episodes/SAMPLE_01/publish/generate")
+    for _ in range(100):
+        got = sam.get("/api/episodes/SAMPLE_01/publish").json()
+        if (got.get("job") or {}).get("state") != "running" and got.get("pack"):
+            break
+        time.sleep(0.05)
+    pack = got["pack"]
+    assert pack["title"] == "电影夜：一碗面里的父亲" and pack["adapter"] == "sample"
+    assert pack["markdown"].count("长镜头") >= 1 and "先吃饱" in pack["markdown"]    # the key words were found
+    assert sam.get("/api/episodes/SAMPLE_01/poster").json()["available"]
+    sam.post("/api/episodes/SAMPLE_01/poster/generate")
+    for _ in range(200):
+        view = sam.get("/api/episodes/SAMPLE_01/poster").json()
+        if (view.get("job") or {}).get("state") != "running" and view["variants"]:
+            break
+        time.sleep(0.05)
+    assert len(view["variants"]) == 4 and not view["errors"]
+
+
 def test_the_tour_position_is_kept_and_reset(tmp_path):
     leon = setup(tmp_path)
     sam = join(leon, "sam@example.com")
