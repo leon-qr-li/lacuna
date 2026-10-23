@@ -177,7 +177,8 @@ def tour_music_chat(m, text: str) -> dict | None:
 
 
 def tour_marks(ep) -> dict | None:
-    """Where the tour's spots are on the current cut (seconds): the actor lines, 「等一下 我喝口水」, the cough."""
+    """Where the tour's spots are on the current cut (seconds): the actor lines, 「等一下 我喝口水」, the silence
+    after it, the cough."""
     meta = getattr(ep, "meta", {}) or {}
     lang = meta.get("language")
     if meta.get("source") != "sample" or lang not in SCRIPT:
@@ -203,6 +204,8 @@ def tour_marks(ep) -> dict | None:
         return {"hosts": list(HOSTS[lang]),
                 "actor": tl((a[0], b[1]) if a and b else None),
                 "water": tl(turn(10)),
+                # the silence after 「等一下 我喝口水」: no words, so the tour cuts it on the timeline
+                "gap": tl((w[1], n[0]) if (w := turn(10)) and (n := turn(11)) else None),
                 "cough": tl((c[0] + COUGH[1], c[0] + COUGH[1] + COUGH[2]) if c else None)}
 
 

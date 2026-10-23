@@ -47,12 +47,17 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
     seen.push(s);
     if (s === "done") break;
     if (s === "raw") {
-      await page.getByTestId("tour-raw-play").click();
+      // read first: nothing plays until 知道了, then LACUNA plays it
+      await expect(tour).toHaveAttribute("data-phase", "read");
+      await page.waitForTimeout(800);
+      expect(await page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(true);
+      await ok();
       await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.1);
       // whatever plays can be stopped from the pill (the page itself is masked)
       await page.getByTestId("tour-pause").click();
       await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(true);
       await expect(page.getByTestId("tour-pause")).toHaveCount(0);
+      await expect(tour).toHaveAttribute("data-phase", "result");
       await ok();
       await moved(s);
       continue;
@@ -86,17 +91,18 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
   }
   expect(navs).toBe(6); // review → listen → levels → music → export → publish → poster
   // every step was shown once, in order, and nothing was skipped
-  expect(seen.length).toBe(17); // 16 steps, then done
+  expect(seen.length).toBe(16); // 15 steps, then done
   expect(new Set(seen).size).toBe(seen.length);
   const done = page.getByTestId("tour-done");
   await expect(done).toContainText("审阅了 3 处");
   await expect(done).toContainText("手动剪了 3 处");
   await expect(done).toContainText("配乐 2 段");
   await done.getByTestId("tour-after").click();
-  // the edits the tour made are real: the actor lines, the water line and the cough are gone
+  // the edits the tour made are real: the actor lines (chat), the water line (transcript) and the dead air
+  // after it (timeline) are gone
   const ep = await (await page.request.get("/api/episodes/SAMPLE_01")).json();
   expect(ep.edits.filter((e: { source: string }) => e.source === "chat")).toHaveLength(1);
-  expect(ep.edits.filter((e: { source: string; tracks: string[] | null }) => e.source === "manual" && e.tracks?.length === 1)).toHaveLength(1);
+  expect(ep.edits.filter((e: { source: string; tracks: string[] | null }) => e.source === "manual" && !e.tracks?.length)).toHaveLength(2);
   expect((await (await page.request.get("/api/onboarding")).json()).tour).toBe("done");
   await done.getByTestId("tour-try").click();
   await expect(page).toHaveURL(/SAMPLE_01\/listen/);

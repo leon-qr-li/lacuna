@@ -38,8 +38,13 @@ test("welcome → sample show with the tour → own show → checklist", async (
   // the sample: straight into its review, the bubble tour at its first step (the raw recording)
   await sam.getByTestId("welcome-sample").click();
   await expect(sam).toHaveURL(/#\/ep\/SAMPLE_01\/review/);
-  await expect(sam.getByTestId("tour-pill")).toContainText("第 1 步，共 8 步");
+  await expect(sam.getByTestId("tour-pill")).toContainText("第 1 步，共 7 步");
   await expect(sam.getByTestId("tour-raw")).toContainText("先听听没剪过的样子");
+  // 知道了 → LACUNA plays it; paused from the pill → the result, 知道了 again
+  await sam.getByTestId("tour-raw").getByTestId("tour-ok").click();
+  await expect.poll(() => sam.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.1);
+  await sam.getByTestId("tour-pause").click();
+  await expect(sam.getByTestId("tour-raw")).toContainText("听完了");
   await sam.getByTestId("tour-raw").getByTestId("tour-ok").click();
   const bubble = sam.getByTestId("tour-bubble");
   await expect(bubble).toContainText("LACUNA 拿不准的 3 处");
@@ -55,7 +60,7 @@ test("welcome → sample show with the tour → own show → checklist", async (
   // the one way out is the quiet × on the pill; it asks first (继续教程 stays), then remembers the step
   await expect(bubble.getByRole("button", { name: "跳过教程" })).toHaveCount(0);
   await sam.getByTestId("tour-exit").click();
-  await expect(sam.getByTestId("dialog")).toContainText("还剩 7 步");
+  await expect(sam.getByTestId("dialog")).toContainText("还剩 6 步");
   await sam.getByTestId("dialog").getByRole("button", { name: "继续教程" }).click();
   await expect(bubble).toContainText("保留，还是恢复？");
   await sam.getByTestId("tour-exit").click();

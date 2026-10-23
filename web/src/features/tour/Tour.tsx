@@ -403,29 +403,32 @@ function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
 /** 1: the first 30 seconds as recorded, before anything else */
 function Raw({ step, id, h, onNext, onExit }: { step: Step; id: string; h: Hosts; onNext: () => void; onExit: () => void }) {
   const [ab, setAb] = useState<AB | null>(null);
-  const [playing, setPlaying] = useState(false);
+  // read first; after 知道了 LACUNA plays it; when it ends (or is paused from the pill), the result
+  const [phase, setPhase] = useState<"read" | "act" | "result">("read");
   const [now, setNow] = useState(0);
   const audio = useRef<HTMLAudioElement>(null);
+  const play = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     req<AB>("GET", `/api/episodes/${encodeURIComponent(id)}/tour/raw`).then(setAb, () => undefined);
   }, [id]);
-  const toggle = () => {
-    const a = audio.current;
-    if (!a) return;
-    if (a.paused) void a.play().catch(() => undefined);
-    else a.pause();
+  const ok = async () => {
+    if (phase === "result") return onNext();
+    if (phase !== "read" || !audio.current) return;
+    setPhase("act");
+    await tap(play.current, 900);
+    void audio.current.play().catch(() => setPhase("result"));
   };
   return (
-    <div className="tour" data-testid="tour" data-step={step.id}>
+    <div className="tour" data-testid="tour" data-step={step.id} data-phase={phase}>
       <div className="tour-shade" style={{ inset: 0 }} />
       <Pill ch={1} onExit={onExit} />
       <div className="tour-modal card" role="dialog" aria-label={step.title(h)} data-testid="tour-raw">
         <span className="tour-meta">{t("第 {n} 步，共 {total} 步", { n: 1, total: CHAPTERS })} · {chapterName(1)}</span>
         <h2>{step.title(h)}</h2>
-        <p>{rich(step.body(h))}</p>
+        <p>{rich(phase === "result" ? (step.result?.(h) ?? "") : step.body(h))}</p>
         <div className="tour-play">
-          <button type="button" className="btn btn-primary" onClick={toggle} disabled={!ab} data-testid="tour-raw-play">
-            {playing ? t("❚❚ 暂停") : t("▶ 播放原始录音")}
+          <button ref={play} type="button" className="btn btn-primary" tabIndex={-1} disabled={!ab} data-testid="tour-raw-play">
+            {phase === "act" ? t("❚❚ 正在播放") : t("▶ 播放原始录音")}
           </button>
           <span className="mono small">
             {fmt(now)} / {fmt(ab?.before.duration ?? 30)}
@@ -434,18 +437,18 @@ function Raw({ step, id, h, onNext, onExit }: { step: Step; id: string; h: Hosts
         <audio
           ref={audio}
           src={ab?.before.url}
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
+          onPause={() => setPhase((p) => (p === "act" ? "result" : p))}
           onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
-          onEnded={onNext}
           data-testid="tour-raw-audio"
         />
         <div className="tour-foot">
-          <span className="tour-hint">{t("听完自动进入下一步。")}</span>
-          <span className="grow" />
-          <button type="button" className="btn btn-outline btn-small" onClick={onNext} data-testid="tour-ok">
-            {t("下一步")}
-          </button>
+          {phase === "act" ? (
+            <span className="tour-hint" data-testid="tour-acting">{t("正在播放原始录音…")}</span>
+          ) : (
+            <button type="button" className="btn btn-primary btn-small" onClick={() => void ok()} disabled={!ab} data-testid="tour-ok" autoFocus>
+              {t("知道了")}
+            </button>
+          )}
         </div>
         <p className="tour-note small muted">{t("示例节目不占用你的额度。两位主持人的声音是合成的。")}</p>
       </div>

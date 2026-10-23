@@ -219,10 +219,11 @@ def test_the_tour_finds_its_spots_on_the_cut(tmp_path):
     sam.post("/api/onboarding/sample", json={"lang": "zh"})
     m = sam.get("/api/episodes/SAMPLE_01/tour/marks").json()
     assert m["hosts"] == ["小林", "阿乔"]
-    for k in ("actor", "water", "cough"):
+    for k in ("actor", "water", "gap", "cough"):
         a, b = m[k]
         assert 0 < a < b < 120, k
-    assert m["actor"][1] < m["water"][0] < m["cough"][0]
+    assert m["actor"][1] < m["water"][0] < m["water"][1] <= m["gap"][0] < m["cough"][0]
+    assert 1.2 < m["gap"][1] - m["gap"][0] < 2.2  # the 1.6 s silence after 「等一下 我喝口水」
     assert 0.3 < m["cough"][1] - m["cough"][0] < 0.6
     assert leon.get("/api/episodes/EP_TEST/tour/marks").status_code in (404, 403)
 

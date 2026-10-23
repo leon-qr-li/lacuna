@@ -13,6 +13,11 @@ import { TermFixButton } from "../transcript-fix/TermFixButton";
 import { transcriptRev } from "../transcript-fix/api";
 import type { Manual } from "./useManual";
 
+const TEXT_SELECT_EVENT = "lacuna:text-select";
+/** Select the words between a and b (timeline seconds) as if dragged across: the sample tour does this. */
+export const selectInText = (a: number, b: number) =>
+  window.dispatchEvent(new CustomEvent(TEXT_SELECT_EVENT, { detail: { a, b } }));
+
 const BEFORE_S = 15; // the card shows from a little before the playhead ...
 const SHOW_S = 90; // ... this far, in steps of TEXT_S so it does not jump with every word
 
@@ -88,6 +93,15 @@ export function TranscriptEdit({
     const inside = audible.filter((w) => (w.a + w.b) / 2 >= lo && (w.a + w.b) / 2 < hi);
     setSel({ a: lo, b: hi, from: "text", speakers: [...new Set(inside.map((w) => w.speaker))], text: joinWords(inside.map((w) => w.text)) });
   };
+  useEffect(() => {
+    const on = (e: Event) => {
+      const { a, b } = (e as CustomEvent<{ a: number; b: number }>).detail;
+      const inside = audible.filter((w) => (w.a + w.b) / 2 >= a && (w.a + w.b) / 2 < b);
+      if (inside.length) select(inside[0], inside[inside.length - 1]);
+    };
+    window.addEventListener(TEXT_SELECT_EVENT, on);
+    return () => window.removeEventListener(TEXT_SELECT_EVENT, on);
+  });
   const wordDown = (w: W) => (e: React.PointerEvent) => {
     if (e.button !== 0) return;
     e.preventDefault();
