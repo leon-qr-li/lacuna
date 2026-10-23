@@ -40,12 +40,11 @@ test("welcome → sample show with the tour → own show → checklist", async (
   await expect(sam).toHaveURL(/#\/ep\/SAMPLE_01\/review/);
   await expect(sam.getByTestId("tour-pill")).toContainText("第 1 步，共 7 步");
   await expect(sam.getByTestId("tour-raw")).toContainText("先听听没剪过的样子");
-  // 知道了 → LACUNA plays it; paused from the pill → the result, 知道了 again
-  await sam.getByTestId("tour-raw").getByTestId("tour-ok").click();
+  // no 知道了 here: play is the only control; paused from the pill → on to the next step
+  await expect(sam.getByTestId("tour-raw").getByTestId("tour-ok")).toHaveCount(0);
+  await sam.getByTestId("tour-raw-play").click();
   await expect.poll(() => sam.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.1);
   await sam.getByTestId("tour-pause").click();
-  await expect(sam.getByTestId("tour-raw")).toContainText("听完了");
-  await sam.getByTestId("tour-raw").getByTestId("tour-ok").click();
   const bubble = sam.getByTestId("tour-bubble");
   await expect(bubble).toContainText("LACUNA 拿不准的 3 处");
   await expect(bubble).toContainText("审阅改动 · 1/3");

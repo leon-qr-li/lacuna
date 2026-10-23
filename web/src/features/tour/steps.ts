@@ -49,6 +49,8 @@ export interface Step {
   hint?: (h: Hosts) => string;
   /** shown after `act`, with 知道了 again (the outcome is on screen and worth a sentence) */
   result?: (h: Hosts) => string;
+  /** lit up while `result` shows (default: `target`): where the outcome is */
+  resultTarget?: Target[];
   side?: "top" | "bottom" | "left" | "right";
   /** the bubble keeps clear of these too (default: only the lit part) */
   around?: string[];
@@ -124,8 +126,7 @@ export const TOUR_MUSIC = () => t("说话时片头音乐再小一点");
 
 export const STEPS: Step[] = [
   // 1 the raw recording: a dialog of its own (Tour.tsx)
-  { id: "raw", ch: 1, mode: "review", title: () => t("先听听没剪过的样子"), body: () => t("这是示例节目开头 30 秒的原始录音：有重说、口头禅、冷场，两人一个大声一个小声。按 **知道了**，LACUNA 替你播放。"),
-    result: () => t("听完了。教程最后会放剪好的同一段给你对比。") },
+  { id: "raw", ch: 1, mode: "review", title: () => t("先听听没剪过的样子"), body: () => t("这是示例节目开头 30 秒的原始录音：有重说、口头禅、冷场，两人一个大声一个小声。点 **▶ 播放原始录音** 听一听，放完自动进入下一步；教程最后会放剪好的同一段给你对比。") },
 
   // 2 审阅改动
   { id: "rlist", ch: 2, mode: "review", side: "right", target: [".review-nav"],
@@ -170,7 +171,7 @@ export const STEPS: Step[] = [
     body: (h) => t("这是整集试听：边听边改，有三种剪法。第一种最省事，直接告诉 LACUNA 你想怎么改。虚线框里，{b}想不起演员名字，来回两句，中间还冷场了。按 **知道了**，LACUNA 替你写一句「{text}」并发送。", { ...h, text: TOUR_CHAT() }),
     hint: () => t("LACUNA 正在回答…"),
     result: () => t("LACUNA 找到了那一段，给了一个改法，还没动你的音频。") },
-  { id: "cab", ch: 3, mode: "listen", side: "left", target: [proposalOrApproved],
+  { id: "cab", ch: 3, mode: "listen", side: "left", target: [proposalOrApproved], resultTarget: ['[data-testid="edit-lanes"]'],
     act: async (c) => {
       await tap('[data-testid="proposal"] .btn-outline-accent');
       await until(() => q('[data-testid="proposal"] .ab button'));
@@ -249,7 +250,12 @@ export const STEPS: Step[] = [
     title: () => t("放上片头和片尾"),
     body: () => t("左边是素材库，示例准备了 3 首 CC0 授权的音乐。按 **知道了**，LACUNA 把第一首放成 **片头**、第二首放成 **片尾**：有人开口时音乐会自动压低。"),
     hint: () => t("正在放音乐…") },
-  { id: "usend", ch: 5, mode: "music", side: "top", target: ['[data-tour="music-assist"]'],
+  { id: "usend", ch: 5, mode: "music", side: "top", target: ['[data-tour="music-assist"]'], resultTarget: [`${intro} [data-testid="music-curve"]`],
+    // the request is about the intro, so its curve is the one open on screen
+    enter: () => {
+      const tg = q(`${intro} .mcard-toggle`) as HTMLButtonElement | null;
+      if (tg?.getAttribute("aria-expanded") === "false") tg.click();
+    },
     act: async (c) => {
       await type(c, '[data-tour="music-assist"] textarea', TOUR_MUSIC());
       await wait(500);
@@ -261,7 +267,8 @@ export const STEPS: Step[] = [
     done: () => !q('[data-testid="music-draft"]'),
     title: () => t("配乐的位置和音量，直接说"),
     body: () => t("放好的音乐，想调位置、音量、淡入淡出，直接说就行。用哪首曲子，还是你在素材库里挑。LACUNA 的改动先变成建议，满意再 **采用**。按 **知道了**，LACUNA 替你发一句「{text}」，再点采用。", { text: TOUR_MUSIC() }),
-    hint: () => t("LACUNA 正在调…") },
+    hint: () => t("LACUNA 正在调…"),
+    result: () => t("采用了：有人说话时，片头音乐又压低了 4 dB，曲线里压低的那一段往下掉了。") },
 
   // 6 导出
   { id: "xstart", ch: 6, mode: "export", side: "bottom", target: ['[data-tour="export-formats"]', '[data-tour="export-start"]', ".xmain .job"],

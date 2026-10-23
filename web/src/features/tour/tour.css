@@ -50,3 +50,6 @@
 @media (prefers-reduced-motion: reduce) { .tour-ring.is-acting { animation: none; } }
 .tour-press { transform: scale(0.94); transition: transform 0.12s; }
 @media (prefers-reduced-motion: reduce) { .tour-press { transform: none; } }
+
+/* during the tour the black playhead would hide the orange cut lines it talks about */
+body:has([data-testid="tour"]) .ml-head-line { display: none; }

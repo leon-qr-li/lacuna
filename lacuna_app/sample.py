@@ -456,11 +456,11 @@ _COVER = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200"><rect
           '<text x="94" y="1090" font-family="Inter" font-size="44" fill="{fg}" opacity="0.7">LACUNA SAMPLE SHOW</text></svg>')
 _ART = {
     "emblem": '<circle cx="600" cy="460" r="250" fill="none" stroke="#F2B66D" stroke-width="28"/><path d="M420 470 Q600 620 780 470" fill="none" stroke="#F2B66D" stroke-width="22"/><circle cx="600" cy="400" r="46" fill="#FFF4E0"/>',
-    "films": '<rect x="140" y="170" width="420" height="600" fill="#2E4A62"/><rect x="640" y="170" width="420" height="600" fill="#C25B3C"/>',
+    "pairing": '<rect x="140" y="170" width="420" height="600" fill="#2E4A62"/><rect x="640" y="170" width="420" height="600" fill="#C25B3C"/>',
     "geometry": '<rect x="120" y="140" width="960" height="40" fill="#E8D9B5"/><circle cx="820" cy="520" r="200" fill="#C25B3C"/><rect x="200" y="380" width="300" height="300" fill="#E8D9B5"/>',
     "free": '<path d="M150 700 L600 180 L1050 700 Z" fill="#3D6B5A"/><circle cx="600" cy="560" r="90" fill="#F6E7C1"/>',
 }
-_COLORS = {"emblem": ("#1C2433", "#FFF4E0"), "films": ("#F3EBDD", "#1C2433"), "geometry": ("#22313F", "#E8D9B5"),
+_COLORS = {"emblem": ("#1C2433", "#FFF4E0"), "pairing": ("#F3EBDD", "#1C2433"), "geometry": ("#22313F", "#E8D9B5"),
            "free": ("#F6E7C1", "#1C2433")}
 
 

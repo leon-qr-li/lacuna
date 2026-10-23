@@ -15,6 +15,8 @@ The bubble tour of LACUNA 示例节目 is a demo, "like a PPT":
   and nothing moves. Only after 知道了 does LACUNA highlight and act; the result follows in a new bubble. When the
   next step is on another tab, LACUNA visibly presses 下一步 (or the tab) first, after its own
   bubble and 知道了, slowly enough to follow. One step frames one thing.
+- One exception (Leon, 19:48Z): step 1 has no 知道了. Its only control is 「▶ 播放原始录音」; when the recording ends
+  or is paused, the tour moves on. A button that is visible but does nothing confused him.
 
 ## Why
 New people got stuck on the do-steps: where to click, a failed drag, text hidden under a bubble. Then the
