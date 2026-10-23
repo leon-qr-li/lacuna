@@ -51,11 +51,14 @@ LEGACY: dict = {
          "style": "Somewhat strict with her clear stumbles, but gentler than with Leon; keep some of her tics."},
     ],
     "footer": "*《洛城二三事》是 Leon 和 Pei 两个人的电影闲聊。觉得好听，就分享给一个也爱看电影的朋友吧。*",  # i18n-ignore
-    "publish": {"ximalaya": True, "album": "洛城二三事", "platforms": ["ximalaya", "xiaoyuzhou"]},  # i18n-ignore
+    "publish": {"ximalaya": True, "album": "洛城二三事", "platforms": ["ximalaya", "xiaoyuzhou"], "auto_wish": []},  # i18n-ignore
 }
 
 # podcast platforms a show can say it publishes on (节目设置 → 发布); "other" = anything not listed
 PLATFORMS = ("apple", "spotify", "youtube", "ximalaya", "xiaoyuzhou", "other")
+# 自动发布 (即将推出, decision 2026-10-23-auto-publish-coming-soon): the platforms a show would like LACUNA to
+# publish to later. Only ones it can surely reach (through the show's host's RSS); kept for the admin's counts.
+AUTO_PUBLISH = ("apple", "spotify", "youtube", "amazon")
 
 NEW: dict = {
     "version": VERSION,
@@ -66,7 +69,7 @@ NEW: dict = {
     "language": "zh",
     "hosts": [],
     "footer": "",
-    "publish": {"ximalaya": False, "album": "", "platforms": []},
+    "publish": {"ximalaya": False, "album": "", "platforms": [], "auto_wish": []},
 }
 
 
@@ -144,6 +147,10 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
     else:
         out["publish"]["ximalaya"] = "ximalaya" in raw_pf
     out["publish"]["platforms"] = [p for p in PLATFORMS if p in raw_pf]
+    raw_aw = pub.get("auto_wish")
+    if not isinstance(raw_aw, list):
+        raw_aw = ((before or {}).get("publish") or {}).get("auto_wish")
+    out["publish"]["auto_wish"] = [p for p in AUTO_PUBLISH if p in (raw_aw if isinstance(raw_aw, list) else [])]
     # a form that doesn't send the terms (yet) keeps the stored ones
     raw = data.get("terms") if "terms" in data else (before or {}).get("terms")
     terms, seen = [], set()
@@ -205,7 +212,8 @@ def view(profile: dict) -> dict:
     """What the interface gets (GET /api/show)."""
     return profile | {"rev": profile.get("rev", 0), "needs_setup": not profile.get("setup_done"), "colors": list(COLORS),
                       "cut_levels": list(CUT_LEVELS), "cut_adjusts": list(habits.ADJUSTS), "my_level": habits.level(),
-                      "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES), "platforms": list(PLATFORMS)}
+                      "max_hosts": MAX_HOSTS, "languages": list(LANGUAGES), "platforms": list(PLATFORMS),
+                      "auto_publish": list(AUTO_PUBLISH)}
 
 
 def tracks(profile: dict) -> list[tuple[str, str]]:
