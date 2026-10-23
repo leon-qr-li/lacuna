@@ -1,4 +1,5 @@
 import { ExportPanel } from "../../components/ExportPanel";
+import { EpisodeSummary } from "./Summary";
 import type { Feature } from "../registry";
 import "./export.css";
 import { t } from "../../i18n";
@@ -12,7 +13,7 @@ export const feature: Feature = {
       order: 35,
       render: ({ id, ep }) => (
         <main className="export-step">
-          <ExportPanel id={id} version={ep.version} inline pending={ep.pending_review} />
+          <ExportPanel id={id} version={ep.version} pending={ep.pending_review} summary={<EpisodeSummary id={id} ep={ep} />} />
         </main>
       ),
     },

@@ -14,6 +14,7 @@ Replacing it: put the real episode here and bump VERSION (old masters stay until
 """
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 
@@ -21,9 +22,10 @@ import numpy as np
 import soundfile as sf
 
 from . import show
+from .i18n import tr
 from .store import atomic_write_json
 
-VERSION = 1
+VERSION = 2
 EPISODE = "SAMPLE_01"
 LANGS = ("zh", "en")
 SR = 16000
@@ -33,58 +35,182 @@ HOSTS = {"zh": ("小林", "阿乔"), "en": ("Sam", "Alex")}  # i18n-ignore
 ABOUT = {"zh": "两位主持人聊一部刚看过的电影。（LACUNA 示例节目，录音为占位音频）",  # i18n-ignore
          "en": "Two hosts talk about a film they just watched. (LACUNA sample show, placeholder recording)"}
 
-# (host 0/1, text, seconds of silence after). Placeholder script following the dialogue outline: a restart,
-# fillers, a long pause, a tangent (the one content cut to review), laughing over each other, a correction.
+# (host 0/1, text, seconds of silence after). Placeholder script for the bubble tour (new-user batch, tour v3):
+# 2:12 raw. The first cut has five spots, three to review (a restart at 0:03, a tangent at about 0:25, a
+# corrected score at about 0:41) and two routine ones (one 呃 / uh, one long pause), so 2:12 → about 1:55.
+# Then the tour asks LACUNA to drop Alex/阿乔's two lines about the actor's name (→ about 1:49), deletes
+# 「等一下 我喝口水」 by hand (→ about 1:46) and mutes Sam/小林's cough under the other host (COUGH).
 SCRIPT = {
     "zh": [
-        (0, "大家好 欢迎收听 今天我们 今天我们聊一部 我们两个都看过的电影", 0.6),  # i18n-ignore
-        (1, "对 就是上周末一起看的那部", 0.5),  # i18n-ignore
-        (0, "我觉得 嗯 它的开头 呃 真的 真的 真的很抓人", 0.7),  # i18n-ignore
+        (0, "大家好 欢迎收听电影夜 今天我们 今天我们聊一部 我们俩上周一起看的电影", 0.6),  # i18n-ignore
+        (1, "对 就是那部讲一家人开面馆的片子", 0.5),  # i18n-ignore
+        (0, "它的开头 呃 真的很抓人 一个长镜头从后厨一直跟到门口", 0.6),  # i18n-ignore
+        (1, "那个镜头我数了 差不多三分钟没有剪", 0.5),  # i18n-ignore
+        (0, "说到三分钟 我那天停车就找了三分钟 我表哥的车也停在那边 后来还被贴了罚单", 0.5),  # i18n-ignore
+        (1, "好了好了 说回电影 先聊聊整体的感觉", 0.6),  # i18n-ignore
+        (0, "我先说结论 这部片子我给打七分 不对 是八分", 0.6),  # i18n-ignore
+        (1, "我也是八分 我最喜欢爸爸这个角色 他话很少 但每次做菜都像在说话", 0.6),  # i18n-ignore
         (1, "那个演员叫什么来着", 4.6),  # i18n-ignore
-        (1, "想起来了 是演过很多文艺片的那位", 0.6),  # i18n-ignore
-        (0, "说到这个 我那天停车找了半天 我表哥的车也停在那边 后来还被贴了罚单", 0.4),  # i18n-ignore
-        (1, "好了 说回电影", 0.6),  # i18n-ignore
-        (0, "结尾那场戏你哭了吧", 0.2),  # i18n-ignore
-        (1, "哈哈 你也哭了", 0.6),  # i18n-ignore
-        (1, "我给它打八分 不对 是九分", 0.7),  # i18n-ignore
-        (0, "我也九分 下期见", 0.8),  # i18n-ignore
+        (1, "想起来了 就是那位老演员", 0.7),  # i18n-ignore
+        (0, "等一下 我喝口水", 1.6),  # i18n-ignore
+        (0, "好 接着说 我觉得女儿那条线写得特别好 她一直想离开小镇 最后还是回来接手了面馆", 0.6),  # i18n-ignore
+        (1, "对 这个结尾很克制 没有煽情 但我还是哭了", 0.5),  # i18n-ignore
+        (0, "哈哈 我也哭了 尤其是最后那碗面 爸爸就多放了一个蛋", 0.6),  # i18n-ignore
+        (1, "还有配乐也很好 几乎都是厨房里的声音 切菜 烧水 关火", 0.6),  # i18n-ignore
+        (0, "对 我回家以后煮面的时候 一直在听自己家厨房的声音", 0.6),  # i18n-ignore
+        (1, "所以我们的推荐是 去看 但是看之前一定要先吃饱", 0.5),  # i18n-ignore
+        (0, "好 今天就聊到这里 谢谢大家 我们下期见", 0.4),  # i18n-ignore
+        (1, "下期见", 1.6),  # i18n-ignore
     ],
     "en": [
-        (0, "Hi everyone so today we're so today we are talking about a film we both saw", 0.6),
-        (1, "Right the one we watched last weekend", 0.5),
-        (0, "I thought um the opening was uh it was it was it was really gripping", 0.7),
-        (1, "What was the lead actor called again", 4.6),
-        (1, "Oh I remember the one from all those indie films", 0.6),
-        (0, "Speaking of which parking took forever my cousin's car was there too and he got a ticket", 0.4),
-        (1, "Anyway back to the movie", 0.6),
-        (0, "You cried at the ending right", 0.2),
-        (1, "Ha you did too", 0.6),
-        (1, "I'd give it an eight no wait a nine", 0.7),
-        (0, "Nine for me too see you next time", 0.8),
+        (0, "Hi everyone welcome to Movie Night today we're today we are talking about a film we both saw last week", 0.6),
+        (1, "Right the one about the family noodle shop", 0.5),
+        (0, "The opening uh was really gripping one long shot from the kitchen to the front door", 0.6),
+        (1, "I counted almost three minutes without a cut", 0.5),
+        (0, "Speaking of three minutes parking took me three minutes my cousin's car was there too and he got a ticket",
+         0.5),
+        (1, "Okay okay back to the movie and how it felt overall", 0.6),
+        (0, "Bottom line I would give this film a seven no wait an eight", 0.6),
+        (1, "Eight for me too I love the father he barely talks but his cooking says everything", 0.6),
+        (1, "What was the actor called again", 4.6),
+        (1, "Oh right the veteran one", 0.7),
+        (0, "Hold on let me grab some water", 1.6),
+        (0, "Okay so the daughter's story is great she wants to leave town and in the end she takes over the shop", 0.6),
+        (1, "Yes and the ending is so restrained no big speeches but I still cried", 0.5),
+        (0, "Me too especially the last bowl of noodles he says nothing and just adds an extra egg", 0.6),
+        (1, "The music is great too mostly kitchen sounds chopping boiling water the stove clicking off", 0.6),
+        (0, "I have been listening to my own kitchen ever since", 0.6),
+        (1, "So our advice go see it but eat first", 0.5),
+        (0, "That's it for today see you next time", 0.4),
+        (1, "See you", 0.8),
     ],
 }
-# what the first cut does: (turn, words, op, category, reason) - the words are found inside that turn
+# what the first cut does: (turn, words, op, category, reason, confidence) - the words are found inside that turn.
+# Under 0.4 (review.REVIEW_CONFIDENCE) or a content cut goes to review; the rest is routine.
 CUTS = {
     "zh": [
-        (0, "今天我们", "cut", "repetition", "开头说了两遍，保留第二遍"),  # i18n-ignore
-        (2, "嗯", "cut", "disfluency", "嗯"),  # i18n-ignore
-        (2, "呃", "cut", "disfluency", "呃"),  # i18n-ignore
-        (2, "真的 真的", "cut", "repetition", "「真的」说了三遍，留一遍"),  # i18n-ignore
-        (5, "说到这个 我那天停车找了半天 我表哥的车也停在那边 后来还被贴了罚单", "cut", "content",  # i18n-ignore
-         "停车和罚单是题外话，后面没有再提"),  # i18n-ignore
-        (9, "八分 不对 是", "cut", "repetition", "说错又纠正，留纠正后的"),  # i18n-ignore
+        (0, "今天我们", "cut", "repetition", "开头重说了一遍，保留第二遍", 0.35),  # i18n-ignore
+        (2, "呃", "cut", "disfluency", "呃", 0.9),  # i18n-ignore
+        (4, "说到三分钟 我那天停车就找了三分钟 我表哥的车也停在那边 后来还被贴了罚单", "cut", "content",  # i18n-ignore
+         "停车和罚单是题外话，后面没有再提", 0.55),  # i18n-ignore
+        (6, "七分 不对 是", "cut", "repetition", "说错又改口，留改口后的", 0.35),  # i18n-ignore
     ],
     "en": [
-        (0, "so today we're", "cut", "repetition", "Restarted the sentence, keep the second take"),
-        (2, "um", "cut", "disfluency", "um"),
-        (2, "uh", "cut", "disfluency", "uh"),
-        (2, "it was it was", "cut", "repetition", "\"it was\" said three times, keep one"),
-        (5, "Speaking of which parking took forever my cousin's car was there too and he got a ticket", "cut",
-         "content", "The parking story is a tangent and never comes back"),
-        (9, "an eight no wait", "cut", "repetition", "Said a score, then corrected it; keep the correction"),
+        (0, "today we're", "cut", "repetition", "Restarted the sentence, keep the second take", 0.35),
+        (2, "uh", "cut", "disfluency", "uh", 0.9),
+        (4, "Speaking of three minutes parking took me three minutes my cousin's car was there too and he got a ticket",
+         "cut", "content", "The parking story is a tangent and never comes back", 0.55),
+        (6, "a seven no wait", "cut", "repetition", "Said a score, then corrected it; keep the correction", 0.35),
     ],
 }
-LONG_PAUSE = 3      # the turn after which the long pause is tightened
+LONG_PAUSE = 8      # the turn after which the long pause is tightened
+COUGH = (12, 2.0, 0.45)  # host 0 coughs while host 1 says turn 12: seconds into the turn, how long
+LOUD = (1.5, 0.5)   # host 0 sits close to the mic: about 9.5 dB louder (the tour's 统一两人音量 step)
+MUSIC = Path(__file__).with_name("sample_music")   # CC0 tracks with licenses.json (trimmed copies)
+
+
+# the sentence the tour fills in (step 4): LACUNA's answer is scripted, so it never depends on the AI or quota
+TOUR_CHAT = {"zh": "把阿乔问演员名字的那两句删掉", "en": "Cut Alex's two lines about the actor's name"}  # i18n-ignore
+TOUR_LINES = (8, 9)     # the turns it removes
+TOUR_MUSIC = {"zh": "说话时片头音乐再小一点", "en": "Make the intro music a bit quieter under the talk"}  # i18n-ignore
+
+
+def _plain(text: str) -> str:
+    return "".join(c for c in text.lower() if c.isalnum())
+
+
+def tour_chat(ep, text: str, playhead: float) -> dict | None:
+    """The tour's chat line in the sample episode → a proposal cutting those two lines (no AI call)."""
+    from .editor import Proposal
+
+    meta = getattr(ep, "meta", {}) or {}
+    lang = meta.get("language")
+    if meta.get("source") != "sample" or lang not in TOUR_CHAT or _plain(text) != _plain(TOUR_CHAT[lang]):
+        return None
+    first, last = (SCRIPT[lang][i][1] for i in TOUR_LINES)
+    want = [c for c in (first + last) if c != " "] if lang == "zh" else (first + " " + last).split()
+    with ep.lock:
+        cuts = ep.cuts_for(ep.enabled)
+        words = [w for w in ep.words(0.0, 1e9) if w[0] == HOSTS[lang][1]]
+        seq = [w[3] for w in words]
+        at = next((k for k in range(len(seq)) if seq[k:k + len(want)] == want), None)
+        if at is None:
+            return None
+        a = to_tl_s(ep, words[at][1], cuts)
+        b = to_tl_s(ep, words[at + len(want) - 1][2], cuts)
+    if b - a < 0.5:     # already cut
+        return None
+
+    class Scripted:
+        name = "sample"
+
+        def propose(self, ctx):
+            return Proposal(tr("好的：删掉 {a}–{b} {who}问演员名字的两句，共 {s} 秒，前后接得上。",
+                               a=_mmss(a), b=_mmss(b), who=HOSTS[lang][1], s=f"{b - a:.1f}"),
+                            action="cut", start=round(a - 0.05, 3), end=round(b + 0.25, 3),
+                            title=tr("删掉{who}问演员名字的两句", who=HOSTS[lang][1]), reason=tr("按你的指令删掉"),
+                            confidence=1.0)
+
+    return ep.chat(text, playhead, Scripted())
+
+
+def tour_music_chat(m, text: str) -> dict | None:
+    """The tour's music line in the sample episode → a draft lowering the intro under the talk by 4 dB (no AI call)."""
+    from .music import BG_DB
+    from .music_assist import apply_actions
+
+    meta = getattr(m.ep, "meta", {}) or {}
+    lang = meta.get("language")
+    if meta.get("source") != "sample" or lang not in TOUR_MUSIC or _plain(text) != _plain(TOUR_MUSIC[lang]):
+        return None
+    p = next((x for x in m.load()["placements"] if x["role"] == "intro"), None)
+    if p is None:
+        return {"message": tr("先从左边的素材库放一段片头，我再帮你调。"), "draft": None, "usage": None}
+    bg = min(float(p.get("bg_db") if p.get("bg_db") is not None else BG_DB) + 4.0, 40.0)
+    ps, changes = apply_actions(m, [{"type": "set", "placement_id": p["id"], "bg_db": bg}])
+    msg = tr("好的：说话时把片头再压低 4 dB（共 {db} dB），音乐只在开头单独放时是全音量。先试听，满意就采用。", db=f"{bg:.0f}")
+    m.set_draft(ps, changes, msg, "chat")
+    return {"message": msg, "draft": m.draft_view(), "usage": None}
+
+
+def tour_marks(ep) -> dict | None:
+    """Where the tour's spots are on the current cut (seconds): the actor lines, 「等一下 我喝口水」, the cough."""
+    meta = getattr(ep, "meta", {}) or {}
+    lang = meta.get("language")
+    if meta.get("source") != "sample" or lang not in SCRIPT:
+        return None
+    script = SCRIPT[lang]
+    with ep.lock:
+        cuts = ep.cuts_for(ep.enabled)
+        words = ep.words(0.0, 1e9)
+
+        def turn(i: int) -> tuple[float, float] | None:
+            h, text, _ = script[i]
+            mine = [w for w in words if w[0] == HOSTS[lang][h]]
+            want = [c for c in text if c != " "] if lang == "zh" else text.split()
+            seq = [w[3] for w in mine]
+            at = next((k for k in range(len(seq)) if seq[k:k + len(want)] == want), None)
+            return None if at is None else (mine[at][1], mine[at + len(want) - 1][2])
+
+        def tl(span):
+            return None if span is None else [round(to_tl_s(ep, span[0], cuts), 2), round(to_tl_s(ep, span[1], cuts), 2)]
+
+        a, b = turn(TOUR_LINES[0]), turn(TOUR_LINES[1])
+        c = turn(COUGH[0])
+        return {"hosts": list(HOSTS[lang]),
+                "actor": tl((a[0], b[1]) if a and b else None),
+                "water": tl(turn(10)),
+                "cough": tl((c[0] + COUGH[1], c[0] + COUGH[1] + COUGH[2]) if c else None)}
+
+
+def to_tl_s(ep, base_s: float, cuts) -> float:
+    from .episode import to_tl
+
+    return to_tl(int(base_s * ep.sr), cuts) / ep.sr
+
+
+def _mmss(s: float) -> str:
+    return f"{int(s // 60)}:{int(s % 60):02d}"
 
 
 def master(root: str | Path, lang: str) -> Path:
@@ -105,6 +231,9 @@ def give(root: str | Path, space: str | Path, lang: str) -> None:
     profile = show.normalise({"setup_done": True, "show_name": NAME[lang], "about": ABOUT[lang], "language": lang,
                               "hosts": [{"tag": "A", "name": a}, {"tag": "B", "name": b}]}, strict=False)
     atomic_write_json(space / show.FILE, profile)
+    lib = master(root, lang) / "library"
+    if lib.is_dir() and not (space / "library").exists():
+        shutil.copytree(lib, space / "library")
     reset(root, space, lang)
 
 
@@ -119,7 +248,7 @@ def reset(root: str | Path, space: str | Path, lang: str) -> None:
 
 def _turns(lang: str):
     """[(host, start, end, word)] with times: one token per character (zh) or word (en)."""
-    step, size = (0.3, 0.25) if lang == "zh" else (0.42, 0.36)
+    step, size = (0.3, 0.25) if lang == "zh" else (0.5, 0.42)
     out, t = [], 0.6
     for i, (host, text, gap) in enumerate(SCRIPT[lang]):
         words = [c for c in text if c != " "] if lang == "zh" else text.split()
@@ -138,6 +267,30 @@ def _speech(n: int, f0: float, rng) -> np.ndarray:
     x = sum(np.sin(2 * np.pi * f0 * k * t) / k for k in (1, 2, 3, 4))
     ramp = np.minimum(1, np.minimum(np.arange(n), np.arange(n)[::-1]) / (0.01 * SR))
     return 0.16 * x * env * ramp
+
+
+def _cough(n: int, rng) -> np.ndarray:
+    """Two short noise bursts: a cough the listener should mute (the tour's 只静音 step)."""
+    x = rng.standard_normal(n)
+    t = np.arange(n) / n
+    env = np.exp(-((t - 0.2) / 0.08) ** 2) + 0.7 * np.exp(-((t - 0.62) / 0.09) ** 2)
+    return 0.35 * x * env
+
+
+def _music(lib_dir: Path) -> None:
+    """The sample show's library: three CC0 tracks (licenses.json), shared, credited, kinds set."""
+    from .library import Library
+    from .store import Workspace
+
+    lib = Library(Workspace(lib_dir.parent))
+    for e in json.loads((MUSIC / "licenses.json").read_text("utf-8")):
+        a = lib.add_file(MUSIC / e["file"], e["kind"], note=f"{e['license']} · {e['track_page_url']}")
+        with lib.lock:
+            doc = lib.load()
+            x = next(y for y in doc["assets"] if y["id"] == a["id"])
+            x["credit"].update(title=e["title"], artist=e["artist"], status="confirmed", source="license",
+                               sources=[e["track_page_url"], e["license_url"]])
+            lib.save(doc)
 
 
 def _build(base: Path, lang: str) -> None:
@@ -161,7 +314,11 @@ def _build(base: Path, lang: str) -> None:
         for toks in turns:
             if toks and toks[0][0] == h:
                 i, j = int(toks[0][1] * SR), int(toks[-1][2] * SR)
-                x[i:j] += _speech(j - i, f0, rng)
+                x[i:j] += LOUD[h] * _speech(j - i, f0, rng)
+        if h == 0:
+            ti, off, ln = COUGH
+            i = int((turns[ti][0][1] + off) * SR)
+            x[i:i + int(ln * SR)] += _cough(int(ln * SR), rng)
         path = raw / f"{name}.wav"
         sf.write(str(path), x.astype(np.float32), SR, subtype="PCM_16")
         refs[name] = path
@@ -182,14 +339,14 @@ def _build(base: Path, lang: str) -> None:
             tracks[tags[h]].append({"id": tid, "t": w, "start": a, "end": b, "pause_after": 0.0, "flag": None})
             ids[ti].append(tid)
     ops = []
-    for i, (ti, words, op, cat, reason) in enumerate(CUTS[lang], 1):
+    for i, (ti, words, op, cat, reason, conf) in enumerate(CUTS[lang], 1):
         seq = [x[3] for x in turns[ti]]
         want = [c for c in words if c != " "] if lang == "zh" else words.split()
         at = next(k for k in range(len(seq)) if seq[k:k + len(want)] == want)
         host = tags[turns[ti][0][0]]
         ops.append({"id": f"op{i:04d}", "op": op, "track": host if cat != "content" else "both",
                     "from": ids[ti][at], "to": ids[ti][at + len(want) - 1], "category": cat, "reason": reason,
-                    "confidence": 0.55 if cat == "content" else 0.85})
+                    "confidence": conf})
     last = turns[LONG_PAUSE][-1][2]
     ops.append({"id": f"op{len(ops) + 1:04d}", "op": "tighten_pause", "track": "both", "at": round(last + 2.3, 3),
                 "target_s": 0.6, "category": "pause",
@@ -200,3 +357,4 @@ def _build(base: Path, lang: str) -> None:
     project, edits, transcript, _ = build_episode(media, doc, tokens, 0.0, None, None, dict(zip(tags, names)))
     meta = {"title": TITLE[lang], "demo": False, "raw_offset_s": 0.0, "source": "sample", "language": lang}
     create_episode(Workspace(base / "ws"), EPISODE, meta, project, edits, transcript)
+    _music(base / "ws" / "library")

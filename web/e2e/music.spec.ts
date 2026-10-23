@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 // written by tests/app/serve_e2e.py when the backend starts
 const INBOX = join(dirname(fileURLToPath(import.meta.url)), ".fixtures", "music_inbox");
@@ -9,6 +9,18 @@ const INBOX = join(dirname(fileURLToPath(import.meta.url)), ".fixtures", "music_
 const EP = encodeURIComponent("EP_TEST_合成");
 // one placement on the music page by its use (the rows' type pickers list every use's name)
 const row = (page: Page, role: string) => page.locator(`[data-testid="placement"][data-role="${role}"]`);
+// 配乐 design B: one card is open at a time; 更多设置 holds the less used numbers
+async function openCard(card: Locator) {
+  const b = card.getByTestId("placement-toggle");
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+  await expect(b).toHaveAttribute("aria-expanded", "true");
+}
+async function more(card: Locator) {
+  await openCard(card);
+  const b = card.getByTestId("music-more");
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+}
+
 
 // one flow: the music tests share the backend's library and the episode's music
 test("media library → credits → music on the episode → series rule", async ({ page }) => {
@@ -102,6 +114,7 @@ test("media library → credits → music on the episode → series rule", async
   // the whole song plays; Leon's numbers for the gap are saved and read back in plain words
   await expect(row(page, "intro").getByTestId("placement-plan")).toContainText("只有音乐");
   await expect(mid.getByTestId("placement-plan")).toContainText("整首");
+  await more(mid);
   await mid.getByLabel("全音量时长（秒）").fill("3");
   await mid.getByLabel("背景压低（dB）").fill("16");
   await mid.getByLabel("裁到").fill("0:09");
@@ -114,7 +127,8 @@ test("media library → credits → music on the episode → series rule", async
   await expect(mid.getByRole("button", { name: "保存" })).toBeDisabled();
 
   // remember the intro as the project default, then it is offered once the episode has none
-  await page.getByRole("button", { name: "设为整个节目的默认片头片尾" }).click();
+  await page.getByTestId("save-scope").getByRole("radio", { name: "整个节目" }).click();
+  await page.getByRole("button", { name: "设为默认片头片尾" }).click();
   await expect(page.getByText("已记住")).toBeVisible();
   await row(page, "intro").getByRole("button", { name: "去掉" }).click();
   await expect(page.getByTestId("series-suggestion")).toContainText("这个节目有默认的片头片尾");
@@ -160,6 +174,7 @@ test("place by use → hear the suggestion → accept → nudge → change it by
 
   // one second later, exactly
   const mid = row(page, "interlude");
+  await more(mid);
   const pos = mid.getByLabel("位置（成品时间）");
   const before = await pos.inputValue();
   const secs = (t: string) => t.split(":").reduce((a, x) => a * 60 + Number(x), 0);

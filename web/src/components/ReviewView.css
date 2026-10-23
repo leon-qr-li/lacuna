@@ -1,5 +1,5 @@
 /* 审阅改动, slim version A: a top bar, a slim list, one card (new-user batch E1) */
-.rv-slim { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); grid-template-areas: "top top" "nav main"; gap: 18px 20px; }
+.rv-slim { display: grid; grid-template-columns: minmax(240px, 320px) minmax(0, 1fr); grid-template-areas: "top top" "nav main"; gap: 18px 20px; align-content: start; align-items: start; }
 .rv-slim .review-nav { grid-area: nav; max-width: none; gap: 10px; padding: 12px 10px; }
 .rv-slim .review-main { grid-area: main; }
 .rv-top { grid-area: top; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

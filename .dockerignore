@@ -18,3 +18,4 @@ dist
 *.wav
 *.mp3
 *.f32
+!lacuna_app/sample_music/*.mp3

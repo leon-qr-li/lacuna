@@ -1,0 +1,40 @@
+/* the bubble tour of LACUNA 示例节目 (new-user batch, tour v3) */
+.tour { position: fixed; inset: 0; z-index: 80; pointer-events: none; }
+.tour-shade { position: fixed; background: rgb(4 5 14 / 0.62); pointer-events: auto; }
+[data-theme="light"] .tour-shade { background: rgb(18 20 40 / 0.45); }
+.tour-ring { position: fixed; border-radius: 12px; box-shadow: 0 0 0 2px var(--accent), 0 0 0 7px rgb(232 98 42 / 0.25), 0 0 28px rgb(232 98 42 / 0.35); pointer-events: none; transition: left 0.18s, top 0.18s, width 0.18s, height 0.18s; }
+.tour-block { position: fixed; pointer-events: auto; cursor: default; }
+.tour-box { position: fixed; border: 2px dashed var(--accent); border-radius: 8px; background: rgb(232 98 42 / 0.1); pointer-events: none; animation: tour-pulse 1.6s ease-in-out infinite; }
+@keyframes tour-pulse { 50% { background: rgb(232 98 42 / 0.22); } }
+@media (prefers-reduced-motion: reduce) { .tour-box { animation: none; } .tour-ring { transition: none; } }
+.tour-bubble { position: fixed; z-index: 2; width: min(380px, calc(100vw - 24px)); display: flex; flex-direction: column; gap: 8px; padding: 16px 18px; border-radius: 16px; background: var(--solid); color: var(--ink); border: 1px solid var(--accent-mid, var(--line-2)); box-shadow: var(--shadow-pop); pointer-events: auto; }
+.tour-bubble h3 { margin: 0; font-size: 16px; }
+.tour-bubble p { margin: 0; font-size: 14px; line-height: 1.65; color: var(--ink-2); }
+.tour-bubble p b, .tour-modal p b { color: var(--ink); }
+.tour-meta { font-size: 12px; color: var(--accent-ink); }
+[data-theme="dark"] .tour-meta { color: #ffb48c; }
+.tour-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 4px; }
+.tour-hint { font-size: 13px; font-weight: 600; color: var(--accent-ink); }
+[data-theme="dark"] .tour-hint { color: #ffb48c; }
+.tour-foot .linkbtn { padding: 0; border: 0; background: none; color: var(--ink-2); font: inherit; font-size: 13px; text-decoration: underline; cursor: pointer; }
+.tour-note { margin: 2px 0 0; }
+.tour-pill { position: fixed; z-index: 3; top: 14px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 6px 8px 6px 16px; border-radius: 999px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); font-size: 13px; font-weight: 600; white-space: nowrap; pointer-events: auto; }
+.tour-pill-exit { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line-2); background: none; color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.tour-pill-exit:hover { color: var(--ink); border-color: var(--ink-3); }
+.tour-modal { position: fixed; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(600px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 14px; padding: 28px; background: var(--solid); pointer-events: auto; box-shadow: var(--shadow-pop); }
+.tour-modal h2 { margin: 0; font-size: 22px; }
+.tour-modal p { margin: 0; line-height: 1.65; color: var(--ink-2); }
+.tour-play { display: flex; align-items: center; gap: 12px; }
+.tour-done { width: min(860px, calc(100vw - 32px)); align-items: center; text-align: center; }
+.tour-ok-meta { color: var(--ok) !important; letter-spacing: 0.08em; }
+.tour-ab { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; text-align: left; }
+.tour-side { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 16px; border: 1px solid var(--line-2); background: var(--hover); color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.tour-side > span:last-child { display: flex; flex-direction: column; gap: 3px; }
+.tour-side.is-after { border-color: var(--accent-mid, var(--accent)); }
+.tour-side.is-on { box-shadow: 0 0 0 2px var(--accent); }
+.tour-side-play { flex: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--solid); border: 1px solid var(--line-2); }
+.tour-side.is-after .tour-side-play { background: var(--accent); color: #fff; border: 0; }
+.tour-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 26px; font-size: 14px; color: var(--ink-2); }
+.tour-stats b { color: var(--ink); }
+.tour-done-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.tour-again { position: fixed; right: 20px; bottom: 20px; z-index: 40; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--solid); color: var(--ink); font: inherit; font-weight: 600; box-shadow: var(--shadow-pop); cursor: pointer; }

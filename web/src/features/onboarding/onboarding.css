@@ -1,4 +1,4 @@
-/* 入门: welcome page, checklist card, top-bar tag, sample coach (new-user batch) */
+/* 入门: welcome page, checklist card, top-bar tag, sample tour (new-user batch) */
 .welcome { display: flex; flex-direction: column; gap: 18px; margin: 8px 0 24px; }
 .welcome h1 { margin: 0; font-size: 30px; }
 .welcome-lead { margin: 0; max-width: 640px; font-size: 16px; line-height: 1.65; color: var(--ink-2); }
@@ -11,18 +11,12 @@
 .name-ask label { display: flex; flex-direction: column; gap: 4px; }
 .onboard { margin-bottom: 18px; }
 .onboard h2 { font-size: 17px; }
-.onboard-steps, .coach-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.onboard-steps li, .coach-steps li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 8px; border-radius: var(--r-sm); color: var(--muted); }
-.onboard-steps li.is-next, .coach-steps li.is-next { background: var(--hover); color: var(--ink); font-weight: 600; }
-.onboard-steps li.is-done, .coach-steps li.is-done { color: var(--ink-2); }
+.onboard-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.onboard-steps li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 8px; border-radius: var(--r-sm); color: var(--muted); }
+.onboard-steps li.is-next { background: var(--hover); color: var(--ink); font-weight: 600; }
+.onboard-steps li.is-done { color: var(--ink-2); }
 .onboard-tick { flex: none; width: 18px; height: 18px; margin-top: 1px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid var(--line-2); font-size: 11px; color: var(--on-primary); }
 li.is-done .onboard-tick { background: var(--ok); border-color: var(--ok); }
-.onboard-hint, .coach-hint { display: block; margin-top: 3px; font-weight: 400; color: var(--muted); line-height: 1.55; }
+.onboard-hint { display: block; margin-top: 3px; font-weight: 400; color: var(--muted); line-height: 1.55; }
 .onboard-extra { margin: 10px 8px 0; }
 .onboard-tag { color: var(--accent-ink); }
-.coach { position: fixed; right: 20px; bottom: 20px; z-index: 40; width: min(340px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: var(--r); background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); }
-.coach-head { display: flex; align-items: center; gap: 8px; }
-.coach-note { margin: 0; }
-.coach-foot { padding-top: 8px; border-top: 1px solid var(--line); }
-.coach-pill { position: fixed; right: 20px; bottom: 20px; z-index: 40; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--solid); color: var(--ink); font: inherit; font-weight: 600; box-shadow: var(--shadow-pop); cursor: pointer; }
-@media (max-width: 720px) { .coach { right: 16px; bottom: 16px; } }

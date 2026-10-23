@@ -1,7 +1,7 @@
 """Voice levels (backlog 7): measured loudness, per-track gain, 「统一两人音量」 (lacuna_app/levels.py)."""
 from __future__ import annotations
 
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 from pydantic import BaseModel, Field
 
 from .. import levels
@@ -24,6 +24,10 @@ def register(app, ctx) -> None:
     @app.get("/api/episodes/{episode_id}/levels")
     def levels_view(episode_id: str):
         return levels.view(get(episode_id))
+
+    @app.get("/api/episodes/{episode_id}/levels/ab")
+    def levels_ab(episode_id: str, at: float = Query(0.0, ge=0)):
+        return levels.ab(get(episode_id), at)
 
     @app.post("/api/episodes/{episode_id}/levels/auto")
     def levels_auto(episode_id: str, body: AutoBody):

@@ -5,6 +5,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
+from .. import sample
 from ..audio import parse_range
 from ..music import EpisodeMusic
 from ..music_assist import MusicChat, auto_place, break_candidates
@@ -135,7 +136,7 @@ def register(app, ctx) -> None:
     @app.post("/api/episodes/{episode_id}/music/chat")
     def music_chat(episode_id: str, body: ChatBody):
         m = music(episode_id)
-        out = chat.ask(m, body.text.strip())
+        out = sample.tour_music_chat(m, body.text.strip()) or chat.ask(m, body.text.strip())
         if out.get("usage"):
             ctx.log_usage(episode_id, {"kind": "music_chat", **out["usage"]})
         return m.summary() | {"message": out["message"]}

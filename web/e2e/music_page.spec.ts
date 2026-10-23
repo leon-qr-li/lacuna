@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
 // 首次检测 15-22 on the music page: file names first in the picker, 22 dB default, the full-volume
 // label, ±5 s, the strip and the player always together, automatic / looping beds, changing a use.
@@ -24,6 +24,18 @@ async function ensureAsset(request: APIRequestContext, file: string, kind: strin
 const music = async (page: Page) => (await (await page.request.get(`/api/episodes/${EP}/music`)).json()) as { placements: P[]; duration: number };
 const secs = (s: string) => s.split(":").reduce((a, x) => a * 60 + Number(x), 0);
 const mixTime = (page: Page) => page.getByTestId("mix-audio").evaluate((a: HTMLAudioElement) => a.currentTime);
+
+// 配乐 design B: one card is open at a time; 更多设置 holds the less used numbers
+async function openCard(card: Locator) {
+  const b = card.getByTestId("placement-toggle");
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+  await expect(b).toHaveAttribute("aria-expanded", "true");
+}
+async function more(card: Locator) {
+  await openCard(card);
+  const b = card.getByTestId("music-more");
+  if ((await b.getAttribute("aria-expanded")) !== "true") await b.click();
+}
 
 const added: string[] = [];
 // leave the shared episode and library as they were, also when a check fails
@@ -116,11 +128,13 @@ test("music page: picker, defaults, player and strip together, beds, changing a 
   await page.getByTestId("mix-audio").evaluate((a: HTMLAudioElement) => a.pause());
 
   // 22: change the interlude into a bed and back, keeping its song and volume
+  await openCard(mid); // after the reload the first card is the open one
   await mid.getByLabel("音量（dB）").fill("-4");
   await mid.getByRole("button", { name: "保存" }).click();
   await expect(page.getByTestId("music-msg")).toHaveText("已保存");
   await mid.getByLabel("改类型").selectOption("bed");
   await expect(page.getByTestId("music-msg")).toHaveText("已改成铺底");
+  await more(mid);
   await expect(mid.getByTestId("bed-options")).toBeVisible();
   await expect(mid.getByLabel("音量（dB）")).toHaveValue("-4");
   await mid.getByLabel("改类型").selectOption("interlude");
@@ -138,6 +152,7 @@ test("music page: picker, defaults, player and strip together, beds, changing a 
   await page.getByLabel("循环填满").check();
   await page.getByRole("button", { name: "放进去" }).click();
   const bed = page.getByTestId("placement").filter({ hasText: "odyssey_theme.mp3" });
+  await more(bed);
   await expect(bed.getByLabel("自动放进空档")).toBeChecked();
   await expect(bed.getByLabel("循环填满")).toBeChecked();
   await expect(bed.getByTestId("placement-plan")).toContainText("没有其他配乐的空档");

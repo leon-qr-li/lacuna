@@ -19,9 +19,28 @@ Decision: `docs/decisions/2026-10-22-new-user-experience.md`. One integration PR
 - Dialogue outline for Leon and Pei: https://claude.ai/artifact/H14QxsyixJ59cthFbdNSs5
 - Tests: `tests/app/test_onboarding.py`, `tests/app/test_new_members.py`, `web/e2e/onboarding.spec.ts`.
 
+## Polish round (2026-10-22, second PR on the same branch)
+Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
+- 声音 page design A (`features/levels/LevelsView.tsx`): a card per host with meter, before/after waves (first 30 s),
+  −1 / slider / +1, 用建议值, clipping per card; 对比这里：原始 / 调整后 (`GET …/levels/ab`).
+- 配乐 page design B (`features/library/MusicLibrary.tsx`, `MusicCard.tsx`, `music-b.css`): library on the left
+  (▶, 放到 ▾), one open card with a volume curve whose white dots drag (or arrow keys), sliders with numbers and
+  − / +, 更多设置 with ±5 s, 用在 scope + 设为默认片头片尾.
+- 导出 page (`components/ExportPanel.tsx`, `features/export/Summary.tsx`): formats / start / download left, this
+  episode + platform standard right.
+- Review page: no empty space under the list.
+- Sample v2 (`lacuna_app/sample.py`): 2:10 raw, five first-cut spots (three to review), the actor lines, 「等一下
+  我喝口水」, a cough under the other host, host 0 about 9.5 dB louder, three CC0 tracks in its library
+  (`lacuna_app/sample_music/`, licenses.json with source sha256).
+- Bubble tour replaces the coach panel (`web/src/features/tour/`): 9 chapters, 57 bubbles, locked mask, dashed
+  targets on the timeline, position kept on the server (`onboarding.tour`), before / after at the end. The two
+  sentences it fills in are answered by `sample.tour_chat` / `sample.tour_music_chat` without the AI;
+  `GET …/tour/raw` and `GET …/tour/marks` (`routes/tour.py`).
+- Tests: `tests/app/test_onboarding.py` (tour), `web/e2e/tour.spec.ts` (the whole tour), `onboarding.spec.ts`,
+  `levels.spec.ts`, `music_b.spec.ts`, `review_gap.spec.ts`.
+
 ## Open
 - Real sample recordings (Leon + Pei, zh + en) → run ASR + first cut, check by hand, bump `sample.VERSION`.
-- Sample music files: download the 5 CC0 tracks (container can't reach FMA), keep license URL + date per track,
-  preload intro / outro / bed into the sample show's library.
+- Invite email 6-step copy: waiting for Leon's pick (A / B).
 - Chat cap in the sample show (~20 messages) and audio-hour metering skipping `sample` shows: batch 5.
 - Usage line on welcome / import form ("本月已用 …"): needs batch 5 metering.

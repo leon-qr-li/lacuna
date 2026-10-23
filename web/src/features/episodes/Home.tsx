@@ -6,7 +6,6 @@ import { hostList, useShow } from "../show/api";
 import { ShowSetup } from "../show/ShowView";
 import { Welcome, NameAsk } from "../onboarding/Welcome";
 import { Checklist } from "../onboarding/Checklist";
-import { Coach } from "../onboarding/Coach";
 import { ProfileCard } from "../show/ProfileCard";
 import { EpisodeListSkeleton } from "../loading/Loading";
 import { ImportPanel } from "../import/ImportPanel";
@@ -232,7 +231,6 @@ export function Home({ nav }: { nav: ReactNode }) {
           </p>
         )}
       </main>
-      <Coach />
       {dialog && albums.view && (
         <AlbumDialog
           album={dialog.album}

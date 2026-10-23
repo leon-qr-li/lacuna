@@ -1,0 +1,77 @@
+/* 配乐 design B: library on the left, the episode's music on the right */
+.music-b { max-width: 1360px; }
+.music-grid { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+.music-grid.is-empty { grid-template-columns: minmax(0, 1fr); }
+.music-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (max-width: 980px) { .music-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* the library */
+.mlib { position: sticky; top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.mlib-head { display: flex; flex-direction: column; gap: 8px; }
+.mlib-head h2 { margin: 0; font-size: 17px; }
+.mlib-upload .scope-upload { gap: 6px; }
+.mlib-upload .scope-upload > .small { flex-basis: 100%; }
+.mlib-search { width: 100%; }
+.mlib-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.mlib-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; background: var(--hover); border: 1px solid var(--line); }
+.mlib-play { flex: none; width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--line-2); background: var(--solid); color: var(--ink); cursor: pointer; font-size: 11px; }
+.mlib-play:hover { border-color: var(--accent); color: var(--accent); }
+.mlib-name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.mlib-name strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mlib-put-wrap { position: relative; flex: none; }
+.mlib-menu { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; min-width: 200px; display: flex; flex-direction: column; padding: 6px; border-radius: 12px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); }
+.mlib-menu button { text-align: left; padding: 8px 10px; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.mlib-menu button:hover, .mlib-menu button:focus-visible { background: var(--hover); }
+.mlib-note { margin: 0; }
+.mlib .music-add { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.mlib .music-add h3 { margin: 0; font-size: 14px; }
+.mlib .music-pick { flex-basis: 100%; }
+
+/* toolbar */
+.music-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--hover); border: 1px solid var(--line); }
+.seg button { padding: 4px 12px; border: 0; border-radius: 999px; background: none; color: var(--ink-2); font: inherit; font-size: 13px; cursor: pointer; }
+.seg button.is-on { background: var(--solid); color: var(--ink); box-shadow: var(--shadow); font-weight: 600; }
+
+/* a card per piece */
+.mcard { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; }
+.mcard.is-open { border-color: var(--accent-mid); }
+.mcard-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.mcard-toggle { flex: 1 1 300px; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mcard-title { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mcard-title strong { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mcard-actions { flex-wrap: wrap; }
+.mcard-foot { align-items: center; }
+.mcard-credit { color: var(--ink-3); }
+.mcard .music-plan { margin: 0; }
+.mcurve-mini { flex: none; width: 120px; height: 28px; }
+.mcurve-mini polyline { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+
+/* the curve */
+.mcurve { position: relative; height: 170px; margin: 4px 6px 18px; border-radius: 12px; background: var(--solid-2); border: 1px solid var(--line); touch-action: none; user-select: none; }
+.mcurve svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.mcurve-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; }
+.mcurve-fill { fill: var(--accent); opacity: 0.12; }
+.mcurve-zero { stroke: var(--line-2); stroke-dasharray: 4 4; }
+.mcurve-talk { fill: var(--leon); opacity: 0.18; }
+.mcurve-talk-label { position: absolute; bottom: -18px; color: var(--ink-3); white-space: nowrap; }
+.mcurve-dot { position: absolute; width: 18px; height: 18px; margin: -9px 0 0 -9px; padding: 0; border-radius: 50%; border: 2px solid var(--accent); background: #fff; box-shadow: 0 0 0 4px rgb(255 255 255 / 0.18), 0 2px 8px rgb(0 0 0 / 0.3); cursor: grab; z-index: 2; }
+.mcurve-dot:hover, .mcurve-dot:focus-visible, .mcurve-dot.is-drag { box-shadow: 0 0 0 7px rgb(232 98 42 / 0.35), 0 2px 8px rgb(0 0 0 / 0.3); outline: none; }
+.mcurve-dot.is-drag { cursor: grabbing; }
+.mcurve-dot-label { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); white-space: nowrap; color: var(--accent-ink); font-weight: 600; pointer-events: none; }
+[data-theme="dark"] .mcurve-dot-label { color: var(--accent); }
+
+/* sliders with numbers */
+.mslides { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 18px; }
+.mslide { display: flex; flex-direction: column; gap: 4px; }
+.mslide-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mslide-num { display: inline-flex; align-items: center; gap: 4px; }
+.mslide-num input.num { width: 70px; padding-left: 6px; padding-right: 8px; text-align: right; }
+.mslide-num .sq { min-width: 28px; padding: 2px 6px; }
+.mslide input[type="range"] { width: 100%; accent-color: var(--accent); }
+.mmore { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line-2); }
+.mmore .music-tune { padding: 0; background: none; }
+.mcurve-dot.lab-right .mcurve-dot-label { left: auto; right: -6px; transform: none; }
+.mcurve-dot.lab-left .mcurve-dot-label { left: -6px; transform: none; }
+.mcurve-dot.lab-below .mcurve-dot-label { bottom: auto; top: calc(100% + 6px); }
+.mcard-actions .chip-select { height: 32px; padding: 0 10px; }

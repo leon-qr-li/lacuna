@@ -144,9 +144,13 @@ test.describe.serial("LACUNA Studio", () => {
     const pop = page.locator('[aria-label="导出成品"]');
     await expect(pop).toContainText("−16 LUFS");
     await pop.getByTestId("export-start").click();
+    // the right side: this episode, then the platform standard once exported
+    await expect(pop.getByTestId("export-summary")).toContainText("这一集");
+    await expect(pop.getByTestId("export-standard")).toContainText("导出后在这里显示");
     const result = pop.getByTestId("export-result");
     await expect(result).toBeVisible({ timeout: 30_000 });
-    await expect(result).toContainText(/响度\s*-1[56]\.\d LUFS/);
+    await expect(pop.getByTestId("export-standard")).toContainText(/响度\s*-1[56]\.\d LUFS/);
+    await expect(result.getByRole("link", { name: "去发布" })).toBeVisible();
     const links = result.locator(".export-files a");
     await expect(links).toHaveCount(2);
     await expect(result.getByTestId("export-download-mp3")).toHaveText("下载 MP3");

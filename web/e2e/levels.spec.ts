@@ -91,10 +91,12 @@ test.describe.serial("声音", () => {
       await route.fulfill({ response: r, json: body });
     });
     await openLevels(page);
-    const box = page.getByTestId("levels-clips");
+    const box = page.getByTestId("levels-clips-Pei");
     await expect(box).toContainText("Pei：40 处，已自动修复 37 处");
     await expect(box).toContainText("3 处太严重");
     await expect(box).toHaveClass(/warn/);
+    await expect(page.getByTestId("levels-clips")).toContainText("下次录音");
+    await expect(page.getByTestId("levels-clips-Leon")).toContainText("没有破音");
     await box.getByRole("button", { name: "0:33" }).click();
     const audio = page.getByTestId("levels-audio");
     await expect.poll(() => audio.evaluate((a: HTMLAudioElement) => !a.paused && a.currentTime >= 30.9)).toBe(true);
@@ -110,12 +112,26 @@ test.describe.serial("声音", () => {
       await route.fulfill({ response: r, json: body });
     });
     await openLevels(page);
-    const box = page.getByTestId("levels-clips");
+    const box = page.getByTestId("levels-clips-Pei");
     await expect(box).toContainText("Pei：813 处，已自动修复 813 处");
-    await expect(box).toContainText("自动修好");
     await expect(box).not.toHaveClass(/warn/);
     await expect(box.getByRole("button")).toHaveCount(0);
-    await expect(box).not.toContainText("下次录音");
+    const note = page.getByTestId("levels-clips");
+    await expect(note).toContainText("自动修好");
+    await expect(note).not.toHaveClass(/warn/);
+    await expect(note).not.toContainText("下次录音");
+  });
+
+  test("原始 / 调整后: the same moment without and with the volume change", async ({ page }) => {
+    await openLevels(page);
+    await page.getByRole("button", { name: "Pei 大 1 dB" }).click();
+    await expect(gain(page, "Pei")).toHaveText("+1.0 dB");
+    const cmp = page.getByTestId("levels-compare");
+    const ab = page.waitForResponse((r) => /\/levels\/ab\?at=/.test(r.url()) && r.ok());
+    await cmp.getByRole("button", { name: "对比这里：原始 / 调整后" }).click();
+    await ab;
+    await expect(cmp.getByRole("button", { name: "▶ 原始" })).toBeVisible();
+    await expect(cmp.getByRole("button", { name: "▶ 调整后" })).toBeVisible();
   });
 
   for (const theme of ["light", "dark"] as const) {
@@ -125,10 +141,14 @@ test.describe.serial("声音", () => {
       await page.evaluate((t) => localStorage.setItem("lacuna.theme", t), theme);
       await openLevels(page);
       await expect(page.getByTestId("levels-track-Pei")).toContainText("LUFS");
-      // the controls fit on one row next to the name
-      const ctl = await page.getByTestId("levels-track-Leon").locator(".levels-ctl").boundingBox();
-      const name = await page.getByTestId("levels-track-Leon").locator(".levels-name").boundingBox();
-      expect(ctl && name && Math.abs(ctl.y + ctl.height / 2 - (name.y + name.height / 2)) < 20).toBe(true);
+      // one card per host, side by side; −1 / slider / +1 / value on one row
+      const a = await page.getByTestId("levels-track-Leon").boundingBox();
+      const b = await page.getByTestId("levels-track-Pei").boundingBox();
+      expect(a && b && Math.abs(a.y - b.y) < 2 && b.x > a.x + a.width - 1).toBe(true);
+      const minus = await page.getByRole("button", { name: "Leon 小 1 dB" }).boundingBox();
+      const val = await page.getByTestId("levels-gain-Leon").boundingBox();
+      expect(minus && val && Math.abs(minus.y + minus.height / 2 - (val.y + val.height / 2)) < 10).toBe(true);
+      await expect(page.getByTestId("levels-track-Leon").locator(".levels-meter-target")).toBeVisible();
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/levels_${theme}.png`, fullPage: true });
       await page.evaluate(() => localStorage.setItem("lacuna.lang", "en"));
       await page.reload();

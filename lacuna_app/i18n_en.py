@@ -594,4 +594,10 @@ EN: dict[str, str | tuple[str, str]] = {
     "示例节目只给你自己练手，不能邀请别人": "The sample show is for your own practice; you can't invite anyone to it",
     "没有这一步": "There is no such step",
     "你还没有示例节目": "You don't have a sample show yet",
+    # the tour's chat line in the sample episode (sample.tour_chat)
+    "好的：删掉 {a}–{b} {who}问演员名字的两句，共 {s} 秒，前后接得上。": "OK: cutting {who}'s two lines about the actor's name, {a}–{b}, {s} s; the talk joins up cleanly.",
+    "删掉{who}问演员名字的两句": "Cut {who}'s two lines about the actor's name",
+    "按你的指令删掉": "Cut as you asked",
+    "先从左边的素材库放一段片头，我再帮你调。": "Put an intro in from the library on the left first, then I'll adjust it.",
+    "好的：说话时把片头再压低 4 dB（共 {db} dB），音乐只在开头单独放时是全音量。先试听，满意就采用。": "OK: the intro goes 4 dB lower under the talk ({db} dB in all); it's only at full level while it plays alone at the start. Have a listen, then accept it if you like it.",
 }
