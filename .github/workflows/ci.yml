@@ -99,7 +99,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2]
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest is 26.04 now, where `playwright install chromium` refuses
+    # ("does not support chromium on ubuntu26.04-x64"). Move up once Playwright supports it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
       run:
