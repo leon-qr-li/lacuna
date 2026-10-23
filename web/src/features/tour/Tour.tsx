@@ -207,7 +207,8 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
       // the scene settles (seek, scroll, a panel opening) before there is anything to read
       // and after a change of page, the new page shows a moment on its own first
       const moved = STEPS[STEPS.indexOf(s) - 1]?.mode !== s.mode;
-      window.setTimeout(() => setReady(s.id), (s.enter ? 450 : 0) + (moved ? 700 : 0));
+      // a step left before its wait ends (step 1, paused early) must not take the bubble from the next one
+      window.setTimeout(() => setReady((r) => (STEPS[curRef.current] === s ? s.id : r)), (s.enter ? 450 : 0) + (moved ? 700 : 0));
     }, 150);
     return () => window.clearTimeout(k);
   }, [step, mode, id, fresh]);
