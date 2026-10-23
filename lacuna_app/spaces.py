@@ -157,11 +157,16 @@ class Spaces:
         return sum(1 for e in self._get(sid)["members"] if e != c)
 
     def title(self, sid: str) -> str:
-        """What people see as the project's name: its show name once set, else the name it was made with."""
+        """What people see as the project's name: its show name once set, else the name it was made with.
+        A new account's first show, still waiting for its first visit to name it, is 「新节目」 (it was
+        made with a placeholder name, never one to show)."""
         try:
-            name = show.load(self.path(sid)).get("show_name") or ""
+            p = show.load(self.path(sid))
         except Exception:
-            name = ""
+            p = {}
+        name = p.get("show_name") or ""
+        if not name and p and not p.get("setup_done") and not p.get("legacy"):
+            return tr("新节目")
         return name or self.spaces[sid]["name"]
 
     def summary(self, sid: str) -> dict:
