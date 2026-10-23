@@ -398,7 +398,7 @@ function Raw({ step, id, h, onNext, onExit }: { step: Step; id: string; h: Hosts
             {t("下一步")}
           </button>
         </div>
-        <p className="tour-note small muted">{t("示例节目不占用你的额度。录音是占位音频，正式示例正在录制。")}</p>
+        <p className="tour-note small muted">{t("示例节目不占用你的额度。两位主持人的声音是合成的。")}</p>
       </div>
     </div>
   );

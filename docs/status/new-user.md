@@ -14,7 +14,7 @@ Decision: `docs/decisions/2026-10-22-new-user-experience.md`. One integration PR
 - Review page version A (`components/ReviewView.tsx`, `ReviewView.css`).
 - Welcome page, 入门清单, top-bar tag, coach panel, collaborator short version, 设置 → 通用 card
   (`web/src/features/onboarding/`, `routes/onboarding.py`).
-- Sample show (`lacuna_app/sample.py`): placeholder recording, shared read-only audio, reset / delete.
+- Sample show (`lacuna_app/sample.py`): synthetic two-voice recording (v3, below), shared read-only audio, reset / delete.
 - 节目资料卡 + import hint (`web/src/features/show/ProfileCard.tsx`).
 - Dialogue outline for Leon and Pei: https://claude.ai/artifact/H14QxsyixJ59cthFbdNSs5
 - Tests: `tests/app/test_onboarding.py`, `tests/app/test_new_members.py`, `web/e2e/onboarding.spec.ts`.
@@ -49,7 +49,14 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
   new bubble rrest on 「剩下的全部保留」 while it still shows. Review keys: K always the cut (re-applies a
   restored edit), R always the original words.
 
+- Sample v3 (Leon 2026-10-23, 「可以了，换上去」): the tones are replaced by synthetic voices of open models,
+  stock speakers only (zh CosyVoice-300M-SFT 中文男/中文女, en Kokoro-82M am_michael/af_heart, Apache-2.0), one
+  FLAC per host and CTC-aligned word times in `lacuna_app/sample_audio/<lang>/` (README.txt there). `sample.py`
+  reads them, adds the cough and makes host 0 louder. zh 1:34 raw → about 1:21 after the first cut, en 1:27.
+  Made on Leon-PC (`C:\Projects\LACUNA_Workspace\sample_tts\`, scripts there). Tour note and show blurb say the
+  voices are synthetic.
+
 ## Open
-- Sample audio: Leon asked for a synthetic two-voice sample first (stock voices, not cloned); goes in only after he listens. Real recordings (Leon + Pei, zh + en) still the end goal → run ASR + first cut, check by hand, bump `sample.VERSION`.
+- Real recordings (Leon + Pei, zh + en) may still replace the synthetic voices later → run ASR + first cut, check by hand, bump `sample.VERSION`.
 - Chat cap in the sample show (~20 messages) and audio-hour metering skipping `sample` shows: batch 5.
 - Usage line on welcome / import form ("本月已用 …"): needs batch 5 metering.

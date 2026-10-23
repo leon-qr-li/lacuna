@@ -70,10 +70,14 @@ test("welcome → sample show with the tour → own show → checklist", async (
   await expect(sam.getByTestId("tour-raw")).toBeVisible();
 
   // the end of the tour: before / after, and the way to their own first episode
-  await sam.request.put("/api/onboarding", { data: { tour: "done" } });
-  await sam.reload();
+  // 重新开始 reloads the page itself: jump to the end only once that reload has settled (Windows CI raced it)
+  await sam.waitForLoadState("load");
   const done = sam.getByTestId("tour-done");
-  await expect(done).toContainText("同一段 30 秒，剪之前和剪之后");
+  await expect(async () => {
+    await sam.request.put("/api/onboarding", { data: { tour: "done" } });
+    await sam.reload();
+    await expect(done).toContainText("同一段 30 秒，剪之前和剪之后", { timeout: 3000 });
+  }).toPass({ timeout: 20000 });
   await done.getByTestId("tour-own").click();
   await expect(sam.getByTestId("welcome")).toBeVisible();
   await sam.getByTestId("welcome-own").click();

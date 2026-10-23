@@ -21,8 +21,7 @@ export const en: Dict = {
   "▶ 播放原始录音": "▶ Play the raw recording",
   "听完自动进入下一步。": "The next step starts when it ends.",
   "下一步": "Next",
-  "示例节目不占用你的额度。录音是占位音频，正式示例正在录制。":
-    "The sample show doesn't use your quota. The audio is a placeholder; the real sample is being recorded.",
+  "示例节目不占用你的额度。两位主持人的声音是合成的。": "The sample show doesn't use your quota. The two hosts' voices are synthetic.",
   "剪辑 {a} → {b}": "Edited {a} → {b}",
   "成品含配乐 {c}": "Final with music {c}",
   "你审阅了 {n} 处": "You reviewed {n}",

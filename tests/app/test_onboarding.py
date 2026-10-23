@@ -91,26 +91,29 @@ def test_the_sample_show_is_free_resettable_and_removable(tmp_path):
 
 
 def test_the_sample_matches_the_tour(tmp_path):
-    """The bubble tour's numbers: 2:12 raw, five first-cut spots (three to review: a restart, a tangent, a
-    corrected score; one 呃 and one pause routine), 2:12 → about 1:55, and three CC0 tracks in the library."""
+    """The bubble tour's numbers: 1:34 raw (the synthetic voices), five first-cut spots (three to review: a
+    restart, a tangent, a corrected score; one 呃 and one pause routine), 1:34 → about 1:21, three CC0 tracks."""
     leon = setup(tmp_path)
     sam = join(leon, "sam@example.com")
     sam.post("/api/onboarding/sample", json={"lang": "zh"})
     ep = sam.get("/api/episodes/SAMPLE_01").json()
-    assert 130 <= ep["raw_duration"] <= 133
-    assert 112 <= ep["duration"] <= 117
+    assert 93 <= ep["raw_duration"] <= 95
+    assert 79 <= ep["duration"] <= 83
     edits = ep["edits"]
     assert len(edits) == 5
     assert ep["pending_review"] == 3
     review = sorted((e for e in edits if e["consequential"]), key=lambda e: e["t"])
     assert [e["category"] for e in review] == ["filler", "content", "filler"]
-    assert review[0]["t"] < 6 and 20 < review[1]["t"] < 32 and 36 < review[2]["t"] < 46
+    assert review[0]["t"] < 6 and 15 < review[1]["t"] < 24 and 23 < review[2]["t"] < 30
     assert sorted(e["category"] for e in edits if not e["consequential"]) == ["filler", "pause"]
     # the lines the tour points at are in the transcript
     lines = sam.get(f"/api/episodes/SAMPLE_01/manual/transcript?v={ep['version']}&t0=0&t1=200").json()
     said = "".join(w[0] for ln in (lines["lines"] if isinstance(lines, dict) else lines) for w in ln["words"])
     for line in ("那个演员叫什么来着", "等一下我喝口水"):
         assert line in said
+    # the tour's spots sit on the real word times of the recording
+    marks = sam.get("/api/episodes/SAMPLE_01/tour/marks").json()
+    assert marks["actor"][0] < marks["actor"][1] < marks["water"][0] < marks["water"][1] < marks["cough"][0]
     lib = sam.get("/api/library").json()["assets"]
     assert sorted(a["credit"]["title"] for a in lib) == ["Happy African Village", "Safari Time", "Uptown Fatness"]
     assert all(a["shared"] and a["credit"]["status"] == "confirmed" for a in lib)
@@ -134,7 +137,7 @@ def test_the_tour_line_in_the_sample_is_answered_without_the_ai(tmp_path):
     assert out["adapter"] == "sample" and "问演员名字的两句" in out["reply"]
     pid = out["proposal"]["id"]
     ep = sam.post(f"/api/episodes/SAMPLE_01/proposals/{pid}/approve", json={"playhead": 40}).json()
-    assert 5 <= before - ep["duration"] <= 8      # about 1:55 → 1:49
+    assert 3.5 <= before - ep["duration"] <= 6.5      # about 1:21 → 1:17
     # said again once they are gone: the normal path (no scripted answer)
     again = sam.post("/api/episodes/SAMPLE_01/chat", json={"text": "把阿乔问演员名字的那两句删掉", "playhead": 40}).json()
     assert again.get("adapter") != "sample"
