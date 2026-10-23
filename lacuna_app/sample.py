@@ -105,12 +105,14 @@ CUTS = {
 }
 LONG_PAUSE = 8      # the turn after which the long pause is tightened
 COUGH = (12, 2.0, 0.45)  # host 0 coughs while host 1 says turn 12: seconds into the turn, how long
+LOUD = (1.5, 0.5)   # host 0 sits close to the mic: about 9.5 dB louder (the tour's 统一两人音量 step)
 MUSIC = Path(__file__).with_name("sample_music")   # CC0 tracks with licenses.json (trimmed copies)
 
 
 # the sentence the tour fills in (step 4): LACUNA's answer is scripted, so it never depends on the AI or quota
 TOUR_CHAT = {"zh": "把阿乔问演员名字的那两句删掉", "en": "Cut Alex's two lines about the actor's name"}  # i18n-ignore
 TOUR_LINES = (8, 9)     # the turns it removes
+TOUR_MUSIC = {"zh": "说话时片头音乐再小一点", "en": "Make the intro music a bit quieter under the talk"}  # i18n-ignore
 
 
 def _plain(text: str) -> str:
@@ -150,6 +152,55 @@ def tour_chat(ep, text: str, playhead: float) -> dict | None:
                             confidence=1.0)
 
     return ep.chat(text, playhead, Scripted())
+
+
+def tour_music_chat(m, text: str) -> dict | None:
+    """The tour's music line in the sample episode → a draft lowering the intro under the talk by 4 dB (no AI call)."""
+    from .music import BG_DB
+    from .music_assist import apply_actions
+
+    meta = getattr(m.ep, "meta", {}) or {}
+    lang = meta.get("language")
+    if meta.get("source") != "sample" or lang not in TOUR_MUSIC or _plain(text) != _plain(TOUR_MUSIC[lang]):
+        return None
+    p = next((x for x in m.load()["placements"] if x["role"] == "intro"), None)
+    if p is None:
+        return {"message": tr("先从左边的素材库放一段片头，我再帮你调。"), "draft": None, "usage": None}
+    bg = min(float(p.get("bg_db") if p.get("bg_db") is not None else BG_DB) + 4.0, 40.0)
+    ps, changes = apply_actions(m, [{"type": "set", "placement_id": p["id"], "bg_db": bg}])
+    msg = tr("好的：说话时把片头再压低 4 dB（共 {db} dB），音乐只在开头单独放时是全音量。先试听，满意就采用。", db=f"{bg:.0f}")
+    m.set_draft(ps, changes, msg, "chat")
+    return {"message": msg, "draft": m.draft_view(), "usage": None}
+
+
+def tour_marks(ep) -> dict | None:
+    """Where the tour's spots are on the current cut (seconds): the actor lines, 「等一下 我喝口水」, the cough."""
+    meta = getattr(ep, "meta", {}) or {}
+    lang = meta.get("language")
+    if meta.get("source") != "sample" or lang not in SCRIPT:
+        return None
+    script = SCRIPT[lang]
+    with ep.lock:
+        cuts = ep.cuts_for(ep.enabled)
+        words = ep.words(0.0, 1e9)
+
+        def turn(i: int) -> tuple[float, float] | None:
+            h, text, _ = script[i]
+            mine = [w for w in words if w[0] == HOSTS[lang][h]]
+            want = [c for c in text if c != " "] if lang == "zh" else text.split()
+            seq = [w[3] for w in mine]
+            at = next((k for k in range(len(seq)) if seq[k:k + len(want)] == want), None)
+            return None if at is None else (mine[at][1], mine[at + len(want) - 1][2])
+
+        def tl(span):
+            return None if span is None else [round(to_tl_s(ep, span[0], cuts), 2), round(to_tl_s(ep, span[1], cuts), 2)]
+
+        a, b = turn(TOUR_LINES[0]), turn(TOUR_LINES[1])
+        c = turn(COUGH[0])
+        return {"hosts": list(HOSTS[lang]),
+                "actor": tl((a[0], b[1]) if a and b else None),
+                "water": tl(turn(10)),
+                "cough": tl((c[0] + COUGH[1], c[0] + COUGH[1] + COUGH[2]) if c else None)}
 
 
 def to_tl_s(ep, base_s: float, cuts) -> float:
@@ -263,7 +314,7 @@ def _build(base: Path, lang: str) -> None:
         for toks in turns:
             if toks and toks[0][0] == h:
                 i, j = int(toks[0][1] * SR), int(toks[-1][2] * SR)
-                x[i:j] += _speech(j - i, f0, rng)
+                x[i:j] += LOUD[h] * _speech(j - i, f0, rng)
         if h == 0:
             ti, off, ln = COUGH
             i = int((turns[ti][0][1] + off) * SR)

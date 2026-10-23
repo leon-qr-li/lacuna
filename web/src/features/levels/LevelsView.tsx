@@ -258,10 +258,12 @@ function Waves({ id, version, name, gain }: { id: string; version: string; name:
   const [pk, setPk] = useState<number[] | null>(null);
   useEffect(() => {
     let live = true;
-    manualApi.wave(id, version, 0).then(
-      (w) => live && setPk(w.tracks.find((x) => x.name === name)?.peaks ?? null),
-      () => undefined,
-    );
+    // the first 30 seconds (three tiles), so both hosts are in it
+    Promise.all([0, 1, 2].map((k) => manualApi.wave(id, version, k).catch(() => null))).then((ws) => {
+      if (!live) return;
+      const all = ws.flatMap((w) => w?.tracks.find((x) => x.name === name)?.peaks ?? []);
+      setPk(all.length ? all : null);
+    });
     return () => {
       live = false;
     };

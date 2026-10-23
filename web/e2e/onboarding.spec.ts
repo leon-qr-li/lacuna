@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 // 入门 (new-user batch): a new person signs up from an invite with their name → 欢迎，Sam with the plan line →
-// LACUNA 示例节目 with the coach (A/B, keep, reset) → back to their own show → 建节目 → 入门清单 and
+// LACUNA 示例节目 with the bubble tour (resume elsewhere, leave, restart, the end) → back to their own show → 建节目 → 入门清单 and
 // 节目资料卡 → 设置 → 通用 deletes the sample. Progress is the server's, per person.
 const PW = "correct horse battery";
 
@@ -13,7 +13,7 @@ test.afterAll(async ({ request }) => {
   await request.post("/api/auth/_test/reset?skip_setup=true");
 });
 
-test("welcome → sample show with the coach → own show → checklist", async ({ browser }) => {
+test("welcome → sample show with the tour → own show → checklist", async ({ browser }) => {
   const leon = await (await browser.newContext()).newPage();
   expect((await leon.request.post("/api/auth/register", { data: { email: "leon@example.com", password: PW, name: "Leon" } })).ok()).toBeTruthy();
   const inv = await (await leon.request.post("/api/auth/invites", { data: { email: "sam@example.com", plan: "basic" } })).json();
@@ -35,30 +35,35 @@ test("welcome → sample show with the coach → own show → checklist", async 
   await expect(sam.getByTestId("welcome-plan")).toContainText("基础版 · 每月 4 小时音频");
   await expect(sam.getByTestId("show-setup")).toHaveCount(0);
 
-  // the sample: straight into its review, the coach at step 1
+  // the sample: straight into its review, the bubble tour at its first step (the raw recording)
   await sam.getByTestId("welcome-sample").click();
   await expect(sam).toHaveURL(/#\/ep\/SAMPLE_01\/review/);
-  const coach = sam.getByTestId("coach");
-  await expect(coach).toContainText("0/5");
-  await expect(coach.locator("li.is-next")).toContainText("听一处删减");
-  await expect(sam.getByTestId("review-title")).toBeVisible();
-  await sam.getByRole("button", { name: "A · 原话" }).click();
-  await expect(coach.locator("li.is-next")).toContainText("保留或恢复");
-  await sam.keyboard.press("k");
-  await expect(coach).toContainText("2/5");
-  await expect(coach.locator("li.is-next")).toContainText("整集试听");
-  // the coach's ticks follow Sam to another browser
+  await expect(sam.getByTestId("tour-pill")).toContainText("第 1 步，共 9 步");
+  await expect(sam.getByTestId("tour-raw")).toContainText("先听听没剪过的样子");
+  await sam.getByTestId("tour-raw").getByTestId("tour-ok").click();
+  const bubble = sam.getByTestId("tour-bubble");
+  await expect(bubble).toContainText("先看左边的清单");
+  await expect(bubble).toContainText("审阅改动 · 1/8");
+  await bubble.getByTestId("tour-ok").click();
+  await expect(bubble).toContainText("这一处删了什么");
+  // the place reached follows Sam to another browser
   const again = await (await browser.newContext()).newPage();
   await again.request.post("/api/auth/login", { data: { email: "sam@example.com", password: PW } });
-  const ob = await (await again.request.get("/api/onboarding")).json();
-  expect(ob.done).toEqual(expect.arrayContaining(["sample.ab", "sample.decide"]));
-  // 重置示例: the first cut as it was, the coach from the start
-  await coach.getByTestId("coach-reset").click();
-  await sam.getByTestId("dialog").getByRole("button", { name: "重置示例" }).click();
-  await expect(sam.getByTestId("coach")).toContainText("0/5");
+  await expect.poll(async () => (await (await again.request.get("/api/onboarding")).json()).tour).toBe("rbody");
+  // 退出教程, then 重新开始示例教程: the first cut as it was, the tour from the start
+  await sam.getByTestId("tour-pill").getByRole("button", { name: "退出教程" }).click();
+  await sam.getByTestId("dialog").getByRole("button", { name: "退出教程" }).click();
+  await expect(sam.getByTestId("tour")).toHaveCount(0);
+  await sam.getByTestId("tour-again").click();
+  await sam.getByTestId("dialog").getByRole("button", { name: "重新开始" }).click();
+  await expect(sam.getByTestId("tour-raw")).toBeVisible();
 
-  // their own show: the welcome again until it is set up; 建我的节目 opens the form
-  await sam.getByTestId("coach-own").click();
+  // the end of the tour: before / after, and the way to their own first episode
+  await sam.request.put("/api/onboarding", { data: { tour: "done" } });
+  await sam.reload();
+  const done = sam.getByTestId("tour-done");
+  await expect(done).toContainText("同一段 30 秒，剪之前和剪之后");
+  await done.getByTestId("tour-own").click();
   await expect(sam.getByTestId("welcome")).toBeVisible();
   await sam.getByTestId("welcome-own").click();
   const setup = sam.getByTestId("show-setup");

@@ -11,6 +11,8 @@ export interface Onboarding {
   done: string[];
   hidden: boolean;
   welcomed: boolean;
+  /** the bubble tour of the sample show: the step to come back to, "" when finished or left, null not started */
+  tour: string | null;
   /** the steps of your own first episode (the short version for a collaborator: review, chat) */
   steps: Step[];
   sample_steps: SampleStep[];
@@ -22,7 +24,7 @@ export interface Onboarding {
 export const onboardingApi = {
   get: () => req<Onboarding>("GET", "/api/onboarding"),
   mark: (step: string) => req<Onboarding>("POST", "/api/onboarding/mark", { step }),
-  flags: (f: { hidden?: boolean; welcomed?: boolean }) => req<Onboarding>("PUT", "/api/onboarding", f),
+  flags: (f: { hidden?: boolean; welcomed?: boolean; tour?: string }) => req<Onboarding>("PUT", "/api/onboarding", f),
   addSample: (lang: string) => req<Onboarding>("POST", "/api/onboarding/sample", { lang }),
   resetSample: () => req<Onboarding>("POST", "/api/onboarding/sample/reset"),
   dropSample: () => req<Onboarding>("DELETE", "/api/onboarding/sample"),

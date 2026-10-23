@@ -2,7 +2,9 @@
 was, and the same stretch of the current cut. Any episode works; only the tour asks for it."""
 from __future__ import annotations
 
-from fastapi import Query
+from fastapi import HTTPException, Query
+
+from .. import sample
 
 RAW_S = 30.0
 
@@ -15,3 +17,10 @@ def register(app, ctx) -> None:
         ep = get(episode_id)
         with ep.lock:
             return ep.ab(frozenset(), ep.enabled, (0, 0), ctx_s=s, max_s=s)
+
+    @app.get("/api/episodes/{episode_id}/tour/marks")
+    def marks(episode_id: str):
+        out = sample.tour_marks(get(episode_id))
+        if out is None:
+            raise HTTPException(404, "not the sample episode")
+        return out

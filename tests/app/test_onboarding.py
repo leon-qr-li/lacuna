@@ -2,6 +2,8 @@
 plan counts, reset and delete, the short version for collaborators."""
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from lacuna_app import create_app, sample
@@ -149,3 +151,42 @@ def test_the_tour_position_is_kept_and_reset(tmp_path):
     # before / after: the first 30 s as recorded and the same stretch of the cut
     ab = sam.get("/api/episodes/SAMPLE_01/tour/raw").json()
     assert ab["before"]["duration"] == 30.0 and ab["after"]["duration"] == 30.0
+
+
+def test_the_tour_music_line_is_answered_without_the_ai(tmp_path):
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    lib = sam.get("/api/library?episode=SAMPLE_01").json()
+    assert len(lib["assets"]) == 3        # the three CC0 pieces are in the sample's library
+    line = sample.TOUR_MUSIC["zh"]
+    early = sam.post("/api/episodes/SAMPLE_01/music/chat", json={"text": line}).json()
+    assert "先从左边的素材库放一段片头" in early["message"] and not early.get("draft")
+    intro = next(a for a in lib["assets"] if a["kind"] == "intro")
+    sam.post("/api/episodes/SAMPLE_01/music", json={"asset_id": intro["id"], "role": "intro"})
+    out = sam.post("/api/episodes/SAMPLE_01/music/chat", json={"text": line}).json()
+    assert "再压低 4 dB" in out["message"] and out["draft"]
+    sam.post(f"/api/episodes/SAMPLE_01/music/draft/{out['draft']['id']}/accept")
+    p = sam.get("/api/episodes/SAMPLE_01/music").json()["placements"][0]
+    assert p["bg_db"] == 26
+
+
+def test_the_tour_finds_its_spots_on_the_cut(tmp_path):
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    m = sam.get("/api/episodes/SAMPLE_01/tour/marks").json()
+    assert m["hosts"] == ["小林", "阿乔"]
+    for k in ("actor", "water", "cough"):
+        a, b = m[k]
+        assert 0 < a < b < 120, k
+    assert m["actor"][1] < m["water"][0] < m["cough"][0]
+    assert 0.3 < m["cough"][1] - m["cough"][0] < 0.6
+    assert leon.get("/api/episodes/EP_TEST/tour/marks").status_code in (404, 403)
+
+
+def test_the_tour_sentences_match_the_interface():
+    """The tour fills these in through t(): the scripted answers must recognise both languages."""
+    web = (Path(__file__).resolve().parents[2] / "web" / "src" / "features" / "tour" / "en.ts").read_text("utf-8")
+    for d in (sample.TOUR_CHAT, sample.TOUR_MUSIC):
+        assert f'"{d["zh"]}": "{d["en"]}"' in web
