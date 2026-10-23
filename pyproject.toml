@@ -27,7 +27,7 @@ lacuna = "lacuna_app.__main__:main"
 packages = ["lacuna_core", "lacuna_app", "lacuna_app.routes"]
 
 [tool.setuptools.package-data]
-lacuna_app = ["prompts/*", "prompts/poster_examples/*", "fonts/*", "sample_music/*"]
+lacuna_app = ["prompts/*", "prompts/poster_examples/*", "fonts/*", "sample_music/*", "sample_audio/*/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

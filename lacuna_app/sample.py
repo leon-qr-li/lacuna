@@ -8,9 +8,11 @@ points at those files. So it takes almost no disk, the original audio is never w
 copies the episode files again. The show is marked ``sample`` in the site database: it doesn't count against
 the plan's show limit, and audio-hour metering (batch 5) must skip it too.
 
-Until Leon and Pei record the real sample (Q3), the recording is a placeholder: two speech-like tones under a
-scripted conversation whose transcript reads properly, with a first cut that shows each kind of edit once.
-Replacing it: put the real episode here and bump VERSION (old masters stay until nobody's sample uses them).
+The voices are synthetic (Leon 2026-10-23, until he and Pei record the real sample): two stock voices of open
+models read the script, one track per host (``sample_audio/<lang>/host0.flac``, ``host1.flac``), with the time
+of every word from forced alignment (``tokens.json``); README.txt there names the models and licenses. Here we
+only add the cough and make host 0 louder. Replacing it: new files there, then bump VERSION (old masters stay
+until nobody's sample uses them).
 """
 from __future__ import annotations
 
@@ -25,21 +27,21 @@ from . import show
 from .i18n import tr
 from .store import atomic_write_json
 
-VERSION = 2
+VERSION = 3
 EPISODE = "SAMPLE_01"
 LANGS = ("zh", "en")
 SR = 16000
 NAME = {"zh": "LACUNA 示例节目", "en": "LACUNA Sample Show"}  # i18n-ignore
 TITLE = {"zh": "示例 · 电影夜", "en": "Sample · Movie Night"}  # i18n-ignore
 HOSTS = {"zh": ("小林", "阿乔"), "en": ("Sam", "Alex")}  # i18n-ignore
-ABOUT = {"zh": "两位主持人聊一部刚看过的电影。（LACUNA 示例节目，录音为占位音频）",  # i18n-ignore
-         "en": "Two hosts talk about a film they just watched. (LACUNA sample show, placeholder recording)"}
+ABOUT = {"zh": "两位主持人聊一部刚看过的电影。（LACUNA 示例节目，声音为合成语音）",  # i18n-ignore
+         "en": "Two hosts talk about a film they just watched. (LACUNA sample show, synthetic voices)"}
 
 # (host 0/1, text, seconds of silence after). Placeholder script for the bubble tour (new-user batch, tour v3):
-# 2:12 raw. The first cut has five spots, three to review (a restart at 0:03, a tangent at about 0:25, a
-# corrected score at about 0:41) and two routine ones (one 呃 / uh, one long pause), so 2:12 → about 1:55.
-# Then the tour asks LACUNA to drop Alex/阿乔's two lines about the actor's name (→ about 1:49), deletes
-# 「等一下 我喝口水」 by hand (→ about 1:46) and mutes Sam/小林's cough under the other host (COUGH).
+# 1:34 raw (zh; en 1:27). The first cut has five spots, three to review (a restart at 0:03, a tangent at about
+# 0:20, a corrected score at about 0:26) and two routine ones (one 呃 / uh, one long pause), so → about 1:21.
+# Then the tour asks LACUNA to drop Alex/阿乔's two lines about the actor's name (→ about 1:17), deletes
+# 「等一下 我喝口水」 by hand (→ about 1:15) and mutes Sam/小林's cough under the other host (COUGH).
 SCRIPT = {
     "zh": [
         (0, "大家好 欢迎收听电影夜 今天我们 今天我们聊一部 我们俩上周一起看的电影", 0.6),  # i18n-ignore
@@ -107,6 +109,7 @@ LONG_PAUSE = 8      # the turn after which the long pause is tightened
 COUGH = (12, 2.0, 0.45)  # host 0 coughs while host 1 says turn 12: seconds into the turn, how long
 LOUD = (1.5, 0.5)   # host 0 sits close to the mic: about 9.5 dB louder (the tour's 统一两人音量 step)
 MUSIC = Path(__file__).with_name("sample_music")   # CC0 tracks with licenses.json (trimmed copies)
+AUDIO = Path(__file__).with_name("sample_audio")   # the two synthetic voices per language, word times
 
 
 # the sentence the tour fills in (step 4): LACUNA's answer is scripted, so it never depends on the AI or quota
@@ -247,26 +250,16 @@ def reset(root: str | Path, space: str | Path, lang: str) -> None:
 
 
 def _turns(lang: str):
-    """[(host, start, end, word)] with times: one token per character (zh) or word (en)."""
-    step, size = (0.3, 0.25) if lang == "zh" else (0.5, 0.42)
-    out, t = [], 0.6
-    for i, (host, text, gap) in enumerate(SCRIPT[lang]):
-        words = [c for c in text if c != " "] if lang == "zh" else text.split()
-        toks = []
-        for w in words:
-            toks.append((host, round(t, 3), round(t + size, 3), w))
-            t += step
-        out.append(toks)
-        t += gap
-    return out, t + 0.5
-
-
-def _speech(n: int, f0: float, rng) -> np.ndarray:
-    t = np.arange(n) / SR
-    env = 0.55 + 0.45 * np.sin(2 * np.pi * 4.0 * t + rng.uniform(0, 6)) ** 2
-    x = sum(np.sin(2 * np.pi * f0 * k * t) / k for k in (1, 2, 3, 4))
-    ramp = np.minimum(1, np.minimum(np.arange(n), np.arange(n)[::-1]) / (0.01 * SR))
-    return 0.16 * x * env * ramp
+    """[(host, start, end, word)] per script turn, from the aligned recording; and its length in seconds."""
+    lines = json.loads((AUDIO / lang / "tokens.json").read_text("utf-8"))
+    out = []
+    for (host, text, _), ln in zip(SCRIPT[lang], lines, strict=True):
+        want = [c for c in text if c != " "] if lang == "zh" else text.split()
+        got = [w for w, _, _ in ln["tokens"]]
+        if ln["host"] != host or got != want:
+            raise ValueError(f"sample_audio/{lang}/tokens.json does not match the script at {text!r}")
+        out.append([(host, round(a, 3), round(b, 3), w) for w, a, b in ln["tokens"]])
+    return out, sf.info(str(AUDIO / lang / "host0.flac")).duration
 
 
 def _cough(n: int, rng) -> np.ndarray:
@@ -299,7 +292,7 @@ def _build(base: Path, lang: str) -> None:
     from .episode import create_episode
     from .store import Workspace
 
-    turns, dur = _turns(lang)
+    turns, _ = _turns(lang)
     names = HOSTS[lang]
     tags = ("A", "B")
     tmp = base.with_name(base.name + ".tmp")
@@ -307,18 +300,18 @@ def _build(base: Path, lang: str) -> None:
     raw = tmp / "raw"
     raw.mkdir(parents=True)
     rng = np.random.default_rng(11)
-    n = int(dur * SR)
     refs = {}
-    for h, (name, f0) in enumerate(zip(names, (130.0, 205.0))):
-        x = 3e-4 * rng.standard_normal(n)
-        for toks in turns:
-            if toks and toks[0][0] == h:
-                i, j = int(toks[0][1] * SR), int(toks[-1][2] * SR)
-                x[i:j] += LOUD[h] * _speech(j - i, f0, rng)
+    for h, name in enumerate(names):
+        x, sr = sf.read(str(AUDIO / lang / f"host{h}.flac"), dtype="float32")
+        if sr != SR:
+            raise ValueError(f"sample_audio/{lang}/host{h}.flac must be {SR} Hz")
+        if x.ndim != 1:
+            raise ValueError(f"sample_audio/{lang}/host{h}.flac must be mono")
+        x = LOUD[h] * 0.55 * x / max(float(np.abs(x).max()), 1e-6)  # same peak for both, then host 0 louder
         if h == 0:
             ti, off, ln = COUGH
             i = int((turns[ti][0][1] + off) * SR)
-            x[i:i + int(ln * SR)] += _cough(int(ln * SR), rng)
+            x[i:i + int(ln * SR)] += _cough(int(ln * SR), rng)[:len(x[i:i + int(ln * SR)])]
         path = raw / f"{name}.wav"
         sf.write(str(path), x.astype(np.float32), SR, subtype="PCM_16")
         refs[name] = path
