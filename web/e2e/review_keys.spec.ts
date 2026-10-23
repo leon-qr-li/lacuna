@@ -38,6 +38,12 @@ test("review shortcuts: arrows move, K keeps, R restores, ? shows the card, typi
   await expect(page.locator(".toast")).toHaveText("已恢复原话");
   await expect(chip).toHaveText(at(2));
 
+  // K on a restored edit puts the cut back: K always means the cut, R the original words (Leon 2026-10-23)
+  await items.nth(1).click();
+  await expect(page.getByRole("button", { name: /^重新应用这个删除/ })).toBeVisible();
+  await page.keyboard.press("k");
+  await expect(page.getByRole("button", { name: /^(已)?保留/ })).toBeVisible();
+
   // ? opens and closes the shortcut card; the ? button does the same
   await page.keyboard.press("?");
   await expect(page.getByTestId("review-shortcuts")).toContainText("上一处 / 下一处");
@@ -47,6 +53,8 @@ test("review shortcuts: arrows move, K keeps, R restores, ? shows the card, typi
   await expect(page.getByTestId("review-shortcuts")).toBeVisible();
 
   // leave the shared backend as we found it
+  await undoKey(page);
+  await expect(page.getByRole("button", { name: /^重新应用这个删除/ })).toBeVisible();
   await undoKey(page);
   await expect(chip).toHaveText(at(1));
   await undoKey(page);

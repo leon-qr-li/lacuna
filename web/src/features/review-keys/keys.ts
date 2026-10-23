@@ -39,7 +39,7 @@ export function reviewAction(e: Pick<KeyboardEvent, "key" | "target" | "metaKey"
 export const help = (): { keys: string[]; label: string }[] => [
   { keys: [t("空格")], label: t("播放 / 暂停") },
   { keys: ["←", "→"], label: t("上一处 / 下一处") },
-  { keys: ["K"], label: t("保留（保持现状），跳到下一处") },
+  { keys: ["K"], label: t("保留删除（恢复过的会重新删），跳到下一处") },
   { keys: ["R"], label: t("恢复原话，跳到下一处") },
   { keys: ["A", "B"], label: t("切换原始 / 剪后") },
   { keys: ["S"], label: t("切换播放速度 1× / 1.25× / 1.5× / 2×") },

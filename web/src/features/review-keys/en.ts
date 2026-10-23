@@ -7,7 +7,7 @@ export const en: Dict = {
   "空格": "Space",
   "播放 / 暂停": "Play / pause",
   "上一处 / 下一处": "Previous / next",
-  "保留（保持现状），跳到下一处": "Keep as is, go to the next",
+  "保留删除（恢复过的会重新删），跳到下一处": "Keep the cut (re-applies a restored one), go to the next",
   "恢复原话，跳到下一处": "Restore the original, go to the next",
   "切换原始 / 剪后": "Switch original / cut",
   "切换播放速度 1× / 1.25× / 1.5× / 2×": "Switch speed 1× / 1.25× / 1.5× / 2×",

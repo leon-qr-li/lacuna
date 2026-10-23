@@ -42,7 +42,14 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
 - Invite email 6 steps: copy B 「专业名词式」 (Leon 2026-10-23) in `invite_mail.steps()`; English kept to one
   line per step in the two-column layout ("Music & loudness normalization", "Multi-platform export").
 
+- Tour fixes from Leon's 验收 (2026-10-23): every step change pauses all audio, and the pill shows 「⏸ 暂停播放」
+  while anything plays; 跳过教程 is gone from the bubbles, a quiet × on the pill asks 「还剩 N 步，大约 M 分钟」
+  (继续教程 primary) and leaving keeps the place (`onboarding.tour = "~step"`, pill 「继续示例教程」);
+  timeline steps call `showOnTimeline` (EditLanes, zooms out when needed); listening steps take 知道了 too;
+  new bubble rrest on 「剩下的全部保留」 while it still shows. Review keys: K always the cut (re-applies a
+  restored edit), R always the original words.
+
 ## Open
-- Real sample recordings (Leon + Pei, zh + en) → run ASR + first cut, check by hand, bump `sample.VERSION`.
+- Sample audio: Leon asked for a synthetic two-voice sample first (stock voices, not cloned); goes in only after he listens. Real recordings (Leon + Pei, zh + en) still the end goal → run ASR + first cut, check by hand, bump `sample.VERSION`.
 - Chat cap in the sample show (~20 messages) and audio-hour metering skipping `sample` shows: batch 5.
 - Usage line on welcome / import form ("本月已用 …"): needs batch 5 metering.

@@ -43,17 +43,28 @@ test("welcome → sample show with the tour → own show → checklist", async (
   await sam.getByTestId("tour-raw").getByTestId("tour-ok").click();
   const bubble = sam.getByTestId("tour-bubble");
   await expect(bubble).toContainText("先看左边的清单");
-  await expect(bubble).toContainText("审阅改动 · 1/8");
+  await expect(bubble).toContainText("审阅改动 · 1/9");
   await bubble.getByTestId("tour-ok").click();
   await expect(bubble).toContainText("这一处删了什么");
   // the place reached follows Sam to another browser
   const again = await (await browser.newContext()).newPage();
   await again.request.post("/api/auth/login", { data: { email: "sam@example.com", password: PW } });
   await expect.poll(async () => (await (await again.request.get("/api/onboarding")).json()).tour).toBe("rbody");
-  // 退出教程, then 重新开始示例教程: the first cut as it was, the tour from the start
-  await sam.getByTestId("tour-pill").getByRole("button", { name: "退出教程" }).click();
-  await sam.getByTestId("dialog").getByRole("button", { name: "退出教程" }).click();
+  // the one way out is the quiet × on the pill; it asks first (继续教程 stays), then remembers the step
+  await expect(bubble.getByRole("button", { name: "跳过教程" })).toHaveCount(0);
+  await sam.getByTestId("tour-exit").click();
+  await expect(sam.getByTestId("dialog")).toContainText("还剩 8 步");
+  await sam.getByTestId("dialog").getByRole("button", { name: "继续教程" }).click();
+  await expect(bubble).toContainText("这一处删了什么");
+  await sam.getByTestId("tour-exit").click();
+  await sam.getByTestId("dialog").getByRole("button", { name: "先离开，下次接着走" }).click();
   await expect(sam.getByTestId("tour")).toHaveCount(0);
+  await expect.poll(async () => (await (await again.request.get("/api/onboarding")).json()).tour).toBe("~rbody");
+  await sam.getByTestId("tour-resume").click();
+  await expect(bubble).toContainText("这一处删了什么");
+  // after the tour (finished or left at the end): 重新开始示例教程, the first cut as it was, the tour from the start
+  await sam.request.put("/api/onboarding", { data: { tour: "" } });
+  await sam.reload();
   await sam.getByTestId("tour-again").click();
   await sam.getByTestId("dialog").getByRole("button", { name: "重新开始" }).click();
   await expect(sam.getByTestId("tour-raw")).toBeVisible();
