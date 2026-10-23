@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from lacuna_app import Episode, Workspace, create_app
+from lacuna_app import Episode, Workspace, create_app, publish
 from lacuna_app.editor import MockEditorAdapter
 from lacuna_app.publish import (PROMPTS, TOOL, ClaudePublisher, Publisher, RulePublisher, clean, has_table, load_names,
                                 make_publisher, mmss, retime_markdown, segments, untable)
@@ -38,7 +38,11 @@ def fake():
 
 
 @pytest.fixture
-def pub(ws, fake):
+def pub(ws, fake, monkeypatch):
+    # these tests check every entry the writer gave; the detail levels have tests of their own
+    # (test_publish_levels.py), so here a level keeps them all
+    monkeypatch.setitem(publish.LEVELS, "all", {"rank": 3, "gap": 0.0})
+    monkeypatch.setattr(publish, "DEFAULT_LEVEL", "all")
     return Publisher(ws, lambda: ClaudePublisher(client=fake))
 
 

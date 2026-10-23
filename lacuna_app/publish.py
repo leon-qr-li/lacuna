@@ -44,6 +44,13 @@ ROLE_LABELS = {"intro": "片头", "interlude": "间奏", "outro": "片尾", "bed
 MERGE_GAP_S = 1.5          # same speaker, shorter gap -> same segment
 MAX_SEGMENT_S = 45.0
 MIN_CHARS = 3              # "嗯" / "对对" alone are not worth a line
+# how detailed the published timeline is (Leon 2026-10-23, version A): the writer ranks every entry
+# (1 big turn, 2 main point, 3 detail); a level keeps ranks up to `rank`, at least `gap` seconds apart
+# on the final cut. A part's first entry always stays, so every heading keeps a line. 详细 is
+# everything the writer wrote (about one a minute on a long episode).
+LEVELS = {"lean": {"rank": 2, "gap": 300.0}, "std": {"rank": 2, "gap": 90.0}, "full": {"rank": 3, "gap": 0.0}}
+DEFAULT_LEVEL = "std"
+OLD_LEVEL = "full"         # packs written before levels: show them as they were
 
 _STR = {"type": "string"}
 _STRS = {"type": "array", "items": _STR}
@@ -66,9 +73,11 @@ TOOL = {
                 "properties": {
                     "heading": _STR,
                     "entries": {"type": "array", "items": {
-                        "type": "object", "additionalProperties": False, "required": ["segment", "text"],
+                        "type": "object", "additionalProperties": False, "required": ["segment", "text", "rank"],
                         "properties": {"segment": {"type": "string", "description": "segment id, e.g. s0042"},
-                                       "text": _STR}}}}}},
+                                       "text": _STR,
+                                       "rank": {"type": "integer", "enum": [1, 2, 3],
+                                                "description": "1 big turn, 2 main point, 3 detail"}}}}}}},
             "films": {"type": "array", "items": {
                 "type": "object", "additionalProperties": False, "required": ["name", "note"],
                 "properties": {"name": _STR, "note": _STR}}},
@@ -369,7 +378,9 @@ def clean(data: dict, segs: list[Segment]) -> tuple[dict, list[str]]:
             if s is None or not text:
                 dropped += 1
                 continue
-            entries.append({"text": text, "base_s": s.base_s, "segment": s.id})
+            rank = e.get("rank")
+            entries.append({"text": text, "base_s": s.base_s, "segment": s.id,
+                            "rank": rank if rank in (1, 2, 3) else 2})
         entries.sort(key=lambda e: e["base_s"])
         if entries:
             sections.append({"heading": _s(sec.get("heading"), 200) or "（未命名）", "entries": entries})  # i18n-ignore
@@ -411,7 +422,7 @@ def timed(ep: Episode, draft: dict, music: Music) -> dict:
             x = int(e["base_s"] * sr)
             gone = any(a <= x < b for a, b in cuts)
             rows.append({"key": f"{si}.{ei}", "t": music.to_final(to_tl(x, cuts) / sr), "text": e["text"],
-                         "section": si, "gone": gone})
+                         "section": si, "gone": gone, "rank": e.get("rank", 2)})
     speech = list(rows)
     for ci, c in enumerate(c for c in music.credits or () if c["role"] in ("intro", "interlude", "outro")):
         t = c["start_s"]
@@ -428,6 +439,22 @@ def timed(ep: Episode, draft: dict, music: Music) -> dict:
         rows.append({"key": f"m{ci}", "t": t, "text": label, "section": sec, "gone": False, "music": True})
     rows.sort(key=lambda r: (r["section"], r["t"], 0 if r.get("music") else 1))
     return {"rows": rows}
+
+
+def thin(rows: list[dict], level: str) -> list[dict]:
+    """The rows a detail level shows (`rows` as `timed` orders them; music cues always stay)."""
+    lv = LEVELS.get(level, LEVELS[DEFAULT_LEVEL])
+    keep: set[int] = set()
+    last, seen = -1e9, set()
+    for i, r in sorted(enumerate(rows), key=lambda x: x[1]["t"]):
+        if r.get("music"):
+            continue
+        first = r["section"] not in seen
+        seen.add(r["section"])
+        if first or (r["rank"] <= lv["rank"] and r["t"] - last >= lv["gap"]):
+            keep.add(i)
+            last = r["t"]
+    return [r for i, r in enumerate(rows) if r.get("music") or i in keep]
 
 
 # ---------------------------------------------------------------------------- markdown
@@ -629,8 +656,9 @@ class Publisher:
         draft, notes = clean(out.data, segs)
         if not draft["sections"]:
             raise PublishError(tr("时间轴是空的（引用的段落都对不上），请再生成一次"))
+        old = self.load(ep)
         pack = {"schema": PUBLISH_SCHEMA, "episode": ep.id,
-                "generated_at": now_iso(),
+                "generated_at": now_iso(), "level": (old or {}).get("level") or DEFAULT_LEVEL,
                 "adapter": out.adapter, "usage": out.usage, "notes": out.notes + notes,
                 "draft": draft, "edited": False}
         with ep.lock:
@@ -683,6 +711,22 @@ class Publisher:
             self.save(ep, pack)
             return pack
 
+    def set_level(self, ep: Episode, level: str, rev: int | None = None) -> dict:
+        """Show the timeline at another detail level: local, no AI call. Replaces hand-edited Markdown
+        (the page asks first)."""
+        from .coedit import StaleError
+        if level not in LEVELS:
+            raise ValueError(level)
+        with ep.lock:
+            pack = self._need(ep)
+            if rev is not None and int(pack.get("rev") or 0) != rev:
+                raise StaleError(tr("{name} 刚刚修改了发布资料。页面已更新为最新内容，你的本次修改未保存，请在最新内容上重新修改。",
+                                    name=pack.get("by_name") or tr("其他成员")))
+            pack["level"] = level
+            self._rerender(ep, pack)
+            self.save(ep, pack)
+            return pack
+
     def name(self, ep: Episode, heard: str, action: str) -> dict:
         """Accept (fix everywhere + remember for later episodes) or ignore a suspected misheard name."""
         with ep.lock:
@@ -727,14 +771,19 @@ class Publisher:
 
     def _layout(self, ep: Episode, pack: dict, music: Music, keep_text: bool = False) -> None:
         """Place the draft on the current cut: times, chapters, Markdown (unless Leon's is kept)."""
-        rows = timed(ep, pack["draft"], music)["rows"]
+        every = timed(ep, pack["draft"], music)["rows"]
+        level = pack.get("level") or OLD_LEVEL
+        rows = thin(every, level)
+        with ep.lock:
+            duration = music.to_final(ep.timeline_for(ep.enabled).length / ep.sr)
         first: dict[int, float] = {}
         for r in rows:
             first.setdefault(r["section"], r["t"])
         pack.update(version=ep.version_key(), music=music.credits, music_inserts=music.inserts, times=[mmss(r["t"]) for r in rows],
                     chapters=[{"t": round(first.get(i, 0.0), 2), "time": mmss(first.get(i, 0.0)),
                                "heading": s["heading"]} for i, s in enumerate(pack["draft"]["sections"])],
-                    gone=[r["text"] for r in rows if r["gone"]])
+                    gone=[r["text"] for r in rows if r["gone"]], duration=round(duration, 2),
+                    counts={k: sum(not r.get("music") for r in thin(every, k)) for k in LEVELS})
         if not keep_text:
             pack["markdown"] = render_markdown(ep.id, pack["draft"], rows, music.credits, show.load(self.ws.root))
 
@@ -761,6 +810,8 @@ class Publisher:
             "usage": pack.get("usage") or {}, "generated_at": pack["generated_at"],
             "library": music.library,
             "rev": int(pack.get("rev") or 0),
+            "level": pack.get("level") or OLD_LEVEL, "counts": pack.get("counts") or {},
+            "duration": pack.get("duration") or 0,
         }
         return out
 

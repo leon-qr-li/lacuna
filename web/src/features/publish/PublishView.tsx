@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PublishView as View } from "./api";
+import type { PublishLevel, PublishView as View } from "./api";
 import { copyRich, copyText, markdownToHtml } from "../../markdown";
 import { publishApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
@@ -108,6 +108,15 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
     void act(publishApi.generatePublish(id));
   };
   const claude = view.editor === "claude";
+  const levelNames: [PublishLevel, string][] = [["lean", t("精简")], ["std", t("标准")], ["full", t("详细")]];
+  const setLevel = async (level: PublishLevel) => {
+    if (!pack || level === pack.level) return;
+    if (pack.edited && !(await confirmDialog({ message: t("换详细程度会重新排时间轴，你手改过的 show notes 会被覆盖，确定吗？"), confirmLabel: t("换"), danger: true }))) return;
+    void act(publishApi.setPublishLevel(id, level, pack.rev));
+  };
+  const entries = pack?.counts[pack.level] ?? 0;
+  // "about every N minutes" only where it means something (not on a one-minute sample)
+  const every = pack && entries ? pack.duration / 60 / entries : 0;
   const job = view.job;
 
   return (
@@ -197,6 +206,28 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
           <section className="card" aria-label="Show notes">
             <div className="card-head">
               <strong>Show notes{pack.edited ? t(" · 已手改") : ""}</strong>
+              {!editing && (
+                <span className="row wrap gap8 publish-level">
+                  <span className="seg" role="group" aria-label={t("时间轴详细程度")} data-testid="publish-level">
+                    {levelNames.map(([k, label]) => (
+                      <button
+                        key={k}
+                        type="button"
+                        className={pack.level === k ? "is-on" : undefined}
+                        aria-pressed={pack.level === k}
+                        title={t("{n} 条", { n: pack.counts[k] ?? 0 })}
+                        disabled={busy || running}
+                        onClick={() => setLevel(k)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </span>
+                  <span className="muted small publish-level-count" data-testid="publish-level-count">
+                    {every >= 1.5 ? t("{n} 条 · 约每 {m} 分钟一条", { n: entries, m: Math.round(every) }) : t("{n} 条", { n: entries })}
+                  </span>
+                </span>
+              )}
               <span className="row wrap gap8">
                 {!editing && (
                   <>

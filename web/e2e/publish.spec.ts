@@ -94,4 +94,26 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await page.getByRole("button", { name: "更新时间戳" }).click();
   await expect(page.getByTestId("publish-stale")).toBeHidden();
   await expect(page.getByTestId("show-notes")).toContainText("好久不见");
+
+  // timeline detail (Leon 2026-10-23): 标准 by default; 详细 shows every line, re-filtered locally;
+  // over hand-edited notes it asks first, then rebuilds them
+  const level = page.getByTestId("publish-level");
+  await expect(level.getByRole("button", { name: "标准" })).toHaveAttribute("aria-pressed", "true");
+  const lines = page.getByTestId("show-notes").locator("h3 + ul li");
+  const std = await lines.count();
+  await expect(page.getByTestId("publish-level-count")).toHaveText(`${std} 条`);
+  await level.getByRole("button", { name: "详细" }).click();
+  const ask = page.getByRole("alertdialog");
+  await expect(ask).toContainText("会被覆盖");
+  await ask.getByRole("button", { name: "换", exact: true }).click();
+  await expect(level.getByRole("button", { name: "详细" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("show-notes")).not.toContainText("好久不见");
+  await expect(page.getByText("Show notes · 已手改")).toBeHidden();
+  await expect.poll(() => lines.count()).toBeGreaterThan(std);
+  // no longer hand-edited: switching back needs no question
+  await level.getByRole("button", { name: "精简" }).click();
+  await expect(level.getByRole("button", { name: "精简" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("alertdialog")).toBeHidden();
+  await page.reload();
+  await expect(page.getByTestId("publish-level").getByRole("button", { name: "精简" })).toHaveAttribute("aria-pressed", "true");
 });

@@ -21,3 +21,4 @@ Depends on: 2 · Parallel with: 6a
 ## Later changes
 - 2026-10-18 (backlog 26, #89): show notes never contain tables (prompt, example, renderer, `publish.untable` on save/open) and a 「喜马拉雅版」 sub-tab with three layouts: `show-notes-ximalaya.md`.
 - Interface text calls the writer LACUNA / AI, not the vendor (`dialog-brand.md`); 重新生成 / 恢复成生成的版本 confirm through the in-app dialog.
+- 2026-10-23 (decision `show-notes-detail-levels`): 精简 / 标准 / 详细 switch on the Show notes card. The brief asks the writer to rank every entry (tool field `rank` 1–3); `publish.thin` filters the timed rows per level (`LEVELS`, min gap on the final cut, a part's first line always kept); `pack.level` (new packs `std`, old ones `full`), `pack.counts` per level and `pack.duration` in the view; `PUT …/publish/level {level, rev}`. Tests `tests/app/test_publish_levels.py` + the end of `web/e2e/publish.spec.ts`.
