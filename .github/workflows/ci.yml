@@ -85,9 +85,11 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
           NEEDRESTART_MODE: a
+        # apt-get update stalled with no output on some runners: time out each try and retry
         run: |
-          sudo -E apt-get -o DPkg::Lock::Timeout=120 update -qq
-          sudo -E apt-get -o DPkg::Lock::Timeout=120 install -y -qq --no-install-recommends ffmpeg
+          APT="-o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
+          for i in 1 2 3; do sudo -E timeout 90 apt-get $APT update -q && break; echo "apt-get update try $i failed"; done
+          sudo -E timeout 180 apt-get $APT install -y -q --no-install-recommends ffmpeg
 
       - name: Install Python package
         run: uv pip install --system -e ".[test,claude]"
@@ -141,9 +143,11 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
           NEEDRESTART_MODE: a
+        # apt-get update stalled with no output on some runners: time out each try and retry
         run: |
-          sudo -E apt-get -o DPkg::Lock::Timeout=120 update -qq
-          sudo -E apt-get -o DPkg::Lock::Timeout=120 install -y -qq --no-install-recommends ffmpeg
+          APT="-o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
+          for i in 1 2 3; do sudo -E timeout 90 apt-get $APT update -q && break; echo "apt-get update try $i failed"; done
+          sudo -E timeout 180 apt-get $APT install -y -q --no-install-recommends ffmpeg
 
       - name: Install Python package
         run: uv pip install --system -e ".[test,claude]"
