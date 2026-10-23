@@ -129,8 +129,11 @@ test.describe.serial("声音", () => {
     const cmp = page.getByTestId("levels-compare");
     const ab = page.waitForResponse((r) => /\/levels\/ab\?at=/.test(r.url()) && r.ok());
     await cmp.getByRole("button", { name: "对比这里：原始 / 调整后" }).click();
-    await ab;
-    await expect(cmp.getByRole("button", { name: "▶ 原始" })).toBeVisible();
+    const res = await ab;
+    // macOS CI only: the A/B buttons were missing; say what the card held instead (PR #175)
+    await expect(cmp.getByRole("button", { name: "▶ 原始" })).toBeVisible().catch(async (e) => {
+      throw new Error(`${e.message}\ncompare card: ${await cmp.innerHTML()}\nab: ${res.status()} ${(await res.text()).slice(0, 300)}`);
+    });
     await expect(cmp.getByRole("button", { name: "▶ 调整后" })).toBeVisible();
   });
 
