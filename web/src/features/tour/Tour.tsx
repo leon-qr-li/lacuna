@@ -73,6 +73,7 @@ export function Tour({ ep, mode, id, player }: { ep: Episode; mode: string; id: 
   const at = ob?.tour;
   if (!on || !ob) return null;
   if (at === "") return <Restart />;
+  if (at?.startsWith("~")) return <Resume at={at.slice(1)} />;
   return <Run ep={ep} mode={mode} id={id} player={player} at={at ?? STEPS[0].id} />;
 }
 
@@ -88,6 +89,15 @@ function Restart() {
   return (
     <button type="button" className="tour-again" onClick={() => void again()} data-testid="tour-again">
       {t("重新开始示例教程")}
+    </button>
+  );
+}
+
+/** Left halfway with ×: one click goes on from the same step. */
+function Resume({ at }: { at: string }) {
+  return (
+    <button type="button" className="tour-again" onClick={() => save(at)} data-testid="tour-resume">
+      {t("继续示例教程")}
     </button>
   );
 }
@@ -114,6 +124,7 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   const h: Hosts = { a: marks?.hosts[0] ?? ep.tracks[0]?.name ?? "", b: marks?.hosts[1] ?? ep.tracks[1]?.name ?? "" };
 
   const go = useCallback((i: number) => {
+    stopAudio(); // every new step starts quiet: the page is masked, so nothing else could stop it
     memo.current = {};
     clicked.current = new Set();
     if (i >= STEPS.length) {
@@ -175,8 +186,16 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   }, [step, next]);
 
   const exit = async () => {
-    if (!(await confirmDialog({ message: t("示例节目会留着，可以随便点。想再走一遍，点右下角的「重新开始示例教程」。"), confirmLabel: t("退出教程") }))) return;
-    setOnboarding({ ...(await onboardingApi.flags({ tour: "" })) });
+    const left = STEPS.length - cur;
+    const stay = await confirmDialog({
+      title: t("还剩 {n} 步，大约 {m} 分钟", { n: CHAPTERS - (step?.ch ?? 1) + 1, m: Math.max(1, Math.round((left * 8) / 60)) }),
+      message: t("走完你就亲手剪好了一集，最后会放剪前剪后的对比给你听。现在离开也没关系，我们记得你走到哪儿，下次打开示例节目接着走。"),
+      confirmLabel: t("继续教程"),
+      cancelLabel: t("先离开，下次接着走"),
+    });
+    if (stay || !step) return;
+    stopAudio();
+    setOnboarding({ ...(await onboardingApi.flags({ tour: `~${step.id}` })) });
   };
 
   if (finished) return <Done ep={ep} id={id} onExit={() => onboardingApi.flags({ tour: "" }).then(setOnboarding)} />;
@@ -185,12 +204,38 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   return <Mask key={step.id} step={step} ctx={ctx} h={h} onNext={next} onExit={() => void exit()} />;
 }
 
+/** Pause every player on the page (main, A/B, music clips, the raw recording). */
+function stopAudio() {
+  document.querySelectorAll("audio").forEach((a) => a.pause());
+}
+
+/** Something is playing somewhere on the page (polled: the players live in many components). */
+function usePlaying() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const k = window.setInterval(() => setOn([...document.querySelectorAll("audio")].some((a) => !a.paused)), 300);
+    return () => window.clearInterval(k);
+  }, []);
+  return on;
+}
+
 function Pill({ ch, onExit }: { ch: number; onExit: () => void }) {
+  const playing = usePlaying();
   return (
     <div className="tour-pill" data-testid="tour-pill">
       <span>{t("示例教程 · 第 {n} 步，共 {total} 步", { n: ch, total: CHAPTERS })}</span>
-      <button type="button" className="tour-pill-exit" onClick={onExit}>
-        {t("退出教程")}
+      <span className="tour-dots" aria-hidden="true">
+        {Array.from({ length: CHAPTERS }, (_, i) => (
+          <i key={i} className={i + 1 < ch ? "is-done" : i + 1 === ch ? "is-now" : ""} />
+        ))}
+      </span>
+      {playing && (
+        <button type="button" className="tour-pill-btn" onClick={stopAudio} data-testid="tour-pause">
+          {t("⏸ 暂停播放")}
+        </button>
+      )}
+      <button type="button" className="tour-pill-x" onClick={onExit} aria-label={t("暂停教程")} title={t("暂停教程")} data-testid="tour-exit">
+        ×
       </button>
     </div>
   );
@@ -300,9 +345,6 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
               {t("跳过这一步")}
             </button>
           )}
-          <button type="button" className="linkbtn small muted" onClick={onExit} data-testid="tour-exit">
-            {t("跳过教程")}
-          </button>
         </div>
       </div>
     </div>
@@ -354,9 +396,6 @@ function Raw({ step, id, h, onNext, onExit }: { step: Step; id: string; h: Hosts
           <span className="grow" />
           <button type="button" className="btn btn-outline btn-small" onClick={onNext} data-testid="tour-ok">
             {t("下一步")}
-          </button>
-          <button type="button" className="linkbtn small muted" onClick={onExit} data-testid="tour-exit">
-            {t("跳过教程")}
           </button>
         </div>
         <p className="tour-note small muted">{t("示例节目不占用你的额度。录音是占位音频，正式示例正在录制。")}</p>

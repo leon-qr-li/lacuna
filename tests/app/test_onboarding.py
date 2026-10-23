@@ -146,6 +146,7 @@ def test_the_tour_position_is_kept_and_reset(tmp_path):
     sam.post("/api/onboarding/sample", json={"lang": "zh"})
     assert sam.get("/api/onboarding").json()["tour"] is None
     assert sam.put("/api/onboarding", json={"tour": "music3"}).json()["tour"] == "music3"
+    assert sam.put("/api/onboarding", json={"tour": "~music3"}).json()["tour"] == "~music3"   # paused there
     assert sam.put("/api/onboarding", json={"tour": "Bad Step!"}).status_code == 422
     assert sam.post("/api/onboarding/sample/reset").json()["tour"] is None
     # before / after: the first 30 s as recorded and the same stretch of the cut

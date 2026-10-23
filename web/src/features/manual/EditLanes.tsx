@@ -12,6 +12,9 @@ import type { Manual } from "./useManual";
 import "./manual.css";
 
 const ZOOM_KEY = "lacuna.manual.span";
+const SHOW_EVENT = "lacuna:timeline-show";
+/** Ask the 整集试听 timeline to show [a, b] (seconds on the timeline), zooming out if it doesn't fit. */
+export const showOnTimeline = (a: number, b: number) => window.dispatchEvent(new CustomEvent(SHOW_EVENT, { detail: { a, b } }));
 const MIN_SPAN = 3; // seconds across the lanes at the closest zoom ...
 const MAX_SPAN = 600; // ... and the widest
 const EDGE_PX = 7; // grab a selection edge within this many pixels
@@ -156,6 +159,18 @@ export function EditLanes({
     setSpan(ns);
     setT0(Math.max(0, Math.min(start, view.current.d - ns)));
   };
+  // showOnTimeline(a, b): bring that stretch into view (the tour points at spots that may be off-screen or
+  // wider than a zoomed-in window)
+  useEffect(() => {
+    const on = (e: Event) => {
+      const { a, b } = (e as CustomEvent<{ a: number; b: number }>).detail;
+      const s = Math.max(view.current.span, (b - a) * 1.6 + 2);
+      place(a - (Math.min(s, view.current.d) - (b - a)) / 2, s);
+    };
+    window.addEventListener(SHOW_EVENT, on);
+    return () => window.removeEventListener(SHOW_EVENT, on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   type Drag = { kind: "sel"; x0: number; anchor: number; moved: boolean; r: DOMRect } | { kind: "pan"; x0: number; t0: number; w: number };
   const drag = useRef<Drag | null>(null);
   const card = useRef<HTMLElement | null>(null);

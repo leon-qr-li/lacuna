@@ -1,6 +1,7 @@
 // The bubble tour of LACUNA 示例节目 (new-user batch, tour v3, canvas boards U00–U60): every page the way a
 // host really uses it, one bubble per thing, the thing it talks about lit up. A "do" step waits until it has
 // been done (only the lit part can be clicked); the others have 知道了.
+import { showOnTimeline } from "../manual/EditLanes";
 import type { Episode } from "../../api";
 import type { Player } from "../../usePlayer";
 import { t } from "../../i18n";
@@ -113,15 +114,18 @@ export const STEPS: Step[] = [
   { id: "rbody", ch: 2, mode: "review", side: "bottom", target: [".rv-card .rv-head", ".rv-reason", ".rv-lines"],
     title: () => t("这一处删了什么"),
     body: () => t("最上面是删了什么、删了多久；下面一行是 LACUNA 删它的理由；再下面是前后文，**删除线**就是被删掉的话。") },
-  { id: "rab", ch: 2, mode: "review", side: "bottom", target: [".rv-act .ab-seg"],
+  { id: "rab", alsoOk: true, ch: 2, mode: "review", side: "bottom", target: [".rv-act .ab-seg"],
     clicks: [".rv-act .ab-opt:nth-of-type(1)", ".rv-act .ab-opt:nth-of-type(2)"],
     done: () => true,
     title: () => t("先听，再决定"),
     body: () => t("点 **A · 原话** 听删之前，再点 **B · 剪后** 听删之后。"),
-    hint: () => t("两个都听过后继续") },
+    hint: () => t("两个都听过会自动继续") },
   { id: "rspeed", ch: 2, mode: "review", side: "bottom", free: true, target: ['[data-testid="review-speed"]'],
     title: () => t("嫌慢可以倍速"),
     body: () => t("点 **1×** 切到 1.5× 听，音调不变。整集试听里也一样。") },
+  { id: "rrest", ch: 2, mode: "review", side: "bottom", target: ['[data-testid="review-keep-rest"]'],
+    title: () => t("处数多时，一键确认"),
+    body: () => t("点 **剩下的全部保留**，没看的那些一次确认：LACUNA 删了的保持删，没删的保持原样。按错了按 **Ctrl+Z** 撤销。这一集只有 3 处，我们一处处来。") },
   { id: "rdecide", ch: 2, mode: "review", side: "top", target: [".review-main", '[data-testid="review-list"]'],
     done: (c) => (c.ep.pending_review ?? 0) === 0,
     title: () => t("保留，还是恢复？"),
@@ -129,7 +133,7 @@ export const STEPS: Step[] = [
     hint: () => t("3 处都决定后继续") },
   { id: "rprog", ch: 2, mode: "review", side: "bottom", target: ['[data-testid="review-progress"]'],
     title: () => t("3 处都看完了"),
-    body: () => t("这里显示看了几处。处数多时，右边的 **剩下的全部保留** 能一键确认其余的，也能一步撤销。旁边的 **?** 是全部快捷键。") },
+    body: () => t("这里显示看了几处。旁边的 **?** 是全部快捷键。") },
   { id: "rroutine", ch: 2, mode: "review", side: "right", target: ['[data-testid="review-routine"]'],
     title: () => t("还有 2 处是自动剪的"),
     body: () => t("一个口头禅、一段冷场，LACUNA 直接剪好了，不用一处处看。剪得不对也能恢复，下一章就教你。") },
@@ -149,10 +153,10 @@ export const STEPS: Step[] = [
   { id: "lplayer", ch: 3, mode: "listen", side: "top", free: true, target: ["section.player"],
     title: () => t("播放条"),
     body: () => t("**−5s / +5s** 前后跳，**1× / 1.5×** 切倍速；勾上 **暂停时回退 5 秒**，每次暂停后会往回退一点，方便重听。空格键也能播放 / 暂停。") },
-  { id: "lpop", ch: 3, mode: "listen", side: "bottom", target: [".ml .ml-body", '[data-testid="ml-pop"]'],
+  { id: "lpop", alsoOk: true, ch: 3, mode: "listen", side: "bottom", target: [".ml .ml-body", '[data-testid="ml-pop"]'],
     enter: (c) => {
       const e = routine(c.ep);
-      if (e) c.player.seek(Math.max(0, e.t - 4));
+      if (e) { c.player.seek(Math.max(0, e.t - 2)); showOnTimeline(e.t - 2, e.t + 1); }
     },
     box: (c) => {
       const e = routine(c.ep);
@@ -161,7 +165,7 @@ export const STEPS: Step[] = [
     done: (c) => routine(c.ep)?.status === "restored",
     title: () => t("自动剪的，也能恢复"),
     body: () => t("把鼠标移到虚线框里那条橙色竖线上，这是自动剪掉的口头禅「呃」。弹出卡片后先点 **▶ 听前后**，再点 **恢复**。"),
-    hint: () => t("点「恢复」后继续") },
+    hint: () => t("点「恢复」会自动继续") },
   { id: "ltx", ch: 3, mode: "listen", side: "top", target: [(c) => { const e = routine(c.ep); return e ? lines(e.t - 8, e.t + 0.5).slice(-1) : []; }],
     title: () => t("文字稿跟着变"),
     body: () => t("「呃」回来了，删除线也没了。文字稿里任何删除线，点一下也能恢复。") },
@@ -175,7 +179,7 @@ export const STEPS: Step[] = [
   { id: "ctx", ch: 4, mode: "listen", side: "top",
     enter: (c) => {
       click('[data-testid="tab-ai"]');
-      if (c.marks?.actor) c.player.seek(c.marks.actor[0]);
+      if (c.marks?.actor) { c.player.seek(c.marks.actor[0]); showOnTimeline(c.marks.actor[0], c.marks.actor[1]); }
     },
     target: [(c) => (c.marks?.actor ? lines(c.marks.actor[0], c.marks.actor[1]) : [])],
     title: () => t("这两句有点拖"),
@@ -202,15 +206,15 @@ export const STEPS: Step[] = [
   { id: "cpend", ch: 4, mode: "listen", side: "bottom", target: ['[data-testid="edit-lanes"]'],
     enter: (c) => {
       const p = c.ep.proposals[0]?.edit;
-      if (p) c.player.seek(Math.max(0, p.t - 3));
+      if (p) { c.player.seek(Math.max(0, p.t - 3)); showOnTimeline(p.t - 3, p.t + 2); }
     },
     title: () => t("黄色虚线框：待批准"),
     body: () => t("LACUNA 不会直接改。它要删的地方先在时间线上用黄色虚线框标出来，等你点头。") },
-  { id: "cab", ch: 4, mode: "listen", side: "left", target: ['[data-testid="proposal"]'],
+  { id: "cab", alsoOk: true, ch: 4, mode: "listen", side: "left", target: ['[data-testid="proposal"]'],
     clicks: ['[data-testid="proposal"] .ab button:nth-of-type(1)', '[data-testid="proposal"] .ab button:nth-of-type(2)'], done: () => true,
     title: () => t("先听，再批准"),
     body: () => t("点 **试听前后对比**，再分别点 **▶ 现在** 和 **▶ 改后** 听一下。"),
-    hint: () => t("两个都听过后继续") },
+    hint: () => t("两个都听过会自动继续") },
   { id: "cok", ch: 4, mode: "listen", side: "left", target: ['[data-testid="proposal"]', ".pstate.ok"],
     done: () => !q('[data-testid="proposal"]') && !!q(".pstate.ok"),
     title: () => t("满意就批准"),
@@ -220,7 +224,7 @@ export const STEPS: Step[] = [
   // 5 手动删除
   { id: "dlanes", ch: 5, mode: "listen", side: "bottom", target: [".ml .ml-body"],
     enter: (c) => {
-      if (c.marks?.water) c.player.seek(Math.max(0, c.marks.water[0] - 3));
+      if (c.marks?.water) { c.player.seek(Math.max(0, c.marks.water[0] - 3)); showOnTimeline(c.marks.water[0] - 1, c.marks.water[1] + 1); }
     },
     box: (c) => (c.marks?.water ? { track: c.marks.hosts[0], a: c.marks.water[0], b: c.marks.water[1] } : null),
     done: (c) => selOver(c.marks?.water),
@@ -247,7 +251,7 @@ export const STEPS: Step[] = [
   // 6 手动静音
   { id: "mlanes", ch: 6, mode: "listen", side: "bottom", target: [".ml .ml-body"],
     enter: (c) => {
-      if (c.marks?.cough) c.player.seek(Math.max(0, c.marks.cough[0] - 3));
+      if (c.marks?.cough) { c.player.seek(Math.max(0, c.marks.cough[0] - 3)); showOnTimeline(c.marks.cough[0] - 1, c.marks.cough[1] + 1); }
     },
     box: (c) => (c.marks?.cough ? { track: c.marks.hosts[0], a: c.marks.cough[0] - 0.1, b: c.marks.cough[1] + 0.1 } : null),
     done: (c) => selOver(c.marks?.cough),
@@ -340,7 +344,7 @@ export const STEPS: Step[] = [
     },
     title: () => t("更多设置"),
     body: () => t("「歌从 / 裁到」选用歌的哪一段；「位置」可以早 1 秒、晚 1 秒、±5 秒；还有各段淡入淡出的用时。") },
-  { id: "utry", ch: 8, mode: "music", side: "bottom", target: [`${intro} [data-tour="music-try"]`],
+  { id: "utry", alsoOk: true, ch: 8, mode: "music", side: "bottom", target: [`${intro} [data-tour="music-try"]`],
     clicks: [`${intro} [data-tour="music-try"]`], done: () => true,
     title: () => t("试听这一处"),
     body: () => t("改完点 **试听这一处**，只听片头这一小段。"),

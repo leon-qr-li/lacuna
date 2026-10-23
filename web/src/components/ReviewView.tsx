@@ -94,8 +94,9 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
         abRef.current?.toggle();
       } else if (a === "a") abRef.current?.select("before");
       else if (a === "b") abRef.current?.select("after");
-      else if (a === "keep" && cur) void decide(cur.status === "applied" ? "keep" : "restore");
-      else if (a === "restore" && cur && cur.status === "applied") void decide("restore");
+      // K always means the cut, R always the original words, whatever the edit's state (Leon 2026-10-23)
+      else if (a === "keep" && cur) void decide(cur.status === "applied" ? "keep" : "apply");
+      else if (a === "restore" && cur && (cur.status === "applied" || !cur.approved)) void decide("restore");
       else if (a === "speed") speed.cycle();
       else if (a === "help") setHelp((h) => !h);
       else return;
@@ -223,11 +224,11 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
               ) : (
                 <>
                   <button type="button" className={`btn ${cur.approved ? "btn-primary" : "btn-outline"}`} onClick={() => void decide("apply")}>
-                    {t("重新应用这个删除")}
+                    {t("重新应用这个删除")} <kbd aria-hidden="true">K</kbd>
                   </button>
                   {!cur.approved && (
                     <button type="button" className="btn btn-primary" onClick={() => void decide("restore")}>
-                      <Icon name="check" /> {t("不删，保持原话")} <kbd aria-hidden="true">K</kbd>
+                      <Icon name="check" /> {t("不删，保持原话")} <kbd aria-hidden="true">R</kbd>
                     </button>
                   )}
                 </>

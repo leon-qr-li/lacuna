@@ -6,13 +6,17 @@ export const en: Dict = {
     "The sample episode goes back to just after LACUNA's first cut. Your changes in it are cleared and the tour starts again.",
   "重新开始": "Start again",
   "重新开始示例教程": "Restart the sample tour",
-  "示例节目会留着，可以随便点。想再走一遍，点右下角的「重新开始示例教程」。":
-    "The sample show stays, so feel free to explore it. To go through it again, click \"Restart the sample tour\" at the bottom right.",
-  "退出教程": "Leave the tour",
   "示例教程 · 第 {n} 步，共 {total} 步": "Sample tour · step {n} of {total}",
   "第 {n} 步，共 {total} 步": "Step {n} of {total}",
+  "继续示例教程": "Continue the sample tour",
+  "暂停教程": "Pause the tour",
+  "还剩 {n} 步，大约 {m} 分钟": "{n} steps left, about {m} min",
+  "走完你就亲手剪好了一集，最后会放剪前剪后的对比给你听。现在离开也没关系，我们记得你走到哪儿，下次打开示例节目接着走。":
+    "Finish and you'll have edited a whole episode yourself, with a before / after to hear at the end. Leaving now is fine too: we remember where you are and pick up from there next time you open the sample show.",
+  "继续教程": "Keep going",
+  "先离开，下次接着走": "Leave for now",
   "跳过这一步": "Skip this step",
-  "跳过教程": "Skip the tour",
+  "⏸ 暂停播放": "⏸ Pause",
   "❚❚ 暂停": "❚❚ Pause",
   "▶ 播放原始录音": "▶ Play the raw recording",
   "听完自动进入下一步。": "The next step starts when it ends.",
@@ -61,7 +65,7 @@ export const en: Dict = {
     "At the top: what was cut and for how long. Below it, LACUNA's reason. Then the words around it: the **struck-through** words are the ones removed.",
   "先听，再决定": "Listen first, then decide",
   "点 **A · 原话** 听删之前，再点 **B · 剪后** 听删之后。": "Click **A · Original** to hear it before the cut, then **B · cut** to hear it after.",
-  "两个都听过后继续": "Continues once you've heard both",
+  "两个都听过会自动继续": "Moves on by itself once you've heard both",
   "嫌慢可以倍速": "Speed it up if you like",
   "点 **1×** 切到 1.5× 听，音调不变。整集试听里也一样。": "Click **1×** to switch to 1.5×; the pitch stays the same. Listen has it too.",
   "保留，还是恢复？": "Keep, or restore?",
@@ -69,8 +73,10 @@ export const en: Dict = {
     "If the cut is right, click **Keep** (K); to have the words back, click **Restore original** (R). The cut is already in place; you're only confirming it. The other 2 work the same way: listen to A/B, then decide.",
   "3 处都决定后继续": "Continues once all 3 are decided",
   "3 处都看完了": "All 3 checked",
-  "这里显示看了几处。处数多时，右边的 **剩下的全部保留** 能一键确认其余的，也能一步撤销。旁边的 **?** 是全部快捷键。":
-    "This shows how many you've checked. When there are many, **Keep all the rest** on the right confirms the others in one click, and one undo takes it back. The **?** lists every shortcut.",
+  "这里显示看了几处。旁边的 **?** 是全部快捷键。": "This shows how many you've looked at. The **?** next to it lists every shortcut.",
+  "处数多时，一键确认": "Many edits? Confirm the rest at once",
+  "点 **剩下的全部保留**，没看的那些一次确认：LACUNA 删了的保持删，没删的保持原样。按错了按 **Ctrl+Z** 撤销。这一集只有 3 处，我们一处处来。":
+    "Click **Keep all the rest** to confirm all the ones you haven't looked at: what LACUNA cut stays cut, what it left stays. Pressed it by mistake? **Ctrl+Z** undoes it. This episode has only 3, so let's go one by one.",
   "还有 2 处是自动剪的": "2 more were cut automatically",
   "一个口头禅、一段冷场，LACUNA 直接剪好了，不用一处处看。剪得不对也能恢复，下一章就教你。":
     "A filler word and a stretch of dead air: LACUNA just cut them, so you don't have to check each one. You can still restore them; the next chapter shows how.",
@@ -90,7 +96,7 @@ export const en: Dict = {
   "自动剪的，也能恢复": "Automatic cuts can be restored too",
   "把鼠标移到虚线框里那条橙色竖线上，这是自动剪掉的口头禅「呃」。弹出卡片后先点 **▶ 听前后**，再点 **恢复**。":
     "Move the pointer onto the orange line in the dashed box: the filler \"uh\" that was cut automatically. When its card opens, click **▶ Hear around it**, then **Restore**.",
-  "点「恢复」后继续": "Continues once you click \"Restore\"",
+  "点「恢复」会自动继续": "Moves on by itself once you click \"Restore\"",
   "文字稿跟着变": "The transcript follows",
   "「呃」回来了，删除线也没了。文字稿里任何删除线，点一下也能恢复。":
     "The \"uh\" is back and no longer struck through. Clicking any struck-through words in the transcript restores them too.",

@@ -37,7 +37,7 @@ class MarkBody(BaseModel):
 class FlagsBody(BaseModel):
     hidden: bool | None = None
     welcomed: bool | None = None
-    tour: str | None = Field(None, pattern=r"^([a-z0-9]{1,12}|)$")   # where the sample tour is ("" = finished / left)
+    tour: str | None = Field(None, pattern=r"^(~?[a-z0-9]{1,12}|)$")   # where the sample tour is ("~step" = paused there, "" = finished)
 
 
 class SampleBody(BaseModel):

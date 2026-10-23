@@ -41,6 +41,8 @@ async function drag(page: Page, host: string, a: number, b: number) {
 
 test("the whole tour, step by step, ends with before / after", async ({ page }) => {
   test.setTimeout(240_000);
+  // zoomed in on the timeline, as Leon was (2026-10-23): the tour still brings every spot into view
+  await page.addInitScript(() => localStorage.setItem("lacuna.manual.span", "4"));
   await newcomer(page);
   const tour = page.getByTestId("tour");
   const ok = () => page.getByTestId("tour-ok").click();
@@ -56,6 +58,10 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
       case "raw":
         await page.getByTestId("tour-raw-play").click();
         await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.1);
+        // whatever plays can be stopped from the pill (the page itself is masked)
+        await page.getByTestId("tour-pause").click();
+        await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(true);
+        await expect(page.getByTestId("tour-pause")).toHaveCount(0);
         await ok();
         break;
       case "rab":

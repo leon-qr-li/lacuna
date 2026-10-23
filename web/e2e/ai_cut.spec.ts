@@ -32,7 +32,7 @@ test("AI first cut: no demo marks, review list in timeline order", async ({ page
   await expect(page.getByTestId("review-routine")).toContainText("另外收紧了");
 });
 
-test("review: decide → jump to next pending; Y shortcut; 全部通过 in one step, one undo", async ({ page }) => {
+test("review: decide → jump to next pending; R on a suggestion; 全部通过 in one step, one undo", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /审阅改动/ }).click();
   const items = page.getByTestId("review-list").locator(".ritem");
@@ -47,10 +47,11 @@ test("review: decide → jump to next pending; Y shortcut; 全部通过 in one s
   await expect(items.first().locator(".rstate")).toHaveText("✓");
   await expect(page.getByTestId("review-progress")).toContainText("已看 1 / 4");
 
-  // the last is the AI's unapplied suggestion: Y confirms "don't cut" and wraps round to the skipped second
+  // the last is the AI's unapplied suggestion: R confirms "don't cut" (R always means the original words)
+  // and wraps round to the skipped second
   await items.nth(3).click();
-  await expect(page.getByRole("button", { name: "不删，保持原话" })).toBeVisible();
-  await page.keyboard.press("y");
+  await expect(page.getByRole("button", { name: /^不删，保持原话/ })).toBeVisible();
+  await page.keyboard.press("r");
   await expect(page.locator(".toast")).toHaveText("已确认不删");
   await expect(items.nth(3).locator(".rstate")).toHaveText("不删 ✓");
   await expect(items.nth(1)).toHaveAttribute("aria-current", "true");
