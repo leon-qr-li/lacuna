@@ -351,3 +351,109 @@ def _build(base: Path, lang: str) -> None:
     meta = {"title": TITLE[lang], "demo": False, "raw_offset_s": 0.0, "source": "sample", "language": lang}
     create_episode(Workspace(base / "ws"), EPISODE, meta, project, edits, transcript)
     _music(base / "ws" / "library")
+
+
+# the 发布 chapter of the tour (Leon 2026-10-23, a locked demo: fixed content, no AI call). Placeholder words
+# until Leon and Pei record the real sample; each timeline entry cites the first segment holding its key words.
+PUBLISH = {
+    "zh": {  # i18n-ignore
+        "title": "电影夜：一碗面里的父亲", "alt_titles": ["长镜头、八分和一个蛋", "看之前先吃饱"],  # i18n-ignore
+        "blurb": "两位主持人聊一部讲面馆一家人的电影：三分钟的长镜头、话很少的爸爸，和最后那碗面。",  # i18n-ignore
+        "intro": "这一集我们聊一部上周一起看的电影。一家人开面馆，爸爸话很少，但每次做菜都像在说话；女儿一直想离开小镇，最后还是回来接手了面馆。我们各打了几分？听到最后你就知道。",  # i18n-ignore
+        "sections": [("开场", [("电影夜", "开场：今天聊一部讲面馆一家人的电影"),  # i18n-ignore
+                               ("长镜头", "开头三分钟不剪的长镜头")]),  # i18n-ignore
+                     ("聊电影", [("八分", "两人都打八分，最喜欢话很少的爸爸"),  # i18n-ignore
+                                ("女儿", "女儿那条线：想离开小镇，最后回来接手面馆"),  # i18n-ignore
+                                ("结尾", "克制的结尾，最后那碗面多放了一个蛋"),  # i18n-ignore
+                                ("配乐", "配乐几乎都是厨房里的声音")]),  # i18n-ignore
+                     ("推荐", [("推荐", "我们的推荐：去看，但先吃饱")])],  # i18n-ignore
+        "films": [{"name": "示例电影（面馆一家人）", "note": "本集主角"}],  # i18n-ignore
+        "glossary": [{"term": "长镜头", "meaning": "一个镜头连续拍很久、中间不剪"}],  # i18n-ignore
+    },
+    "en": {
+        "title": "Movie Night: A Father in a Bowl of Noodles", "alt_titles": ["One Long Shot and an Extra Egg"],
+        "blurb": "Two hosts talk about a film on a family noodle shop: a three-minute long shot, a quiet father and that last bowl.",
+        "intro": "This week we talk about a film we both saw: a family runs a noodle shop, the father barely talks but his cooking says everything, and the daughter wants to leave town until she doesn't. What did we give it? Listen to the end.",
+        "sections": [("Opening", [("Movie Night", "Opening: a film about a family noodle shop"),
+                                  ("long shot", "The three-minute long shot that opens it")]),
+                     ("The film", [("Eight", "An eight from both of us, and the quiet father"),
+                                   ("daughter", "The daughter's story: leaving town, then taking over the shop"),
+                                   ("ending", "A restrained ending and one extra egg"),
+                                   ("music", "Music made of kitchen sounds")]),
+                     ("Verdict", [("advice", "Our advice: go see it, but eat first")])],
+        "films": [{"name": "Sample film (the noodle shop family)", "note": "this episode's film"}],
+        "glossary": [{"term": "long shot", "meaning": "one take that runs for a long time without a cut"}],
+    },
+}
+
+
+def _lang(ep) -> str | None:
+    meta = getattr(ep, "meta", {}) or {}
+    return meta.get("language") if meta.get("source") == "sample" and meta.get("language") in PUBLISH else None
+
+
+class SamplePublisher:
+    """The sample episode's publish pack: written in advance, so the tour always shows the same thing."""
+
+    name = "sample"
+    available = True
+
+    def __init__(self, lang: str):
+        self.lang = lang
+
+    def write(self, ep, segs, music, names, duration):
+        from .publish import Draft
+
+        p = PUBLISH[self.lang]
+
+        def cite(key: str) -> str | None:
+            k = _plain(key)
+            return next((s.id for s in segs if k in _plain(s.text)), None)
+
+        sections = [{"heading": h, "entries": [{"segment": sid, "text": text} for key, text in rows if (sid := cite(key))]}
+                    for h, rows in p["sections"]]
+        if not any(s["entries"] for s in sections) and segs:     # the words moved: one line at the start still shows the idea
+            sections = [{"heading": p["sections"][0][0], "entries": [{"segment": segs[0].id, "text": p["sections"][0][1][0][1]}]}]
+        data = {k: p[k] for k in ("title", "alt_titles", "blurb", "intro", "films", "glossary")}
+        return Draft(data | {"sections": sections, "shows": [], "things": [], "names_to_check": []}, {}, self.name)
+
+
+def sample_publisher(ep) -> SamplePublisher | None:
+    lang = _lang(ep)
+    return SamplePublisher(lang) if lang else None
+
+
+# one cover per design direction; plain shapes and Latin text only (sanitize / the bundled Inter font)
+_COVER = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200"><rect width="1200" height="1200" fill="{bg}"/>'
+          '{art}<text x="90" y="1010" font-family="Inter" font-size="120" font-weight="700" fill="{fg}">MOVIE NIGHT</text>'
+          '<text x="94" y="1090" font-family="Inter" font-size="44" fill="{fg}" opacity="0.7">LACUNA SAMPLE SHOW</text></svg>')
+_ART = {
+    "emblem": '<circle cx="600" cy="460" r="250" fill="none" stroke="#F2B66D" stroke-width="28"/><path d="M420 470 Q600 620 780 470" fill="none" stroke="#F2B66D" stroke-width="22"/><circle cx="600" cy="400" r="46" fill="#FFF4E0"/>',
+    "films": '<rect x="140" y="170" width="420" height="600" fill="#2E4A62"/><rect x="640" y="170" width="420" height="600" fill="#C25B3C"/>',
+    "geometry": '<rect x="120" y="140" width="960" height="40" fill="#E8D9B5"/><circle cx="820" cy="520" r="200" fill="#C25B3C"/><rect x="200" y="380" width="300" height="300" fill="#E8D9B5"/>',
+    "free": '<path d="M150 700 L600 180 L1050 700 Z" fill="#3D6B5A"/><circle cx="600" cy="560" r="90" fill="#F6E7C1"/>',
+}
+_COLORS = {"emblem": ("#1C2433", "#FFF4E0"), "films": ("#F3EBDD", "#1C2433"), "geometry": ("#22313F", "#E8D9B5"),
+           "free": ("#F6E7C1", "#1C2433")}
+
+
+class SampleDesigner:
+    """The sample episode's covers: drawn in advance (no AI call)."""
+
+    name = "sample"
+    available = True
+
+    def design(self, context: str, direction: str):
+        from .poster import Design
+
+        k = direction if direction in _ART else "free"
+        bg, fg = _COLORS[k]
+        return Design(name=f"Sample {k.title()}", concept=tr("示例海报，节目录好后换成正式版本。"),
+                      svg=_COVER.format(bg=bg, fg=fg, art=_ART[k]))
+
+    def revise(self, context: str, svg: str, instruction: str):
+        return self.design(context, "free")
+
+
+def sample_designer(ep) -> SampleDesigner | None:
+    return SampleDesigner() if _lang(ep) else None

@@ -441,7 +441,8 @@ class Posters:
     def generate(self, ep: Episode, directions: list[str] | None = None, wait: bool = False) -> dict:
         keys = directions or [k for k, _, _ in DIRECTIONS]
         context = self._context(ep)
-        designer = self._designer()
+        from .sample import sample_designer
+        designer = sample_designer(ep) or self._designer()
 
         def work(stage: Callable[[str], None]) -> None:
             done, errors = [], []
@@ -530,8 +531,9 @@ class Posters:
                                                 "notes", "created_at")}
                             | {"direction_label": tr(DIRECTION_LABELS.get(v["direction"], v["direction"])),
                                "cost_usd": (v.get("usage") or {}).get("cost_usd")})
+        from .sample import sample_designer
         try:
-            available = bool(getattr(self.factory(), "available", True))
+            available = bool(sample_designer(ep) or getattr(self.factory(), "available", True))
         except Exception:      # noqa: BLE001
             available = False
         return {"variants": variants, "chosen": doc.get("chosen"), "cover": doc.get("cover"), "available": available,

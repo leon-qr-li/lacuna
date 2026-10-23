@@ -62,7 +62,16 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
   `test_a_new_sample_starts_the_tour_from_step_1`, `test_accounts_deleted_before_the_fix_are_swept_at_start`,
   end of `web/e2e/onboarding.spec.ts`.
 
+- Tour is a locked demo (Leon 2026-10-23, decision `tour-locked-demo`): LACUNA does every step itself in the
+  step's `enter` (clicks, selects via `selectOnTimeline`, sends); the person only presses 知道了, which waits on
+  `done` (at most 30 s). Nothing on the page can be clicked. Trimmed from 60 steps to 30; a 10th chapter 发布
+  shows the publish pack and covers, which for the sample are written in advance (`sample.SamplePublisher`,
+  `sample.SampleDesigner`, no AI call). Tests: `web/e2e/tour.spec.ts`,
+  `test_the_sample_publish_pack_and_covers_come_without_the_ai`.
+
 ## Open
-- Real recordings (Leon + Pei, zh + en) may still replace the synthetic voices later → run ASR + first cut, check by hand, bump `sample.VERSION`.
+- BEFORE BETA (Leon 2026-10-23, must): Leon + Pei record the sample (zh + en); then polish and lock every tour
+  detail (words, cuts, show notes, covers; maybe a pre-made export). For now only the flow and concept are final.
+- Real recordings (Leon + Pei, zh + en) replace the synthetic voices → run ASR + first cut, check by hand, bump `sample.VERSION`.
 - Chat cap in the sample show (~20 messages) and audio-hour metering skipping `sample` shows: batch 5.
 - Usage line on welcome / import form ("本月已用 …"): needs batch 5 metering.

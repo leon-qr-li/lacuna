@@ -91,6 +91,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
           className={view.variants.length ? "btn btn-outline" : "btn btn-primary"}
           onClick={generate}
           disabled={busy || running || !view.has_pack || !claude}
+          data-tour="poster-generate"
         >
           <BusyLabel busy={running} label={view.variants.length ? t("再画 {n} 版", { n }) : t("画 {n} 版海报", { n })} busyLabel={t("正在画…")} />
         </button>
