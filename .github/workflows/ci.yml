@@ -79,17 +79,10 @@ jobs:
           cache-dependency-glob: pyproject.toml
 
       # the runner's own package: AnimMouse/setup-ffmpeg@v1 started downloading a broken FFmpeg 9.0 archive (2026-10-23)
-      # noninteractive + a lock timeout: one runner hung here (needrestart / a held dpkg lock)
+      # BtbN's FFmpeg build via the action (GitHub download + actions cache). Its archive was broken for a while on
+      # 2026-10-23 during BtbN's daily re-upload; the apt route tried instead was far slower on some runners.
       - name: Install ffmpeg
-        timeout-minutes: 6
-        env:
-          DEBIAN_FRONTEND: noninteractive
-          NEEDRESTART_MODE: a
-        # apt-get update stalled with no output on some runners: time out each try and retry
-        run: |
-          APT="-o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
-          for i in 1 2 3; do sudo -E timeout 90 apt-get $APT update -q && break; echo "apt-get update try $i failed"; done
-          sudo -E timeout 180 apt-get $APT install -y -q --no-install-recommends ffmpeg
+        uses: AnimMouse/setup-ffmpeg@v1
 
       - name: Install Python package
         run: uv pip install --system -e ".[test,claude]"
@@ -137,17 +130,10 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       # the runner's own package: AnimMouse/setup-ffmpeg@v1 started downloading a broken FFmpeg 9.0 archive (2026-10-23)
-      # noninteractive + a lock timeout: one runner hung here (needrestart / a held dpkg lock)
+      # BtbN's FFmpeg build via the action (GitHub download + actions cache). Its archive was broken for a while on
+      # 2026-10-23 during BtbN's daily re-upload; the apt route tried instead was far slower on some runners.
       - name: Install ffmpeg
-        timeout-minutes: 6
-        env:
-          DEBIAN_FRONTEND: noninteractive
-          NEEDRESTART_MODE: a
-        # apt-get update stalled with no output on some runners: time out each try and retry
-        run: |
-          APT="-o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20"
-          for i in 1 2 3; do sudo -E timeout 90 apt-get $APT update -q && break; echo "apt-get update try $i failed"; done
-          sudo -E timeout 180 apt-get $APT install -y -q --no-install-recommends ffmpeg
+        uses: AnimMouse/setup-ffmpeg@v1
 
       - name: Install Python package
         run: uv pip install --system -e ".[test,claude]"
