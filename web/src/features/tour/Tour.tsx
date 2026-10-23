@@ -123,8 +123,9 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   ctx.current = { ep, id, mode, marks, player, memo: memo.current, clicked: clicked.current };
   const h: Hosts = { a: marks?.hosts[0] ?? ep.tracks[0]?.name ?? "", b: marks?.hosts[1] ?? ep.tracks[1]?.name ?? "" };
 
-  const go = useCallback((i: number) => {
-    stopAudio(); // every new step starts quiet: the page is masked, so nothing else could stop it
+  // keep: the step went on by itself because a play button was clicked (A / B): let that one play
+  const go = useCallback((i: number, keep = false) => {
+    if (!keep) stopAudio(); // every new step starts quiet: the page is masked, so nothing else could stop it
     memo.current = {};
     clicked.current = new Set();
     if (i >= STEPS.length) {
@@ -179,11 +180,11 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
       if (entered.current !== s.id) return;
       const c = ctx.current;
       const all = (s.clicks ?? []).every((x) => c.clicked.has(x));
-      if (all && (s.done ? s.done(c) : true)) next();
+      if (all && (s.done ? s.done(c) : true)) go(cur + 1, !!s.clicks);
       else setTick((n) => n + 1);
     }, 250);
     return () => window.clearInterval(k);
-  }, [step, next]);
+  }, [step, go, cur]);
 
   const exit = async () => {
     const left = STEPS.length - cur;
