@@ -11,7 +11,6 @@ export interface PosterVariant {
   instruction: string | null;
   notes: string[];
   created_at: string;
-  cost_usd: number | null;
 }
 
 export interface PosterCover {
@@ -39,6 +38,9 @@ export interface PosterView {
   chosen: string | null;
   cover: PosterCover | null;
   errors: string[];
+  /** rounds of 「画 N 版」 left for this episode (null: no cap) */
+  rounds_left: number | null;
+  max_rounds: number;
   job: PosterJob | null;
   has_pack: boolean;
   available: boolean; // Claude reachable (API key + SDK)

@@ -46,6 +46,7 @@ COVER_PX = 3000          # 喜马拉雅 only demands a square; 3000 also meets A
 JPEG_QUALITY = 92        # ~0.3-0.5 MB at 3000 px for these designs
 MAX_SVG_BYTES = 300_000
 MAX_INSTRUCTION = 500
+MAX_ROUNDS = 3        # 「画 4 版」 rounds per episode: included in the plan, so capped instead of priced
 
 # (key, label for Leon, brief for Claude)
 DIRECTIONS: list[tuple[str, str, str]] = [
@@ -438,8 +439,18 @@ class Posters:
             self.save(ep, doc)
         return v
 
+    @staticmethod
+    def _rounds_left(ep: Episode, doc: dict) -> int | None:
+        """Rounds of 「画 4 版」 this episode has left (None: no cap, the sample's covers cost nothing)."""
+        from .sample import sample_designer
+        if sample_designer(ep):
+            return None
+        return max(0, MAX_ROUNDS - int(doc.get("rounds", 0)))
+
     def generate(self, ep: Episode, directions: list[str] | None = None, wait: bool = False) -> dict:
         keys = directions or [k for k, _, _ in DIRECTIONS]
+        if self._rounds_left(ep, self.load(ep)) == 0:
+            raise PosterError(tr("本集海报次数用完"))
         context = self._context(ep)
         from .sample import sample_designer
         designer = sample_designer(ep) or self._designer()
@@ -465,11 +476,11 @@ class Posters:
                 list(ex.map(one, keys))
             if not done:
                 raise PosterError("；".join(errors) or tr("一版也没画出来"))
-            with ep.lock:       # also clears the errors of an earlier round
-                if errors or self.load(ep).get("last_errors"):
-                    doc = self.load(ep)
-                    doc["last_errors"] = errors
-                    self.save(ep, doc)
+            with ep.lock:       # also clears the errors of an earlier round; a round counts once something was drawn
+                doc = self.load(ep)
+                doc["last_errors"] = errors
+                doc["rounds"] = int(doc.get("rounds", 0)) + 1
+                self.save(ep, doc)
 
         return self._run(ep, "generate", tr("准备"), work, wait)
 
@@ -529,8 +540,7 @@ class Posters:
         for v in reversed(doc["variants"]):        # newest first
             variants.append({k: v[k] for k in ("id", "direction", "name", "concept", "parent", "instruction",
                                                 "notes", "created_at")}
-                            | {"direction_label": tr(DIRECTION_LABELS.get(v["direction"], v["direction"])),
-                               "cost_usd": (v.get("usage") or {}).get("cost_usd")})
+                            | {"direction_label": tr(DIRECTION_LABELS.get(v["direction"], v["direction"]))})
         from .sample import sample_designer
         try:
             available = bool(sample_designer(ep) or getattr(self.factory(), "available", True))
@@ -538,4 +548,5 @@ class Posters:
             available = False
         return {"variants": variants, "chosen": doc.get("chosen"), "cover": doc.get("cover"), "available": available,
                 "errors": doc.get("last_errors", []), "job": job, "has_pack": has_pack,
+                "rounds_left": self._rounds_left(ep, doc), "max_rounds": MAX_ROUNDS,
                 "directions": [{"key": k, "label": tr(label)} for k, label, _ in DIRECTIONS]}

@@ -19,11 +19,14 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   await expect.poll(async () => (await (await page.request.get(`${api}/publish`)).json()).pack !== null).toBe(true);
   await page.reload();
 
-  await expect(page.getByText(/约 \$1/)).toBeVisible();
+  // included in the plan: no price anywhere, a few rounds per episode instead
+  await expect(page.getByText("每集可以画 3 轮")).toBeVisible();
+  await expect(page.locator("main.poster")).not.toContainText("$");
   await page.getByRole("button", { name: "画 4 版海报" }).click();
   await expect(page.getByTestId("poster-running")).toBeVisible();
   const cards = page.getByTestId("poster-card");
   await expect(cards).toHaveCount(4, { timeout: 15_000 });
+  await expect(page.locator("main.poster")).not.toContainText("$");
   for (const label of ["一个意象", "并置", "色块与几何", "自由发挥"]) {
     await expect(cards.filter({ hasText: label })).toHaveCount(1);
   }

@@ -12,7 +12,7 @@ from PIL import Image
 
 from lacuna_app import Episode, Workspace, create_app
 from lacuna_app.editor import MockEditorAdapter
-from lacuna_app.poster import (COVER_PX, DIRECTIONS, PREVIEW_PX, TOOL, ClaudeDesigner, PosterError, Posters,
+from lacuna_app.poster import (COVER_PX, DIRECTIONS, MAX_ROUNDS, PREVIEW_PX, TOOL, ClaudeDesigner, PosterError, Posters,
                                brief_context, render_png, sanitize)
 from lacuna_app.publish import ClaudePublisher, Publisher
 
@@ -151,7 +151,7 @@ def test_generate_draws_one_cover_per_direction(ws, packed, pub):
     assert [x["id"] for x in v["variants"]] == ["v4", "v3", "v2", "v1"]        # newest first
     assert {x["direction"] for x in v["variants"]} == {k for k, _, _ in DIRECTIONS}
     assert {x["direction_label"] for x in v["variants"]} == {"一个意象", "并置", "色块与几何", "自由发挥"}
-    assert all(x["concept"] and x["cost_usd"] > 0 for x in v["variants"])
+    assert all(x["concept"] and "cost_usd" not in x for x in v["variants"])   # included in the plan: no price shown
     assert v["chosen"] is None and v["cover"] is None and v["errors"] == []
     for x in v["variants"]:
         assert png_size(p.preview(packed, x["id"]).read_bytes()) == (PREVIEW_PX, PREVIEW_PX)
@@ -169,6 +169,23 @@ def test_one_failed_direction_keeps_the_others(ws, packed, pub):
     p.generate(packed, wait=True)
     v = p.view(packed)
     assert len(v["variants"]) == 7 and v["errors"] == []
+
+
+def test_three_rounds_per_episode_then_none_left(ws, packed, pub):
+    p = posters_with(ws, pub, FakePosterAnthropic())
+    assert p.view(packed)["rounds_left"] == MAX_ROUNDS == 3
+    for left in (2, 1, 0):
+        p.generate(packed, wait=True)
+        assert p.view(packed)["rounds_left"] == left
+    with pytest.raises(PosterError, match="本集海报次数用完"):
+        p.generate(packed, wait=True)
+    assert len(p.view(packed)["variants"]) == 3 * len(DIRECTIONS)
+
+
+def test_a_round_that_draws_nothing_is_not_counted(ws, packed, pub):
+    p = posters_with(ws, pub, FakePosterAnthropic(fail=tuple(b.split(":")[0] for _, _, b in DIRECTIONS)))
+    p.generate(packed, wait=True)
+    assert p.view(packed)["rounds_left"] == MAX_ROUNDS
 
 
 def test_all_failed_is_a_job_error(ws, packed, pub):

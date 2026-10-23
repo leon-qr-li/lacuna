@@ -71,8 +71,11 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   const job = view.job;
   const n = view.directions.length;
   const chosen = view.variants.find((v) => v.id === view.chosen) ?? null;
+  // rounds of 「画 N 版」 are included in the plan, a few per episode (null: no cap)
+  const left = view.rounds_left;
+  const spent = left === 0;
   const generate = async () => {
-    if (view.variants.length && !(await confirmDialog({ message: t("再画 {n} 版？之前的版本都会留着。（会再花一次 AI 的钱）", { n }), confirmLabel: t("再画") }))) return;
+    if (view.variants.length && !(await confirmDialog({ message: left == null ? t("再画 {n} 版？之前的版本都会留着。", { n }) : t("再画 {n} 版？之前的版本都会留着。本集还能画 {left} 轮。", { n, left }), confirmLabel: t("再画") }))) return;
     void act(posterApi.generatePoster(id));
   };
 
@@ -90,10 +93,11 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
           type="button"
           className={view.variants.length ? "btn btn-outline" : "btn btn-primary"}
           onClick={generate}
-          disabled={busy || running || !view.has_pack || !claude}
+          disabled={busy || running || !view.has_pack || !claude || spent}
           data-tour="poster-generate"
+          data-testid="poster-generate"
         >
-          <BusyLabel busy={running} label={view.variants.length ? t("再画 {n} 版", { n }) : t("画 {n} 版海报", { n })} busyLabel={t("正在画…")} />
+          <BusyLabel busy={running} label={spent ? t("本集海报次数用完") : view.variants.length ? t("再画 {n} 版", { n }) : t("画 {n} 版海报", { n })} busyLabel={t("正在画…")} />
         </button>
       </div>
 
@@ -104,7 +108,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
       )}
       {view.has_pack && !claude && <p className="card">{t("还没接上 AI（没有 AI 密钥），画不了海报。")}</p>}
       {view.has_pack && claude && !view.variants.length && !running && (
-        <p className="card">{t("只发标题、简介和片名这些文字给 LACUNA，{n} 版同时画，大约 2–4 分钟，一共约 $1。", { n })}</p>
+        <p className="card">{t("只发标题、简介和片名这些文字给 LACUNA，{n} 版同时画，大约 2–4 分钟。每集可以画 {m} 轮。", { n, m: view.max_rounds })}</p>
       )}
       {running && (
         <JobProgress
@@ -204,7 +208,6 @@ function PosterCard(props: {
         <button type="button" className="btn btn-primary btn-small" disabled={busy || chosen} onClick={() => void props.onChoose()}>
           {chosen ? t("正在用这张") : t("用这张")}
         </button>
-        {v.cost_usd ? <span className="muted small">{t("约 ${cost}", { cost: v.cost_usd.toFixed(2) })}</span> : null}
       </div>
       <PromptBar
         label={t("改一改 {name}", { name: v.name })}

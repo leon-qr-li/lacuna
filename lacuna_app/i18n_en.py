@@ -425,6 +425,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "LACUNA 在按你的话改「{name}」": "LACUNA is revising “{name}” as you asked",
     "渲染 3000×3000 封面": "Rendering the 3000×3000 cover",
     "这一集的海报正在生成": "This episode's covers are being drawn",
+    "本集海报次数用完": "No cover rounds left for this episode",
     "LACUNA 在画 {p0} 版海报（已完成 {p1}）": "LACUNA is drawing {p0} covers ({p1} done)",
     "一版也没画出来": "None could be drawn",
     "没有这一版海报": "No such cover version",
