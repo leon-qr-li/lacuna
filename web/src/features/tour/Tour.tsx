@@ -1,7 +1,8 @@
 // The bubble tour engine (new-user batch, tour v3): a mask with one lit hole, a ring and a bubble. A locked demo
-// (Leon 2026-10-23, "像 PPT"): nothing on the page can be clicked, LACUNA does every step itself (its `enter`) and
-// the person only presses 知道了. The place reached is kept on the server (onboarding `tour`), so leaving and
-// coming back resumes it. Only in LACUNA 示例节目.
+// (Leon 2026-10-23, "像 PPT"): nothing on the page can be clicked and the person only presses 知道了. Reading and
+// acting never overlap: a step's scene is set (`enter`) before its bubble shows; LACUNA acts (`act`) only after
+// 知道了, then shows `result` or goes on, clicking 下一步 itself where the page changes. The place reached is kept on
+// the server (onboarding `tour`), so leaving and coming back resumes it. Only in LACUNA 示例节目.
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { AB, Episode } from "../../api";
@@ -12,7 +13,7 @@ import { confirmDialog } from "../dialog/Dialog";
 import { libraryApi } from "../library/api";
 import { onboardingApi, setOnboarding, useOnboarding } from "../onboarding/api";
 import { openProject, useProjects } from "../projects/api";
-import { CHAPTERS, chapterName, DONE, STEPS, type Ctx, type Hosts, type Marks, type Step } from "./steps";
+import { CHAPTERS, chapterName, DONE, STEPS, tap, until, wait, type Ctx, type Hosts, type Marks, type Step } from "./steps";
 import "./tour.css";
 
 type Rect = { x: number; y: number; w: number; h: number };
@@ -130,9 +131,16 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   ctx.current = { ep, id, mode, marks, player, memo: m0, alive: () => mounted.current && memo.current === m0 };
   const h: Hosts = { a: marks?.hosts[0] ?? ep.tracks[0]?.name ?? "", b: marks?.hosts[1] ?? ep.tracks[1]?.name ?? "" };
 
+  const [phase, setPhase] = useState<Phase>("read");
+  const [ready, setReady] = useState<string | null>(null); // the step whose scene is set: its bubble may show
+  const nav = useRef<HTMLElement | null>(null);
+  const curRef = useRef(cur);
+  curRef.current = cur;
+
   const go = useCallback((i: number) => {
     stopAudio(); // every new step starts quiet: the page is masked, so nothing else could stop it
     memo.current = {};
+    setPhase("read");
     if (i >= STEPS.length) {
       setFinished(true);
       save(DONE);
@@ -142,6 +150,36 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
     save(STEPS[i].id);
   }, []);
   const next = useCallback(() => go(cur + 1), [go, cur]);
+
+  // 知道了: LACUNA acts (the person has read it), maybe shows the result, then goes on, clicking the way to the
+  // next page itself
+  const ok = useCallback(async () => {
+    const i = curRef.current;
+    const s = STEPS[i];
+    const live = () => mounted.current && curRef.current === i;
+    if (phase === "act" || phase === "nav") return;
+    if (phase === "read" && s.act) {
+      setPhase("act");
+      await s.act(ctx.current);
+      if (s.done) await until(() => !live() || s.done!(ctx.current), 20_000);
+      if (!live()) return;
+      await wait(700); // the outcome stays on screen a moment
+      if (s.result) return setPhase("result");
+    }
+    const nx = STEPS[i + 1];
+    if (nx && nx.mode !== s.mode) {
+      const link = navLink(id, nx.mode);
+      if (link) {
+        nav.current = link;
+        setPhase("nav");
+        await wait(1300);
+        if (!live()) return;
+        await tap(link);
+        await wait(300);
+      }
+    }
+    if (live()) go(i + 1);
+  }, [phase, id, go]);
 
   // on the step's page; its enter once the page is there
   const entered = useRef<string | null>(null); // the step whose enter has run: only then is it checked
@@ -155,17 +193,18 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
     const s = step;
     const k = window.setTimeout(() => {
       entered.current = s.id;
-      void s.enter?.(ctx.current);
+      s.enter?.(ctx.current);
+      // the scene settles (seek, scroll, a panel opening) before there is anything to read
+      window.setTimeout(() => setReady(s.id), s.enter ? 450 : 0);
     }, 150);
     return () => window.clearTimeout(k);
   }, [step, mode, id, fresh]);
 
-  // a step LACUNA is still doing: 知道了 waits for it (checked a few times a second)
+  // the body may count what is on screen (the timeline's window): keep it current
   useEffect(() => {
-    if (!step?.done) return;
-    const k = window.setInterval(() => setTick((n) => n + 1), 250);
+    const k = window.setInterval(() => setTick((n) => n + 1), 500);
     return () => window.clearInterval(k);
-  }, [step]);
+  }, []);
 
   const exit = async () => {
     const left = STEPS.length - cur;
@@ -183,7 +222,19 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   if (finished) return <Done ep={ep} id={id} onExit={() => onboardingApi.flags({ tour: "" }).then(setOnboarding)} />;
   if (!step) return null;
   if (step.id === "raw") return <Raw step={step} id={id} h={h} onNext={next} onExit={() => void exit()} />;
-  return <Mask key={step.id} step={step} ctx={ctx} h={h} onNext={next} onExit={() => void exit()} />;
+  return (
+    <Mask key={step.id} step={step} ctx={ctx} h={h} phase={phase} shown={ready === step.id} nav={nav.current} onNext={() => void ok()} onExit={() => void exit()} />
+  );
+}
+
+type Phase = "read" | "act" | "result" | "nav";
+
+/** The link LACUNA clicks to get to the next step's page: 下一步 when it goes there, else the page's own tab. */
+function navLink(id: string, mode: string): HTMLElement | null {
+  const href = `#/ep/${encodeURIComponent(id)}/${mode}`;
+  const next = document.querySelector<HTMLElement>('[data-testid="next-step"]');
+  if (next?.getAttribute("href") === href) return next;
+  return [...document.querySelectorAll<HTMLElement>(`a[href="${href}"]`)].find((a) => !!visible(a)) ?? null;
 }
 
 /** Pause every player on the page (main, A/B, music clips, the raw recording). */
@@ -223,7 +274,17 @@ function Pill({ ch, onExit }: { ch: number; onExit: () => void }) {
   );
 }
 
-function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.MutableRefObject<Ctx>; h: Hosts; onNext: () => void; onExit: () => void }) {
+function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
+  step: Step;
+  ctx: React.MutableRefObject<Ctx>;
+  h: Hosts;
+  phase: Phase;
+  shown: boolean;
+  nav: HTMLElement | null;
+  onNext: () => void;
+  onExit: () => void;
+}) {
+  const going = phase === "nav" && !!nav;
   const [hole, setHole] = useState<Rect | null>(null);
   const [box, setBox] = useState<Rect | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -235,7 +296,7 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
     let raf = 0;
     const loop = () => {
       const c = ctx.current;
-      const els = elements(step, c);
+      const els = going && nav ? [nav] : elements(step, c);
       const rs = els.map(visible).filter((r): r is DOMRect => !!r);
       if (!scrolled.current && els.length && rs.length) {
         scrolled.current = true;
@@ -245,7 +306,7 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
       const nh = union(rs);
       setHole((o) => (same(o, nh) ? o : nh));
       // the dashed box on the timeline
-      const bx = step.box?.(c) ?? null;
+      const bx = going ? null : (step.box?.(c) ?? null);
       let nb: Rect | null = null;
       const lanes = document.querySelector<HTMLElement>('[data-testid="edit-lanes"]');
       if (bx && lanes) {
@@ -267,7 +328,7 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [step, ctx]);
+  }, [step, ctx, going, nav]);
 
   useLayoutEffect(() => {
     const b = bubble.current;
@@ -279,13 +340,7 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
 
   const all = STEPS.filter((s) => s.ch === step.ch);
   const k = all.indexOf(step) + 1;
-  // LACUNA got stuck (a page that never came, a click that missed): after a while 知道了 lets the person on
-  const [late, setLate] = useState(false);
-  useEffect(() => {
-    const k = window.setTimeout(() => setLate(true), 30_000);
-    return () => window.clearTimeout(k);
-  }, []);
-  const busy = !late && !!step.done && !step.done(ctx.current);
+  const acting = phase === "act" || phase === "nav";
   const W = typeof window === "undefined" ? 0 : window.innerWidth;
   const H = typeof window === "undefined" ? 0 : window.innerHeight;
   // the four shades around the hole catch every click outside it; React's handler stops the page's own
@@ -300,11 +355,11 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
       ]
     : [{ x: 0, y: 0, w: W, h: H }];
   return (
-    <div className="tour" data-testid="tour" data-step={step.id} onPointerDown={stop} onMouseDown={stop}>
+    <div className="tour" data-testid="tour" data-step={step.id} data-phase={phase} onPointerDown={stop} onMouseDown={stop}>
       {shades.map((r, i) => (
         <div key={i} className="tour-shade" style={{ left: r.x, top: r.y, width: r.w, height: r.h }} />
       ))}
-      {hole && <div className="tour-ring" style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }} />}
+      {hole && <div className={`tour-ring${acting ? " is-acting" : ""}`} style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }} />}
       {hole && <div className="tour-block" style={{ left: hole.x, top: hole.y, width: hole.w, height: hole.h }} />}
       {box && <div className="tour-box" style={{ left: box.x, top: box.y, width: box.w, height: box.h }} data-testid="tour-box" />}
       <Pill ch={step.ch} onExit={onExit} />
@@ -313,19 +368,26 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
         className="tour-bubble"
         role="dialog"
         aria-label={step.title(h)}
-        style={pos ? { left: pos.left, top: pos.top } : { visibility: "hidden" }}
+        style={pos && shown ? { left: pos.left, top: pos.top } : { visibility: "hidden" }}
         data-testid="tour-bubble"
       >
         <span className="tour-meta">
           {t("第 {n} 步，共 {total} 步", { n: step.ch, total: CHAPTERS })} · {chapterName(step.ch)} · {k}/{all.length}
         </span>
-        <h3>{step.title(h)}</h3>
-        <p>{rich(step.body(h))}</p>
+        <h3>{going ? t("下一步") : step.title(h)}</h3>
+        {phase === "read" && <p>{rich(step.body(h, ctx.current))}</p>}
+        {phase === "result" && <p>{rich(step.result?.(h) ?? "")}</p>}
+        {going && <p>{rich(t("LACUNA 点 **{label}**，进入下一部分。", { label: (nav?.textContent ?? "").trim() }))}</p>}
         <div className="tour-foot">
-          <button type="button" className="btn btn-primary btn-small" onClick={onNext} disabled={busy} data-testid="tour-ok" autoFocus>
-            {t("知道了")}
-          </button>
-          {busy && <span className="tour-hint">{step.hint?.(h) ?? t("LACUNA 正在操作…")}</span>}
+          {acting ? (
+            <span className="tour-hint" data-testid="tour-acting">
+              {going ? t("正在打开…") : (step.hint?.(h) ?? t("LACUNA 正在操作…"))}
+            </span>
+          ) : (
+            <button type="button" className="btn btn-primary btn-small" onClick={onNext} data-testid="tour-ok" autoFocus>
+              {t("知道了")}
+            </button>
+          )}
         </div>
       </div>
     </div>

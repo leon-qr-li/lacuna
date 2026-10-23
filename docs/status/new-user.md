@@ -63,8 +63,11 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
   end of `web/e2e/onboarding.spec.ts`.
 
 - Tour is a locked demo (Leon 2026-10-23, decision `tour-locked-demo`): LACUNA does every step itself in the
-  step's `enter` (clicks, selects via `selectOnTimeline`, sends); the person only presses 知道了, which waits on
-  `done` (at most 30 s). Nothing on the page can be clicked. Trimmed from 60 steps to 30; a 10th chapter 发布
+  step's `act` (clicks, selects via `selectOnTimeline`, sends); the person only presses 知道了. Read, then act:
+  `enter` only sets the scene, `act` runs after 知道了 and waits on `done` (at most 20 s), `result` is a second
+  bubble; a change of tab is shown as LACUNA pressing 下一步 (`navLink`). Nothing on the page can be clicked.
+  16 steps in 9 chapters (`steps.ts`). The sample A/B plays only the one host's sentence (`sample.turn_around`,
+  `test_the_sample_ab_plays_one_hosts_sentence`). Chapter 发布
   shows the publish pack and covers, which for the sample are written in advance (`sample.SamplePublisher`,
   `sample.SampleDesigner`, no AI call). Tests: `web/e2e/tour.spec.ts`,
   `test_the_sample_publish_pack_and_covers_come_without_the_ai`.

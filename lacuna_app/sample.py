@@ -212,6 +212,30 @@ def to_tl_s(ep, base_s: float, cuts) -> float:
     return to_tl(int(base_s * ep.sr), cuts) / ep.sr
 
 
+def turn_around(ep, span: tuple[int, int] | None) -> tuple[int, int] | None:
+    """In the sample episode, an A/B plays only the sentence of the host whose words were cut, not 5 s either side
+    with the other host cut off halfway (Leon 2026-10-23): base samples of that turn, or None (play as usual)."""
+    meta = getattr(ep, "meta", {}) or {}
+    if meta.get("source") != "sample" or not span:
+        return None
+    a, b = span[0] / ep.sr, span[1] / ep.sr
+    words = ep.words(0.0, 1e9)
+    inside = [k for k, w in enumerate(words) if w[1] < b and w[2] > a]
+    if not inside:
+        return None
+    who = words[inside[0]][0]
+    lo = hi = inside[0]
+    while lo > 0 and words[lo - 1][0] == who:
+        lo -= 1
+    hi = inside[-1]
+    while hi + 1 < len(words) and words[hi + 1][0] == who:
+        hi += 1
+    if any(words[k][0] != who for k in inside) or (words[lo][1] >= a - 0.05 and words[hi][2] <= b + 0.05):
+        return None     # both hosts in the cut, or the whole sentence is cut: B would be silence
+    pad = 0.25
+    return int(max(words[lo][1] - pad, 0) * ep.sr), int((words[hi][2] + pad) * ep.sr)
+
+
 def _mmss(s: float) -> str:
     return f"{int(s // 60)}:{int(s % 60):02d}"
 

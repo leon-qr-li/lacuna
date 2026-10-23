@@ -353,7 +353,8 @@ class Episode:
             yield data[lo:hi]
 
     def ab(self, before: frozenset[str], after: frozenset[str], span: tuple[int, int] | None,
-           ctx_s: float = 5.0, max_s: float = 80.0) -> dict:
+           ctx_s: float = 5.0, max_s: float = 80.0, around: tuple[int, int] | None = None) -> dict:
+        """around: base samples to play instead of ctx_s either side (the sample tour: one host's sentence)."""
         a, b = span or (0, 0)
         out = {}
         for side, enabled in (("before", before), ("after", after)):
@@ -362,6 +363,8 @@ class Episode:
             ta, tb = to_tl(a, cuts), to_tl(b, cuts)
             c = int(ctx_s * self.sr)
             start, end = max(ta - c, 0), min(max(tb, ta) + c, tl.length)
+            if around:
+                start, end = max(to_tl(around[0], cuts), 0), min(to_tl(around[1], cuts), tl.length)
             end = min(end, start + int(max_s * self.sr))
             audio = self.render(enabled, start, end)
             cid = uuid.uuid4().hex[:12]
@@ -380,8 +383,9 @@ class Episode:
         return self._clips.get(cid)
 
     def edit_ab(self, eid: str) -> dict:
+        from .sample import turn_around
         e = self._edit(eid)
-        return self.ab(self.enabled - {eid}, self.enabled | {eid}, e.span)
+        return self.ab(self.enabled - {eid}, self.enabled | {eid}, e.span, around=turn_around(self, e.span))
 
     def proposal_ab(self, pid: str) -> dict:
         p = self._proposal(pid)
