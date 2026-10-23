@@ -170,7 +170,7 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
 test("two-step sign-in: turn it on in 设置, then sign in with the phone code or a recovery code", async ({ page }) => {
   await signIn(page, "leon@example.com");
   await expect(page.locator(".topbar")).toBeVisible();
-  await page.getByRole("link", { name: "设置" }).click();
+  await page.getByRole("link", { name: "设置", exact: true }).click();
   await page.getByTestId("settings-nav-account").click();
   const me = page.getByRole("region", { name: "账号与安全" });
   await me.getByRole("button", { name: "开启两步验证" }).click();
