@@ -127,14 +127,14 @@ export const en: Dict = {
 
   // 5 cut by hand
   "自己动手删一段": "Cut a stretch yourself",
-  "{a}说「等一下，我喝口水」，这句不要。在{a}的轨道上 **按住鼠标**，从橙色虚线框左边拖到右边。":
-    "{a} says \"Hold on, let me grab some water\"; that line can go. On {a}'s track, **press and drag** from the left of the dashed orange box to its right.",
-  "拖选后继续": "Continues once it's selected",
+  "{a}说「等一下，我喝口水」，这句不要。LACUNA 已经帮你选中了它。平时自己删：在轨道上 **按住鼠标** 从左拖到右。":
+    "{a} says \"Hold on, let me grab some water\"; that line can go. LACUNA has selected it for you. To do it yourself: **press and drag** across it on the tracks.",
   "选中后的菜单": "The selection menu",
   "松开鼠标，选区旁边弹出菜单：**删掉这段**（Ctrl X），或者 **只静音** 其中一个人。空格只放选中的这段，Esc 取消选中；拖选区的边可以调整范围。":
     "When you let go, a menu opens next to the selection: **Cut this** (Ctrl X), or **Silence** one host only. Space plays just the selection, Esc drops it, and dragging its edges adjusts it.",
-  "点菜单里的 **删掉这段**。": "Click **Cut this** in the menu.",
-  "删掉后继续": "Continues once it's cut",
+  "LACUNA 替你点了菜单里的 **删掉这段**，这句已经删掉了。删错了按 Ctrl + Z 撤销。":
+    "LACUNA clicked **Cut this** in the menu for you; the line is gone. Press Ctrl + Z to undo.",
+  "拖选后继续": "Continues once it's selected",
   "在文字稿里删，更快": "Faster: cut in the transcript",
   "不想在波形上找，就在文字稿里 **选中文字**（可以只选一个词），下面会出现工具条：**删掉这段**、**只静音** 某人、**▶ 听选中**、**取消**。删过的字显示删除线，点一下就恢复。":
     "Rather than finding it in the waveform, **select the words** in the transcript (even a single word) and a bar appears below: **Cut this**, **Silence** one host, **▶ Play selection**, **Cancel**. Cut words are struck through, and a click restores them.",

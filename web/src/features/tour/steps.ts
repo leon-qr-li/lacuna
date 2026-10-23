@@ -1,7 +1,7 @@
 // The bubble tour of LACUNA 示例节目 (new-user batch, tour v3, canvas boards U00–U60): every page the way a
 // host really uses it, one bubble per thing, the thing it talks about lit up. A "do" step waits until it has
 // been done (only the lit part can be clicked); the others have 知道了.
-import { showOnTimeline } from "../manual/EditLanes";
+import { selectOnTimeline, showOnTimeline } from "../manual/EditLanes";
 import type { Episode } from "../../api";
 import type { Player } from "../../usePlayer";
 import { t } from "../../i18n";
@@ -48,6 +48,8 @@ export interface Step {
   /** notes what the step compares against, the moment it begins (before anything can be clicked) */
   init?: (c: Ctx) => void;
   side?: "top" | "bottom" | "left" | "right";
+  /** the bubble keeps clear of these too (default: only the lit part) */
+  around?: string[];
   /** a dashed box on the timeline: where to drag (track null = all tracks) */
   box?: (c: Ctx) => { track: string | null; a: number; b: number } | null;
 }
@@ -169,7 +171,7 @@ export const STEPS: Step[] = [
   { id: "ltx", ch: 3, mode: "listen", side: "top", target: [(c) => { const e = routine(c.ep); return e ? lines(e.t - 8, e.t + 0.5).slice(-1) : []; }],
     title: () => t("文字稿跟着变"),
     body: () => t("「呃」回来了，删除线也没了。文字稿里任何删除线，点一下也能恢复。") },
-  { id: "lnear", ch: 3, mode: "listen", side: "left", target: [".side-tabs", ".side-near"],
+  { id: "lnear", ch: 3, mode: "listen", side: "left", target: ['[data-testid="tab-near"]'],
     clicks: ['[data-testid="tab-near"]'], done: () => true,
     title: () => t("这附近改了什么"),
     body: () => t("点右边的 **这附近改了什么** 标签：播放头附近的改动都列在这里，可以直接 **恢复** 或 **重新应用**。刚才恢复的「呃」也在这里。"),
@@ -194,7 +196,7 @@ export const STEPS: Step[] = [
   { id: "ctools", ch: 4, mode: "listen", side: "left", target: ['[data-testid="mic"]', "form.chat-form .btn-outline"],
     title: () => t("也可以用嘴说"),
     body: () => t("点 🎤 直接说话，不用打字。**记住** 是让 LACUNA 把这句当成以后的规则（比如「笑声别剪」），下一集也照做。") },
-  { id: "csend", ch: 4, mode: "listen", side: "left", target: ["form.chat-form button.btn-primary"],
+  { id: "csend", ch: 4, mode: "listen", side: "top", target: ["form.chat-form button.btn-primary"], around: ["form.chat-form"],
     enter: () => {
       const el = q("form.chat-form textarea") as HTMLTextAreaElement | null;
       if (el && !el.value.trim()) fill("form.chat-form textarea", TOUR_CHAT());
@@ -222,24 +224,27 @@ export const STEPS: Step[] = [
     hint: () => t("批准后继续") },
 
   // 5 手动删除
+  // LACUNA selects and cuts it for the user (Leon 2026-10-23: a drag is too much to ask here)
   { id: "dlanes", ch: 5, mode: "listen", side: "bottom", target: [".ml .ml-body"],
     enter: (c) => {
-      if (c.marks?.water) { c.player.seek(Math.max(0, c.marks.water[0] - 3)); showOnTimeline(c.marks.water[0] - 1, c.marks.water[1] + 1); }
+      if (c.marks?.water) {
+        c.player.seek(Math.max(0, c.marks.water[0] - 3));
+        showOnTimeline(c.marks.water[0] - 1, c.marks.water[1] + 1);
+        selectOnTimeline(c.marks.water[0], c.marks.water[1]);
+      }
     },
-    box: (c) => (c.marks?.water ? { track: c.marks.hosts[0], a: c.marks.water[0], b: c.marks.water[1] } : null),
-    done: (c) => selOver(c.marks?.water),
     title: () => t("自己动手删一段"),
-    body: (h) => t("{a}说「等一下，我喝口水」，这句不要。在{a}的轨道上 **按住鼠标**，从橙色虚线框左边拖到右边。", h),
-    hint: () => t("拖选后继续") },
+    body: (h) => t("{a}说「等一下，我喝口水」，这句不要。LACUNA 已经帮你选中了它。平时自己删：在轨道上 **按住鼠标** 从左拖到右。", h) },
   { id: "dbar", ch: 5, mode: "listen", side: "bottom", target: ['[data-testid="ml-menu"]', '[data-testid="ml-sel"]'],
+    enter: (c) => {
+      if (c.marks?.water && !q('[data-testid="ml-sel"]')) selectOnTimeline(c.marks.water[0], c.marks.water[1]);
+    },
     title: () => t("选中后的菜单"),
     body: () => t("松开鼠标，选区旁边弹出菜单：**删掉这段**（Ctrl X），或者 **只静音** 其中一个人。空格只放选中的这段，Esc 取消选中；拖选区的边可以调整范围。") },
-  { id: "dcut", ch: 5, mode: "listen", side: "bottom", target: ['[data-testid="ml-menu"]', '[data-testid="ml-sel"]'],
-    init: (c) => (c.memo.n = manual(c.ep, false)),
-    done: (c) => manual(c.ep, false) > Number(c.memo.n ?? 0),
+  { id: "dcut", ch: 5, mode: "listen", side: "bottom", target: [".ml .ml-body"],
+    enter: () => click('[data-testid="ml-cut"]'),
     title: () => t("删掉这段"),
-    body: () => t("点菜单里的 **删掉这段**。"),
-    hint: () => t("删掉后继续") },
+    body: () => t("LACUNA 替你点了菜单里的 **删掉这段**，这句已经删掉了。删错了按 Ctrl + Z 撤销。") },
   { id: "dtx", ch: 5, mode: "listen", side: "top", target: ['[data-testid="transcript-edit"]'],
     title: () => t("在文字稿里删，更快"),
     body: () => t("不想在波形上找，就在文字稿里 **选中文字**（可以只选一个词），下面会出现工具条：**删掉这段**、**只静音** 某人、**▶ 听选中**、**取消**。删过的字显示删除线，点一下就恢复。") },

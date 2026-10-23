@@ -291,7 +291,8 @@ function Mask({ step, ctx, h, onNext, onExit }: { step: Step; ctx: React.Mutable
   useLayoutEffect(() => {
     const b = bubble.current;
     if (!b) return;
-    const p = place(hole, { w: b.offsetWidth, h: b.offsetHeight }, step.side);
+    const near = step.around?.map((sel) => document.querySelector(sel)).filter((e): e is Element => !!e).map((e) => e.getBoundingClientRect()) ?? [];
+    const p = place(near.length ? union([...(hole ? [new DOMRect(hole.x, hole.y, hole.w, hole.h)] : []), ...near]) : hole, { w: b.offsetWidth, h: b.offsetHeight }, step.side);
     setPos((o) => (o && Math.abs(o.left - p.left) < 0.5 && Math.abs(o.top - p.top) < 0.5 ? o : p));
   });
 

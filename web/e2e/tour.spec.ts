@@ -108,11 +108,13 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
         await page.getByTestId("proposal").getByRole("button", { name: "批准" }).click();
         break;
       case "dlanes":
-        await expect(page.getByTestId("tour-box")).toBeVisible();
-        await drag(page, m.hosts[0], m.water[0], m.water[1]);
+        // LACUNA selects the water line and cuts it itself; the person only reads along
+        await expect(page.getByTestId("ml-sel")).toBeVisible();
+        await ok();
         break;
       case "dcut":
-        await page.getByTestId("ml-menu").getByTestId("ml-cut").click();
+        await expect(page.getByTestId("ml-sel")).toHaveCount(0);
+        await ok();
         break;
       case "mlanes":
         await expect(page.getByTestId("tour-box")).toBeVisible();
