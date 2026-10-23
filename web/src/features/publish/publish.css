@@ -18,3 +18,7 @@
 .chapters { margin: 0; padding-left: 20px; line-height: 1.9; }
 .names { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .names li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--ground); }
+/* timeline detail switch (精简 / 标准 / 详细), next to the Show notes heading; .seg is the shared segmented control */
+.publish-level { align-items: center; }
+.publish-level .seg button { padding: 4px 12px; font-size: 13px; }
+.publish-level-count { font-variant-numeric: tabular-nums; }

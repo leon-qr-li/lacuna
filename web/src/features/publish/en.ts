@@ -1,6 +1,15 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "精简": "Brief",
+  "标准": "Standard",
+  "详细": "Detailed",
+  "时间轴详细程度": "Timeline detail",
+  "{n} 条": { one: "{n} entry", other: "{n} entries" },
+  "{n} 条 · 约每 {m} 分钟一条": { one: "{n} entry · about every {m} min", other: "{n} entries · about every {m} min" },
+  "换详细程度会重新排时间轴，你手改过的 show notes 会被覆盖，确定吗？":
+    "Changing the detail level rebuilds the timeline and replaces the show notes you edited by hand. Continue?",
+  "换": "Change",
   "操作失败：{message}": "That didn't work: {message}",
   "复制失败：{message}": "Copy failed: {message}",
   "发布资料打不开：": "Can't open the publish pack: ",

@@ -16,6 +16,11 @@ class PublishEditBody(BaseModel):
     rev: int | None = Field(None, description="the pack version the page showed; stale -> 409 (coedit.py)")
 
 
+class LevelBody(BaseModel):
+    level: str = Field(pattern="^(lean|std|full)$", description="how detailed the timeline is")
+    rev: int | None = Field(None, description="the pack version the page showed; stale -> 409 (coedit.py)")
+
+
 class NameBody(BaseModel):
     heard: str = Field(min_length=1, max_length=200)
     action: str = Field(pattern="^(apply|ignore)$")
@@ -64,6 +69,11 @@ def register(app, ctx) -> None:
     def publish_edit(episode_id: str, body: PublishEditBody):
         ep = get(episode_id)
         return publish_change(ep, lambda: publisher.edit(ep, body.markdown, body.title, body.rev))
+
+    @app.put("/api/episodes/{episode_id}/publish/level")
+    def publish_level(episode_id: str, body: LevelBody):
+        ep = get(episode_id)
+        return publish_change(ep, lambda: publisher.set_level(ep, body.level, body.rev))
 
     @app.post("/api/episodes/{episode_id}/publish/names")
     def publish_name(episode_id: str, body: NameBody):

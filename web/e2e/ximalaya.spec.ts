@@ -24,6 +24,10 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
     await gen.click();
     await expect(page.getByTestId("publish-title")).toBeVisible({ timeout: 15_000 });
   }
+  // every timeline line the fake writer gave (the default 标准 keeps about one per part on this short episode)
+  const pub = `/api/episodes/${ep}/publish`;
+  const rev = (await (await page.request.get(pub)).json()).pack.rev;
+  expect((await page.request.put(`${pub}/level`, { data: { level: "full", rev } })).ok()).toBe(true);
 
   // a style remembered while 杂志 was the default (old key) doesn't hide the new default
   await page.evaluate(() => localStorage.setItem("lacuna.ximalaya.style", "magazine"));

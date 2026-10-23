@@ -32,7 +32,15 @@ export interface PublishPack {
   rev?: number;
   generated_at: string;
   library: boolean;
+  /** how detailed the show-notes timeline is (Leon 2026-10-23); packs from before levels are "full" */
+  level: PublishLevel;
+  /** timeline entries each level shows */
+  counts: Partial<Record<PublishLevel, number>>;
+  /** final-cut length in seconds */
+  duration: number;
 }
+
+export type PublishLevel = "lean" | "std" | "full";
 
 export interface PublishJob {
   state: "running" | "done" | "error";
@@ -58,6 +66,9 @@ export const publishApi = {
   // `rev`: the pack version on screen; someone saved since -> 409 with `stale` (features/coedit)
   editPublish: (id: string, body: { markdown?: string | null; title?: string; rev?: number }) =>
     req<PublishView>("PUT", `${ep(id)}/publish`, body),
+  // local re-filter of the timeline, no AI call; replaces hand-edited show notes (the page asks first)
+  setPublishLevel: (id: string, level: PublishLevel, rev?: number) =>
+    req<PublishView>("PUT", `${ep(id)}/publish/level`, { level, rev }),
   publishName: (id: string, heard: string, action: "apply" | "ignore") =>
     req<PublishView>("POST", `${ep(id)}/publish/names`, { heard, action }),
 };

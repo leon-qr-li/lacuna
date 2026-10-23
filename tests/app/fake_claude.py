@@ -142,7 +142,9 @@ def publish_answer(user: str) -> dict:
     half = max(1, len(segs) // 2)
 
     def entries(rows):
-        return [{"segment": sid, "text": f"{who} 聊到「{text[:6]}」"} for sid, who, text in rows[::2]]
+        # ranked like a real writer: a part opens with a big turn, then main points and details
+        return [{"segment": sid, "text": f"{who} 聊到「{text[:6]}」", "rank": 1 if not i else 2 + i % 2}
+                for i, (sid, who, text) in enumerate(rows[::2])]
     return {
         "title": "合成的一期：两部电影",
         "alt_titles": ["两部电影一个结尾", "那个结尾到底好不好"],

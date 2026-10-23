@@ -35,6 +35,11 @@ WHAT TO WRITE (call submit_publish_pack exactly once)
   Each entry = the segment id where that bit starts + a short line (≤ 30 characters) saying what
   is talked about there, concrete and in the hosts' own words where possible. Do not write times;
   the app computes them from the segment id. Do not add entries for intro / outro music.
+  Give every entry a rank, because the editor picks how detailed the published timeline is and the
+  app keeps only some entries: 1 = a big turn (where a main topic or part starts; about one entry
+  in six), 2 = a point a listener would want to jump to (about one in three), 3 = a detail. The
+  first entry of each part is usually 1. Write the entry lines so that the rank-1 and rank-2 lines
+  alone still tell the story of the episode.
 - films: every film (and its director or a short note in ≤ 12 characters) mentioned in a
   meaningful way, in order of first mention; correct misheard titles; Chinese title first when it
   has a common one, then the original title.
