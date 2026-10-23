@@ -220,3 +220,23 @@ def test_a_new_sample_starts_the_tour_from_step_1(tmp_path):
     assert old not in {s["id"] for s in leon.get("/api/spaces").json()["all"]}
     got = again.post("/api/onboarding/sample", json={"lang": "zh"}).json()
     assert got["sample"]["id"] != old and got["tour"] is None
+
+
+def test_accounts_deleted_before_the_fix_are_swept_at_start(tmp_path):
+    """Deleted before forget_person existed: the sample show and the progress stayed. The next start clears them."""
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    old = sam.post("/api/onboarding/sample", json={"lang": "zh"}).json()["sample"]["id"]
+    sam.put("/api/onboarding", json={"tour": "~music3", "welcomed": True})
+    auth = leon.app.state.auth
+    auth.on_deleted[:] = [f for f in auth.on_deleted if f.__name__ != "forget_person"]   # as the old code did
+    assert leon.delete("/api/auth/users/sam@example.com").status_code == 200
+    assert auth.db.meta("onboard:sam@example.com")
+    restarted = TestClient(create_app(tmp_path / "ws", MockEditorAdapter(), web_dist=tmp_path / "none",
+                                      mailer=FakeMailer(), mail_inline=True))
+    restarted.post("/api/auth/login", json={"email": "leon@example.com", "password": PW})
+    assert old not in {s["id"] for s in restarted.get("/api/spaces").json()["all"]}
+    again = join(restarted, "sam@example.com")
+    got = again.get("/api/onboarding").json()
+    assert got["sample"] is None and got["tour"] is None and got["welcomed"] is False
+    assert leon.get("/api/onboarding").json()["welcomed"] is True      # people still here keep theirs

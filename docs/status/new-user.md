@@ -58,7 +58,9 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
 - Tour didn't start for a "new" person (Leon 2026-10-23): the tour's place outlived the sample it was made in.
   Now deleting the sample, or adding a new one, resets the tour's place and the sample steps. Deleting an
   account also deletes its sample show and its 入门 progress, so the same email invited again starts as a new person.
-  Tests: `test_a_new_sample_starts_the_tour_from_step_1`, end of `web/e2e/onboarding.spec.ts`.
+  Accounts deleted before this fix are swept at start (their sample show and progress). Tests:
+  `test_a_new_sample_starts_the_tour_from_step_1`, `test_accounts_deleted_before_the_fix_are_swept_at_start`,
+  end of `web/e2e/onboarding.spec.ts`.
 
 ## Open
 - Real recordings (Leon + Pei, zh + en) may still replace the synthetic voices later → run ASR + first cut, check by hand, bump `sample.VERSION`.

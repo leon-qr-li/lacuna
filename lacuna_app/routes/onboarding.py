@@ -187,6 +187,19 @@ def register(app, ctx) -> None:
 
     auth.on_deleted.append(forget_person)
 
+    def sweep_departed() -> None:
+        """Accounts deleted before forget_person existed (2026-10-23) left their sample show and 入门 progress
+        behind; the same email invited again found them. Cleared at start (only samples and progress)."""
+        if not auth.users:
+            return
+        for sid in [sid for sid in list(spaces.spaces) if spaces.sample(sid) and spaces.creator(sid) not in auth.users]:
+            spaces.delete(sid)
+        for r in auth.db.query("SELECT key FROM meta WHERE key LIKE 'onboard:%' AND value != ''"):
+            if r["key"].split(":", 1)[1] not in auth.users:
+                auth.db.set_meta(r["key"], "")
+
+    sweep_departed()
+
     def _drop_child(sid: str) -> None:
         """A show's app caches its open episodes: forget it so the next request reads the fresh files."""
         children = getattr(app.state, "space_apps", None)
