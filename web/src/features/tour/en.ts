@@ -89,8 +89,6 @@ export const en: Dict = {
     "Cutting…",
   "正在导出…":
     "Exporting…",
-  "正在恢复…":
-    "Restoring…",
   "正在批准…":
     "Approving…",
   "正在播放…":
@@ -105,12 +103,18 @@ export const en: Dict = {
     "**MP3** is small, good for sharing; **WAV** sounds best. Press **OK** and LACUNA clicks **Start export**: the episode is rebuilt and its loudness evened out. How long depends on the length; a long episode takes a few minutes.",
   "LACUNA 不会直接改。批准前，你可以先听一下：**▶ 现在** 是原样，**▶ 改后** 是删掉这两句以后。按 **知道了**，LACUNA 替你各放一遍。":
     "LACUNA doesn't change anything by itself. Before approving you can listen: **▶ Now** is as it is, **▶ After** is without those two lines. Press **OK** and LACUNA plays each once.",
-  "LACUNA 点 **{label}**，进入下一部分。":
-    "LACUNA clicks **{label}** to go on.",
+  "按 **知道了**，LACUNA 点 **{label}**，进入下一部分。":
+    "Press **OK** and LACUNA clicks **{label}** to go on.",
+  "这一部分看完了":
+    "That's this part",
+  "LACUNA 拿不准的 3 处":
+    "The 3 cuts LACUNA wasn't sure of",
+  "LACUNA 已经剪完了第一版。大部分改动它有把握，左边只列出它拿不准的 **3 处**，等你过目。停顿、口头禅这些小改动，整集试听时都能听到。":
+    "LACUNA has made the first cut. It's sure of most changes; the list on the left holds only the **3** it wasn't sure of, for you to check. The small ones (pauses, filler words) you'll hear when you play the episode.",
   "{a}离麦克风近，比{b}响很多。尺子上白线是原始音量，彩色条是现在，绿线是目标。按 **知道了**，LACUNA 替你点 **统一两人音量**，两人都到绿线。":
     "{a} sat close to the mic and is much louder than {b}. On the meter, the white line is the original level, the colored bar is now, the green line is the target. Press **OK** and LACUNA clicks **Match both voices**: both reach the green line.",
-  "{a}说「等一下，我喝口水」（虚线框），这句不要。平时在轨道上 **按住鼠标** 从左拖到右选中它，再点菜单里的 **删掉这段**。按 **知道了**，LACUNA 替你做一遍。":
-    "{a} says \"Hold on, let me grab some water\" (dashed box); that line can go. Normally you **press and drag** across it on the tracks, then click **Cut this** in the menu. Press **OK** and LACUNA does it once for you.",
+  "这是剪辑时间线：每人一条轨道，**橙色竖线** 是剪切点。{a}说「等一下，我喝口水」（虚线框），这句不要。平时在轨道上 **按住鼠标** 从左拖到右选中它，再点菜单里的 **删掉这段**。按 **知道了**，LACUNA 替你做一遍。":
+    "This is the edit timeline: one track per host, the **orange lines** are cuts. {a} says \"Hold on, let me grab some water\" (dashed box); that line can go. Normally you **press and drag** across it on the tracks, then click **Cut this** in the menu. Press **OK** and LACUNA does it once for you.",
   "不想自己调数值，直接说就行。LACUNA 的改动先变成建议，满意再 **采用**。按 **知道了**，LACUNA 替你发一句「{text}」，再点采用。":
     "Rather than set numbers, just say it. LACUNA's change comes as a suggestion; **Use it** if you like it. Press **OK** and LACUNA sends \"{text}\", then uses the suggestion.",
   "写好了：标题、备选标题、简介和 show notes，点一下就能复制，和导出的音频一起贴到播客平台。剪辑再改，时间戳一键更新。":
@@ -123,8 +127,8 @@ export const en: Dict = {
     "Raw length, final length, how much was cut, how much music: all here. Loudness is −16 LUFS with true peaks under −1 dBTP, the standard of Apple Podcasts, Spotify and others, ready to upload.",
   "左边是素材库，示例准备了 3 首 CC0 授权的音乐。按 **知道了**，LACUNA 把第一首放成 **片头**、第二首放成 **片尾**：有人开口时音乐会自动压低。":
     "On the left is the library: 3 CC0 tracks for the sample. Press **OK** and LACUNA puts the first in as the **Intro** and the second as the **Outro**; the music dips by itself when someone talks.",
-  "左边清单里是 LACUNA 拿不准的 **3 处**，等你过目。第 1 处：{a}开头把一句话重说了一遍。按 **知道了**，LACUNA 先放 **A · 原话**（删之前），再放 **B · 剪后**（删之后）。":
-    "The list on the left holds the **3 cuts** LACUNA wasn't sure of, for you to check. The first: {a} restarts a sentence at the top. Press **OK** and LACUNA plays **A · Original** (before the cut), then **B · Edited** (after it).",
+  "第 1 处：{a}开头把一句话重说了一遍。按 **知道了**，LACUNA 先放 **A · 原话**（删之前），再放 **B · 剪后**（删之后）。":
+    "The first: {a} restarts a sentence at the top. Press **OK** and LACUNA plays **A · Original** (before the cut), then **B · Edited** (after it).",
   "批准前，可以先听":
     "Listen before approving",
   "按 **知道了**，LACUNA 按标题和简介画几版方形封面。":
@@ -137,8 +141,6 @@ export const en: Dict = {
     "Add an intro and an outro",
   "正在放音乐…":
     "Adding the music…",
-  "每人一条轨道，**橙色竖线** 是剪切点：现在画面里有 {n} 处（整集共 {total} 处）。虚线框里那条剪掉的是口头禅「呃」，自动剪的也能恢复：平时把鼠标移上去点 **恢复**，或者点文字稿里的删除线。按 **知道了**，LACUNA 替你恢复它。":
-    "One track per host; the **orange lines** are cuts: {n} in view now ({total} in the episode). The one in the dashed box removed an \"uh\"; automatic cuts can be undone too: hover and click **Restore**, or click the struck-through words. Press **OK** and LACUNA restores it.",
   "满意就点 **批准**；不满意，平时可以点「再改」接着说。按 **知道了**，LACUNA 替你批准。":
     "If you like it, click **Approve**; if not, click \"Change it\" and keep talking. Press **OK** and LACUNA approves it.",
   "直接跟 LACUNA 说":

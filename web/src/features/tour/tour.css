@@ -48,3 +48,5 @@
 @keyframes tour-ring-pulse { 50% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 11px rgb(232 98 42 / 0.3), 0 0 34px rgb(232 98 42 / 0.45); } }
 .tour-tap { outline: 3px solid var(--accent) !important; outline-offset: 2px; box-shadow: 0 0 0 7px rgb(232 98 42 / 0.3) !important; transition: outline-color 0.15s; }
 @media (prefers-reduced-motion: reduce) { .tour-ring.is-acting { animation: none; } }
+.tour-press { transform: scale(0.94); transition: transform 0.12s; }
+@media (prefers-reduced-motion: reduce) { .tour-press { transform: none; } }

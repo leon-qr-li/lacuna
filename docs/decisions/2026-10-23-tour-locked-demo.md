@@ -8,10 +8,11 @@ The bubble tour of LACUNA 示例节目 is a demo, "like a PPT":
 - The person only presses 知道了.
 - The whole page is masked; nothing else can be clicked.
 - Every output is fixed in advance: the chat and music answers, the publish pack and the covers.
-- The tour has 16 steps in 9 chapters (it had 60, then 30). The last chapter, 发布, shows the publish pack and covers.
+- The tour has 16 steps in 8 chapters (it had 60, then 30). The last chapter, 发布, shows the publish pack and covers.
 - Read, then act (Leon, 2026-10-23 17:40Z): reading and acting never happen at the same time. The bubble shows first
   and nothing moves. Only after 知道了 does LACUNA highlight and act; the result follows in a new bubble. When the
-  next step is on another tab, LACUNA visibly presses 下一步 (or the tab) first.
+  next step is on another tab, LACUNA visibly presses 下一步 (or the tab) first, after its own
+  bubble and 知道了, slowly enough to follow. One step frames one thing.
 
 ## Why
 New people got stuck on the do-steps: where to click, a failed drag, text hidden under a bubble. Then the

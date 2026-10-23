@@ -66,7 +66,9 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
   step's `act` (clicks, selects via `selectOnTimeline`, sends); the person only presses 知道了. Read, then act:
   `enter` only sets the scene, `act` runs after 知道了 and waits on `done` (at most 20 s), `result` is a second
   bubble; a change of tab is shown as LACUNA pressing 下一步 (`navLink`). Nothing on the page can be clicked.
-  16 steps in 9 chapters (`steps.ts`). The sample A/B plays only the one host's sentence (`sample.turn_around`,
+  16 steps in 8 chapters (`steps.ts`; Leon 2026-10-23 evening: 「拿不准的 3 处」 and the A/B are two steps again, each
+  framing one thing; the 「呃」 restore step is gone). Before another page, a bubble says LACUNA will click 下一步 and
+  waits for 知道了; then the press is shown slowly (`tap(el, 1200)`) and the new page shows a moment before its bubble. The sample A/B plays only the one host's sentence (`sample.turn_around`,
   `test_the_sample_ab_plays_one_hosts_sentence`). Chapter 发布
   shows the publish pack and covers, which for the sample are written in advance (`sample.SamplePublisher`,
   `sample.SampleDesigner`, no AI call). Tests: `web/e2e/tour.spec.ts`,

@@ -59,9 +59,9 @@ export type Hosts = Record<string, string> & {
   b: string;
 };
 
-export const CHAPTERS = 9;
+export const CHAPTERS = 8;
 export const chapterName = (n: number) =>
-  [t("先听原始录音"), t("审阅改动"), t("整集试听"), t("对 LACUNA 说"), t("手动剪辑"), t("声音"), t("配乐"), t("导出"), t("发布")][n - 1] ?? "";
+  [t("先听原始录音"), t("审阅改动"), t("对 LACUNA 说"), t("手动剪辑"), t("声音"), t("配乐"), t("导出"), t("发布")][n - 1] ?? "";
 
 const q = (sel: string) => document.querySelector(sel);
 const click = (sel: string) => (q(sel) as HTMLElement | null)?.click();
@@ -73,12 +73,14 @@ export const until = async (f: () => unknown, ms = 10_000) => {
   return !!f();
 };
 /** LACUNA clicks something the way a person would be seen to: it flashes, then the click */
-export const tap = async (el: Element | string | null | undefined) => {
+export const tap = async (el: Element | string | null | undefined, ms = 650) => {
   const e = (typeof el === "string" ? q(el) : el) as HTMLElement | null;
   if (!e) return;
   e.classList.add("tour-tap");
-  await wait(650);
-  e.classList.remove("tour-tap");
+  await wait(ms - 250);
+  e.classList.add("tour-press"); // the press itself, just before the click
+  await wait(250);
+  e.classList.remove("tour-tap", "tour-press");
   e.click();
 };
 /** Type into a React-controlled textarea / input */
@@ -98,7 +100,6 @@ const type = async (c: Ctx, sel: string, text: string) => {
     await wait(55);
   }
 };
-const routine = (ep: Episode) => ep.edits.find((e) => e.ai_category === "disfluency" && e.source === "first_cut");
 const manual = (ep: Episode, lift: boolean) => ep.edits.filter((e) => e.source === "manual" && !!e.tracks === lift).length;
 const playing = () => [...document.querySelectorAll("audio")].some((a) => !a.paused);
 /** LACUNA clicks a play button and waits until it has played (at most ms) */
@@ -107,15 +108,6 @@ const hear = async (c: Ctx, sel: string, ms = 12_000) => {
   await tap(sel);
   await until(playing, 2000);
   await until(() => !playing() || !c.alive(), ms);
-};
-/** the cut points in the timeline's window now / in the whole episode */
-const cutsSeen = (c?: Ctx) => {
-  const lanes = q('[data-testid="edit-lanes"]') as HTMLElement | null;
-  const on = (c?.ep.edits ?? []).filter((e) => e.status === "applied" && !e.tracks);
-  if (!lanes) return { n: on.length, total: on.length };
-  const t0 = Number(lanes.dataset.start);
-  const t1 = t0 + Number(lanes.dataset.span);
-  return { n: on.filter((e) => e.t >= t0 && e.t <= t1).length, total: on.length };
 };
 const intro = '[data-testid="placement"][data-role="intro"]';
 const select = (span: [number, number] | null | undefined, pad = 0) => span && selectOnTimeline(span[0] - pad, span[1] + pad);
@@ -128,14 +120,17 @@ export const STEPS: Step[] = [
   { id: "raw", ch: 1, mode: "review", title: () => t("先听听没剪过的样子"), body: () => t("这是示例节目开头 30 秒的原始录音：有重说、口头禅、冷场，两人一个大声一个小声。教程最后会放剪好的同一段给你对比。") },
 
   // 2 审阅改动
-  { id: "rab", ch: 2, mode: "review", side: "bottom", target: ['[data-testid="review-list"]', ".rv-act .ab-seg"],
+  { id: "rlist", ch: 2, mode: "review", side: "right", target: [".review-nav"],
+    title: () => t("LACUNA 拿不准的 3 处"),
+    body: () => t("LACUNA 已经剪完了第一版。大部分改动它有把握，左边只列出它拿不准的 **3 处**，等你过目。停顿、口头禅这些小改动，整集试听时都能听到。") },
+  { id: "rab", ch: 2, mode: "review", side: "bottom", target: [".rv-act .ab-seg"],
     act: async (c) => {
       await hear(c, ".rv-act .ab-opt:nth-of-type(1)");
       await wait(400);
       await hear(c, ".rv-act .ab-opt:nth-of-type(2)");
     },
     title: () => t("先听，再决定"),
-    body: (h) => t("左边清单里是 LACUNA 拿不准的 **3 处**，等你过目。第 1 处：{a}开头把一句话重说了一遍。按 **知道了**，LACUNA 先放 **A · 原话**（删之前），再放 **B · 剪后**（删之后）。", h),
+    body: (h) => t("第 1 处：{a}开头把一句话重说了一遍。按 **知道了**，LACUNA 先放 **A · 原话**（删之前），再放 **B · 剪后**（删之后）。", h),
     hint: () => t("正在播放…") },
   { id: "rdecide", ch: 2, mode: "review", side: "top", target: [".review-main"],
     act: async (c) => {
@@ -150,27 +145,8 @@ export const STEPS: Step[] = [
     body: () => t("删得对就点 **保留**（键盘 K），想留原话就点 **恢复原话**（R）。删除早已生效，你只是确认。这 3 处都删对了：按 **知道了**，LACUNA 一处处点 **保留**。"),
     hint: () => t("正在确认 3 处…") },
 
-  // 3 整集试听
-  { id: "lpop", ch: 3, mode: "listen", side: "bottom", target: [".ml .ml-body"],
-    enter: (c) => {
-      const e = routine(c.ep);
-      if (e) { c.player.seek(Math.max(0, e.t - 2)); showOnTimeline(e.t - 4, e.t + 3); }
-    },
-    box: (c) => {
-      const e = routine(c.ep);
-      return e ? { track: c.ep.tracks[0]?.name ?? null, a: e.t - 0.4, b: e.t + 0.4 } : null;
-    },
-    act: async (c) => {
-      const e = routine(c.ep);
-      if (e) await tap(`.ml-gone[data-edit="${e.id}"]`);
-    },
-    done: (c) => routine(c.ep)?.status !== "applied",
-    title: () => t("剪辑时间线"),
-    body: (_h, c) => t("每人一条轨道，**橙色竖线** 是剪切点：现在画面里有 {n} 处（整集共 {total} 处）。虚线框里那条剪掉的是口头禅「呃」，自动剪的也能恢复：平时把鼠标移上去点 **恢复**，或者点文字稿里的删除线。按 **知道了**，LACUNA 替你恢复它。", cutsSeen(c)),
-    hint: () => t("正在恢复…") },
-
-  // 4 对 LACUNA 说
-  { id: "csend", ch: 4, mode: "listen", side: "left", target: ["form.chat-form"],
+  // 3 对 LACUNA 说
+  { id: "csend", ch: 3, mode: "listen", side: "left", target: ["form.chat-form"],
     enter: (c) => {
       click('[data-testid="tab-ai"]');
       if (c.marks?.actor) { c.player.seek(c.marks.actor[0]); showOnTimeline(c.marks.actor[0] - 1, c.marks.actor[1] + 1); }
@@ -185,7 +161,7 @@ export const STEPS: Step[] = [
     title: () => t("直接跟 LACUNA 说"),
     body: (h) => t("虚线框里，{b}想不起演员名字，来回两句，中间还冷场了。这种地方直接跟 LACUNA 说就能剪。按 **知道了**，LACUNA 替你写一句「{text}」并发送。", { ...h, text: TOUR_CHAT() }),
     hint: () => t("LACUNA 正在回答…") },
-  { id: "cab", ch: 4, mode: "listen", side: "left", target: ['[data-testid="proposal"]'],
+  { id: "cab", ch: 3, mode: "listen", side: "left", target: ['[data-testid="proposal"]'],
     act: async (c) => {
       await tap('[data-testid="proposal"] .btn-outline-accent');
       await until(() => q('[data-testid="proposal"] .ab button'));
@@ -196,15 +172,15 @@ export const STEPS: Step[] = [
     title: () => t("批准前，可以先听"),
     body: () => t("LACUNA 不会直接改。批准前，你可以先听一下：**▶ 现在** 是原样，**▶ 改后** 是删掉这两句以后。按 **知道了**，LACUNA 替你各放一遍。"),
     hint: () => t("正在播放…") },
-  { id: "cok", ch: 4, mode: "listen", side: "left", target: ['[data-testid="proposal"]'],
+  { id: "cok", ch: 3, mode: "listen", side: "left", target: ['[data-testid="proposal"]'],
     act: () => tap('[data-testid="proposal"] .btn-primary'),
     done: () => !q('[data-testid="proposal"]') && !!q(".pstate.ok"),
     title: () => t("满意就批准"),
     body: () => t("满意就点 **批准**；不满意，平时可以点「再改」接着说。按 **知道了**，LACUNA 替你批准。"),
     hint: () => t("正在批准…") },
 
-  // 5 手动剪辑
-  { id: "dcut", ch: 5, mode: "listen", side: "bottom", target: [".ml .ml-body"],
+  // 4 手动剪辑
+  { id: "dcut", ch: 4, mode: "listen", side: "bottom", target: [".ml .ml-body"],
     enter: (c) => {
       const w = c.marks?.water;
       if (w) { c.player.seek(Math.max(0, w[0] - 3)); showOnTimeline(w[0] - 2, w[1] + 2); }
@@ -219,9 +195,9 @@ export const STEPS: Step[] = [
     },
     done: (c) => manual(c.ep, false) > Number(c.memo.n ?? 0),
     title: () => t("自己动手删一段"),
-    body: (h) => t("{a}说「等一下，我喝口水」（虚线框），这句不要。平时在轨道上 **按住鼠标** 从左拖到右选中它，再点菜单里的 **删掉这段**。按 **知道了**，LACUNA 替你做一遍。", h),
+    body: (h) => t("这是剪辑时间线：每人一条轨道，**橙色竖线** 是剪切点。{a}说「等一下，我喝口水」（虚线框），这句不要。平时在轨道上 **按住鼠标** 从左拖到右选中它，再点菜单里的 **删掉这段**。按 **知道了**，LACUNA 替你做一遍。", h),
     hint: () => t("正在删…") },
-  { id: "dmute", ch: 5, mode: "listen", side: "bottom", target: [".ml .ml-body"],
+  { id: "dmute", ch: 4, mode: "listen", side: "bottom", target: [".ml .ml-body"],
     enter: (c) => {
       const k = c.marks?.cough;
       if (k) { c.player.seek(Math.max(0, k[0] - 3)); showOnTimeline(k[0] - 2, k[1] + 2); }
@@ -240,15 +216,15 @@ export const STEPS: Step[] = [
     body: (h) => t("删掉整段会把{b}的话也删了。平时选中咳嗽那一小段（虚线框），点 **只静音 {a}**：{b}的话留着，只有{a}那条轨道变安静。按 **知道了**，LACUNA 替你做一遍。", h),
     hint: () => t("正在静音…") },
 
-  // 6 声音
-  { id: "vauto", ch: 6, mode: "levels", side: "bottom", target: ['[data-tour="levels-auto"]', ".levels-tracks .levels-top"],
+  // 5 声音
+  { id: "vauto", ch: 5, mode: "levels", side: "bottom", target: [".levels-card"],
     act: (c) => tap('[data-tour="levels-auto"]').then(() => until(() => !q('[data-tour="levels-auto"][disabled]') || !c.alive())),
     title: () => t("一个大声，一个小声"),
     body: (h) => t("{a}离麦克风近，比{b}响很多。尺子上白线是原始音量，彩色条是现在，绿线是目标。按 **知道了**，LACUNA 替你点 **统一两人音量**，两人都到绿线。", h),
     hint: () => t("正在统一音量…") },
 
-  // 7 配乐
-  { id: "uput", ch: 7, mode: "music", side: "right", target: ['[data-tour="music-library"]'],
+  // 6 配乐
+  { id: "uput", ch: 6, mode: "music", side: "right", target: ['[data-tour="music-library"]'],
     act: async (c) => {
       for (const [kind, i, role] of [["intro", 1, "intro"], ["outro", 2, "outro"]] as const) {
         if (!c.alive() || q(`[data-testid="placement"][data-role="${role}"]`)) continue;
@@ -263,7 +239,7 @@ export const STEPS: Step[] = [
     title: () => t("放上片头和片尾"),
     body: () => t("左边是素材库，示例准备了 3 首 CC0 授权的音乐。按 **知道了**，LACUNA 把第一首放成 **片头**、第二首放成 **片尾**：有人开口时音乐会自动压低。"),
     hint: () => t("正在放音乐…") },
-  { id: "usend", ch: 7, mode: "music", side: "top", target: ['[data-tour="music-assist"]'],
+  { id: "usend", ch: 6, mode: "music", side: "top", target: ['[data-tour="music-assist"]'],
     act: async (c) => {
       await type(c, '[data-tour="music-assist"] textarea', TOUR_MUSIC());
       await wait(500);
@@ -277,19 +253,19 @@ export const STEPS: Step[] = [
     body: () => t("不想自己调数值，直接说就行。LACUNA 的改动先变成建议，满意再 **采用**。按 **知道了**，LACUNA 替你发一句「{text}」，再点采用。", { text: TOUR_MUSIC() }),
     hint: () => t("LACUNA 正在调…") },
 
-  // 8 导出
-  { id: "xstart", ch: 8, mode: "export", side: "bottom", target: ['[data-tour="export-formats"]', '[data-tour="export-start"]', ".xmain .job"],
+  // 7 导出
+  { id: "xstart", ch: 7, mode: "export", side: "bottom", target: ['[data-tour="export-formats"]', '[data-tour="export-start"]', ".xmain .job"],
     act: () => tap('[data-tour="export-start"]'),
     done: () => !!q('[data-testid="export-result"]'),
     title: () => t("导出"),
     body: () => t("**MP3** 体积小，适合分享；**WAV** 音质最好。按 **知道了**，LACUNA 替你点 **开始导出**：整集重新合成，再统一响度。要多久看节目长短，长的节目要等几分钟。"),
     hint: () => t("正在导出…") },
-  { id: "xsum", ch: 8, mode: "export", side: "left", target: ['[data-tour="export-summary"]', '[data-tour="export-standard"]'],
+  { id: "xsum", ch: 7, mode: "export", side: "left", target: ['[data-tour="export-summary"]', '[data-tour="export-standard"]'],
     title: () => t("这一集的结果"),
     body: () => t("原始多长、成品多长、剪掉多少、配乐几处，都在这里。响度统一到 −16 LUFS，真峰值不超过 −1 dBTP，符合 Apple Podcasts、Spotify 等平台的标准，可以直接上传。") },
 
-  // 9 发布
-  { id: "ptext", ch: 9, mode: "publish", side: "bottom", target: ['[data-tour="publish-title-card"]', '[data-tour="publish-generate"]'],
+  // 8 发布
+  { id: "ptext", ch: 8, mode: "publish", side: "bottom", target: ['[data-tour="publish-title-card"]', '[data-tour="publish-generate"]'],
     act: async () => {
       if (!q('[data-testid="publish-title"]')) await tap('[data-tour="publish-generate"]');
     },
@@ -298,7 +274,7 @@ export const STEPS: Step[] = [
     body: () => t("按 **知道了**，LACUNA 读剪好的文字稿，写这一集的标题、一句话简介和带时间戳的 show notes。"),
     hint: () => t("LACUNA 正在写…"),
     result: () => t("写好了：标题、备选标题、简介和 show notes，点一下就能复制，和导出的音频一起贴到播客平台。剪辑再改，时间戳一键更新。") },
-  { id: "pposter", ch: 9, mode: "poster", side: "bottom", target: ['[data-testid="poster-card"]', '[data-tour="poster-generate"]'],
+  { id: "pposter", ch: 8, mode: "poster", side: "bottom", target: ['[data-testid="poster-card"]', '[data-tour="poster-generate"]'],
     act: async () => {
       if (!q('[data-testid="poster-card"]')) await tap('[data-tour="poster-generate"]');
     },
