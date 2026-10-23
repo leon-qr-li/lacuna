@@ -67,8 +67,11 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
   `enter` only sets the scene, `act` runs after 知道了 and waits on `done` (at most 20 s), `result` is a second
   bubble; a change of tab is shown as LACUNA pressing 下一步 (`navLink`). Nothing on the page can be clicked.
   15 steps in 7 chapters, one to one with the prototype Leon approved on 2026-10-23
-  (https://claude.ai/artifact/BXYqkEEQrqpMMmdDbVNQpd; only the tour changed, no page UI). The raw recording plays
-  after 知道了. 整集试听 is one chapter with three ways to cut: tell LACUNA (listen, then approve, one step),
+  (https://claude.ai/artifact/BXYqkEEQrqpMMmdDbVNQpd; only the tour changed, no page UI). Step 1 is the one
+  exception to 知道了 (Leon 19:48Z): its only control is 「▶ 播放原始录音」, and the tour moves on when it ends or is
+  paused. A step's `resultTarget` frames where the outcome is (the timeline after approving; the intro's curve
+  after the music request, whose card `usend` opens first). The black playhead is hidden during the tour so the
+  orange cut lines show (`tour.css`). The 4 sample covers are distinct (`test_the_sample_publish_pack_…`). 整集试听 is one chapter with three ways to cut: tell LACUNA (listen, then approve, one step),
   delete 「等一下 我喝口水」 in the transcript (`selectInText`), cut the dead air after it on the timeline
   (`sample.tour_marks` "gap"). Before another page, a bubble says LACUNA will click 下一步 and waits for 知道了;
   the press is shown slowly and the new page shows a moment before its bubble. The sample A/B plays only the one host's sentence (`sample.turn_around`,

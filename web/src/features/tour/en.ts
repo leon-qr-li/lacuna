@@ -119,12 +119,10 @@ export const en: Dict = {
     "Adding the music…",
   "❚❚ 正在播放":
     "❚❚ Playing",
-  "正在播放原始录音…":
-    "Playing the raw recording…",
-  "这是示例节目开头 30 秒的原始录音：有重说、口头禅、冷场，两人一个大声一个小声。按 **知道了**，LACUNA 替你播放。":
-    "These are the first 30 seconds of the sample, as recorded: restarts, filler words, dead air, one host loud and one quiet. Press **OK** and LACUNA plays it.",
-  "听完了。教程最后会放剪好的同一段给你对比。":
-    "That's the raw take. At the end of the tour you'll hear the same stretch edited.",
+  "这是示例节目开头 30 秒的原始录音：有重说、口头禅、冷场，两人一个大声一个小声。点 **▶ 播放原始录音** 听一听，放完自动进入下一步；教程最后会放剪好的同一段给你对比。":
+    "These are the first 30 seconds of the sample, as recorded: restarts, filler words, dead air, one host loud and one quiet. Press **▶ Play the raw recording** to listen; when it ends the tour moves on, and at the end you'll hear the same stretch edited.",
+  "采用了：有人说话时，片头音乐又压低了 4 dB，曲线里压低的那一段往下掉了。":
+    "Applied: while someone talks, the intro music now dips 4 dB lower, and the dipped part of the curve drops.",
   "第一种：直接跟 LACUNA 说":
     "Way 1: just tell LACUNA",
   "这是整集试听：边听边改，有三种剪法。第一种最省事，直接告诉 LACUNA 你想怎么改。虚线框里，{b}想不起演员名字，来回两句，中间还冷场了。按 **知道了**，LACUNA 替你写一句「{text}」并发送。":

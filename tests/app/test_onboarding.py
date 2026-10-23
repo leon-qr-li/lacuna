@@ -166,6 +166,11 @@ def test_the_sample_publish_pack_and_covers_come_without_the_ai(tmp_path):
             break
         time.sleep(0.05)
     assert len(view["variants"]) == 4 and not view["errors"]
+    # every direction has its own cover (Leon 2026-10-23: 并置 showed the 自由发挥 one)
+    from lacuna_app.poster import DIRECTIONS
+    from lacuna_app.sample import SampleDesigner
+    svgs = [SampleDesigner().design("", k).svg for k, _, _ in DIRECTIONS]
+    assert len(set(svgs)) == len(DIRECTIONS)
 
 
 def test_the_sample_ab_plays_one_hosts_sentence(tmp_path):

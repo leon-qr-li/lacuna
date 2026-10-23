@@ -47,18 +47,16 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
     seen.push(s);
     if (s === "done") break;
     if (s === "raw") {
-      // read first: nothing plays until 知道了, then LACUNA plays it
+      // the one step without 知道了: nothing plays until the person presses play, the only control
       await expect(tour).toHaveAttribute("data-phase", "read");
+      await expect(page.getByTestId("tour-raw").getByTestId("tour-ok")).toHaveCount(0);
       await page.waitForTimeout(800);
       expect(await page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(true);
-      await ok();
+      await page.getByTestId("tour-raw-play").click();
       await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.1);
       // whatever plays can be stopped from the pill (the page itself is masked)
       await page.getByTestId("tour-pause").click();
-      await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(true);
-      await expect(page.getByTestId("tour-pause")).toHaveCount(0);
-      await expect(tour).toHaveAttribute("data-phase", "result");
-      await ok();
+      // paused (or played to the end) → the tour moves on by itself
       await moved(s);
       continue;
     }
@@ -71,6 +69,10 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
       await page.getByRole("button", { name: /^保留/ }).click({ force: true });
       expect((await (await page.request.get("/api/episodes/SAMPLE_01")).json()).pending_review).toBe(3);
     }
+    if (s === "usend") {
+      // the request is about the intro, so the intro's curve is the one shown
+      await expect(page.locator('[data-testid="placement"][data-role="intro"] [data-testid="music-curve"]')).toBeVisible();
+    }
     if (s === "csend") {
       await page.waitForTimeout(1000);
       await expect(page.locator("form.chat-form textarea")).toHaveValue("");
@@ -80,6 +82,12 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
     while ((await tour.getAttribute("data-step")) === s) {
       const was = (await phase())!;
       await expect(page.getByTestId("tour-ok")).toBeVisible();
+      if (was === "result" && s === "cab") {
+        // the new orange cut line shows: no black playhead on top of it
+        await expect(page.locator(".mark-cut")).not.toHaveCount(0);
+        for (const l of await page.locator(".ml-head-line").all()) await expect(l).toBeHidden();
+      }
+      if (was === "result" && s === "usend") await expect(page.locator('[data-testid="placement"][data-role="intro"] [data-testid="music-curve"]')).toBeVisible();
       if (was === "nav") {
         navs++;
         await expect(page.getByTestId("tour-bubble")).toContainText("这一部分看完了");

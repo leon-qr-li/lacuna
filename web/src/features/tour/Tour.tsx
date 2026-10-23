@@ -45,8 +45,8 @@ function rich(s: string): ReactNode {
   return s.split(/\*\*(.+?)\*\*/g).map((part, i) => (i % 2 ? <b key={i}>{part}</b> : <Fragment key={i}>{part}</Fragment>));
 }
 
-function elements(s: Step, c: Ctx): Element[] {
-  return (s.target ?? []).flatMap((x) => (typeof x === "string" ? [...document.querySelectorAll(x)] : x(c)));
+function elements(s: Step, c: Ctx, result = false): Element[] {
+  return ((result && s.resultTarget) || s.target || []).flatMap((x) => (typeof x === "string" ? [...document.querySelectorAll(x)] : x(c)));
 }
 
 /** Where the bubble goes: the preferred side when it fits, else the first side that fits, else a corner. */
@@ -123,7 +123,13 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
 
   useEffect(() => {
     const v = ep.version;
-    req<Marks>("GET", `/api/episodes/${encodeURIComponent(id)}/tour/marks`).then((m) => setGot({ v, m }), () => setGot({ v, m: null }));
+    // an older version's answer arriving last must not win, or no step would ever begin
+    let live = true;
+    req<Marks>("GET", `/api/episodes/${encodeURIComponent(id)}/tour/marks`).then(
+      (m) => live && setGot({ v, m }),
+      () => live && setGot({ v, m: null }),
+    );
+    return () => void (live = false);
   }, [id, ep.version]);
 
   const ctx = useRef<Ctx>(null as unknown as Ctx);
@@ -299,10 +305,11 @@ function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
 
   // follow the lit part every frame (the page scrolls, popups open, the timeline moves)
   useLayoutEffect(() => {
+    if (phase === "result" && step.resultTarget) scrolled.current = false;
     let raf = 0;
     const loop = () => {
       const c = ctx.current;
-      const els = going && nav ? [nav] : elements(step, c);
+      const els = going && nav ? [nav] : elements(step, c, phase === "result");
       const rs = els.map(visible).filter((r): r is DOMRect => !!r);
       if (!scrolled.current && els.length && rs.length) {
         scrolled.current = true;
@@ -334,7 +341,7 @@ function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [step, ctx, going, nav]);
+  }, [step, ctx, going, nav, phase]);
 
   useLayoutEffect(() => {
     const b = bubble.current;
@@ -403,20 +410,25 @@ function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
 /** 1: the first 30 seconds as recorded, before anything else */
 function Raw({ step, id, h, onNext, onExit }: { step: Step; id: string; h: Hosts; onNext: () => void; onExit: () => void }) {
   const [ab, setAb] = useState<AB | null>(null);
-  // read first; after 知道了 LACUNA plays it; when it ends (or is paused from the pill), the result
-  const [phase, setPhase] = useState<"read" | "act" | "result">("read");
+  // the one exception to 知道了: the only control is 「▶ 播放原始录音」; when it ends (or is paused) the tour moves on
+  const [phase, setPhase] = useState<"read" | "act">("read");
   const [now, setNow] = useState(0);
   const audio = useRef<HTMLAudioElement>(null);
-  const play = useRef<HTMLButtonElement>(null);
+  const left = useRef(false);
   useEffect(() => {
     req<AB>("GET", `/api/episodes/${encodeURIComponent(id)}/tour/raw`).then(setAb, () => undefined);
   }, [id]);
-  const ok = async () => {
-    if (phase === "result") return onNext();
-    if (phase !== "read" || !audio.current) return;
+  const next = () => {
+    if (left.current) return;
+    left.current = true;
+    onNext();
+  };
+  const toggle = () => {
+    const a = audio.current;
+    if (!a) return;
+    if (phase === "act") return a.pause();
     setPhase("act");
-    await tap(play.current, 900);
-    void audio.current.play().catch(() => setPhase("result"));
+    void a.play().catch(() => setPhase("read"));
   };
   return (
     <div className="tour" data-testid="tour" data-step={step.id} data-phase={phase}>
@@ -425,9 +437,9 @@ function Raw({ step, id, h, onNext, onExit }: { step: Step; id: string; h: Hosts
       <div className="tour-modal card" role="dialog" aria-label={step.title(h)} data-testid="tour-raw">
         <span className="tour-meta">{t("第 {n} 步，共 {total} 步", { n: 1, total: CHAPTERS })} · {chapterName(1)}</span>
         <h2>{step.title(h)}</h2>
-        <p>{rich(phase === "result" ? (step.result?.(h) ?? "") : step.body(h))}</p>
+        <p>{rich(step.body(h))}</p>
         <div className="tour-play">
-          <button ref={play} type="button" className="btn btn-primary" tabIndex={-1} disabled={!ab} data-testid="tour-raw-play">
+          <button type="button" className="btn btn-primary" onClick={toggle} disabled={!ab} data-testid="tour-raw-play" autoFocus>
             {phase === "act" ? t("❚❚ 正在播放") : t("▶ 播放原始录音")}
           </button>
           <span className="mono small">
@@ -437,19 +449,11 @@ function Raw({ step, id, h, onNext, onExit }: { step: Step; id: string; h: Hosts
         <audio
           ref={audio}
           src={ab?.before.url}
-          onPause={() => setPhase((p) => (p === "act" ? "result" : p))}
+          onPause={() => phase === "act" && next()}
+          onEnded={next}
           onTimeUpdate={(e) => setNow(e.currentTarget.currentTime)}
           data-testid="tour-raw-audio"
         />
-        <div className="tour-foot">
-          {phase === "act" ? (
-            <span className="tour-hint" data-testid="tour-acting">{t("正在播放原始录音…")}</span>
-          ) : (
-            <button type="button" className="btn btn-primary btn-small" onClick={() => void ok()} disabled={!ab} data-testid="tour-ok" autoFocus>
-              {t("知道了")}
-            </button>
-          )}
-        </div>
         <p className="tour-note small muted">{t("示例节目不占用你的额度。两位主持人的声音是合成的。")}</p>
       </div>
     </div>
