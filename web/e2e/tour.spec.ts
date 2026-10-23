@@ -34,11 +34,14 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
   const tour = page.getByTestId("tour");
   const ok = () => page.getByTestId("tour-ok").click();
   const seen: string[] = [];
-  // LACUNA acts only after 知道了; then the next step comes, or the step's result with 知道了 again
-  const moved = (s: string) =>
+  // LACUNA acts only after 知道了; then the next step comes, or 知道了 again: the step's result, or, before
+  // another page, the bubble saying LACUNA will click 下一步 (it clicks only after that 知道了)
+  const phase = () => tour.getAttribute("data-phase");
+  const moved = (s: string, from = "read") =>
     expect
-      .poll(async () => (await tour.getAttribute("data-step")) !== s || (await tour.getAttribute("data-phase")) === "result", { timeout: 60_000 })
+      .poll(async () => (await tour.getAttribute("data-step")) !== s || ((await phase()) !== from && ["result", "nav"].includes((await phase())!)), { timeout: 60_000 })
       .toBe(true);
+  let navs = 0;
   for (let guard = 0; guard < 40; guard++) {
     const s = (await tour.getAttribute("data-step"))!;
     seen.push(s);
@@ -57,7 +60,7 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
     // read first: the bubble is up and nothing has been done yet
     await expect(page.getByTestId("tour-bubble")).toBeVisible();
     await expect(tour).toHaveAttribute("data-phase", "read");
-    if (s === "rab") {
+    if (s === "rlist") {
       // locked: even the lit part lands on the mask
       await page.getByTestId("review-list").click({ force: true });
       await page.getByRole("button", { name: /^保留/ }).click({ force: true });
@@ -67,15 +70,21 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
       await page.waitForTimeout(1000);
       await expect(page.locator("form.chat-form textarea")).toHaveValue("");
     }
-    if (s === "lpop") await expect(page.getByTestId("tour-bubble")).toContainText(/现在画面里有 \d 处（整集共 5 处）/);
     await ok();
     await moved(s);
-    if ((await tour.getAttribute("data-step")) === s) {
+    while ((await tour.getAttribute("data-step")) === s) {
+      const was = (await phase())!;
       await expect(page.getByTestId("tour-ok")).toBeVisible();
+      if (was === "nav") {
+        navs++;
+        await expect(page.getByTestId("tour-bubble")).toContainText("这一部分看完了");
+        await expect(page.getByTestId("tour-bubble")).toContainText("按 知道了，LACUNA 点");
+      }
       await ok();
-      await expect(tour).not.toHaveAttribute("data-step", s, { timeout: 30_000 });
+      await moved(s, was);
     }
   }
+  expect(navs).toBe(6); // review → listen → levels → music → export → publish → poster
   // every step was shown once, in order, and nothing was skipped
   expect(seen.length).toBe(17); // 16 steps, then done
   expect(new Set(seen).size).toBe(seen.length);

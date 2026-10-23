@@ -157,7 +157,15 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
     const i = curRef.current;
     const s = STEPS[i];
     const live = () => mounted.current && curRef.current === i;
-    if (phase === "act" || phase === "nav") return;
+    if (phase === "act" || phase === "going") return;
+    if (phase === "nav") {
+      // read first, then LACUNA presses 下一步, slowly enough to follow
+      setPhase("going");
+      await wait(500);
+      if (nav.current) await tap(nav.current, 1200);
+      if (live()) go(i + 1);
+      return;
+    }
     if (phase === "read" && s.act) {
       setPhase("act");
       await s.act(ctx.current);
@@ -171,11 +179,7 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
       const link = navLink(id, nx.mode);
       if (link) {
         nav.current = link;
-        setPhase("nav");
-        await wait(1300);
-        if (!live()) return;
-        await tap(link);
-        await wait(300);
+        return setPhase("nav");
       }
     }
     if (live()) go(i + 1);
@@ -195,7 +199,9 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
       entered.current = s.id;
       s.enter?.(ctx.current);
       // the scene settles (seek, scroll, a panel opening) before there is anything to read
-      window.setTimeout(() => setReady(s.id), s.enter ? 450 : 0);
+      // and after a change of page, the new page shows a moment on its own first
+      const moved = STEPS[STEPS.indexOf(s) - 1]?.mode !== s.mode;
+      window.setTimeout(() => setReady(s.id), (s.enter ? 450 : 0) + (moved ? 700 : 0));
     }, 150);
     return () => window.clearTimeout(k);
   }, [step, mode, id, fresh]);
@@ -227,7 +233,7 @@ function Run({ ep, mode, id, player, at }: { ep: Episode; mode: string; id: stri
   );
 }
 
-type Phase = "read" | "act" | "result" | "nav";
+type Phase = "read" | "act" | "result" | "nav" | "going";
 
 /** The link LACUNA clicks to get to the next step's page: 下一步 when it goes there, else the page's own tab. */
 function navLink(id: string, mode: string): HTMLElement | null {
@@ -284,7 +290,7 @@ function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
   onNext: () => void;
   onExit: () => void;
 }) {
-  const going = phase === "nav" && !!nav;
+  const going = (phase === "nav" || phase === "going") && !!nav;
   const [hole, setHole] = useState<Rect | null>(null);
   const [box, setBox] = useState<Rect | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
@@ -340,7 +346,7 @@ function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
 
   const all = STEPS.filter((s) => s.ch === step.ch);
   const k = all.indexOf(step) + 1;
-  const acting = phase === "act" || phase === "nav";
+  const acting = phase === "act" || phase === "going";
   const W = typeof window === "undefined" ? 0 : window.innerWidth;
   const H = typeof window === "undefined" ? 0 : window.innerHeight;
   // the four shades around the hole catch every click outside it; React's handler stops the page's own
@@ -374,10 +380,10 @@ function Mask({ step, ctx, h, phase, shown, nav, onNext, onExit }: {
         <span className="tour-meta">
           {t("第 {n} 步，共 {total} 步", { n: step.ch, total: CHAPTERS })} · {chapterName(step.ch)} · {k}/{all.length}
         </span>
-        <h3>{going ? t("下一步") : step.title(h)}</h3>
+        <h3>{going ? t("这一部分看完了") : step.title(h)}</h3>
         {phase === "read" && <p>{rich(step.body(h, ctx.current))}</p>}
         {phase === "result" && <p>{rich(step.result?.(h) ?? "")}</p>}
-        {going && <p>{rich(t("LACUNA 点 **{label}**，进入下一部分。", { label: (nav?.textContent ?? "").trim() }))}</p>}
+        {going && <p>{rich(t("按 **知道了**，LACUNA 点 **{label}**，进入下一部分。", { label: (nav?.textContent ?? "").trim() }))}</p>}
         <div className="tour-foot">
           {acting ? (
             <span className="tour-hint" data-testid="tour-acting">
