@@ -39,8 +39,10 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
 - Tests: `tests/app/test_onboarding.py` (tour), `web/e2e/tour.spec.ts` (the whole tour), `onboarding.spec.ts`,
   `levels.spec.ts`, `music_b.spec.ts`, `review_gap.spec.ts`.
 
+- Invite email 6 steps: copy B 「专业名词式」 (Leon 2026-10-23) in `invite_mail.steps()`; English kept to one
+  line per step in the two-column layout ("Music & loudness normalization", "Multi-platform export").
+
 ## Open
 - Real sample recordings (Leon + Pei, zh + en) → run ASR + first cut, check by hand, bump `sample.VERSION`.
-- Invite email 6-step copy: waiting for Leon's pick (A / B).
 - Chat cap in the sample show (~20 messages) and audio-hour metering skipping `sample` shows: batch 5.
 - Usage line on welcome / import form ("本月已用 …"): needs batch 5 metering.
