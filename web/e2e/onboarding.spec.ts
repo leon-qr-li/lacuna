@@ -111,4 +111,9 @@ test("welcome → sample show with the tour → own show → checklist", async (
   await expect(st.getByTestId("sample-open")).toHaveText("添加示例节目");
   await sam.goto("/#/");
   await expect(sam.getByTestId("onboard-card")).toBeVisible();
+  // added again (Sam had finished the tour): a new sample, the tour from step 1 (Leon 2026-10-23)
+  await sam.goto("/#/settings/general");
+  await sam.getByTestId("onboard-settings").getByTestId("sample-open").click();
+  await expect(sam).toHaveURL(/#\/ep\/SAMPLE_01\/review/);
+  await expect(sam.getByTestId("tour-raw")).toContainText("先听听没剪过的样子");
 });

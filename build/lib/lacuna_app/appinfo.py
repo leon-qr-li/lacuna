@@ -1,0 +1,69 @@
+"""App version and settings (phase 7, D51; desktop app retired 2026-10-19, decision desktop-retired).
+
+The version is the `VERSION` file the Docker image writes (the git commit); a development checkout
+has none and reports "dev". `/api/app` also lists the work in progress ("busy"), which the cloud
+host's updater (deploy/host/lacuna-update) waits on before it swaps in a new image.
+"""
+from __future__ import annotations
+
+import shutil
+import sys
+from pathlib import Path
+from typing import Callable
+
+from pydantic import BaseModel, Field
+
+APP_ROOT = Path(__file__).resolve().parent.parent      # the image's /app (or the git checkout)
+
+
+def current_version(app_root: Path = APP_ROOT) -> str:
+    try:
+        return (app_root / "VERSION").read_text(encoding="utf-8").strip() or "dev"
+    except OSError:
+        return "dev"
+
+
+# ---------------------------------------------------------------------------- environment
+
+def ffmpeg_status() -> dict:
+    return {"ffmpeg": shutil.which("ffmpeg"), "ffprobe": shutil.which("ffprobe")}
+
+
+def platform_name() -> str:
+    return {"win32": "Windows", "darwin": "macOS"}.get(sys.platform, sys.platform)
+
+
+# ---------------------------------------------------------------------------- API
+
+class KeyBody(BaseModel):
+    key: str = Field(..., max_length=500)
+
+
+def register(app, workspace: Path, busy: Callable[[], list[str]],
+             key_status: Callable[[], dict], models_ready: Callable[[], bool]) -> None:
+    """/api/app*: version + settings."""
+    from fastapi import HTTPException
+
+    from . import editor
+    from .cloud import enabled as cloud_enabled, staging
+
+    def info() -> dict:
+        return {"version": current_version(), "platform": platform_name(), "workspace": str(workspace),
+                "key": key_status(), "models": models_ready(), "busy": busy(),
+                "cloud": cloud_enabled(), "staging": staging()} | ffmpeg_status()
+
+    @app.get("/api/app")
+    def app_info():
+        return info()
+
+    @app.post("/api/app/api-key")
+    def set_key(body: KeyBody):
+        """Development checkout only (the cloud blocks it: keys come from the server's environment).
+        The AI clients are made at startup, so the key takes effect after a restart by hand."""
+        try:
+            where = editor.save_api_key(body.key)
+        except ValueError as e:
+            raise HTTPException(400, str(e))
+        except OSError as e:
+            raise HTTPException(500, str(e))
+        return {"saved": True, "where": where}

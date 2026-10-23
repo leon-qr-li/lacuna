@@ -121,6 +121,13 @@ def register(app, ctx) -> None:
         save(email, rec)
         return view(email)
 
+    def forget_tour(email: str) -> None:
+        """The sample's steps and the tour's place go with the sample they were made in."""
+        rec = record(email)
+        rec["done"] = [s for s in rec["done"] if not s.startswith("sample.")]
+        rec["tour"] = None
+        save(email, rec)
+
     def into(email: str, sid: str) -> JSONResponse:
         res = JSONResponse(view(email))
         res.set_cookie(SPACE_COOKIE, sid, max_age=365 * 86400, httponly=True, samesite="strict", path="/",
@@ -141,6 +148,8 @@ def register(app, ctx) -> None:
             except Exception:
                 spaces.delete(sid)
                 raise
+            # a new sample starts the tour from step 1, whatever an earlier (deleted) sample left behind
+            forget_tour(email)
             # its own folder: the child app for it is made on first use
         return into(email, sid)
 
@@ -153,10 +162,7 @@ def register(app, ctx) -> None:
             raise HTTPException(404, tr("你还没有示例节目"))
         _drop_child(sid)
         sample.reset(root, spaces.path(sid), spaces.sample(sid))
-        rec = record(email)
-        rec["done"] = [s for s in rec["done"] if not s.startswith("sample.")]
-        rec["tour"] = None
-        save(email, rec)
+        forget_tour(email)
         return into(email, sid)
 
     @app.delete("/api/onboarding/sample")
@@ -167,7 +173,19 @@ def register(app, ctx) -> None:
         if sid:
             _drop_child(sid)
             spaces.delete(sid)
+            forget_tour(email)
         return view(email)
+
+    def forget_person(email: str) -> None:
+        """An account was deleted: its sample show and its 入门 progress go too, so the same email invited
+        again starts as a new person (new sample, tour from step 1) instead of finding the old ones."""
+        sid = spaces.sample_of(email)
+        if sid:
+            _drop_child(sid)
+            spaces.delete(sid)
+        auth.db.set_meta(key(email), "")
+
+    auth.on_deleted.append(forget_person)
 
     def _drop_child(sid: str) -> None:
         """A show's app caches its open episodes: forget it so the next request reads the fresh files."""
