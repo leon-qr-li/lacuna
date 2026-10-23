@@ -420,26 +420,26 @@ def test_invite_email_puts_the_plan_at_the_top():
     card = m["html"].index("基础版 · 每月 4 小时音频")
     assert "你的 BETA 套餐" in m["html"] and "beta 期间免费 · 所有功能都能用 · 额度每月重置" in m["html"]
     assert card < m["html"].index("你会有一个自己的节目。") < m["html"].index("cid:lacuna-button" if "cid:lacuna-button" in m["html"] else "接受邀请")
-    assert "验证器 App" in m["html"] and m["text"].index("基础版") < m["text"].index("1. 导入分轨")
+    assert "验证器 App" in m["html"] and m["text"].index("基础版") < m["text"].index("1. 分轨导入与自动转写")
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", plan="trial")
     assert "Free trial · 1 hour of audio" in m["html"] and "BETA" not in m["html"]
 
 
 def test_invite_email_walks_through_the_six_steps():
-    """Copy A 「六步流程」: an episode from import to publish, in the designed mail and the plain one alike."""
+    """Copy B 「专业名词式」: an episode from import to publish, in the designed mail and the plain one alike."""
     from lacuna_app import invite_mail
     from lacuna_app.i18n import speaking
     with speaking("zh"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t")
-    assert m["text"].index("你会有一个自己的节目。") < m["text"].index("1. 导入分轨：") < m["text"].index("6. 导出发布：")
-    assert all(h in m["html"] for h, _ in invite_mail.steps()) and "Show notes 与封面" in m["text"]
+    assert m["text"].index("你会有一个自己的节目。") < m["text"].index("1. 分轨导入与自动转写：") < m["text"].index("6. 多平台导出与发布：")
+    assert all(h in m["html"] for h, _ in invite_mail.steps()) and "Show notes 与封面生成" in m["text"]
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "editor")
         heads = [h for h, _ in invite_mail.steps()]
-    assert heads[0] == "Import tracks" and heads[-1] == "Export & publish"
-    assert "6. Export &amp; publish" not in m["text"] and "6. Export & publish: The finished audio" in m["text"] and "Export &amp; publish" in m["html"]
-    assert m["text"].index("as Editor") < m["text"].index("1. Import tracks")
+    assert heads[0] == "Track import & transcription" and heads[-1] == "Multi-platform export"
+    assert "6. Multi-platform export: The finished audio" in m["text"] and "Track import &amp; transcription" in m["html"] and "Track import &amp; transcription" not in m["text"]
+    assert m["text"].index("as Editor") < m["text"].index("1. Track import & transcription")
     assert "：" not in m["text"] and "（" not in m["text"]
 
 

@@ -159,13 +159,13 @@ def button_png(label: str) -> tuple[bytes, int] | None:
 
 
 def steps() -> list[tuple[str, str]]:
-    """Version A 「六步流程」 (Leon 2026-10-21): an episode from import to publish, each step in one line."""
-    return [(tr("导入分轨"), tr("每位主持人一条分轨，自动转成文字稿")),
-            (tr("LACUNA 初剪"), tr("去掉卡顿、口误和多余的话，留住对话的节奏")),
-            (tr("逐处审阅"), tr("每一刀都能试听、能恢复，最后由你拍板")),
-            (tr("配乐与响度"), tr("片头片尾、背景音乐，整集响度对齐平台标准")),
-            (tr("Show notes 与封面"), tr("按本集内容写好节目介绍和时间轴，配好封面海报")),
-            (tr("导出发布"), tr("导出成品音频，带上整套发布资料去上线"))]
+    """Version B 「专业名词式」 (Leon 2026-10-23): an episode from import to publish, each step in one line."""
+    return [(tr("分轨导入与自动转写"), tr("每位主持人一条分轨，自动转成文字稿")),
+            (tr("LACUNA 智能初剪"), tr("去掉卡顿、口误和多余的话，留住对话的节奏")),
+            (tr("逐处审阅，A/B 对比"), tr("每一刀都能前后对比试听、能恢复，最后由你拍板")),
+            (tr("配乐编排与响度标准化"), tr("片头片尾、背景音乐，整集响度对齐平台标准")),
+            (tr("Show notes 与封面生成"), tr("按本集内容写好节目介绍和时间轴，配好封面海报")),
+            (tr("多平台导出与发布"), tr("导出成品音频，带上整套发布资料发到各个平台"))]
 
 
 PLAN_LINES = {
