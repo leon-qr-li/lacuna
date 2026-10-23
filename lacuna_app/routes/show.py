@@ -23,6 +23,8 @@ class HostBody(BaseModel):
 class PublishBody(BaseModel):
     ximalaya: bool = False
     album: str = Field("", max_length=160)
+    platforms: list[str] | None = Field(None, max_length=20)   # left out = keep the stored ones
+    auto_wish: list[str] | None = Field(None, max_length=20)   # 自动发布 wishes; left out = keep the stored ones
 
 
 class ShowBody(BaseModel):

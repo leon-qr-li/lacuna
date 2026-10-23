@@ -3,7 +3,7 @@ import type { RequestError } from "../../api";
 import { lang as uiLang, t } from "../../i18n";
 import { noticeDialog } from "../dialog/Dialog";
 import { BusyLabel } from "../loading/Loading";
-import { LANGUAGE_LABELS, LANGUAGES, PLATFORM_LABELS, PLATFORMS, setShow, showApi, type CutAdjust, type Host, type HostColor, type Language, type Platform, type Show } from "./api";
+import { AUTO_PUBLISH, AUTO_PUBLISH_LABELS, LANGUAGE_LABELS, LANGUAGES, setShow, showApi, type AutoPublish, type CutAdjust, type Host, type HostColor, type Language, type Show } from "./api";
 
 const COLOR_LABELS: Record<HostColor, string> = {
   blue: t("蓝"),
@@ -58,7 +58,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
   const [footer, setFooter] = useState(show.footer);
   const [hosts, setHosts] = useState<Host[]>(show.hosts.length ? show.hosts : [newHost(show, [])]);
   const [album, setAlbum] = useState(show.publish.album);
-  const [platforms, setPlatforms] = useState<Platform[]>(show.publish.platforms ?? []);
+  const [wish, setWish] = useState<AutoPublish[]>(show.publish.auto_wish ?? []);
   // 专有名词: one per line (or comma separated); hints for the transcript's proofreading, the audio wins
   const [terms, setTerms] = useState((show.terms ?? []).join("\n"));
   const [busy, setBusy] = useState(false);
@@ -75,7 +75,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
     setFooter(s.footer);
     setHosts(s.hosts.length ? s.hosts : [newHost(s, [])]);
     setAlbum(s.publish.album);
-    setPlatforms(s.publish.platforms ?? []);
+    setWish(s.publish.auto_wish ?? []);
     setTerms((s.terms ?? []).join("\n"));
     setRev(s.rev);
   };
@@ -94,9 +94,8 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
         language,
         footer,
         hosts,
-        publish: compact
-          ? { ximalaya: show.publish.ximalaya, album, platforms: show.publish.platforms ?? [] }
-          : { ximalaya: platforms.includes("ximalaya"), album, platforms },
+        // where the show is published stays as stored (no picker since 自动发布 即将推出, 2026-10-23)
+        publish: { ximalaya: show.publish.ximalaya, album, auto_wish: compact ? (show.publish.auto_wish ?? []) : wish },
         ...(compact ? {} : { terms: splitTerms(terms) }),
         rev,
       });
@@ -260,27 +259,38 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
             <span>{t("show notes 结尾")}</span>
             <textarea value={footer} maxLength={600} onChange={(e) => setFooter(e.target.value)} placeholder={t("每期 show notes 最后的一段话（可不填）")} />
           </label>
-          <fieldset className="show-field show-platforms" data-testid="show-platforms">
-            <legend>{t("节目发布在哪儿")}</legend>
+          <fieldset className="show-field show-auto-publish" data-testid="show-auto-publish">
+            <legend>{t("自动发布")}</legend>
+            <div className="row gap8 auto-publish-head">
+              <span className="soon-badge">{t("即将推出")}</span>
+              <span>{t("以后可以从 LACUNA 一键发布到播客平台。")}</span>
+            </div>
+            <small className="muted">{t("你想自动发到哪些平台？（可多选，帮我们决定先做哪个）")}</small>
             <div className="row gap8 wrap">
-              {PLATFORMS.map((p) => (
+              {AUTO_PUBLISH.map((p) => (
                 <label key={p} className="check">
                   <input
                     type="checkbox"
-                    checked={platforms.includes(p)}
+                    checked={wish.includes(p)}
                     onChange={(e) => {
                       setSaved(false);
-                      setPlatforms((ps) => (e.target.checked ? PLATFORMS.filter((x) => x === p || ps.includes(x)) : ps.filter((x) => x !== p)));
+                      setWish((ws) => (e.target.checked ? AUTO_PUBLISH.filter((x) => x === p || ws.includes(x)) : ws.filter((x) => x !== p)));
                     }}
-                    data-testid={`platform-${p}`}
+                    data-testid={`auto-publish-${p}`}
                   />
-                  {PLATFORM_LABELS[p]}
+                  {AUTO_PUBLISH_LABELS[p]}
                 </label>
               ))}
             </div>
-            <small className="muted">{t("导出的成品适合任何播客平台。这里选的平台决定「发布」这一步给你哪些提示。")}</small>
+            <small className="muted">
+              {t("想要的平台不在这里？")}{" "}
+              {/* the feedback page isn't designed yet: this link gets its target when it is */}
+              <a href="#" onClick={(e) => e.preventDefault()} data-testid="auto-publish-feedback">
+                {t("告诉我们")}
+              </a>
+            </small>
           </fieldset>
-          {platforms.includes("ximalaya") && (
+          {show.publish.ximalaya && (
             <label className="show-field">
               <span>{t("喜马拉雅专辑名")}</span>
               <input value={album} maxLength={80} onChange={(e) => setAlbum(e.target.value)} placeholder={t("用喜马拉雅发布时填，「上传喜马拉雅」页会提醒你选这个专辑")} />

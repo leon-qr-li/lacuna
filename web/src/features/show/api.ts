@@ -27,6 +27,17 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   other: t("其他平台"),
 };
 
+/** 自动发布 (即将推出): platforms a show would like LACUNA to publish to later (lacuna_app/show.py AUTO_PUBLISH);
+ *  only ones it can surely reach through the show's host. Saved for the admin's counts. */
+export type AutoPublish = "apple" | "spotify" | "youtube" | "amazon";
+export const AUTO_PUBLISH: AutoPublish[] = ["apple", "spotify", "youtube", "amazon"];
+export const AUTO_PUBLISH_LABELS: Record<AutoPublish, string> = {
+  apple: "Apple Podcasts",
+  spotify: "Spotify",
+  youtube: "YouTube",
+  amazon: "Amazon Music",
+};
+
 export interface Host {
   /** one letter, given by the server; never changes (empty for a host not saved yet) */
   tag: string;
@@ -43,7 +54,7 @@ export interface Show {
   footer: string;
   hosts: Host[];
   /** `platforms`: where the show is published (picks the 发布 step's hints and tabs; the export suits any platform) */
-  publish: { ximalaya: boolean; album: string; platforms?: Platform[] };
+  publish: { ximalaya: boolean; album: string; platforms?: Platform[]; auto_wish?: AutoPublish[] };
   /** 专有名词 of this project: hints for the transcript's proofreading (lacuna_app/transcript_fix.py) */
   terms?: string[];
   legacy: boolean;

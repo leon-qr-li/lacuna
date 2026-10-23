@@ -64,10 +64,18 @@ export const en: Dict = {
     "Xiaoyuzhou",
   "其他平台":
     "Other",
-  "节目发布在哪儿":
-    "Where the show is published",
-  "导出的成品适合任何播客平台。这里选的平台决定「发布」这一步给你哪些提示。":
-    "The export works on any podcast platform. The platforms you pick here decide which hints the Publish step shows.",
+  "自动发布":
+    "Automatic publishing",
+  "即将推出":
+    "Coming soon",
+  "以后可以从 LACUNA 一键发布到播客平台。":
+    "Soon you'll publish to podcast platforms from LACUNA in one click.",
+  "你想自动发到哪些平台？（可多选，帮我们决定先做哪个）":
+    "Which platforms would you like to publish to automatically? (Pick any; it helps us decide what comes first.)",
+  "想要的平台不在这里？":
+    "Don't see the platform you want?",
+  "告诉我们":
+    "Tell us",
   "节目资料卡":
     "Show profile",
   "让 LACUNA 更懂这个节目":

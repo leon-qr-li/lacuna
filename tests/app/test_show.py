@@ -122,3 +122,21 @@ def test_project_terms_saved_from_the_form_and_kept_when_left_out(tmp_path):
     assert c.put("/api/show", json=body | {"terms": ["王家卫", " 花样年华 ", ""]}).json()["terms"] == ["王家卫", "花样年华"]
     assert c.put("/api/show", json=body).json()["terms"] == ["王家卫", "花样年华"]
     assert c.put("/api/show", json=body | {"terms": []}).json()["terms"] == []
+
+
+def test_auto_publish_wishes_saved_kept_and_only_known_platforms(tmp_path):
+    """自动发布 即将推出: the platforms a show would like are stored (for the admin's counts), unknown ones
+    (喜马拉雅 has no upload API) dropped, and a save that leaves them out keeps them."""
+    ws, leon = setup(tmp_path)
+    s = leon.get("/api/show").json()
+    assert s["publish"]["auto_wish"] == [] and s["auto_publish"] == ["apple", "spotify", "youtube", "amazon"]
+    body = {k: s[k] for k in ("show_name", "about", "language", "footer", "hosts")} | {"rev": s["rev"]}
+    r = leon.put("/api/show", json=body | {"publish": {"ximalaya": True, "album": "洛城二三事",
+                                                         "auto_wish": ["amazon", "ximalaya", "apple"]}})
+    assert r.status_code == 200, r.text
+    got = r.json()["publish"]
+    assert got["auto_wish"] == ["apple", "amazon"]
+    assert got["ximalaya"] is True and got["platforms"] == ["ximalaya", "xiaoyuzhou"]   # where it's published: as before
+    r = leon.put("/api/show", json=body | {"rev": r.json()["rev"], "publish": {"ximalaya": True, "album": "洛城二三事"}})
+    assert r.json()["publish"]["auto_wish"] == ["apple", "amazon"]
+    assert json.loads((ws / show.FILE).read_text())["publish"]["auto_wish"] == ["apple", "amazon"]
