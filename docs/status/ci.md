@@ -1,5 +1,9 @@
 # CI speed (2026-10-18)
 
+**2026-10-23: Linux only.** Windows and macOS removed from the matrix; Playwright retries a failed test
+once in CI (decision `docs/decisions/2026-10-23-ci-linux-only.md`). Jobs now: `pytest`, `e2e 1/2`,
+`e2e 2/2`, `CI ok`. The per-OS notes below are history.
+
 Decision: `docs/decisions/2026-10-18-ci-speedup.md`. Workflow: `.github/workflows/ci.yml`.
 
 Jobs per OS (windows / macos / ubuntu): `pytest <os>` (only when Python changed, `-n auto`),

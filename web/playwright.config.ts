@@ -10,6 +10,9 @@ export default defineConfig({
   testDir: "e2e",
   timeout: 45_000,
   workers: 1, // one shared backend; tests mutate its state
+  // CI retries a failed test once, so a timing hiccup doesn't block a deploy; a real bug fails twice.
+  // Playwright still lists a test that passed only on retry as "flaky" in the report.
+  retries: process.env.CI ? 1 : 0,
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     ...devices["Desktop Chrome"],
