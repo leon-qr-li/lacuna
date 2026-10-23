@@ -168,6 +168,19 @@ def test_the_sample_publish_pack_and_covers_come_without_the_ai(tmp_path):
     assert len(view["variants"]) == 4 and not view["errors"]
 
 
+def test_the_sample_ab_plays_one_hosts_sentence(tmp_path):
+    """Leon 2026-10-23: the first review item's A/B is 小林's sentence only, not 5 s either side with 阿乔 cut off."""
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
+    sam.post("/api/onboarding/sample", json={"lang": "zh"})
+    ep = sam.get("/api/episodes/SAMPLE_01").json()
+    first = min((e for e in ep["edits"] if e["ai_category"] == "repetition"), key=lambda e: e["t"])
+    ab = sam.get(f"/api/episodes/SAMPLE_01/edits/{first['id']}/ab").json()
+    # turn 0 is 0.6–8.14 s raw (8.74 s is where 阿乔 starts): A is that sentence, B the same less the repeat
+    assert ab["before"]["start"] >= 0.3 and ab["before"]["start"] + ab["before"]["duration"] <= 8.6
+    assert ab["after"]["duration"] < ab["before"]["duration"] - 0.5
+
+
 def test_the_tour_position_is_kept_and_reset(tmp_path):
     leon = setup(tmp_path)
     sam = join(leon, "sam@example.com")

@@ -34,40 +34,50 @@ test("the whole tour, step by step, ends with before / after", async ({ page }) 
   const tour = page.getByTestId("tour");
   const ok = () => page.getByTestId("tour-ok").click();
   const seen: string[] = [];
-  for (let guard = 0; guard < 100; guard++) {
+  // LACUNA acts only after 知道了; then the next step comes, or the step's result with 知道了 again
+  const moved = (s: string) =>
+    expect
+      .poll(async () => (await tour.getAttribute("data-step")) !== s || (await tour.getAttribute("data-phase")) === "result", { timeout: 60_000 })
+      .toBe(true);
+  for (let guard = 0; guard < 40; guard++) {
     const s = (await tour.getAttribute("data-step"))!;
     seen.push(s);
     if (s === "done") break;
-    await page.waitForTimeout(300);
-    switch (s) {
-      case "raw":
-        await page.getByTestId("tour-raw-play").click();
-        await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.1);
-        // whatever plays can be stopped from the pill (the page itself is masked)
-        await page.getByTestId("tour-pause").click();
-        await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(true);
-        await expect(page.getByTestId("tour-pause")).toHaveCount(0);
-        break;
-      case "rlist":
-        // locked: even the lit part lands on the mask
-        await page.getByTestId("review-list").click({ force: true });
-        await page.getByRole("button", { name: /^保留/ }).click({ force: true });
-        expect((await (await page.request.get("/api/episodes/SAMPLE_01")).json()).pending_review).toBe(3);
-        break;
-      case "cprompt":
-        await expect(page.locator("form.chat-form textarea")).toHaveValue("把阿乔问演员名字的那两句删掉");
-        break;
-      case "dlanes":
-        await expect(page.getByTestId("ml-sel").first()).toBeVisible({ timeout: 20_000 });
-        break;
+    if (s === "raw") {
+      await page.getByTestId("tour-raw-play").click();
+      await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.currentTime)).toBeGreaterThan(0.1);
+      // whatever plays can be stopped from the pill (the page itself is masked)
+      await page.getByTestId("tour-pause").click();
+      await expect.poll(() => page.getByTestId("tour-raw-audio").evaluate((a: HTMLAudioElement) => a.paused)).toBe(true);
+      await expect(page.getByTestId("tour-pause")).toHaveCount(0);
+      await ok();
+      await moved(s);
+      continue;
     }
-    // 知道了 waits while LACUNA is still doing the step
-    await expect(page.getByTestId("tour-ok")).toBeEnabled({ timeout: 30_000 });
+    // read first: the bubble is up and nothing has been done yet
+    await expect(page.getByTestId("tour-bubble")).toBeVisible();
+    await expect(tour).toHaveAttribute("data-phase", "read");
+    if (s === "rab") {
+      // locked: even the lit part lands on the mask
+      await page.getByTestId("review-list").click({ force: true });
+      await page.getByRole("button", { name: /^保留/ }).click({ force: true });
+      expect((await (await page.request.get("/api/episodes/SAMPLE_01")).json()).pending_review).toBe(3);
+    }
+    if (s === "csend") {
+      await page.waitForTimeout(1000);
+      await expect(page.locator("form.chat-form textarea")).toHaveValue("");
+    }
+    if (s === "lpop") await expect(page.getByTestId("tour-bubble")).toContainText(/现在画面里有 \d 处（整集共 5 处）/);
     await ok();
-    await expect(tour).not.toHaveAttribute("data-step", s, { timeout: 30_000 });
+    await moved(s);
+    if ((await tour.getAttribute("data-step")) === s) {
+      await expect(page.getByTestId("tour-ok")).toBeVisible();
+      await ok();
+      await expect(tour).not.toHaveAttribute("data-step", s, { timeout: 30_000 });
+    }
   }
   // every step was shown once, in order, and nothing was skipped
-  expect(seen.length).toBe(31); // 30 steps, then done
+  expect(seen.length).toBe(17); // 16 steps, then done
   expect(new Set(seen).size).toBe(seen.length);
   const done = page.getByTestId("tour-done");
   await expect(done).toContainText("审阅了 3 处");
