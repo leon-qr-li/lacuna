@@ -119,6 +119,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "{who} 邀请你加入「{project}」": "{who} invited you to “{project}”",
     "你被邀请以「{role}」身份加入这个节目。": "You're invited to join this show as {role}. ",
     "你被邀请加入这个节目。": "You're invited to join this show. ",
+    "新节目": "New show",
     "你会有一个自己的节目。": "You'll have a show of your own. ",
     "LACUNA Studio 是一间完整的播客工作室，一期节目从导入录音到发布上线，每一步都在这里完成：": "LACUNA Studio is a complete podcast studio: every step of an episode, from importing the recording to publishing it, happens here.",
     "：": ": ",
