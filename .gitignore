@@ -12,3 +12,6 @@ web/test-results/
 web/e2e/.fixtures/
 web/playwright-report/
 /dist/
+
+# the sample show's CC0 music (licences in licenses.json)
+!lacuna_app/sample_music/*.mp3
