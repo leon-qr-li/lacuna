@@ -94,7 +94,7 @@ test("节目设置 is on the show's home; archive then delete for good right the
   await page.getByTestId("dialog").getByRole("button", { name: "归档", exact: true }).click();
   await page.getByTestId("project-readonly").getByTestId("project-settings-delete").click();
   const dlg = page.getByTestId("project-delete-dialog");
-  await expect(dlg).toContainText("60 天内可以联系 LACUNA 找回");
+  await expect(dlg).toContainText("不能恢复");   // the 60 days are for LACUNA staff only
   await dlg.getByTestId("project-delete-name").fill("试播");
   await dlg.getByTestId("project-delete-confirm").click();
   await expect.poll(async () => (await (await page.request.get("/api/spaces")).json()).mine.map((m: { name: string }) => m.name)).not.toContain("试播");
