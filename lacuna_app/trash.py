@@ -111,6 +111,13 @@ class Trash:
     def drop_user(self, email: str) -> None:
         self.db.set_meta(USER_KEY + email, "")
 
+    def drop(self, tid: str) -> None:
+        """A deleted show goes for good now, not after 60 days (the admin's 立即清除, owner only)."""
+        d = self.dir / _id(tid)
+        if not (d / "record.json").is_file():
+            raise TrashError("not found")
+        shutil.rmtree(d, ignore_errors=True)
+
     # -- both
     def items(self) -> list[dict]:
         """What can still be brought back, newest first, with the days left."""

@@ -197,17 +197,18 @@ def test_plan_changes_nothing(api):
 def test_apply_builds_everything_once(api, capsys):
     a, run = api
     run("apply")
-    assert len(a.tunnels) == 1 and len(a.dns) == 2 and all(r["proxied"] for r in a.dns)
+    assert len(a.tunnels) == 1 and len(a.dns) == 3 and all(r["proxied"] for r in a.dns)
     assert {r["content"] for r in a.dns} == {f"{a.tunnels[0]['id']}.cfargotunnel.com"}
     assert [i["type"] for i in a.idps] == ["onetimepin"]
     assert [r["email"]["email"] for r in a.groups[0]["include"]] == ["leon@example.com", "pei@example.com"]
     assert a.apps[0]["domain"] == provision.DOMAIN and len(a.apps[0]["policies"]) == 2
     assert a.apps[1]["domain"] == provision.PREVIEW_DOMAIN and a.apps[1]["policies"] == a.apps[0]["policies"]
     # only the version path is open to everyone, on each site
-    assert [x["domain"] for x in a.apps[2:]] == [f"{provision.DOMAIN}/api/version", f"{provision.PREVIEW_DOMAIN}/api/version"]
+    assert a.apps[2]["domain"] == provision.ADMIN_DOMAIN
+    assert [x["domain"] for x in a.apps[3:]] == [f"{provision.DOMAIN}/api/version", f"{provision.PREVIEW_DOMAIN}/api/version"]
     bypass = [p for p in a.policies if p["decision"] == "bypass"]
     assert len(bypass) == 1 and bypass[0]["include"] == [{"everyone": {}}]
-    assert all(x["policies"] == [{"id": bypass[0]["id"], "precedence": 1}] for x in a.apps[2:])
+    assert all(x["policies"] == [{"id": bypass[0]["id"], "precedence": 1}] for x in a.apps[3:])
     assert a.buckets == [provision.BUCKET] and a.registry and len(a.volumes) == 1
     assert a.firewalls[0]["inbound_rules"] == []
     assert len(a.droplets) == 1
@@ -236,7 +237,7 @@ def test_staging_site_has_its_own_address_door_and_data(api):
     """decision staging-site: same server, same invite list, its own Access audience, no Access token"""
     a, run = api
     run("apply")
-    assert {r["name"] for r in a.dns} == {provision.DOMAIN, provision.PREVIEW_DOMAIN}
+    assert {r["name"] for r in a.dns} == {provision.DOMAIN, provision.PREVIEW_DOMAIN, provision.ADMIN_DOMAIN}
     routes = {r.get("hostname"): r["service"] for r in a.ingress}
     assert routes[provision.DOMAIN] == "http://lacuna:8765"
     assert routes[provision.PREVIEW_DOMAIN] == "http://lacuna-preview:8765"
@@ -247,11 +248,29 @@ def test_staging_site_has_its_own_address_door_and_data(api):
     assert env["CF_ACCESS_AUD"] == a.apps[1]["aud"] != a.apps[0]["aud"]
     assert env["LACUNA_PUBLIC_URL"] == f"https://{provision.PREVIEW_DOMAIN}" and env["LACUNA_STAGING"] == "1"
     assert "CF_ACCESS_API_TOKEN" not in env and "CF_ACCESS_API_TOKEN=" in real and "LACUNA_STAGING" not in real
+    assert "LACUNA_ADMIN_HOST" not in env and "CF_ADMIN_ACCESS_AUD" not in env     # no admin on staging
     assert files["/etc/lacuna/preview-image"].strip().endswith("/lacuna:preview")
     assert "/etc/systemd/system/lacuna-update-preview.timer" in files
     unit = files["/etc/systemd/system/lacuna-update-preview.service"]
     assert "LACUNA_DATA=/data/preview" in unit and "LACUNA_SEED_FROM=/data/workspace" in unit
     assert "--exclude /data/preview" in files["/usr/local/bin/lacuna-backup"]
+
+
+def test_admin_site_lets_in_only_the_owner(api):
+    """decision admin-site: admin.<domain> goes to the real container behind its own Access application:
+    the first ACCESS_EMAILS address only, 8-hour sessions, no service tokens, no public paths"""
+    a, run = api
+    run("apply")
+    routes = {r.get("hostname"): r["service"] for r in a.ingress}
+    assert routes[provision.ADMIN_DOMAIN] == "http://lacuna:8765"
+    app = next(x for x in a.apps if x["domain"] == provision.ADMIN_DOMAIN)
+    assert app["name"] == provision.ADMIN_APP and app["session_duration"] == "8h"
+    assert [x["domain"] for x in a.apps if x["domain"].startswith(provision.ADMIN_DOMAIN)] == [provision.ADMIN_DOMAIN]
+    pols = [next(p for p in a.policies if p["id"] == x["id"]) for x in app["policies"]]
+    assert [(p["decision"], p["include"]) for p in pols] == [("allow", [{"email": {"email": "leon@example.com"}}])]
+    env = dict(line.split("=", 1) for line in user_data(a)["/etc/lacuna/lacuna.env"].splitlines())
+    assert env["LACUNA_ADMIN_HOST"] == provision.ADMIN_DOMAIN
+    assert env["CF_ADMIN_ACCESS_AUD"] == app["aud"] != env["CF_ACCESS_AUD"]
 
 
 def test_registry_gc_keeps_the_site_and_staging_images(monkeypatch):
@@ -546,6 +565,8 @@ def test_open_door_with_recreate_lets_everyone_reach_the_apps_own_sign_in(api, c
     assert _main_policies(a)[0]["include"] == [{"everyone": {}}]
     staging = next(x for x in a.apps if x["domain"] == provision.PREVIEW_DOMAIN)
     assert next(p for p in a.policies if p["id"] == staging["policies"][0]["id"])["decision"] == "allow"
+    admin = next(x for x in a.apps if x["domain"] == provision.ADMIN_DOMAIN)     # the admin never opens
+    assert next(p for p in a.policies if p["id"] == admin["policies"][0]["id"])["decision"] == "allow"
     assert len(a.widgets) == 1 and a.widgets[0]["domains"] == [provision.DOMAIN]
     env = _env(a)
     assert env["LACUNA_ACCESS"] == "off" and env["TURNSTILE_SITE_KEY"] == a.widgets[0]["sitekey"]

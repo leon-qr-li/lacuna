@@ -73,13 +73,21 @@ def register(app, ctx) -> None:
         else:
             threading.Thread(target=send, name=f"{what}-mail", daemon=True).start()
 
+    def review_link(request: Request, tab: str) -> str:
+        """Where the owner handles a request: the admin site's 邀请与申请 when there is one (decision
+        admin-site), otherwise the main site's members settings."""
+        admin = getattr(app.state, "admin_url", None)
+        if admin:
+            return f"{admin}/access?tab={tab}"
+        origin = app.state.invite_origin(request) if hasattr(app.state, "invite_origin") else ""
+        return f"{origin.rstrip('/')}/#/settings/members"
+
     def notify(row: dict, request: Request) -> None:
         owner = next((u for u in auth.users.values() if u["role"] == "owner"), None)
         if not owner:
             return
-        origin = app.state.invite_origin(request) if hasattr(app.state, "invite_origin") else ""
         with speaking(owner.get("lang") or "zh"):
-            m = notice_mail.access_request(row["email"], row["show"], row["note"], f"{origin.rstrip('/')}/#/settings/members",
+            m = notice_mail.access_request(row["email"], row["show"], row["note"], review_link(request, "trial"),
                                            row.get("tracks"))
         mail(owner["email"], m, "access-request")
 
@@ -105,9 +113,8 @@ def register(app, ctx) -> None:
                       ("ar_" + secrets.token_hex(6), email, now, "new", sitedb.dumps(row)))
         owner = next((u for u in auth.users.values() if u["role"] == "owner"), None)
         if owner:
-            origin = app.state.invite_origin(request) if hasattr(app.state, "invite_origin") else ""
             with speaking(owner.get("lang") or "zh"):
-                m = notice_mail.collab_request(email, row["show"], by, f"{origin.rstrip('/')}/#/settings/members")
+                m = notice_mail.collab_request(email, row["show"], by, review_link(request, "collab"))
             mail(owner["email"], m, "collab-request")
 
     def collab_requests_of(sid: str) -> list[dict]:

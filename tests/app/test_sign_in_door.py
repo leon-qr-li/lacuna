@@ -119,7 +119,8 @@ def test_without_access_in_front_the_app_sign_in_is_the_door(tmp_path, monkeypat
     assert c.get("/api/auth/status").status_code == 200           # no Access token needed
     assert c.get("/api/episodes").status_code == 401              # but the app's sign-in is
     assert c.post("/api/app/api-key", json={"key": "x"}).status_code == 404   # cloud rules still hold
-    assert app.user_middleware[0].cls.__name__ == "CloudGate"
+    # the admin host is split off first (its own Access audience, decision admin-site), then the main door
+    assert [m.cls.__name__ for m in app.user_middleware[:2]] == ["AdminHost", "CloudGate"]
 
 
 def test_request_received_mail_speaks_the_language_it_was_asked_in(tmp_path):

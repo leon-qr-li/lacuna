@@ -158,7 +158,12 @@ def test_prompts_rate_after_the_first_export_pmf_after_the_third_at_most_once_a_
     assert sam.get("/api/feedback/prompt").json()["ask"] == "pmf"
     sam.post("/api/feedback/prompt", json={"kind": "pmf", "outcome": "sent", "answer": {"choice": "very"}})
     clock.t += PROMPT_GAP_S + 1
-    assert sam.get("/api/feedback/prompt").json()["ask"] is None          # both answered
+    # 推荐意愿 0–10 after the 3rd export (decision admin-site), then every 3 months
+    assert sam.get("/api/feedback/prompt").json()["ask"] == "nps"
+    assert sam.post("/api/feedback/prompt", json={"kind": "nps", "outcome": "sent", "answer": {"score": 11}}).status_code == 422
+    assert sam.post("/api/feedback/prompt", json={"kind": "nps", "outcome": "sent", "answer": {"score": 9}}).status_code == 200
+    clock.t += PROMPT_GAP_S + 1
+    assert sam.get("/api/feedback/prompt").json()["ask"] is None          # all answered
     answers = {i["kind"]: i for i in leon.get("/api/feedback/all").json()["items"]}
     assert answers["rate"]["stars"] == 4 and answers["rate"]["saved"] == "1-2h" and answers["pmf"]["choice"] == "very"
     # prompt answers are not 我的反馈
@@ -206,25 +211,3 @@ def test_a_new_show_keeps_its_three_answers_for_the_owner(tmp_path):
     item = leon.get("/api/feedback/all").json()["items"][0]
     assert item["profile"]["region"] == "eu" and item["profile"]["editing"] == "new"
 
-
-def test_the_server_script_answers_for_the_owner_until_the_admin_exists(tmp_path, capsys):
-    """Leon's 验收 (decision 2026-10-24-user-feedback): Claude replies from the server's command line; the person
-    sees it exactly as from the admin later."""
-    from scripts.feedback_admin import main
-    leon, _ = setup(tmp_path)
-    sam = join(leon, "sam@example.com", lang="en")
-    fid = sam.post("/api/feedback", json={"kind": "bug", "text": "Export stuck at 80%"}).json()["id"]
-    ws = str(tmp_path / "ws")
-    assert main(["--workspace", ws, "list", "--email", "sam@example.com"]) == 0
-    assert fid in capsys.readouterr().out
-    assert main(["--workspace", ws, "show", fid]) == 0
-    assert "Export stuck at 80%" in capsys.readouterr().out
-    mailer = FakeMailer()
-    assert main(["--workspace", ws, "reply", fid, "--text", "Fixed, thanks!", "--status", "fixed"], mailer=mailer) == 0
-    assert [m["to"] for m in mailer.outbox] == ["sam@example.com"]
-    assert mailer.outbox[0]["subject"] == "Your LACUNA feedback has a reply" and "Fixed, thanks!" in mailer.outbox[0]["text"]
-    got = sam.get("/api/feedback/mine").json()
-    assert got["unread"] == 1 and got["items"][0]["status"] == "fixed"
-    assert main(["--workspace", ws, "reply", "fb_nope", "--status", "fixed"], mailer=mailer) == 1
-    assert main(["--workspace", ws, "reset-prompts", "nobody@example.com"]) == 1
-    assert main(["--workspace", ws, "reset-prompts", "sam@example.com"]) == 0

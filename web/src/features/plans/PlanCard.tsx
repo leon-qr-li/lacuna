@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { t } from "../../i18n";
 import { plansApi, type MyPlan, type PlanLimits } from "./api";
+import { MoreHours } from "./MoreHours";
 
 const many = (n: number | null) => (n === null ? t("不限") : String(n));
 const hours = (p: PlanLimits) => (p.hours_once ? t("一次性 {n} 小时", { n: p.hours ?? 0 }) : t("每月 {n} 小时", { n: many(p.hours) }));
@@ -29,6 +30,7 @@ export function PlanCard() {
           <Meter label={t("音频时长")} value={p.hours_used === null ? "—" : String(p.hours_used)} of={hours(lim)} note={p.hours_used === null ? t("计时稍后开放") : null} />
           <Meter label={t("节目数")} value={String(p.shows)} of={t("最多 {n} 个", { n: many(lim.shows) })} testid="plan-shows" />
         </div>
+        <MoreHours />
         {p.collaborators.length > 0 && (
           <>
             <h3>{t("每个节目的协作者")}</h3>

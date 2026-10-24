@@ -14,3 +14,14 @@
 .plan-table th small { display: block; font-weight: 400; color: var(--accent-ink); }
 .plan-table th:first-child, .plan-table td:first-child { text-align: left; color: var(--muted); }
 .plan-table .is-mine { background: var(--accent-soft); }
+
+/* 想要更多时长 (MoreHours.tsx) */
+.plan-more { margin-top: 14px; }
+.plan-more-form { display: flex; flex-direction: column; gap: 10px; max-width: 420px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-sm); }
+.plan-more-form label:not(.row) { display: flex; flex-direction: column; gap: 4px; }
+.plan-more-form input[type="number"] { width: 120px; }
+.plan-more-list { list-style: none; margin: 10px 0 0; padding: 0; max-width: 420px; }
+.plan-more-list li { display: flex; gap: 12px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.plan-more-list li span:first-child { min-width: 64px; }
+.plan-more-st { margin-left: auto; font-size: 12px; }
+.plan-more-st.st-approved { color: var(--ok, #0a734d); }

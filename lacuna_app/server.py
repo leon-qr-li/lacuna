@@ -147,6 +147,7 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     adapter = adapter or make_adapter("auto")
     app = FastAPI(title="LACUNA Studio", docs_url="/api/docs", openapi_url="/api/openapi.json")
     ctx = AppContext(app, ws, adapter, services)
+    ctx.web_dist = web_dist
 
     @app.exception_handler(ConflictError)
     async def _conflict(_req, exc: ConflictError):

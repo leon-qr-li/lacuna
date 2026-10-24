@@ -188,7 +188,8 @@ def test_cloud_access_check_comes_first_on_every_path(tmp_path, monkeypatch):
     for path in ("/", "/api/spaces", "/api/episodes", "/api/auth/status", "/api/whatever", "/nothing/here"):
         assert c.get(path).status_code == 403, path
     assert c.post("/api/spaces/switch", json={"id": "main"}).status_code == 403
-    assert app.user_middleware[0].cls.__name__ == "CloudGate"       # outermost
+    # outermost after the admin-host split (decision admin-site), which only takes the admin address
+    assert [m.cls.__name__ for m in app.user_middleware[:2]] == ["AdminHost", "CloudGate"]
 
 
 def test_anyone_starts_a_project_and_invites_collaborators(tmp_path):

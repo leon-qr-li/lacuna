@@ -21,4 +21,16 @@ export const en: Dict = {
   "当前": "Current",
   "不能邀请": "None",
   "想换套餐，请回复邀请邮件联系我们。": "To change plans, reply to your invite email.",
+  // 想要更多时长 (MoreHours.tsx)
+  "等 LACUNA 处理": "Waiting for LACUNA",
+  "已批准": "Approved",
+  "没批": "Declined",
+  "申请已发出，等 LACUNA 处理": "Request sent, waiting for an answer",
+  "想要更多时长": "Ask for more hours",
+  "这个月想多要几小时": "How many more hours this month",
+  "说说为什么（可以不写）": "Why? (optional)",
+  "以后正式收费时，我愿意为更多时长付费": "When LACUNA starts charging, I'd pay for more hours",
+  "发出申请": "Send request",
+  "每一条都有人亲自看，结果会发邮件告诉你。": "Every request is read by a person; you'll get an email with the answer.",
+  "{n} 小时": "{n} h",
 };
