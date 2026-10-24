@@ -1,0 +1,4 @@
+/* 回收区 card (设置 → 成员与邀请) */
+.trash-list { margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.trash-list li { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: var(--r-sm); background: var(--hover); }
+.trash-list li .grow { min-width: 0; overflow-wrap: anywhere; }

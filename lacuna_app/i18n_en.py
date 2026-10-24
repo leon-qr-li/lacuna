@@ -493,7 +493,6 @@ EN: dict[str, str | tuple[str, str]] = {
     "这一集不在专辑里": "This episode isn't in an album",
     "这个节目已归档，只能查看。恢复后才能修改。": "This show is archived and read-only. Restore it to make changes.",
     "这不是一张能打开的图片": "That isn't an image that can be opened",
-    "这个节目是 LACUNA 的主节目，不能删除": "This is LACUNA's main show and can't be deleted",
     "这个节目还没有图片": "This show has no picture yet",
     "图片太大了（最大 10 MB）": "The image is too big (10 MB at most)",
     "只有节目的创建者或站长能永久删除节目": "Only the show's creator or LACUNA's owner can delete a show for good",
@@ -592,6 +591,11 @@ EN: dict[str, str | tuple[str, str]] = {
     "所有人混在一条录音里": "Everyone mixed in one recording",
     "不确定": "Not sure",
     "录音": "Recordings",
+    # 回收区 (routes/trash.py, spaces.py)
+    "只有站长和管理员能看回收区": "Only the site owner and admins can open the trash",
+    "回收区里没有这个节目": "That show isn't in the trash",
+    "回收区里没有这个账号": "That account isn't in the trash",
+    "这个节目已经在了": "That show is already back",
     # 入门 and LACUNA 示例节目 (routes/onboarding.py)
     "示例节目只给你自己练手，不能邀请别人": "The sample show is for your own practice; you can't invite anyone to it",
     "你还没有示例节目": "You don't have a sample show yet",

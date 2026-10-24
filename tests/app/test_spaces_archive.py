@@ -104,7 +104,7 @@ def test_delete_for_good(tmp_path):
     leon.post(f"/api/spaces/{sid}/members", json={"email": "leon@example.com", "role": "admin"})
     assert row(beta, sid)["can_delete"] is True
     assert row(beta, own)["can_delete"] is True
-    assert row(leon, "main")["can_delete"] is False                # the main project never
+    assert row(leon, "main")["can_delete"] is True                 # the first show too (Leon 2026-10-24)
     # only from 已归档
     r = beta.request("DELETE", f"/api/spaces/{sid}", json={"confirm": "要删的"})
     assert r.status_code == 409

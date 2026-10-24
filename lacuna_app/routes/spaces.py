@@ -265,8 +265,8 @@ def register(app, ctx) -> None:
             raise HTTPException(403, tr("这个节目已归档，只能查看。恢复后才能修改。"))
 
     def may_delete(email: str, sid: str) -> bool:
-        """Deleting for good: the project's creator or LACUNA's owner, never the main project."""
-        return sid != MAIN and (spaces.creator(sid) == email or auth.role(email) == "owner")
+        """Deleting for good: the project's creator or LACUNA's owner. Every show alike, the first one too."""
+        return spaces.creator(sid) == email or auth.role(email) == "owner"
 
     def invite_space(actor: str, space: str | None, role: str | None) -> dict:
         """What an invite (routes/auth.py) puts its new account into."""
@@ -508,7 +508,7 @@ def register(app, ctx) -> None:
                 auth.revoke_invite(i["id"])
         with lock:
             children.pop(sid, None)
-        run(lambda: spaces.delete(sid))
+        run(lambda: spaces.delete(sid, by=email))
         res = JSONResponse(overview(request, email) | {"deleted": sid})
         if request.cookies.get(SPACE_COOKIE) == sid:
             res.delete_cookie(SPACE_COOKIE, path="/")

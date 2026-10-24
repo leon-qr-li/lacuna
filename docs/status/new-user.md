@@ -86,6 +86,10 @@ the import hint (`Checklist.tsx`, `ProfileCard.tsx`, `markStep`, `/api/onboardin
 首页 (`features/projects/SettingsLink.tsx`), 所有节目 always in the menu, 永久删除 in an archived show's settings.
 Tests: `test_the_home_checklist_is_gone`, `onboarding.spec.ts`, `project_archive.spec.ts`.
 
+## 回收区 (2026-10-24)
+Decision `docs/decisions/2026-10-24-deleted-kept-60-days.md`: `lacuna_app/trash.py`, `routes/trash.py`,
+`web/src/features/trash/`; main show deletable. Tests `tests/app/test_trash.py`, `web/e2e/project_archive.spec.ts`.
+
 ## Open
 - BEFORE BETA (Leon 2026-10-23, must): Leon + Pei record the sample (zh + en); then polish and lock every tour
   detail (words, cuts, show notes, covers; maybe a pre-made export). For now only the flow and concept are final.

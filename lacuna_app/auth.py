@@ -215,6 +215,7 @@ class Auth:
         # the site is in beta (routes/new_members.py: 「新成员需站长批准」 on): invite mails say so
         self.beta: Callable[[], bool] = lambda: False
         self.on_deleted: list[Callable[[str], None]] = []
+        self.on_deleting: list[Callable[[str, dict, str], None]] = []    # (email, its record, who) before it goes
         self.setup_code: str | None = None
         if self.cloud and not self.users:
             self._make_setup_code()
@@ -715,11 +716,21 @@ class Auth:
         """Removes the account only; what they made stays where it is."""
         with self.lock:
             self._manage(actor, target)
+            for f in self.on_deleting:
+                f(target, dict(self.users[target]), actor)
             del self.users[target]
             self._end_all(target)
             self._save_users()
         for f in self.on_deleted:
             f(target)
+
+    def restore_user(self, record: dict) -> None:
+        """A deleted account back from the 回收区 (trash.py), as it was; it signs in again."""
+        with self.lock:
+            if record["email"] in self.users:
+                raise AuthError(tr("这个邮箱已经有账号了"), 409)
+            self.users[record["email"]] = record
+            self._save_users()
 
     # -- invites (owner / admin)
     def list_invites(self) -> list[dict]:

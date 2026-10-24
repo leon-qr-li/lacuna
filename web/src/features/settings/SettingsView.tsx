@@ -11,6 +11,7 @@ import { SystemTermsCard } from "../transcript-fix/SystemTermsCard";
 import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { OnboardingCard } from "../onboarding/OnboardingCard";
+import { TrashCard } from "../trash/TrashCard";
 
 const KEY_SOURCE: Record<string, string> = {
   env: t("环境变量"),
@@ -169,6 +170,7 @@ export function SettingsView() {
           {cur.id === "plan" && st && <PlanCard />}
           {cur.id === "account" && st && <SecurityCard st={st} setSt={auth.setSt} />}
           {cur.id === "members" && st && <MembersCard me={st.email!} role={st.role!} />}
+          {cur.id === "members" && st && <TrashCard />}
           {cur.id === "mail" && st && <MailCard st={st} setSt={auth.setSt} />}
           {cur.id === "ai" && (
             <>

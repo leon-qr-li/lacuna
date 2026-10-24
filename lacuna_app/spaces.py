@@ -18,7 +18,8 @@ Site owner and admins see the list of shows but not what is in them, unless a sh
 Each project has a square picture (uploaded, ``<root>/auth/pictures/<id>.png``) or else its own solid colour
 (``color``, picked at creation so projects look different). A project manager can archive it: it moves to
 「已归档」 and is read-only for everyone until restored. Only its creator or the site owner can then delete it
-for good, typing its name (decision projects-archive-delete).
+for good, typing its name (decision projects-archive-delete). "For good" keeps it 60 days in the 回收区
+(trash.py), where the site owner or admins can restore it. Every show, the first one ("main") included.
 """
 from __future__ import annotations
 
@@ -34,6 +35,7 @@ from . import show
 from .auth import AuthError
 from .i18n import tr
 from .store import read_json
+from .trash import Trash
 
 MAIN = "main"
 SPACE_RANK = {"viewer": 1, "editor": 2, "admin": 3}
@@ -51,6 +53,7 @@ class Spaces:
         self.now = clock
         self.lock = threading.RLock()
         self.db = sitedb.at(self.root)
+        self.trash = Trash(self.root, self.db, clock)
         self.staff: Callable[[str], bool] = lambda email: False    # site owner / admin (set by routes/spaces.py)
         if self.db.meta("shows_from_json") is None:
             data = read_json(self.file) if self.file.exists() else None
@@ -81,7 +84,7 @@ class Spaces:
         """First start with workspaces: the existing folder becomes "main", with every existing account in
         it (owner and admins as workspace admins, the rest as editors), so nothing changes for them."""
         with self.lock:
-            if MAIN in self.spaces or not users:
+            if MAIN in self.spaces or not users or self.db.meta("main_deleted"):
                 return
             owner = next((u for u in users if u["role"] == "owner"), users[0])
             self.spaces[MAIN] = {"id": MAIN, "name": owner["email"].split("@")[0], "created": self.now(),
@@ -292,18 +295,41 @@ class Spaces:
                 s.pop("archived", None)
             self._save()
 
-    def delete(self, sid: str) -> None:
-        """For good: the project's folder, picture and record. MAIN (the installation's own folder) never."""
+    def delete(self, sid: str, by: str | None = None) -> None:
+        """For good: the project's folder, picture and record go to the 回收区 for 60 days (trash.py). A sample
+        show is only a copy: it goes at once."""
         with self.lock:
-            self._get(sid)
-            if sid == MAIN:
-                raise AuthError(tr("这个节目是 LACUNA 的主节目，不能删除"))
+            s = self._get(sid)
             folder = self.path(sid)
-            del self.spaces[sid]
-            self._save()
+            if self.sample(sid):
+                del self.spaces[sid]
+                self._save()
+                if folder.is_dir() and folder.parent == self.root / "spaces":
+                    shutil.rmtree(folder, ignore_errors=True)
+            else:
+                self.trash.put_show(sid, s, folder, self.picture_file(sid), by)
+                del self.spaces[sid]
+                if sid == MAIN:
+                    self.db.set_meta("main_deleted", str(self.now()))    # adopt() must not make it again
+                self._save()
         self.picture_file(sid).unlink(missing_ok=True)
-        if folder.is_dir() and folder.parent == self.root / "spaces":
-            shutil.rmtree(folder, ignore_errors=True)
+
+    def restore(self, tid: str) -> str:
+        """Back from the 回收区: files where they were, the record as it was (archived, so nothing surprises
+        its members; a manager restores it from there). Returns the show's id."""
+        with self.lock:
+            sid = self.trash.show(tid)["sid"]
+            if sid in self.spaces:
+                raise AuthError(tr("这个节目已经在了"), 409)
+            rec = self.trash.take_show(tid, self.picture_file(sid))
+            self.spaces[sid] = rec
+            if sid == MAIN:
+                self.db.set_meta("main_deleted", "")
+            self._save()
+            return sid
+
+    def memberships(self, email: str) -> dict[str, str]:
+        return {sid: s["members"][email] for sid, s in self.spaces.items() if email in s["members"]}
 
     def forget(self, email: str) -> None:
         """An account was deleted: it leaves every workspace (what it made stays)."""
