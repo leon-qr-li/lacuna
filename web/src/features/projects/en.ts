@@ -58,8 +58,8 @@ export const en: Dict = {
   "归档的节目只能查看，所有协作者都不能修改。恢复后一切照旧。":
     "Archived shows are read-only for every collaborator. Restoring brings everything back as it was.",
   "永久删除「{name}」": "Delete “{name}” for good",
-  "这个节目里的所有剧集、专辑、素材、导出文件和协作者都会被删除，不能恢复。学到的规则和剪辑力度是你自己的，会留下。":
-    "Every episode, album, media file, export and collaborator in this show will be deleted. This can't be undone. Your learned rules and editing strength are your own and stay.",
+  "这个节目里的所有剧集、专辑、素材、导出文件和协作者都会被删除。60 天内可以联系 LACUNA 找回，之后彻底清除。学到的规则和剪辑力度是你自己的，会留下。":
+    "Every episode, album, media file, export and collaborator in this show will be deleted. Within 60 days you can ask LACUNA to bring it back; after that it's gone for good. Your learned rules and editing strength are your own and stay.",
   "输入节目名称「{name}」确认": "Type the show name “{name}” to confirm",
   "节目图片": "Show picture",
   "方形图片，会自动裁成正方形。没有图片时用这个节目自己的颜色。":
