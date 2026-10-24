@@ -352,7 +352,7 @@ class AdminData:
                 cost[c] += float(x.get("cost_usd") or 0)
         made: dict[str, list[str]] = defaultdict(list)
         member: Counter = Counter()
-        for sid, s in self.spaces.spaces.items():
+        for sid, s in list(self.spaces.spaces.items()):
             if s.get("sample"):
                 continue
             c = self.spaces.creator(sid)
@@ -361,7 +361,7 @@ class AdminData:
             for e in s["members"]:
                 member[e] += 1
         sizes = self.sizes()["shows"]
-        eps = {sid: self._episodes(sid) for sid in self.spaces.spaces}
+        eps = {sid: self._episodes(sid) for sid in list(self.spaces.spaces)}
         sources = self.store.get("sources", {})
         out = []
         for e, u in self.auth.users.items():
@@ -401,7 +401,7 @@ class AdminData:
         rows, votes = [], Counter()
         voters = 0
         from . import show as show_mod
-        for sid, s in self.spaces.spaces.items():
+        for sid, s in list(self.spaces.spaces.items()):
             try:
                 prof = show_mod.load(self.spaces.path(sid))
             except Exception:     # noqa: BLE001 - a broken show.json must not hide the list
@@ -447,7 +447,7 @@ class AdminData:
     # ---------------------------------------------------------------- seats and sources
     def seats(self) -> dict:
         staff = self.staff_emails()
-        used = [sid for sid, s in self.spaces.spaces.items()
+        used = [sid for sid, s in list(self.spaces.spaces.items())
                 if not s.get("sample") and self.spaces.creator(sid) not in staff and sid != "main"]
         return {"used": len(used), "total": int(self.store.get("beta_seats", BETA_SEATS))}
 
