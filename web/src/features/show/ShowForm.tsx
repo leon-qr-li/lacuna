@@ -1,9 +1,11 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import type { RequestError } from "../../api";
 import { lang as uiLang, t } from "../../i18n";
 import { noticeDialog } from "../dialog/Dialog";
 import { BusyLabel } from "../loading/Loading";
 import { AUTO_PUBLISH, AUTO_PUBLISH_LABELS, LANGUAGE_LABELS, LANGUAGES, setShow, showApi, type AutoPublish, type CutAdjust, type Host, type HostColor, type Language, type Show } from "./api";
+import { openFeedback } from "../feedback/bus";
 
 const COLOR_LABELS: Record<HostColor, string> = {
   blue: t("蓝"),
@@ -49,7 +51,8 @@ export function TrackNote() {
 export type ShowPart = "basic" | "hosts" | "publish";
 
 /** `parts`: which tabs of 项目设置 this form shows (all by default); the save sends everything. */
-export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compact?: boolean; onSaved?: (s: Show) => void; parts?: ShowPart[] }) {
+/** `extra`: more fields above the save button (the first-run setup's optional questions, features/feedback). */
+export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show; compact?: boolean; onSaved?: (s: Show) => void; parts?: ShowPart[]; extra?: ReactNode }) {
   const has = (p: ShowPart) => !parts || parts.includes(p);
   const [name, setName] = useState(show.show_name);
   const [about, setAbout] = useState(show.about);
@@ -284,8 +287,14 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
             </div>
             <small className="muted">
               {t("想要的平台不在这里？")}{" "}
-              {/* the feedback page isn't designed yet: this link gets its target when it is */}
-              <a href="#" onClick={(e) => e.preventDefault()} data-testid="auto-publish-feedback">
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  openFeedback({ kind: "idea", source: "publish", platforms: wish.map((p) => AUTO_PUBLISH_LABELS[p]) });
+                }}
+                data-testid="auto-publish-feedback"
+              >
                 {t("告诉我们")}
               </a>
             </small>
@@ -298,6 +307,7 @@ export function ShowForm({ show, compact, onSaved, parts }: { show: Show; compac
           )}
         </>
       )}
+      {extra}
       {err && <p className="error">{err}</p>}
       <div className="show-actions">
         <button type="submit" className="btn btn-primary" disabled={busy} data-testid="show-save">

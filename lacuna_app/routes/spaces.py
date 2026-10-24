@@ -30,7 +30,8 @@ from .auth import _cookie
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
 GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan",
-          "/api/site/", "/api/onboarding")
+          "/api/site/", "/api/onboarding",
+          "/api/feedback")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
