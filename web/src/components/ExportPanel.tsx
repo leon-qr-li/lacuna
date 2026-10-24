@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { ExportJob } from "../api";
-import { markStep } from "../features/onboarding/api";
 import { api } from "../api";
 import { t } from "../i18n";
 import { BusyLabel, JobProgress } from "../features/loading/Loading";
@@ -111,7 +110,6 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
                       download
                       title={name}
                       data-testid={`export-download-${fmt}`}
-                      onClick={() => markStep("export")}
                     >
                       {t("下载 {format}", { format: fmt.toUpperCase() })}
                     </a>

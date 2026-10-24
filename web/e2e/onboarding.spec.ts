@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 // 入门 (new-user batch): a new person signs up from an invite with their name → 欢迎，Sam with the plan line →
-// LACUNA 示例节目 with the bubble tour (resume elsewhere, leave, restart, the end) → back to their own show → 建节目 → 入门清单 and
-// 节目资料卡 → 设置 → 通用 deletes the sample. Progress is the server's, per person.
+// LACUNA 示例节目 with the bubble tour (resume elsewhere, leave, restart, the end) → back to their own show → 建节目 → a clean
+// 首页 (no checklist after the tour, Leon 2026-10-24) → 设置 → 通用 deletes the sample. Progress is the server's, per person.
 const PW = "correct horse battery";
 
 test.describe.configure({ mode: "serial" });
@@ -13,7 +13,7 @@ test.afterAll(async ({ request }) => {
   await request.post("/api/auth/_test/reset?skip_setup=true");
 });
 
-test("welcome → sample show with the tour → own show → checklist", async ({ browser }) => {
+test("welcome → sample show with the tour → own show → clean home", async ({ browser }) => {
   const leon = await (await browser.newContext()).newPage();
   expect((await leon.request.post("/api/auth/register", { data: { email: "leon@example.com", password: PW, name: "Leon" } })).ok()).toBeTruthy();
   const inv = await (await leon.request.post("/api/auth/invites", { data: { email: "sam@example.com", plan: "basic" } })).json();
@@ -91,32 +91,27 @@ test("welcome → sample show with the tour → own show → checklist", async (
   await setup.getByTestId("show-name").fill("Late Night Reel");
   await setup.getByLabel("第 1 位主持人的名字").fill("Sam");
   await setup.getByTestId("show-save").click();
-  const card = sam.getByTestId("onboard-card");
-  await expect(card.getByTestId("onboard-progress")).toHaveText("1/6");
-  await expect(card.locator("li.is-next")).toContainText("导入第一集");
-  // 节目资料卡: the description filled in place
-  const profile = sam.getByTestId("profile-card");
-  await profile.getByTestId("profile-about").click();
-  await profile.getByTestId("profile-about-input").fill("两位主持人聊刚看过的电影");
-  await profile.getByRole("button", { name: "保存" }).click();
-  await expect(profile.locator("li.is-done")).toContainText("两位主持人聊刚看过的电影");
-  await profile.getByTestId("profile-off").click();
+  // the tour was the guide: the show's 首页 has no checklist or profile card, and 节目设置 is one click away
+  await expect(sam.locator("h1.home-title")).toContainText("Late Night Reel");
+  await expect(sam.getByTestId("onboard-card")).toHaveCount(0);
   await expect(sam.getByTestId("profile-card")).toHaveCount(0);
+  await expect(sam.getByTestId("onboard-tag")).toHaveCount(0);
+  await sam.getByTestId("home-project-settings").click();
+  await expect(sam).toHaveURL(/#\/project$/);
+  // the show's description and names are still edited in 节目设置 (片头片尾 under its 片头片尾 tab)
+  await expect(sam.getByLabel("一句话介绍")).toBeVisible();
+  await expect(sam.getByTestId("show-terms")).toBeVisible();
   // the sample isn't one of the plan's shows (基础版: 1)
   await sam.goto("/#/settings/plan");
   await expect(sam.getByTestId("plan-shows")).toContainText("1");
-  // hidden, and brought back from 设置 → 通用; the sample deleted there too
-  await sam.goto("/#/");
-  await sam.getByTestId("onboard-hide").click();
-  await expect(sam.getByTestId("onboard-card")).toHaveCount(0);
+  // the sample deleted from 设置 → 通用
   await sam.goto("/#/settings/general");
   const st = sam.getByTestId("onboard-settings");
-  await st.getByTestId("onboard-show").click();
   await st.getByTestId("sample-drop").click();
   await sam.getByTestId("dialog").getByRole("button", { name: "删除" }).click();
   await expect(st.getByTestId("sample-open")).toHaveText("添加示例节目");
   await sam.goto("/#/");
-  await expect(sam.getByTestId("onboard-card")).toBeVisible();
+  await expect(sam.locator("h1.home-title")).toContainText("Late Night Reel");
   // added again (Sam had finished the tour): a new sample, the tour from step 1 (Leon 2026-10-23)
   await sam.goto("/#/settings/general");
   await sam.getByTestId("onboard-settings").getByTestId("sample-open").click();
