@@ -237,6 +237,14 @@ class Feedback:
             c.execute("DELETE FROM feedback WHERE email = ?", (email,))
             c.execute("DELETE FROM feedback_profiles WHERE email = ?", (email,))
 
+    def clear(self) -> None:
+        """E2E only: start from nothing (the shared test server keeps its site database between runs and retries)."""
+        for r in self.db.query("SELECT DISTINCT email FROM feedback"):
+            self.forget(r["email"])
+        with self.db.tx() as c:
+            c.execute("DELETE FROM feedback_profiles")
+            c.execute("DELETE FROM meta WHERE key LIKE 'fbprompt:%'")
+
     # ---------------------------------------------------------------- a show's three questions
     def set_profile(self, email: str, show_id: str, answers: dict) -> dict:
         a = answers if isinstance(answers, dict) else {}

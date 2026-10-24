@@ -35,6 +35,8 @@ test("反馈: a problem with its screenshot and page; the owner's reply comes ba
   const lc = await browser.newContext();
   leon = await lc.newPage();
   expect((await leon.request.post("/api/auth/register", { data: { email: "leon@example.com", password: PW, name: "Leon" } })).ok()).toBeTruthy();
+  // the test server keeps its site database between runs and retries: start without anyone's feedback
+  expect((await leon.request.post("/api/feedback/_test/reset")).ok()).toBeTruthy();
   const inv = await (await leon.request.post("/api/auth/invites", { data: { email: "mia@example.com", plan: "basic" } })).json();
   const reg = await (await browser.newContext()).newPage();
   expect((await reg.request.post("/api/auth/register", { data: { invite: inv.link.split("/").at(-1), password: PW, name: "Mia" } })).ok()).toBeTruthy();
@@ -201,8 +203,10 @@ test("a new show's setup asks two optional questions, kept for the owner", async
   const mia = await signIn(browser, "mia@example.com");
   await mia.goto("/#/");
   const welcome = mia.getByTestId("welcome-own");
-  if (await welcome.isVisible().catch(() => false)) await welcome.click();
   const setup = mia.getByTestId("show-setup");
+  // a first visit may greet with the welcome screen first; wait for one or the other before deciding
+  await expect(welcome.or(setup)).toBeVisible();
+  if (await welcome.isVisible()) await welcome.click();
   await expect(setup.getByTestId("show-questions")).toContainText("让我们更了解你的节目");
   await setup.getByTestId("show-name").fill("夜航电台");
   await setup.getByLabel("第 1 位主持人的名字").fill("Mia");

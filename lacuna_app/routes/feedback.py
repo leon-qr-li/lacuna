@@ -181,6 +181,14 @@ def register(app, ctx) -> None:
         fb.reset_prompts(email)
         return {"ok": True, "exported": exported(email)}
 
+    if ctx.option("auth_test_reset"):
+        @app.post("/api/feedback/_test/reset")
+        def _test_reset(request: Request):
+            """E2E only (web/e2e/feedback.spec.ts): forget every feedback item, profile and prompt answer."""
+            staff(request)
+            fb.clear()
+            return {"ok": True}
+
     @app.get("/api/feedback/{fid}/shot")
     def shot(fid: str, request: Request):
         email = me(request)
