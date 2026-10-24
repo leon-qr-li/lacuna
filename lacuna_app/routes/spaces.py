@@ -35,8 +35,8 @@ GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits",
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
             "lessons", "archive", "episode_index"}
-# services that only hold models: one copy for every workspace
-SHARED = ("dictation", "dictation_fixer")
+# services that only hold models, and the server's audio-hour meter: one copy for every workspace
+SHARED = ("dictation", "dictation_fixer", "meter")
 FOR_GOOD = re.compile(r"^/api/episodes/[^/]+$")      # DELETE = delete an episode for good
 # 节目设置 (name, hosts, opener / ending, publishing): the show's managers only (decision 2026-10-21-roles)
 SETTINGS = {("PUT", "/api/show"), ("PATCH", "/api/albums/project")}

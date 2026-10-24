@@ -461,8 +461,23 @@ export const en: Dict = {
 
   // hours
   "用户点「想要更多时长」的申请。每一条都由你批，不会自动加时长。": "Requests from “I need more hours”. You approve each one; hours are never added automatically.",
-  "规则还没定：beta 时长、到期以后怎么收费，等商业模式定了再填。用量要等第 5 批做完额度计量才有数字。":
-    "Rules pending: the beta length and post-beta pricing come with the business model decision. Usage numbers arrive with hour metering in batch 5.",
+  "商业模式还没定：beta 时长、到期以后怎么收费，定了再填。计量规则先按推荐设好，可以在「套餐与 beta」里改。":
+    "The business model isn't settled: beta length and pricing after it come later. Metering rules are set to the recommendation; change them under Plans & beta.",
+  一次性: "once",
+  "加了 {n} h": "+{n} h given",
+  "反馈奖励 {n} h": "+{n} h feedback",
+  计量规则已保存: "Metering rules saved",
+  用完就不能再导入: "Stop imports when hours run out",
+  "关掉以后只计数，不拦。": "Off: count only, never stop.",
+  整集都要放得下: "The whole episode must fit",
+  "关着时，只要还剩一点就能导入，最后一集可以超出一些。": "Off: an import starts while any hours are left; the last episode may go over.",
+  站长和管理员不拦: "Never stop the owner and admins",
+  "你们自己的节目照样计数。": "Your own shows are still counted.",
+  同一个月重导同样的文件不重复算: "Same files again in a month count once",
+  "删掉一集再用同样的分轨导入，只算一次。": "Deleting an episode and importing the same tracks again counts once.",
+  计量规则: "Metering rules",
+  "按每集导入成功时的长度算（最长那条分轨），导入失败不算；算在创建节目的人头上；每月 1 日（UTC）重新计算。本月全站共导入 {n} 小时。":
+    "Each episode counts its length (longest track) when its import succeeds; failed imports are free; hours go to the show's creator; the count restarts on the 1st (UTC). Imported this month, all shows: {n} h.",
   "待批": "Pending",
   "用量对比额度": "Usage vs allowance",
   "套餐与 beta": "Plans & beta",

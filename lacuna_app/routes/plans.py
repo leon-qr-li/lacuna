@@ -1,6 +1,7 @@
 """套餐与用量 (lacuna_app/plans.py): ``GET /api/plan``, the signed-in person's plan, its limits and what they use.
 
-Audio hours are counted from batch 5 on; until then ``hours_used`` is None and the page says so.
+Audio hours are counted from batch 5 on (quota.py): ``hours`` says what this account used this month (the
+trial: ever), its allowance with the extra hours it got, and what is left.
 """
 from __future__ import annotations
 
@@ -24,8 +25,10 @@ def register(app, ctx) -> None:
         u = auth.users[email]
         plan = u.get("plan") or plans.DEFAULT
         made = [sid for sid in (spaces.spaces if spaces else {}) if spaces.creator(sid) == email]
+        meter = ctx.provide("meter")
+        hours = meter.account(email) if meter is not None and meter.on else None
         return {"plan": plan, "free": bool(u.get("plan_free")), "limits": next(x for x in plans.public() if x["id"] == plan),
-                "shows": len(made), "hours_used": None,
+                "shows": len(made), "hours_used": hours["used"] if hours else None, "hours": hours,
                 "collaborators": [{"id": sid, "name": spaces.title(sid), "count": spaces.collaborators(sid)}
                                   for sid in made],
                 "plans": plans.public()}

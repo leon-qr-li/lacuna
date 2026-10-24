@@ -214,12 +214,33 @@ export interface AccessData {
   mail_error?: string | null;
 }
 
+export interface QuotaRules {
+  enforce: boolean;
+  must_fit: boolean;
+  staff_exempt: boolean;
+  repeat_free: boolean;
+}
+
 export interface HoursData {
   requests: HourReq[];
   decided: HourReq[];
-  usage: { email: string; name: string | null; plan: string; hours: number | null; used: number | null }[];
+  usage: {
+    email: string;
+    name: string | null;
+    plan: string;
+    hours: number | null;
+    used: number | null;
+    /** extra hours this month (approved requests, adopted feedback) */
+    bonus?: { granted: number; feedback: number } | null;
+    /** the trial: one allowance, ever */
+    once?: boolean;
+  }[];
   plans: PlanLimits[];
   beta_end: string | null;
+  /** the metering rules (lacuna_app/quota.py); null where the site doesn't meter */
+  quota?: QuotaRules | null;
+  /** audio hours every show imported this month (the server's work) */
+  month_hours?: number | null;
   willing: { email: string; name: string | null; at: number; reason: string; where: string }[];
 }
 

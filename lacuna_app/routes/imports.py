@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from .. import import_tracks, upload_parts
 from ..archive import free_deleted_ids
 from ..importer import ImportBusy, ImportError_, Importer, check_track
+from ..quota import QuotaError
 from ..server import next_episode_id
 from ..store import META_FILE, PathError, read_json
 from ..i18n import tr
@@ -41,6 +42,24 @@ def register(app, ctx) -> None:
         return paths
 
     import_tracks.prune(ws, tracks_in_use())
+
+    # audio hours (quota.py): the meter comes from the main app, which may register after this module
+    def allow(episode_id: str, tracks: dict) -> None:
+        meter = ctx.provide("meter")
+        if meter is not None:
+            try:
+                meter.allow(ws.root, tracks)
+            except QuotaError as e:
+                raise ImportError_(str(e))
+
+    def charged(episode_id: str, job: dict) -> None:
+        meter = ctx.provide("meter")
+        if meter is not None:
+            meter.charge(ws.root, episode_id, job)
+    if getattr(importer, "allow", None) is None:
+        importer.allow = allow
+    if getattr(importer, "on_done", None) is None:
+        importer.on_done = charged
 
     @app.post("/api/imports/tracks")
     async def upload_track(request: Request, name: str, part: str = ""):
@@ -139,6 +158,8 @@ def register(app, ctx) -> None:
             raise HTTPException(404, "no such import")
         except ImportBusy as e:
             raise HTTPException(409, str(e))
+        except ImportError_ as e:
+            raise HTTPException(422, str(e))
 
     @app.post("/api/imports/{episode_id}/cancel")
     def cancel_import(episode_id: str):

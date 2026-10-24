@@ -691,4 +691,11 @@ EN: dict[str, str | tuple[str, str]] = {
     "去后台处理": "Handle it in the admin",
     "理由": "Reason",
     "正在维护，几分钟后再试。已经在跑的任务不受影响。": "Down for maintenance. Try again in a few minutes; jobs already running are not affected.",
+    "这个站点不计量音频时长": "This site doesn't meter audio hours",
+    "这个月的 {n} 小时音频额度已经用完了。": "This month's {n} hours of audio are used up.",
+    "免费体验的 {n} 小时已经用完了。": "The free trial's {n} hours are used up.",
+    "这一集 {need} 小时，本月额度只剩 {left} 小时。": "This episode is {need} h; only {left} h are left this month.",
+    "可以在「设置 → 套餐与用量」里申请更多时长。": "You can ask for more hours under Settings → Plan & usage.",
+    "用的是创建这个节目的人的额度，请让 TA 在「设置 → 套餐与用量」里申请更多时长。":
+        "This show uses the hours of the person who created it; ask them to request more under Settings → Plan & usage.",
 }

@@ -5,8 +5,8 @@ import { api } from "../api";
 import type { PageProps } from "../Shell";
 import { t } from "../i18n";
 import { planName } from "../labels";
-import type { HourReq, HoursData } from "../types";
-import { Card, Empty, Icon, Loading, PageHead, Pill, Tabs, Who, act, ago, fmtDate, fmtNum, useData } from "../ui";
+import type { HourReq, HoursData, QuotaRules } from "../types";
+import { Card, Empty, Icon, Loading, PageHead, Pill, Switch, Tabs, Who, act, ago, fmtDate, fmtNum, useData } from "../ui";
 
 type Tab = "req" | "usage" | "plans" | "pay" | "done";
 
@@ -19,7 +19,7 @@ export function HoursPage({ me }: PageProps) {
       <PageHead title={t("时长申请")} sub={t("用户点「想要更多时长」的申请。每一条都由你批，不会自动加时长。")} />
       <div className="a-alert warn a-mb">
         <Icon name="clock" />
-        <span>{t("规则还没定：beta 时长、到期以后怎么收费，等商业模式定了再填。用量要等第 5 批做完额度计量才有数字。")}</span>
+        <span>{t("商业模式还没定：beta 时长、到期以后怎么收费，定了再填。计量规则先按推荐设好，可以在「套餐与 beta」里改。")}</span>
       </div>
       {!data ? (
         <Loading error={error} />
@@ -148,7 +148,18 @@ function Usage({ data }: { data: HoursData }) {
                     )}
                   </td>
                   <td className="n">
-                    {u.used === null ? "—" : fmtNum(u.used, 1)} / {u.hours === null ? "∞" : fmtNum(u.hours)} h
+                    {u.used === null ? "—" : fmtNum(u.used, 1)} / {u.hours === null ? "∞" : fmtNum(u.hours, 1)} h
+                    {u.once && <span className="a-muted small"> · {t("一次性")}</span>}
+                    {!!(u.bonus?.granted || u.bonus?.feedback) && (
+                      <div className="a-muted small">
+                        {[
+                          u.bonus?.granted ? t("加了 {n} h", { n: fmtNum(u.bonus.granted, 1) }) : null,
+                          u.bonus?.feedback ? t("反馈奖励 {n} h", { n: fmtNum(u.bonus.feedback, 1) }) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </div>
+                    )}
                   </td>
                 </tr>
               );
@@ -209,7 +220,41 @@ function Plans({ data, set, owner }: { data: HoursData; set: (d: HoursData) => v
         </table>
         <p className="a-muted small a-pad">{t("套餐的数字写在代码里，改它们要发一版。")}</p>
       </Card>
+      {data.quota && <Rules data={data} set={set} owner={owner} />}
     </div>
+  );
+}
+
+/** The metering rules (lacuna_app/quota.py): settings until the business model is decided. */
+function Rules({ data, set, owner }: { data: HoursData; set: (d: HoursData) => void; owner: boolean }) {
+  const q = data.quota!;
+  const change = async (k: keyof QuotaRules, v: boolean) => {
+    const out = await act(() => api<HoursData>("PUT", "/api/admin/hours/quota", { [k]: v }), t("计量规则已保存"));
+    if (out) set(out);
+  };
+  const rows: [keyof QuotaRules, string, string][] = [
+    ["enforce", t("用完就不能再导入"), t("关掉以后只计数，不拦。")],
+    ["must_fit", t("整集都要放得下"), t("关着时，只要还剩一点就能导入，最后一集可以超出一些。")],
+    ["staff_exempt", t("站长和管理员不拦"), t("你们自己的节目照样计数。")],
+    ["repeat_free", t("同一个月重导同样的文件不重复算"), t("删掉一集再用同样的分轨导入，只算一次。")],
+  ];
+  return (
+    <Card title={t("计量规则")}>
+      <p className="a-muted small">
+        {t("按每集导入成功时的长度算（最长那条分轨），导入失败不算；算在创建节目的人头上；每月 1 日（UTC）重新计算。本月全站共导入 {n} 小时。", {
+          n: fmtNum(data.month_hours ?? 0, 1),
+        })}
+      </p>
+      <div className="a-stack">
+        {rows.map(([k, label, sub]) => (
+          <div key={k} className="a-row wrap">
+            <Switch on={q[k]} onChange={(v) => void change(k, v)} label={label} disabled={!owner} testid={`quota-${k}`} />
+            <b>{label}</b>
+            <span className="a-muted small">{sub}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 

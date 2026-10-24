@@ -21,10 +21,25 @@ export interface MyPlan {
   limits: PlanLimits;
   /** shows this account made */
   shows: number;
-  /** counted from batch 5 on; null until then */
+  /** audio hours counted this month (the trial: ever); null where the site doesn't meter */
   hours_used: number | null;
+  /** the month's numbers (lacuna_app/quota.py Meter.account) */
+  hours: HoursUse | null;
   collaborators: { id: string; name: string; count: number }[];
   plans: PlanLimits[];
+}
+
+export interface HoursUse {
+  month: string;
+  /** the trial: one allowance, ever */
+  once: boolean;
+  /** the plan's own hours; null = unlimited */
+  base: number | null;
+  /** extra hours this month: approved by LACUNA, and for feedback LACUNA adopted */
+  bonus: { granted: number; feedback: number };
+  allowance: number | null;
+  used: number;
+  left: number | null;
 }
 
 /** 「想要更多时长」 (lacuna_app/routes/hour_requests.py) */

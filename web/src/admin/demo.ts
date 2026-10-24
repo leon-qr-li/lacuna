@@ -303,6 +303,8 @@ function hours(): HoursData {
       { id: "pro", name: "", hours: 12, hours_once: false, shows: 5, collaborators: null },
     ],
     beta_end: null,
+    quota: { enforce: true, must_fit: false, staff_exempt: true, repeat_free: true },
+    month_hours: 31.5,
     willing: [
       { email: us[2].email, name: us[2].name, at: t0 - 3 * H, reason: "这个月录了两期特别节目，每期两个多小时。", where: "hours" }, // i18n-ignore
       { email: us[8].email, name: us[8].name, at: t0 - 2 * D, reason: "", where: "hours" },
