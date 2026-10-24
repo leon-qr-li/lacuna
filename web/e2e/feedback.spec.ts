@@ -129,9 +129,12 @@ test("反馈: an idea and a compliment, with how much it matters and leave to qu
   expect(all.find((i) => i.kind === "praise")!.quote_ok).toBe(true);
 });
 
+// a raw tool error with long unbroken paths, like the ffmpeg failures Leon saw (2026-10-24)
+const LONG_ERROR = "混音这一步出错了：Command '['ffmpeg', '-nostdin', '-hide_banner', '-loglevel', 'error', '-i', '/data/workspace/spaces/sp_14fe166f/imported_tracks/fe4289acb0123456789abcdef0123456789abcdef/track.wav', '-ac', '1', '-af', 'aresample=16000:resampler=soxr', '-f', 'f32le', '-']' returned non-zero exit status 1.";
+
 test("「告诉我们」 on an export error opens the panel filled in", async () => {
   await leon.route("**/api/episodes/*/export", (route) =>
-    route.request().method() === "POST" ? route.fulfill({ status: 500, json: { detail: "混音这一步出错了" } }) : route.continue(),
+    route.request().method() === "POST" ? route.fulfill({ status: 500, json: { detail: LONG_ERROR } }) : route.continue(),
   );
   await leon.goto("/#/ep/EP_TEST_合成/export");
   await leon.getByTestId("export-start").click();
@@ -141,6 +144,14 @@ test("「告诉我们」 on an export error opens the panel filled in", async ()
   const panel = leon.getByTestId("feedback-panel");
   await expect(panel.getByTestId("feedback-prefill")).toContainText("导出没有完成");
   await expect(panel.getByTestId("feedback-prefill")).toContainText("混音这一步出错了");
+  // a long raw error stays inside the panel: no sideways scrolling, nothing past its edge
+  const fits = await panel.evaluate((el) => {
+    const box = el.getBoundingClientRect();
+    const body = el.querySelector(".fb-body") as HTMLElement | null;
+    return [...el.querySelectorAll("[data-testid=feedback-prefill] *")].every((c) => c.getBoundingClientRect().right <= box.right + 1)
+      && (!body || body.scrollWidth <= body.clientWidth + 1);
+  });
+  expect(fits).toBe(true);
   await expect(panel.getByTestId("feedback-send")).toBeEnabled();     // nothing more to write
   await panel.getByTestId("feedback-send").click();
   await expect(panel.getByTestId("feedback-sent")).toBeVisible();
