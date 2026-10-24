@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { t } from "../../i18n";
 import { albumsApi, type AlbumsView } from "../albums/api";
 import { authApi } from "../auth/api";
-import { confirmDialog } from "../dialog/Dialog";
+import { confirmDialog, noticeDialog } from "../dialog/Dialog";
 import { libraryApi, type Asset } from "../library/api";
 import { PageLoading } from "../loading/Loading";
 import { ShowForm, type ShowPart } from "../show/ShowForm";
@@ -10,6 +10,7 @@ import { useShow } from "../show/api";
 import { spacesApi, type MySpace } from "../spaces/api";
 import { ProjectAvatar } from "./Avatar";
 import { Collaborators } from "./Collaborators";
+import { DeleteProjectDialog } from "./DeleteProject";
 import { RoleMatrix, SupportAccess } from "./ShowRoles";
 import { loadProjects, setProjects, useProjects } from "./api";
 
@@ -196,12 +197,22 @@ function ArchiveZone({ p }: { p: MySpace }) {
   );
 }
 
-/** An archived project's settings: say why nothing can change, and let a manager restore it here. */
+/** An archived project's settings: say why nothing can change, and let a manager restore it here, or its
+ *  creator delete it for good right away (Leon 2026-10-24), the show's name typed to confirm. */
 function ArchivedNote({ p }: { p: MySpace }) {
   const [err, setErr] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const others = (useProjects()?.mine ?? []).filter((m) => m.id !== p.id).length;
+  const tryDelete = async () => {
+    if (!others) {
+      await noticeDialog(t("这是你唯一的节目。先新建一个节目，再删除这个。"));
+      return;
+    }
+    setDeleting(true);
+  };
   return (
     <div className="prj-readonly" data-testid="project-readonly">
-      <span>{t("这个节目已归档，只能查看。恢复后才能修改。")}</span>
+      <span className="grow">{t("这个节目已归档，只能查看。恢复后才能修改。")}</span>
       {p.role === "admin" && (
         <button
           type="button"
@@ -212,7 +223,13 @@ function ArchivedNote({ p }: { p: MySpace }) {
           {t("恢复")}
         </button>
       )}
+      {p.can_delete && (
+        <button type="button" className="btn btn-danger-outline btn-small" onClick={() => void tryDelete()} data-testid="project-settings-delete">
+          {t("永久删除")}
+        </button>
+      )}
       {err && <span className="error small">{err}</span>}
+      {deleting && <DeleteProjectDialog p={p} here home onClose={() => setDeleting(false)} />}
     </div>
   );
 }

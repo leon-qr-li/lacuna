@@ -80,3 +80,6 @@
 .prj-support p { margin: 4px 0 0; }
 .prj-locked { border: 0; margin: 0; padding: 0; min-width: 0; }
 .prj-locked-note { margin: 0 0 12px; }
+/* 节目设置 on the show's 首页, beside its name */
+.home-title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.prj-settings-link { flex: none; }

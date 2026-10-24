@@ -80,6 +80,12 @@ Decision: `docs/decisions/2026-10-22-bubble-tour.md`.
   `sample.SampleDesigner`, no AI call). Tests: `web/e2e/tour.spec.ts`,
   `test_the_sample_publish_pack_and_covers_come_without_the_ai`.
 
+## Home cleanup (2026-10-24)
+Decision: `docs/decisions/2026-10-24-tour-is-the-only-guide.md`. Removed the 入门清单, top-bar 入门 tag, 节目资料卡 and
+the import hint (`Checklist.tsx`, `ProfileCard.tsx`, `markStep`, `/api/onboarding/mark`). Added 节目设置 on the show's
+首页 (`features/projects/SettingsLink.tsx`), 所有节目 always in the menu, 永久删除 in an archived show's settings.
+Tests: `test_the_home_checklist_is_gone`, `onboarding.spec.ts`, `project_archive.spec.ts`.
+
 ## Open
 - BEFORE BETA (Leon 2026-10-23, must): Leon + Pei record the sample (zh + en); then polish and lock every tour
   detail (words, cuts, show notes, covers; maybe a pre-made export). For now only the flow and concept are final.

@@ -75,12 +75,10 @@ export function ProjectCrumb() {
               </button>
             ))}
             <hr />
-            {sp.mine.length > 1 && (
-              <button type="button" role="menuitem" className="prj-menu-item" onClick={() => go("#/projects")}>
-                <span className="prj-check" aria-hidden="true" />
-                {t("所有节目")}
-              </button>
-            )}
+            <button type="button" role="menuitem" className="prj-menu-item" onClick={() => go("#/projects")} data-testid="project-all-link">
+              <span className="prj-check" aria-hidden="true" />
+              {t("所有节目")}
+            </button>
             <button type="button" role="menuitem" className="prj-menu-item" onClick={() => go("#/project")} data-testid="project-settings-link">
               <span className="prj-check" aria-hidden="true" />
               {t("节目设置")}

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Asset, Kind, MusicView as Music, Placement, PlacementPatch, Role } from "./api";
 import "./music-b.css";
-import { markStep } from "../onboarding/api";
 import { fmt, parseTime } from "../../api";
 import { CREDIT_LABEL } from "./LibraryView";
 import { libraryApi } from "./api";
@@ -234,10 +233,6 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
   }, [id]);
   useEffect(load, [load]);
   // 入门: 加片头和片尾音乐 is done once this episode has both
-  const hasEnds = !!m && m.placements.some((p) => p.role === "intro") && m.placements.some((p) => p.role === "outro");
-  useEffect(() => {
-    if (hasEnds) markStep("music");
-  }, [hasEnds]);
 
   // the open card: the one just put in, else the one that was open, else the first
   useEffect(() => {
