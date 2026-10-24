@@ -15,5 +15,7 @@ condition that learned rules and 剪辑力度 don't change.
 - After 60 days a sweep (start-up, every 6 h, and on listing) removes them for good.
 - The site owner and admins see the 回收区 in 设置 → 成员与邀请 (moves to the admin site when that is built).
 - Sample shows are copies and still go at once.
+- USERS NEVER SEE THE 60 DAYS (Leon 2026-10-24 02:01Z): for them 永久删除 is final ("不能恢复"). Only the
+  site owner / admins see the 回收区; restoring is a case-by-case call when a user contacts LACUNA.
 - Open: privacy policy must state the 60-day retention; an "erase now" for GDPR requests (owner) when the admin
   site is built; beyond beta the 回收区 can move to R2 to save disk.
