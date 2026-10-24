@@ -198,7 +198,7 @@ class Spaces:
                  "by": (s.get("added_by") or {}).get(email), "support": email not in s["members"],
                  "sample": bool(s.get("sample"))}
                 | self.look(s["id"]) | (self.summary(s["id"]) if detail else {})
-                for s in self.spaces.values() if self.role(s["id"], email)]
+                for s in list(self.spaces.values()) if self.role(s["id"], email)]
         return sorted(rows, key=lambda r: (r["id"] != MAIN, r["sample"], r["name"].lower()))
 
     def current(self, email: str, wanted: str | None) -> str | None:
@@ -213,7 +213,7 @@ class Spaces:
     def overview(self) -> list[dict]:
         return sorted(({"id": s["id"], "name": self.title(s["id"]), "created": s["created"],
                         "members": [{"email": e, "role": r} for e, r in sorted(s["members"].items())]}
-                       for s in self.spaces.values()), key=lambda r: (r["id"] != MAIN, r["name"].lower()))
+                       for s in list(self.spaces.values())), key=lambda r: (r["id"] != MAIN, r["name"].lower()))
 
     # -- changes (permission checks are in routes/spaces.py)
     def _get(self, sid: str) -> dict:
@@ -329,7 +329,7 @@ class Spaces:
             return sid
 
     def memberships(self, email: str) -> dict[str, str]:
-        return {sid: s["members"][email] for sid, s in self.spaces.items() if email in s["members"]}
+        return {sid: s["members"][email] for sid, s in list(self.spaces.items()) if email in s["members"]}
 
     def forget(self, email: str) -> None:
         """An account was deleted: it leaves every workspace (what it made stays)."""
