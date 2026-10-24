@@ -211,7 +211,7 @@ export function FeedbackHost() {
               <div className="fb-prefill" data-testid="feedback-prefill">
                 <span className="chip">{t("已帮你填好")}</span>
                 <b>{pre.error!.title}</b>
-                {pre.error!.message && <span className="small muted">{pre.error!.message}</span>}
+                {pre.error!.message && <span className="small muted fb-prefill-msg" title={pre.error!.message}>{pre.error!.message}</span>}
                 <span className="small muted">{t("报错详情已附上")}</span>
               </div>
             )}

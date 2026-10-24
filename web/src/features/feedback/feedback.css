@@ -56,6 +56,10 @@
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px;
   border-radius: var(--r-sm); background: var(--accent-soft); border: 1px solid var(--accent-mid);
 }
+.fb-prefill { min-width: 0; max-width: 100%; }
+.fb-prefill > * { max-width: 100%; overflow-wrap: anywhere; }
+/* a raw error (a whole ffmpeg command line) is attached in full; the box shows its first lines */
+.fb-prefill-msg { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
 .fb-prefill b { color: var(--ink); font-size: 14px; }
 [data-theme="dark"] .fb-prefill { background: rgb(255 138 76 / 0.1); border-color: rgb(255 138 76 / 0.3); }
 
