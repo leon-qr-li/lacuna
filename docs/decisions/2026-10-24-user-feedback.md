@@ -25,9 +25,10 @@ UX canvas https://claude.ai/artifact/6BNFqokSF4evJqPMiBH7bS). Leon: 「做，按
 - 夸一句 asks for leave to quote it publicly, signed with the show's name only (unticked by default).
 - Feedback, screenshots and answers never go to the AI, the event log or the code repository. Deleting an account
   deletes its feedback and screenshots.
-- Until the admin back office exists, there is no owner page: Leon tells Claude, and Claude answers on the server
-  with `scripts/feedback_admin.py` (reply, status, 采纳, reset the one-question prompts). Leon picked this over a
-  temporary page (2026-10-24).
+- Until the admin back office exists, the owner replies on a temporary owner-only page `#/feedback-all`
+  (no design; removed with the admin batch). It can also reset an account's one-question prompts for testing.
+  Leon first chose to have Claude reply on the server instead (2026-10-24 00:52Z), but the production server has
+  no shell Claude can reach (pull-based, no inbound), so the page came back.
 - Not in this batch, decided before beta with the business model: extra hours, paying in beta, the beta's length.
 
 ## Where

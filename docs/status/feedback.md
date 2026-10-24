@@ -8,10 +8,10 @@ Decision: `docs/decisions/2026-10-24-user-feedback.md`.
   first export, PMF after the third, ≤ 1 per 7 days, 不再问我), two optional questions in a new show's setup,
   我的反馈 with status, owner replies, red dot and reply email, `#/feedback` page.
 - Owner side: API (`GET /api/feedback/all`, `POST /api/feedback/{id}/reply` with text / status / adopted,
-  `GET /api/feedback/{id}/shot`, `POST /api/feedback/prompt/reset`) and, for Leon's 验收 before the admin exists,
-  `scripts/feedback_admin.py` (list / show / reply / reset-prompts) that Claude runs inside the prod container
-  (`docker exec <container> python scripts/feedback_admin.py …`); Leon chose this over a temporary page.
-- Tests: `tests/app/test_feedback.py` (8), `web/e2e/feedback.spec.ts` (6).
+  `GET /api/feedback/{id}/shot`, `POST /api/feedback/prompt/reset` for 验收) plus a temporary, undesigned
+  `#/feedback-all` page (全部反馈（临时）, owner/admin only, linked from 我的反馈) so Leon can reply before the admin
+  exists. Delete the page when the admin batch lands.
+- Tests: `tests/app/test_feedback.py` (7), `web/e2e/feedback.spec.ts` (7).
 
 ## Notes
 - The screenshot is drawn from the page (html-to-image), without web fonts (dozens of font files otherwise), as JPEG.
@@ -22,5 +22,5 @@ Decision: `docs/decisions/2026-10-24-user-feedback.md`.
 
 ## Next
 - Leon's 验收 with his test account.
-- Admin batch (replaces `scripts/feedback_admin.py`): list, reply, status, 采纳, screenshots, prompt answers and show profiles.
+- Admin batch (replaces `#/feedback-all`): list, reply, status, 采纳, screenshots, prompt answers and show profiles.
 - Batch 5: count the adopted items' bonus hours in the monthly quota.

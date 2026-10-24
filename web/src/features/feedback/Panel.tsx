@@ -9,7 +9,7 @@ import { onOpenFeedback, type Prefill } from "./bus";
 import { MyFeedback } from "./MyFeedback";
 import { captureApp, fromFile } from "./shot";
 import { lastFailure, trail } from "./trail";
-import { setUnread, useUnread } from "./unread";
+import { setUnread, useStaff, useUnread } from "./unread";
 
 const KINDS: { id: Kind; label: string }[] = [
   { id: "bug", label: t("遇到问题") },
@@ -70,6 +70,7 @@ export function FeedbackHost() {
   const [sent, setSent] = useState<Kind | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const unread = useUnread(false);
+  const staff = useStaff();
   const file = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
 
@@ -179,6 +180,11 @@ export function FeedbackHost() {
         {tab === "mine" ? (
           <div className="fb-body">
             <MyFeedback onWrite={() => setTab("write")} />
+            {staff && (
+              <a className="small fb-all-link" href="#/feedback-all" onClick={() => setOpen(false)} data-testid="feedback-all-link">
+                {t("全部反馈（临时）")} →
+              </a>
+            )}
           </div>
         ) : sent ? (
           <div className="fb-body fb-sent" data-testid="feedback-sent">

@@ -205,26 +205,3 @@ def test_a_new_show_keeps_its_three_answers_for_the_owner(tmp_path):
     sam.post("/api/feedback", json={"kind": "bug", "text": "x"})
     item = leon.get("/api/feedback/all").json()["items"][0]
     assert item["profile"]["region"] == "eu" and item["profile"]["editing"] == "new"
-
-
-def test_the_server_script_answers_for_the_owner_until_the_admin_exists(tmp_path, capsys):
-    """Leon's 验收 (decision 2026-10-24-user-feedback): Claude replies from the server's command line; the person
-    sees it exactly as from the admin later."""
-    from scripts.feedback_admin import main
-    leon, _ = setup(tmp_path)
-    sam = join(leon, "sam@example.com", lang="en")
-    fid = sam.post("/api/feedback", json={"kind": "bug", "text": "Export stuck at 80%"}).json()["id"]
-    ws = str(tmp_path / "ws")
-    assert main(["--workspace", ws, "list", "--email", "sam@example.com"]) == 0
-    assert fid in capsys.readouterr().out
-    assert main(["--workspace", ws, "show", fid]) == 0
-    assert "Export stuck at 80%" in capsys.readouterr().out
-    mailer = FakeMailer()
-    assert main(["--workspace", ws, "reply", fid, "--text", "Fixed, thanks!", "--status", "fixed"], mailer=mailer) == 0
-    assert [m["to"] for m in mailer.outbox] == ["sam@example.com"]
-    assert mailer.outbox[0]["subject"] == "Your LACUNA feedback has a reply" and "Fixed, thanks!" in mailer.outbox[0]["text"]
-    got = sam.get("/api/feedback/mine").json()
-    assert got["unread"] == 1 and got["items"][0]["status"] == "fixed"
-    assert main(["--workspace", ws, "reply", "fb_nope", "--status", "fixed"], mailer=mailer) == 1
-    assert main(["--workspace", ws, "reset-prompts", "nobody@example.com"]) == 1
-    assert main(["--workspace", ws, "reset-prompts", "sam@example.com"]) == 0
