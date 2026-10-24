@@ -51,6 +51,7 @@ export function PromptCard({ kind, close }: { kind: PromptKind; close: () => voi
   const [hover, setHover] = useState(0);
   const [saved, setSaved] = useState<string | null>(null);
   const [choice, setChoice] = useState<string | null>(null);
+  const [score, setScore] = useState<number | null>(null);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -73,14 +74,14 @@ export function PromptCard({ kind, close }: { kind: PromptKind; close: () => voi
     setBusy(true);
     setErr(null);
     try {
-      await feedbackApi.answer(kind, "sent", kind === "rate" ? { stars, saved, text } : { choice, text });
+      await feedbackApi.answer(kind, "sent", kind === "rate" ? { stars, saved, text } : kind === "nps" ? { score, text } : { choice, text });
       setThanks(true);
     } catch (e) {
       setErr((e as Error).message);
       setBusy(false);
     }
   };
-  const ready = kind === "rate" ? stars > 0 : !!choice;
+  const ready = kind === "rate" ? stars > 0 : kind === "nps" ? score !== null : !!choice;
 
   return (
     <section className="fb-prompt" role="dialog" aria-labelledby="fb-prompt-title" data-testid={`feedback-prompt-${kind}`}>
@@ -119,6 +120,25 @@ export function PromptCard({ kind, close }: { kind: PromptKind; close: () => voi
               </div>
               <label className="fb-label" htmlFor="fb-prompt-text">
                 {stars > 0 && stars < 5 ? t("还差在哪？（可以不写）") : t("想说点什么？（可以不写）")}
+              </label>
+            </>
+          ) : kind === "nps" ? (
+            <>
+              <span className="small muted">{t("只问一个问题")}</span>
+              <h3 id="fb-prompt-title">{t("你有多大可能把 LACUNA 推荐给做播客的朋友？")}</h3>
+              <div className="fb-nps" role="radiogroup" aria-label={t("0 到 10 分")}>
+                {Array.from({ length: 11 }, (_, n) => (
+                  <button key={n} type="button" role="radio" aria-checked={score === n} className={score === n ? "on" : ""} onClick={() => setScore(n)} data-testid={`feedback-nps-${n}`}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <div className="fb-nps-ends small muted">
+                <span>{t("完全不会")}</span>
+                <span>{t("一定会")}</span>
+              </div>
+              <label className="fb-label" htmlFor="fb-prompt-text">
+                {t("为什么打这个分？（可以不写）")}
               </label>
             </>
           ) : (

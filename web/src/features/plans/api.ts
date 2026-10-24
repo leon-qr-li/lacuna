@@ -27,6 +27,19 @@ export interface MyPlan {
   plans: PlanLimits[];
 }
 
+/** 「想要更多时长」 (lacuna_app/routes/hour_requests.py) */
+export interface HourRequest {
+  id: string;
+  created: number;
+  status: "new" | "approved" | "declined";
+  hours: number;
+  reason: string;
+  granted: number | null;
+}
+
 export const plansApi = {
   mine: () => req<MyPlan>("GET", "/api/plan"),
+  hours: () => req<{ requests: HourRequest[] }>("GET", "/api/plan/hours"),
+  askHours: (hours: number, reason: string, would_pay: boolean) =>
+    req<{ requests: HourRequest[] }>("POST", "/api/plan/hours", { hours, reason, would_pay }),
 };

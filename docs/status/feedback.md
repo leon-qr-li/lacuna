@@ -8,9 +8,9 @@ Decision: `docs/decisions/2026-10-24-user-feedback.md`.
   first export, PMF after the third, ≤ 1 per 7 days, 不再问我), two optional questions in a new show's setup,
   我的反馈 with status, owner replies, red dot and reply email, `#/feedback` page.
 - Owner side: API (`GET /api/feedback/all`, `POST /api/feedback/{id}/reply` with text / status / adopted,
-  `GET /api/feedback/{id}/shot`, `POST /api/feedback/prompt/reset`) and, for Leon's 验收 before the admin exists,
-  `scripts/feedback_admin.py` (list / show / reply / reset-prompts) that Claude runs inside the prod container
-  (`docker exec <container> python scripts/feedback_admin.py …`); Leon chose this over a temporary page.
+  `GET /api/feedback/{id}/shot`, `POST /api/feedback/prompt/reset`). Since the admin batch (decision
+  2026-10-24-admin-site) the owner works in the admin site's 反馈 page (admin.lacunastudio.app); the interim
+  server script `scripts/feedback_admin.py` is gone.
 - Tests: `tests/app/test_feedback.py` (8), `web/e2e/feedback.spec.ts` (6).
 
 ## Notes
@@ -22,5 +22,6 @@ Decision: `docs/decisions/2026-10-24-user-feedback.md`.
 
 ## Next
 - Leon's 验收 with his test account.
-- Admin batch (replaces `scripts/feedback_admin.py`): list, reply, status, 采纳, screenshots, prompt answers and show profiles.
+- Done in the admin batch: inbox, reply, status, 采纳, tags, notes, templates, screenshots, prompt answers, NPS and
+  show profiles (docs/status/admin-site.md). Owner re-test of groups A8, F4/F6, H, I2 moves to the final regression.
 - Batch 5: count the adopted items' bonus hours in the monthly quota.

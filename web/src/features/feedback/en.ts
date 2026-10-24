@@ -77,6 +77,11 @@ export const en: Dict = {
     "Status: Received → Working on it / Planned → Fixed / Released. If it's Not for now, we'll say why.",
   // one question at a time
   "只问一个问题": "Just one question",
+  "你有多大可能把 LACUNA 推荐给做播客的朋友？": "How likely are you to recommend LACUNA to a friend who makes podcasts?",
+  "0 到 10 分": "0 to 10",
+  "完全不会": "Not at all",
+  "一定会": "Definitely",
+  "为什么打这个分？（可以不写）": "Why this score? (optional)",
   "这集剪得怎么样？": "How did this episode turn out?",
   "评分": "Rating",
   "{n} 星": { one: "{n} star", other: "{n} stars" },

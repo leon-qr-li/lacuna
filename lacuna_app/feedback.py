@@ -26,11 +26,13 @@ from . import db as sitedb
 from .i18n import tr
 
 KINDS = ("bug", "idea", "praise")
-PROMPTS = ("rate", "pmf")
+PROMPTS = ("rate", "pmf", "nps")
 # 已收到 → 在处理 / 在计划中 → 已修好 / 已上线, or 暂不做 (with a reason)
 STATUSES = ("received", "working", "planned", "fixed", "shipped", "declined")
 PROMPT_GAP_S = 7 * 86400
 PMF_AFTER = 3              # episodes exported before the 「如果明天用不了」 question
+NPS_AFTER = 3              # 推荐意愿 0–10 (decision 2026-10-24-admin-site): after the 3rd export, then every 3 months
+NPS_EVERY_S = 90 * 86400
 MAX_TEXT = 4000
 MAX_SHOT = 6 * 1024 * 1024
 MAX_ACTIONS = 20
@@ -130,7 +132,7 @@ class Feedback:
         return True
 
     def answer(self, email: str, kind: str, answer: dict, show: dict | None = None, version: str = "") -> dict:
-        """A one-question prompt's answer (``rate`` / ``pmf``), kept for the admin."""
+        """A one-question prompt's answer (``rate`` / ``pmf`` / ``nps``), kept for the admin."""
         if kind not in PROMPTS:
             raise FeedbackError(tr("没有这种反馈"))
         a = answer if isinstance(answer, dict) else {}
@@ -142,6 +144,11 @@ class Feedback:
             data["stars"] = stars
             if a.get("saved") in SAVED:
                 data["saved"] = a["saved"]
+        elif kind == "nps":
+            score = a.get("score")
+            if not isinstance(score, int) or isinstance(score, bool) or not 0 <= score <= 10:
+                raise FeedbackError(tr("先选一个分数"))
+            data["score"] = score
         else:
             if a.get("choice") not in PMF:
                 raise FeedbackError(tr("先选一项"))
@@ -200,7 +207,8 @@ class Feedback:
                 "show": d.get("show"), "context": d.get("context") or {}, "importance": d.get("importance"),
                 "quote_ok": d.get("quote_ok"), "platforms": d.get("platforms") or [], "replies": d.get("replies") or [],
                 "adopted": bool(d.get("adopted")), "bonus_hours": d.get("bonus_hours") or 0,
-                "stars": d.get("stars"), "saved": d.get("saved"), "choice": d.get("choice"), "version": d.get("version")}
+                "stars": d.get("stars"), "saved": d.get("saved"), "choice": d.get("choice"), "score": d.get("score"),
+                "version": d.get("version")}
 
     def mine(self, email: str) -> list[dict]:
         """What the person wrote (not their prompt answers), newest first, for 我的反馈."""
@@ -283,6 +291,8 @@ class Feedback:
             return "pmf"
         if exported >= 1 and "rate" not in done:
             return "rate"
+        if exported >= NPS_AFTER and self.now() - st.get("nps_at", 0) >= NPS_EVERY_S:
+            return "nps"
         return None
 
     def reset_prompts(self, email: str) -> None:
@@ -297,6 +307,8 @@ class Feedback:
         st["last"] = self.now()
         if outcome == "sent":
             st["done"] = sorted(set(st.get("done", [])) | {kind})
+            if kind == "nps":
+                st["nps_at"] = self.now()
         elif outcome == "never":
             st["never"] = True
         self._save_prompt_state(email, st)

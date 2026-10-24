@@ -133,6 +133,10 @@
 .fb-stars { display: flex; gap: 4px; }
 .fb-stars button { font-size: 28px; line-height: 1; background: none; border: 0; padding: 0 2px; cursor: pointer; color: var(--line-2); }
 .fb-stars button.on { color: #ffb54d; }
+.fb-nps { display: grid; grid-template-columns: repeat(11, 1fr); gap: 4px; }
+.fb-nps button { min-width: 0; height: 32px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; padding: 0; }
+.fb-nps button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fb-nps-ends { display: flex; justify-content: space-between; margin-top: 2px; }
 .fb-choices { display: flex; flex-direction: column; gap: 8px; }
 .fb-choice {
   font: inherit; font-size: 14px; text-align: left; color: var(--ink); background: none; cursor: pointer;

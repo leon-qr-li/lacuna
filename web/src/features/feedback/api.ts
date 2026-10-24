@@ -51,7 +51,7 @@ export interface NewFeedback {
   shot?: string;
 }
 
-export type PromptKind = "rate" | "pmf";
+export type PromptKind = "rate" | "pmf" | "nps";
 
 export const feedbackApi = {
   send: (body: NewFeedback) => req<MineList & { id: string }>("POST", "/api/feedback", body),
