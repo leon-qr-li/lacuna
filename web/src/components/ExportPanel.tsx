@@ -6,6 +6,8 @@ import { api } from "../api";
 import { t } from "../i18n";
 import { BusyLabel, JobProgress } from "../features/loading/Loading";
 import { useCloud } from "../features/auth/cloud";
+import { askAfterExport } from "../features/feedback/Prompts";
+import { TellUs } from "../features/feedback/parts";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
@@ -17,6 +19,7 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
   const [wav, setWav] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
+  const watched = useRef(false);
 
   const poll = () => {
     api
@@ -24,6 +27,9 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
       .then((r) => {
         setJob(r.job);
         if (r.job?.state === "running") timer.current = window.setTimeout(poll, 600);
+        // an export this screen watched just finished: maybe one question (features/feedback)
+        else if (watched.current && r.job?.state === "done") void askAfterExport();
+        watched.current = r.job?.state === "running";
       })
       .catch((e) => setErr(String(e.message ?? e)));
   };
@@ -95,8 +101,18 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
         {running && (
           <JobProgress flat title={t("正在导出成品")} stage={job?.stage} progress={job?.progress ?? 0} started={job?.started} testId="export-progress" />
         )}
-        {err && <p className="error small">{err}</p>}
-        {job?.state === "error" && <p className="error small">{t("导出失败：")}{job.error}</p>}
+        {err && (
+          <p className="error small">
+            {err}
+            <TellUs title={t("导出没有完成")} message={err} />
+          </p>
+        )}
+        {job?.state === "error" && (
+          <p className="error small">
+            {t("导出失败：")}{job.error}
+            <TellUs title={t("导出没有完成")} message={job.error} />
+          </p>
+        )}
         <div className="xdl" data-tour="export-download">
           <b className="small">{t("下载")}</b>
           {done ? (

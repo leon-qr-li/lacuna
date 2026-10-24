@@ -9,6 +9,7 @@ import { hostList, LANGUAGE_LABELS, LANGUAGES, useShow, type Host, type Language
 import { TrackNote } from "../show/ShowForm";
 import { AboutHint } from "../show/ProfileCard";
 import "./import.css";
+import { TellUs } from "../feedback/parts";
 
 const RUNNING = new Set(["queued", "running"]);
 const STATE_LABEL: Record<ImportJob["state"], string> = {
@@ -302,9 +303,12 @@ function NewImport({
                     {t("还没选")}
                   </span>
                 ) : s.error ? (
-                  <span className="error" data-testid={`import-${tid(k)}`}>
-                    {s.name}：{s.error}
-                  </span>
+                  <>
+                    <span className="error" data-testid={`import-${tid(k)}`}>
+                      {s.name}：{s.error}
+                    </span>
+                    <TellUs title={t("导入没有完成")} message={`${s.name}：${s.error}`} />
+                  </>
                 ) : s.track ? (
                   <>
                     <span data-testid={`import-${tid(k)}`}>{s.track.name}</span>
@@ -393,7 +397,12 @@ function JobRow({ j, toReview, onChange }: { j: ImportJobView; toReview: number;
             : t("AI 第一刀：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: toReview })}
         </p>
       )}
-      {j.error && j.state !== "done" && <p className="error small">{j.error}</p>}
+      {j.error && j.state !== "done" && (
+        <p className="error small">
+          {j.error}
+          <TellUs title={t("导入没有完成")} message={j.error} code={j.id} />
+        </p>
+      )}
       {err && <p className="error small">{err}</p>}
       <div className="row gap8">
         {j.state === "done" && (
