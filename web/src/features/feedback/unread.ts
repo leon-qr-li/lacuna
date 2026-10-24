@@ -6,7 +6,6 @@ import { feedbackApi } from "./api";
 
 // feedback belongs to an account: an installation without sign-in (a development checkout) shows no 反馈
 let signedIn = false;
-let staff = false;
 export const isSignedIn = () => signedIn;
 export function useSignedIn() {
   const [on, set] = useState(signedIn);
@@ -14,16 +13,10 @@ export function useSignedIn() {
     if (signedIn) return;
     authApi.status().then((s) => {
       signedIn = !!s.email;
-      staff = s.role === "owner" || s.role === "admin";
       set(signedIn);
     }, () => undefined);
   }, []);
   return on;
-}
-/** the site owner or an admin (the temporary list of everyone's feedback) */
-export function useStaff() {
-  const on = useSignedIn();
-  return on && staff;
 }
 
 let count = 0;
