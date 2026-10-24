@@ -109,4 +109,8 @@ export const en: Dict = {
     "During the beta, inviting someone without a LACUNA account needs LACUNA's approval first.",
   "{role} · 等 LACUNA 批准":
     "{role} · awaiting approval",
+  分轨还没上传完: "Tracks are still uploading",
+  "切换节目会停止正在上传的分轨，回来要重新选文件。确定切换吗？":
+    "Switching shows stops the tracks that are uploading; you'd pick the files again. Switch anyway?",
+  切换: "Switch",
 };

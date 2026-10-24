@@ -84,3 +84,14 @@ def test_sdk_check_does_not_import_the_sdk():
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True,
                          cwd=Path(__file__).resolve().parents[2])
     assert out.stdout.strip() == "False"
+
+
+def test_busy_counts_every_show_on_the_server(client):
+    """Batch 5: an import in another show (its own app) also holds off the updater."""
+    from types import SimpleNamespace as NS
+
+    class Busy:
+        def active(self):
+            return ["EP009"]
+    client.app.state.space_apps = {"s2": NS(state=NS(importer=Busy(), exporter=NS(_running="EP004"), publisher=None))}
+    assert client.get("/api/app").json()["busy"] == ["导入（EP009）", "导出（EP004）"]

@@ -11,8 +11,9 @@ export interface PickedTrack {
   size: number;
 }
 
-/** ImportJob plus the server's time-left estimate (lacuna_app/import_eta.py) while it runs. */
-export type ImportJobView = ImportJob & { eta_s?: number | null };
+/** ImportJob plus the server's time-left estimate (lacuna_app/import_eta.py) while it runs, and while it
+ *  waits its turn how many imports on the server go before it (lacuna_app/import_queue.py). */
+export type ImportJobView = ImportJob & { eta_s?: number | null; ahead?: number | null };
 
 /**
  * Send a dropped / picked file to the local app (127.0.0.1 only; it keeps a copy in the workspace).

@@ -19,4 +19,7 @@ export const en: Dict = {
   这一集说的语言: "Language of this episode",
   "这个节目有 {n} 位主持人，只用了前 {n} 条分轨（每个节目最多 4 位主持人，每人一条）。":
     "This show has {n} hosts, so only the first {n} tracks were used (a show has at most 4 hosts, one track each).",
+  "排队中，前面还有 {n} 集": "Waiting in line: {n} ahead",
+  回到导入表单: "Back to the import form",
+  "正在上传 {id} · {pct}%": "Uploading {id} · {pct}%",
 };

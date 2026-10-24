@@ -5,24 +5,53 @@ Cloudflare, in front of the shared server, refuses a request body over 100 MB, a
 under that limit), into ``<workspace>/tmp/uploads/<id>.part``; then it calls the usual upload endpoint
 (import track, library asset) with ``part=<id>`` and an empty body, and that endpoint reads the
 assembled file instead of the request body (``source``). A piece sent again (a retry after a dropped
-connection) replaces what was there from its offset on. Pieces nobody finished are pruned after a
-day. The desktop app uses the same path for big files; nothing leaves the machine there either.
+connection) replaces what was there from its offset on. Pieces nobody touched for an hour are pruned.
+The file is written off the event loop, and an endpoint that keeps the whole file moves it into place
+(``take``) instead of copying it, so a big upload never stalls everyone else's requests. Uploads under way
+count as work in progress (``active``): the cloud updater waits for them before a restart.
 """
 from __future__ import annotations
 
+import os
 import re
+import threading
 import time
 from pathlib import Path
 from typing import AsyncIterator
+
+from starlette.concurrency import run_in_threadpool
 
 from .store import Workspace
 
 PARTS_DIR = ("tmp", "uploads")
 MAX_PIECE = 64 * 1024 ** 2        # the browser sends 32 MB; Cloudflare's limit is 100 MB
 MAX_TOTAL = 8 * 1024 ** 3
-STALE_S = 24 * 3600
+STALE_S = 3600
 READ = 1024 ** 2
+FLUSH = 4 * 1024 ** 2               # write to disk in 4 MB steps, each in a worker thread
+LIVE_S = 120                        # an upload whose last piece arrived this recently is under way
 _ID = re.compile(r"^[0-9a-f]{32}$")
+_live: dict[str, float] = {}
+_live_lock = threading.Lock()
+
+
+def _touch(part_id: str, now: float | None = None) -> None:
+    with _live_lock:
+        _live[part_id] = time.time() if now is None else now
+
+
+def _done(part_id: str) -> None:
+    with _live_lock:
+        _live.pop(part_id, None)
+
+
+def active(now: float | None = None) -> int:
+    """Uploads (in pieces) whose last piece arrived within LIVE_S, on any show of this server."""
+    now = time.time() if now is None else now
+    with _live_lock:
+        for k in [k for k, t in _live.items() if now - t > STALE_S]:
+            del _live[k]
+        return sum(1 for t in _live.values() if now - t <= LIVE_S)
 
 
 class PartError(ValueError):
@@ -66,6 +95,8 @@ async def write_piece(ws: Workspace, part_id: str, offset: int, chunks: AsyncIte
     elif offset > p.stat().st_size:
         raise PartError("a piece is missing")
     n = 0
+    _touch(part_id)
+    buf = bytearray()
     with p.open("r+b") as f:
         f.seek(offset)
         f.truncate()
@@ -73,8 +104,29 @@ async def write_piece(ws: Workspace, part_id: str, offset: int, chunks: AsyncIte
             n += len(chunk)
             if n > MAX_PIECE or offset + n > MAX_TOTAL:
                 raise PartError("piece too big")
-            f.write(chunk)
+            buf += chunk
+            if len(buf) >= FLUSH:
+                await run_in_threadpool(f.write, bytes(buf))
+                buf.clear()
+        if buf:
+            await run_in_threadpool(f.write, bytes(buf))
+    _touch(part_id)
     return offset + n
+
+
+def take(ws: Workspace, part_id: str, target: Path, max_size: int | None = None) -> int:
+    """Move the finished file to `target` (same disk: a rename, not a copy); returns its size."""
+    p = part_path(ws, part_id)
+    _done(part_id)
+    if not p.exists():
+        raise PartError("unknown upload")
+    size = p.stat().st_size
+    if max_size is not None and size > max_size:
+        p.unlink(missing_ok=True)
+        raise PartError("too big")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    os.replace(p, target)
+    return size
 
 
 async def source(request, ws: Workspace, part_id: str | None) -> AsyncIterator[bytes]:
@@ -85,6 +137,7 @@ async def source(request, ws: Workspace, part_id: str | None) -> AsyncIterator[b
             yield chunk
         return
     p = part_path(ws, part_id)
+    _done(part_id)
     if not p.exists():
         raise PartError("unknown upload")
     try:

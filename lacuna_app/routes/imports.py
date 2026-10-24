@@ -54,17 +54,29 @@ def register(app, ctx) -> None:
         if Path(name).suffix.lower() not in AUDIO_EXT:
             raise HTTPException(422, tr("不是音频文件：{name}", name=name))
         try:
+            import_tracks.prune(ws, tracks_in_use())       # copies from forms nobody finished
+        except OSError:
+            pass
+        try:
             target = import_tracks.new_target(ws, name)
         except PathError:
             raise HTTPException(422, tr("不是音频文件：{name}", name=name))
         size = 0
         try:
-            with target.open("wb") as f:
-                async for chunk in upload_parts.source(request, ws, part):
-                    size += len(chunk)
-                    if size > import_tracks.MAX_TRACK:
+            if part:            # sent in pieces: move the finished file into place (no second copy)
+                try:
+                    size = upload_parts.take(ws, part, target, import_tracks.MAX_TRACK)
+                except upload_parts.PartError as e:
+                    if str(e) == "too big":
                         raise HTTPException(413, tr("文件太大"))
-                    f.write(chunk)
+                    raise
+            else:
+                with target.open("wb") as f:
+                    async for chunk in upload_parts.source(request, ws, part):
+                        size += len(chunk)
+                        if size > import_tracks.MAX_TRACK:
+                            raise HTTPException(413, tr("文件太大"))
+                        f.write(chunk)
             if not size:
                 raise HTTPException(422, tr("文件是空的"))
             return {"track": check_track(target)}

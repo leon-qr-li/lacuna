@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { spacesApi, type Spaces } from "../spaces/api";
+import { t } from "../../i18n";
+import { confirmDialog } from "../dialog/Dialog";
+import { uploading } from "../import/draft";
 
 // Projects are the server's workspaces (lacuna_app/spaces.py, decision projects-albums): one fetch shared by
 // the top-bar menu, the project list and the settings page; a change anywhere updates them all.
@@ -39,8 +42,18 @@ export function useProjects(): Spaces | null | undefined {
   return s;
 }
 
-/** Everything on screen belongs to the project you were in: open the new one's 剧集 fresh. */
+/** Everything on screen belongs to the project you were in: open the new one's 剧集 fresh. Tracks still
+ *  uploading would stop (they belong to this show), so that asks first. */
 export async function openProject(id: string) {
+  if (
+    uploading().length &&
+    !(await confirmDialog({
+      title: t("分轨还没上传完"),
+      message: t("切换节目会停止正在上传的分轨，回来要重新选文件。确定切换吗？"),
+      confirmLabel: t("切换"),
+    }))
+  )
+    return;
   await spacesApi.switchTo(id);
   window.location.hash = "#/";
   window.location.reload();
