@@ -15,7 +15,9 @@ test.beforeEach(async ({ request, page }) => {
   expect(seeded).toBe(200);
 });
 
-test.afterEach(async ({ request }) => {
+test.afterEach(async ({ request, page }) => {
+  await page.goto(ADMIN + "/");
+  await page.evaluate(async () => fetch("/api/admin/_test/clear", { method: "POST", headers: { "X-Lacuna-Admin": "1" } }));
   await request.post("/api/auth/_test/reset?skip_setup=true");
 });
 

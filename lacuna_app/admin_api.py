@@ -945,6 +945,14 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
             step = max(int(auth.now() // totp.STEP), tf.get("last", -1) + 1)
             return {"code": totp.code_at(tf["secret"], step)}
 
+        @app.post("/api/admin/_test/clear")
+        def _test_clear():
+            """E2E only: the site-wide switches set in the admin (notice, maintenance) back off, so a spec that
+            stopped halfway leaves nothing on the main site for the next one."""
+            store.put("notice", {"on": False, "zh": "", "en": "", "until": None})
+            store.put("maintenance", {"on": False})
+            return {"ok": True}
+
         @app.post("/api/admin/_test/seed")
         def _test_seed(req: Request, password: str = "correct horse battery"):
             """E2E only, on a server with no accounts (after /api/auth/_test/reset): the owner with an
