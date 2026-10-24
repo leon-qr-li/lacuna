@@ -42,4 +42,5 @@ export const en: Dict = {
   "AI 密钥，以及所有节目的文字稿都按它校对的专有名词。": "The AI key, and the names every show's transcript is proofread against.",
   个人: "Personal",
   仅管理员: "Admins only",
+  打开后台: "Open the admin",
 };

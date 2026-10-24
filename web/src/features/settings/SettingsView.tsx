@@ -49,6 +49,7 @@ const sectionFromHash = (): Section => {
 /**
  * 设置 (Leon 2026-10-20, design C): a left side nav in two groups, 个人 (everyone) and 管理 (only admins: members
  * and invites, the mail sender, the AI key and the system terms), one section at a time at #/settings/<section>.
+ * On the shared server 管理 is the admin site instead: the owner gets a link to it.
  */
 export function SettingsView() {
   const [info, setInfo] = useState<AppInfo | null>(null);
@@ -93,7 +94,10 @@ export function SettingsView() {
   if (!info || !auth.loaded) return err ? <p className="error pad">{err}</p> : <PageLoading label={t("正在打开设置…")} />;
   const st = auth.st?.email && auth.st.role ? auth.st : null; // null: no sign-in (a local copy), the one user is its admin
   const admin = !st || st.role !== "member";
+  // on the shared server the staff cards live in the admin site (decision 2026-10-24-admin-site); a local
+  // checkout keeps them here
   const shown = SECTIONS.filter((x) => {
+    if (info.cloud && x.group === "admin") return false;
     if (x.id === "plan") return !!st;
     if (x.id === "account" || x.id === "members") return !!st && (x.id === "account" || admin);
     if (x.id === "mail") return !!st && st.role === "owner" && !!st.mail;
@@ -126,6 +130,14 @@ export function SettingsView() {
         <nav className="set-nav" aria-label={t("设置")}>
           {navGroup("me")}
           {navGroup("admin")}
+          {info.cloud && !info.staging && st?.role === "owner" && (
+            <div className="set-nav-group" role="group" aria-label={t("管理")}>
+              <div className="set-nav-label">{t("管理")}</div>
+              <a className="set-nav-item" href={`https://admin.${window.location.host}`} target="_blank" rel="noopener noreferrer" data-testid="settings-admin-link">
+                {t("打开后台")} ↗
+              </a>
+            </div>
+          )}
         </nav>
         <div className="set-main" data-testid={`settings-${cur.id}`}>
           <div className="set-head">
