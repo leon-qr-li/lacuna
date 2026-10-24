@@ -1,17 +1,16 @@
-"""入门 (new-user batch, Leon 2026-10-22, recommended C + A): the welcome page, the 入门清单 and LACUNA 示例节目.
+"""入门 (new-user batch, Leon 2026-10-22): the welcome page and LACUNA 示例节目 with its bubble tour.
 
-Progress is kept per person in the site database (meta ``onboard:<email>``), so it follows them to another
-computer or browser. The interface ticks a step when the real thing happened (the first download, three edits
-looked at …): steps of the person's own first episode are plain names (STEPS), steps done in the sample show
-start with ``sample.``. Someone who already has episodes when they first get here (Leon, Pei) starts with the
-guide hidden. Collaborators (no show of their own) get the short version: review, then listen.
+The tour on first login is the only guide (Leon 2026-10-24): the 入门清单 and 节目资料卡 that followed it on the
+show's home are gone. What is kept per person, in the site database (meta ``onboard:<email>``, so it follows them
+to another computer or browser): whether they got past the welcome page and where the tour is. Someone who
+already has episodes when they first get here (Leon, Pei) skips the welcome page; so do collaborators (no show
+of their own).
 
 The sample show (lacuna_app/sample.py) is a show of its own, marked in the site database, that no plan counts.
 """
 from __future__ import annotations
 
 import json
-import re
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -23,19 +22,7 @@ from ..i18n import tr
 from ..spaces import Spaces
 from .spaces import SPACE_COOKIE
 
-STEPS = ("show", "import", "review", "chat", "music", "export")
-COLLAB_STEPS = ("review", "chat")
-SAMPLE_STEPS = ("ab", "decide", "chat", "music", "export")
-# a step, or "card.<show id>": that show's 节目资料卡 put away (C6)
-STEP = re.compile(r"^((sample\.)?[a-z]{2,12}|card\.[a-z0-9_]{2,24})$")
-
-
-class MarkBody(BaseModel):
-    step: str
-
-
 class FlagsBody(BaseModel):
-    hidden: bool | None = None
     welcomed: bool | None = None
     tour: str | None = Field(None, pattern=r"^(~?[a-z0-9]{1,12}|)$")   # where the sample tour is ("~step" = paused there, "" = finished)
 
@@ -69,7 +56,7 @@ def register(app, ctx) -> None:
                 pass
         mine = [m for m in spaces.mine(email, detail=True) if not m["sample"] and not m["support"]]
         veteran = any(m["episodes"] for m in mine)
-        rec = {"done": [], "hidden": veteran, "welcomed": veteran}
+        rec = {"welcomed": veteran}
         save(email, rec)
         return rec
 
@@ -88,32 +75,17 @@ def register(app, ctx) -> None:
                 by = (spaces.spaces[sid].get("added_by") or {}).get(email) or spaces.creator(sid)
                 collab = {"show": spaces.title(sid), "by": auth.name(by) or (by or "").split("@")[0]}
         sid = spaces.sample_of(email)
-        steps = COLLAB_STEPS if collab else STEPS
-        return {"done": rec["done"], "hidden": rec["hidden"], "welcomed": rec["welcomed"], "tour": rec.get("tour"),
-                "steps": list(steps), "sample_steps": list(SAMPLE_STEPS), "collab": collab,
+        return {"welcomed": rec["welcomed"], "tour": rec.get("tour"), "collab": collab,
                 "sample": {"id": sid, "lang": spaces.sample(sid), "episode": sample.EPISODE} if sid else None}
 
     @app.get("/api/onboarding")
     def get(request: Request):
         return view(me(request))
 
-    @app.post("/api/onboarding/mark")
-    def mark(body: MarkBody, request: Request):
-        email = me(request)
-        if not STEP.match(body.step):
-            raise HTTPException(422, tr("没有这一步"))
-        rec = record(email)
-        if body.step not in rec["done"]:
-            rec["done"].append(body.step)
-            save(email, rec)
-        return view(email)
-
     @app.put("/api/onboarding")
     def flags(body: FlagsBody, request: Request):
         email = me(request)
         rec = record(email)
-        if body.hidden is not None:
-            rec["hidden"] = body.hidden
         if body.welcomed is not None:
             rec["welcomed"] = body.welcomed
         if body.tour is not None:
@@ -122,9 +94,9 @@ def register(app, ctx) -> None:
         return view(email)
 
     def forget_tour(email: str) -> None:
-        """The sample's steps and the tour's place go with the sample they were made in."""
+        """The tour's place goes with the sample it was made in."""
         rec = record(email)
-        rec["done"] = [s for s in rec["done"] if not s.startswith("sample.")]
+        rec.pop("done", None)   # the old 入门清单's ticks (before 2026-10-24)
         rec["tour"] = None
         save(email, rec)
 

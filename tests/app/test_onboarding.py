@@ -1,5 +1,5 @@
-"""入门 and LACUNA 示例节目 (routes/onboarding.py, sample.py): progress per person, the sample show that no
-plan counts, reset and delete, the short version for collaborators."""
+"""入门 and LACUNA 示例节目 (routes/onboarding.py, sample.py): the welcome page and tour place per person, the
+sample show that no plan counts, reset and delete, collaborators skip the welcome page."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -30,27 +30,29 @@ def join(leon, email, **extra):
     return c
 
 
-def test_someone_with_episodes_starts_with_the_guide_hidden(tmp_path):
+def test_someone_with_episodes_skips_the_welcome_page(tmp_path):
     leon = setup(tmp_path)
-    got = leon.get("/api/onboarding").json()
-    assert got["hidden"] is True and got["welcomed"] is True
+    assert leon.get("/api/onboarding").json()["welcomed"] is True
 
 
-def test_a_new_person_ticks_steps_and_it_is_kept_for_them(tmp_path):
+def test_a_new_person_is_welcomed_once_and_it_is_kept_for_them(tmp_path):
     leon = setup(tmp_path)
     sam = join(leon, "sam@example.com")
     got = sam.get("/api/onboarding").json()
-    assert got["hidden"] is False and got["welcomed"] is False and got["collab"] is None
-    assert got["steps"] == ["show", "import", "review", "chat", "music", "export"]
-    sam.post("/api/onboarding/mark", json={"step": "show"})
-    sam.post("/api/onboarding/mark", json={"step": "show"})
-    assert sam.post("/api/onboarding/mark", json={"step": "../x"}).status_code == 422
+    assert got["welcomed"] is False and got["collab"] is None
     assert sam.put("/api/onboarding", json={"welcomed": True}).json()["welcomed"] is True
     again = TestClient(leon.app)        # another browser
     again.post("/api/auth/login", json={"email": "sam@example.com", "password": PW})
+    assert again.get("/api/onboarding").json()["welcomed"] is True
+
+
+def test_the_home_checklist_is_gone(tmp_path):
+    """Leon 2026-10-24: the tour on first login is the only guide; no 入门清单 or 节目资料卡 after it."""
+    leon = setup(tmp_path)
+    sam = join(leon, "sam@example.com")
     got = sam.get("/api/onboarding").json()
-    assert got["done"] == ["show"] and got["welcomed"] is True
-    assert leon.get("/api/onboarding").json()["done"] == []
+    assert not {"done", "hidden", "steps", "sample_steps"} & set(got)
+    assert sam.post("/api/onboarding/mark", json={"step": "show"}).status_code in (404, 405)
 
 
 def test_the_sample_show_is_free_resettable_and_removable(tmp_path):
@@ -71,15 +73,12 @@ def test_the_sample_show_is_free_resettable_and_removable(tmp_path):
     assert len(own) == 1
     # nobody can be invited into it
     assert sam.post(f"/api/spaces/{sid}/invite", json={"email": "alex@example.com"}).status_code == 403
-    # adding it again gives the same show; reset brings the edits back and forgets the sample steps
+    # adding it again gives the same show; reset brings the edits back
     assert sam.post("/api/onboarding/sample", json={"lang": "zh"}).json()["sample"]["id"] == sid
     ep = sam.get("/api/episodes/SAMPLE_01").json()
     first = next(e for e in ep["edits"] if e["category"] == "content")
     assert sam.post(f"/api/episodes/SAMPLE_01/edits/{first['id']}/review", json={"action": "restore", "playhead": 0}).status_code == 200
-    sam.post("/api/onboarding/mark", json={"step": "sample.decide"})
-    sam.post("/api/onboarding/mark", json={"step": "show"})
-    out = sam.post("/api/onboarding/sample/reset").json()
-    assert out["done"] == ["show"]
+    sam.post("/api/onboarding/sample/reset")
     again = sam.get("/api/episodes/SAMPLE_01").json()
     assert next(e for e in again["edits"] if e["id"] == first["id"])["status"] == "applied"
     # the shared recording is outside the show's folder, and stays when the sample is deleted
@@ -120,12 +119,10 @@ def test_the_sample_matches_the_tour(tmp_path):
     assert {a["kind"] for a in lib} == {"intro", "outro", "bed"}
 
 
-def test_a_collaborator_gets_the_short_version(tmp_path):
+def test_a_collaborator_is_named_with_who_invited_them(tmp_path):
     leon = setup(tmp_path)
     alex = join(leon, "alex@example.com", space="main", space_role="editor")
-    got = alex.get("/api/onboarding").json()
-    assert got["steps"] == ["review", "chat"]
-    assert got["collab"]["by"] == "Leon"
+    assert alex.get("/api/onboarding").json()["collab"]["by"] == "Leon"
 
 
 def test_the_tour_line_in_the_sample_is_answered_without_the_ai(tmp_path):
@@ -246,11 +243,10 @@ def test_a_new_sample_starts_the_tour_from_step_1(tmp_path):
     leon = setup(tmp_path)
     sam = join(leon, "sam@example.com")
     sam.post("/api/onboarding/sample", json={"lang": "zh"})
-    sam.post("/api/onboarding/mark", json={"step": "sample.decide"})
     sam.put("/api/onboarding", json={"tour": ""})                 # finished
     # deleted in 设置, then added again: the tour from the start
     got = sam.delete("/api/onboarding/sample").json()
-    assert got["tour"] is None and "sample.decide" not in got["done"]
+    assert got["tour"] is None
     sam.put("/api/onboarding", json={"tour": "~music3"})          # (left halfway with no sample: still a fresh start)
     got = sam.post("/api/onboarding/sample", json={"lang": "zh"}).json()
     assert got["tour"] is None and got["sample"]
@@ -260,7 +256,7 @@ def test_a_new_sample_starts_the_tour_from_step_1(tmp_path):
     assert leon.delete("/api/auth/users/sam@example.com").status_code == 200
     again = join(leon, "sam@example.com")
     got = again.get("/api/onboarding").json()
-    assert got["sample"] is None and got["tour"] is None and got["welcomed"] is False and got["done"] == []
+    assert got["sample"] is None and got["tour"] is None and got["welcomed"] is False
     assert old not in {s["id"] for s in leon.get("/api/spaces").json()["all"]}
     got = again.post("/api/onboarding/sample", json={"lang": "zh"}).json()
     assert got["sample"]["id"] != old and got["tour"] is None

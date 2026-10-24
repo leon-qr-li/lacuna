@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AB, EditInfo, Episode, TextLine } from "../api";
-import { markStep } from "../features/onboarding/api";
 import { api, fmt } from "../api";
 import { ABPlayer, type ABHandle } from "./ABPlayer";
 import { Icon } from "./Icon";
@@ -74,9 +73,6 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
     if (!cur) return;
     const ok = await onReview(cur, action);
     if (!ok) return;
-    markStep("decide");
-    // 入门: 审阅 AI 第一刀 counts once three edits (or all there are) were looked at
-    if (done + (pending(cur) ? 1 : 0) >= Math.min(3, all.length)) markStep("review");
     if (action === "apply") return;
     const rest = [...ranked.slice(idx + 1), ...ranked.slice(0, Math.max(idx, 0))];
     select(rest.find((e) => pending(e) && e.id !== cur.id));
@@ -125,7 +121,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
           <button
             type="button"
             className="btn btn-outline"
-            onClick={() => void onApproveAll().then((ok) => ok && markStep("review"))}
+            onClick={() => void onApproveAll()}
             title={t("按 AI 现在的处理全部确认：删了的保持删，没删的保持原样。一步撤销即可退回。")}
             data-testid="review-keep-rest"
           >
@@ -206,10 +202,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
               </div>
             )}
             <div className="rv-act" aria-label={t("试听和决定")}>
-              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={[t("A · 原话"), t("B · 剪后")]} onPlay={() => {
-                  onPauseMain();
-                  markStep("ab");
-                }} compact rate={speed.rate} />
+              <ABPlayer ref={abRef} ab={ab} loading={!ab} labels={[t("A · 原话"), t("B · 剪后")]} onPlay={onPauseMain} compact rate={speed.rate} />
               <SpeedButton rate={speed.rate} onChange={speed.setRate} />
               <span className="grow" />
               {cur.status === "applied" ? (

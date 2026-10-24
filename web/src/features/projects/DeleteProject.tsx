@@ -9,7 +9,7 @@ import { setProjects } from "./api";
  * 永久删除 an archived project: type its name to confirm (decision projects-archive-delete). Not
  * confirmDialog: that one has no text box. Rendered into <body> like the other dialogs.
  */
-export function DeleteProjectDialog({ p, here, onClose }: { p: MySpace; here: boolean; onClose: () => void }) {
+export function DeleteProjectDialog({ p, here, home, onClose }: { p: MySpace; here: boolean; home?: boolean; onClose: () => void }) {
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -27,7 +27,8 @@ export function DeleteProjectDialog({ p, here, onClose }: { p: MySpace; here: bo
     try {
       const sp = await spacesApi.remove(p.id, typed);
       if (here) {
-        // everything on screen belonged to it: start fresh in the project you land in
+        // everything on screen belonged to it: start fresh in the project you land in (from its settings: on its 首页)
+        if (home) window.location.hash = "#/";
         window.location.reload();
         return;
       }

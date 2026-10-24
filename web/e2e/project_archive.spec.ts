@@ -70,3 +70,33 @@ test("a project gets a colour, a picture, is archived read-only, then deleted fo
   await expect(page.getByTestId("project-archive")).toHaveCount(0);
   expect((await (await page.request.get("/api/spaces")).json()).mine[0].archived).toBe(false);
 });
+
+test("节目设置 is on the show's home; archive then delete for good right there (Leon 2026-10-24)", async ({ page }) => {
+  await page.request.post("/api/auth/login", { data: { email: "leon@example.com", password: PW } });
+  // one show: 所有节目 is still in the menu
+  expect((await (await page.request.get("/api/spaces")).json()).mine).toHaveLength(1);
+  await page.goto("/#/");
+  await page.getByTestId("project-menu").click();
+  await expect(page.getByTestId("project-all-link")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  const made = await (await page.request.post("/api/spaces", { data: { name: "试播" } })).json();
+  expect(made.current.id).toBe(made.created); // moved into it
+  // set up (a new show's 首页 is the 建节目 form until then)
+  const before = await (await page.request.get("/api/show")).json();
+  expect((await page.request.put("/api/show", { data: { ...before, show_name: "试播", hosts: [{ name: "Leon" }] } })).ok()).toBeTruthy();
+  await page.goto("/#/");
+  await page.reload();
+  await expect(page.getByTestId("project-menu")).toHaveText(/试播/, { timeout: 20_000 });
+  await page.getByTestId("home-project-settings").click();
+  await expect(page).toHaveURL(/#\/project$/);
+  await page.getByTestId("project-archive-btn").click();
+  await page.getByTestId("dialog").getByRole("button", { name: "归档", exact: true }).click();
+  await page.getByTestId("project-readonly").getByTestId("project-settings-delete").click();
+  const dlg = page.getByTestId("project-delete-dialog");
+  await expect(dlg).toContainText("不能恢复");
+  await dlg.getByTestId("project-delete-name").fill("试播");
+  await dlg.getByTestId("project-delete-confirm").click();
+  await expect.poll(async () => (await (await page.request.get("/api/spaces")).json()).mine.map((m: { name: string }) => m.name)).not.toContain("试播");
+  await expect(page.locator("h1.home-title")).toBeVisible({ timeout: 20_000 });
+});
