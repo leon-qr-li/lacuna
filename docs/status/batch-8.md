@@ -26,10 +26,27 @@ Thread 「第八批：代码冻结与全面回归」 (2026-10-25). No new featur
 - The quota refusal names the real button 「想要更多时长」; a stray space in the terms; admin demo data uses
   example.com addresses only.
 
+## Fix PR 2 (visual walkthrough)
+A cloud-mode server walked in zh/en × dark/light × 1440/1024/390 (about 1,600 screenshots), every fix re-shot:
+- 封面 could still show the server folder when one `/api/auth/status` call failed (`useCloud` took a failure as
+  "not cloud" for the whole page load): a failed call is asked again.
+- Admin: 告警邮件 table ran out of its card in English; CPU/memory axes read "PM PM PM" (now 24-hour, fewer ticks);
+  「系统正常」 while no backup was ever recorded (cloud now warns); raw show role "admin"; audit details in field names;
+  feedback detail header squeezed; the reply box clipped 回复 at 1024 (grid rows now keep their content's height);
+  本机 → 这台设备; "Member" header; the phone top bar's cut-off title.
+- Main site: 收起 covered the 这附近改了什么 count at 1024; toast 撤销 broke onto two lines; tour pill covered the title
+  (moves to the bottom under 1180px); role table headers one character per line and 音量 vertical on phones; the dB
+  value ran out of the card; poster hint cut off; error page without a side gutter; dangling › in the step tabs;
+  English plurals; 已生效 rules said "If adopted"; 电脑 / App wording.
+Left as noted (not bugs or not for the freeze): review titles stay in the language of the first cut; legal TBD
+placeholders wait for the lawyer; the 401 of `/api/site/notice` before sign-in in the browser console.
+
 ## Waiting on Leon (security changes need his typed words)
 See the final report. Found by the security probe: password-reset code guessing has no cooldown after 5 wrong
 tries; `GET /api/app` lists other shows' running jobs and the server path; a non-owner site admin can end the
 owner's sessions in the admin; the main site sends no nosniff / frame headers.
 
+Decisions page (S1–S7 security, needs his typed words; P1–P3 product): https://claude.ai/artifact/VUiqsSf8CHmd5fb9U12h4t
+
 ## Next action
-Merge PR 1 → deploy; visual walkthrough findings → PR 2; final report.
+Merge PR 2 → deploy; final report; then the security fixes Leon picks on the decisions page.

@@ -62,6 +62,11 @@
 @media (max-width: 1100px) {
   .workspace.wb { grid-template-columns: minmax(0, 1fr) 380px; }
   .workspace.wb > .chat { margin-right: 16px; }
+  /* the 380px panel has no room for 收起's word beside two tabs and a count */
+  .chat:has(.side-tabs) .chat-collapse-label { display: none; }
+  .chat:has(.side-tabs) .chat-collapse { padding: 0 9px; }
+  /* and the connection chip beside 「LACUNA」 goes too (the English tab names are longer) */
+  .side-tab .chip { display: none; }
 }
 @media (max-width: 760px) {
   .workspace.wb, .workspace.wb.chat-closed { grid-template-columns: minmax(0, 1fr); }

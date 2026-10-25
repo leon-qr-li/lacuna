@@ -296,7 +296,7 @@ function Staff({ s, set, owner, me }: { s: SettingsData; set: (d: SettingsData) 
                 </td>
                 <td className="n">
                   {x.current ? (
-                    <Pill tone="acc">{t("本机")}</Pill>
+                    <Pill tone="acc">{t("这台设备")}</Pill>
                   ) : (
                     <button type="button" className="a-btn sm" onClick={() => endSession(x.id)}>
                       {t("退出")}

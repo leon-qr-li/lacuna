@@ -379,3 +379,14 @@ def test_the_ai_budget_warning_defaults_to_500_for_the_quality_first_models(tmp_
     c = sign_in(app)
     assert c.get("/api/admin/ai").json()["budget"] == 500
     assert c.get("/api/admin/settings").json()["budget"] == 500
+
+
+def test_no_backup_on_record_is_an_alert_in_the_cloud(tmp_path, monkeypatch):
+    """Regression (batch 8): the cloud admin said 「系统正常」 while 上次备份 read 「没找到」."""
+    from lacuna_app import admin_metrics
+    monkeypatch.setattr(admin_metrics, "BACKUP_MARK", tmp_path / "no-backup.json")
+    app, main, _ = setup(tmp_path)
+    c = sign_in(app)
+    assert not [a for a in c.get("/api/admin/system").json()["alerts"] if a["kind"] == "backup"]   # a checkout
+    monkeypatch.setattr(admin_metrics, "cloud_server", lambda: True)
+    assert {"level": "warn", "kind": "backup", "at": None} in c.get("/api/admin/system").json()["alerts"]

@@ -1341,6 +1341,8 @@ svg.a-chart {
   display: grid;
   gap: 14px;
   align-content: start;
+  /* rows keep their content's height and the panel scrolls (the reply box's overflow let its row shrink) */
+  grid-auto-rows: max-content;
   min-width: 0;
 }
 .a-back {
@@ -1806,3 +1808,14 @@ svg.a-chart {
 .a-speed { display: grid; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .a-speed p { margin: 0; }
 .a-bad-text { color: var(--bad); }
+
+/* 反馈 detail: the person's line keeps its width; status and 采纳 wrap below it on a narrow panel */
+.a-fb-who {
+  min-width: min(260px, 100%);
+}
+/* a phone: the page heading below already names the page; the cut-off copy in the top bar goes */
+@media (max-width: 480px) {
+  .a-top-title {
+    display: none;
+  }
+}

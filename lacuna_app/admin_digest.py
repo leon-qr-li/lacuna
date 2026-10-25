@@ -119,7 +119,7 @@ class Digest:
                                       tr("打开后台"), f"{self.origin}/", advice + " " + tr("同一件事一天只提醒一次，升级时马上再提醒。"),
                                       tr("容量 · CAPACITY"))
         elif a["kind"] == "backup":
-            lead = tr("超过 26 小时没有新的备份了。请看一下备份任务。")
+            lead = tr("超过 26 小时没有新的备份了。请看一下备份任务。") if a.get("at") else tr("还没有找到任何备份记录。请看一下备份任务。")
         else:
             lead = tr("最近 {n} 次导入都失败了。", n=a.get("n", 3))
         return notice_mail.render(tr("LACUNA 后台提醒"), lead, [], tr("打开后台"), f"{self.origin}/system",

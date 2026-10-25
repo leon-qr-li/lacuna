@@ -346,7 +346,7 @@ export function FeedbackHost() {
                     {t("页面：{page}", { page: ctx.title || ctx.page || "—" })}
                     {ctx.at != null && ` · ${t("播放到 {time}", { time: clockText(ctx.at) })}`}
                   </li>
-                  <li>{t("App 版本、浏览器、界面语言")}</li>
+                  <li>{t("LACUNA 版本、浏览器、界面语言")}</li>
                   {kind === "bug" && <li>{t("最近 {n} 步操作和最近一次报错", { n: ctx.actions?.length ?? 0 })}</li>}
                   {fromPublish && <li>{t("节目和你选的平台")}</li>}
                 </ul>

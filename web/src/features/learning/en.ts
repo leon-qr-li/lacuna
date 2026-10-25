@@ -34,6 +34,7 @@ export const en: Dict = {
     "Not enough evidence for a rule yet. Review a few more edits one by one (keep / restore) or ask LACUNA in chat to cut more, and rules will show up here. You can also type a standing request in the LACUNA chat and click Remember to record it directly.",
   "有新证据，待你重新确认": "New evidence, please confirm again",
   "采用后：{effect}。": "If adopted: {effect}.",
+  "生效中：{effect}。": "In force: {effect}.",
   "新的审阅记录里已经看不出这个规律了，但它仍按你当初采用的样子生效。":
     "Recent reviews no longer show this pattern, but it stays active as you adopted it.",
   "看例子（{n}）": "Examples ({n})",

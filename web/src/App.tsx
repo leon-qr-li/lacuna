@@ -191,7 +191,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const approveAll = () =>
     run(
       api.reviewAll(id, "approve", player.time, undefined, ep?.rev),
-      (n) => t("已全部通过 {changed} 处，Ctrl+Z 可撤销", { changed: (n as Episode & { changed: number }).changed }),
+      (n) => t("已全部通过 {changed} 处，Ctrl+Z 可撤销", { changed: (n as Episode & { changed: number }).changed, n: (n as Episode & { changed: number }).changed }),
       { undo: true },
     );
 
