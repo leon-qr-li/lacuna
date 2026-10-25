@@ -292,6 +292,7 @@ export interface AiData {
   month: string;
   per_hour: number | null;
   target: number;
+  unmetered: number;
   hours: number;
   features: Record<string, number>;
   top: { email: string; name: string | null; cost: number; hours: number; per_hour: number | null }[];

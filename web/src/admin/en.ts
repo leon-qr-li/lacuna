@@ -270,6 +270,7 @@ export const en: Dict = {
   "预计月底 {v}": "On track for {v}",
   "每小时音频成本": "Cost per audio hour",
   "目标 {v}": "Target {v}",
+  "不含本月之前导入的集 {v}": "Excludes {v} on episodes imported before this month",
   "预算": "Budget",
   "{s} / {b}，到 80% 发邮件": "{s} / {b}; email at 80%",
   "本月处理的音频": "Audio processed this month",

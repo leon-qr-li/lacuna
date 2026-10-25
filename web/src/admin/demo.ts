@@ -372,8 +372,9 @@ function ai(): AiData {
   return {
     ...o.ai,
     month: new Date().toISOString().slice(0, 7),
-    per_hour: 2.41,
-    target: 1.8,
+    per_hour: 3.62,
+    target: 3.8,
+    unmetered: 0,
     hours: 75.7,
     features: { first_cut: 121.3, chat: 28.4, notes: 14.9, poster: 11.2, rules: 6.6 },
     top: demoUsers()
