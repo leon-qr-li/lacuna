@@ -60,6 +60,11 @@ export function AiPage({ me }: PageProps) {
           <div className="l">{t("每小时音频成本")}</div>
           <div className="v">{fmtUsd(d.per_hour)}</div>
           <div className={`d ${d.per_hour !== null && d.per_hour > d.target ? "dn" : "up"}`}>{t("目标 {v}", { v: fmtUsd(d.target) })}</div>
+          {d.unmetered > 0 && (
+            <div className="d mu" data-testid="ai-unmetered">
+              {t("不含本月之前导入的集 {v}", { v: fmtUsd(d.unmetered) })}
+            </div>
+          )}
         </section>
         <section className="a-card a-kpi">
           <div className="l">{t("预算")}</div>

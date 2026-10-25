@@ -30,6 +30,7 @@ SILENT_DAYS = 14          # 沉默用户 (decision: 14 days)
 STUCK_DAYS = 14
 BETA_SEATS = 20           # beta 名额, counted by show (decision)
 AI_BUDGET = 300.0         # monthly warning in USD (decision 7); the hard limit is in the Anthropic Console
+AI_HOUR_TARGET = 3.8      # USD per audio hour with the quality-first models (decision 2026-10-25-ai-cost-cut)
 DISK_WARN = 0.70
 BACKUP_MARK = Path(os.environ.get("LACUNA_BACKUP_MARK", "/data/backup-canary.json"))
 SAMPLES = 144             # CPU / memory every 5 minutes: 12 hours
@@ -489,6 +490,7 @@ class AdminData:
                 refusals += 1
         start = _month_start(self.now())
         audio = Counter()
+        imported: set[tuple] = set()
         fails = 0
         ids = self.uid_map()
         for r in self.events(start, ("import.done", "import.error")):
@@ -499,9 +501,20 @@ class AdminData:
             sid = r["sid"]
             who = self.spaces.creator(sid) if sid in self.spaces.spaces else ids.get(r["uid"])
             audio[who or "—"] += float(p.get("audio_s") or 0) / 3600
+            imported.add((sid, r["ep"]))
         hours = sum(audio.values())
+        # cost per hour counts only the calls on episodes imported this month: chat on an older episode has no
+        # hours this month and would blow the ratio up (it is shown as `unmetered` instead)
+        metered, metered_by_user = 0.0, Counter()
+        for x in lines:
+            if (x["sid"], x.get("episode")) in imported:
+                c = float(x.get("cost_usd") or 0)
+                metered += c
+                who = self.spaces.creator(x["sid"]) if x["sid"] in self.spaces.spaces else None
+                metered_by_user[who or "—"] += c
         top = [{"email": e, "name": self.auth.name(e), "cost": round(c, 2), "hours": round(audio.get(e, 0), 2),
-                "per_hour": round(c / audio[e], 2) if audio.get(e) else None} for e, c in by_user.most_common(10)]
+                "per_hour": round(metered_by_user[e] / audio[e], 2) if audio.get(e) else None}
+               for e, c in by_user.most_common(10)]
         # AI edits kept vs restored at review, by category (first cut only), this month and last
         keep: dict[str, Counter] = defaultdict(Counter)
         for r in self.events(self.now() - 60 * DAY, ("review.decide",)):
@@ -515,7 +528,8 @@ class AdminData:
             total = sum(c.values())
             accuracy.append({"category": cat, "kept": round(1 - restored / total, 3) if total else None, "n": total})
         rules = self.db.query("SELECT COUNT(*) AS n FROM events WHERE ev IN ('rule.remember', 'lessons.decide') AND ts >= ?", (start,))[0]["n"]
-        return m | {"per_hour": round(m["spent"] / hours, 2) if hours else None, "target": 1.8, "hours": round(hours, 2),
+        return m | {"per_hour": round(metered / hours, 2) if hours else None, "target": AI_HOUR_TARGET,
+                    "unmetered": round(m["spent"] - metered, 2), "hours": round(hours, 2),
                     "features": {k: round(v, 2) for k, v in by_feat.items()}, "top": top,
                     "fails": {"imports": fails, "refusals": refusals}, "accuracy": sorted(accuracy, key=lambda a: -a["n"]),
                     "rules_month": rules, "calls": len(lines)}
