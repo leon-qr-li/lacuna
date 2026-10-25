@@ -40,12 +40,12 @@ export function Welcome({ children }: { children: ReactNode }) {
   return (
     <section className="welcome" data-testid="welcome">
       <h1>{st?.name ? t("欢迎，{name}", { name: st.name }) : t("欢迎来到 LACUNA")}</h1>
-      <p className="welcome-lead">{t("LACUNA 先替你剪第一刀：口误、重复、过长的停顿和跑题。你来听、来决定，然后加音乐、导出。")}</p>
+      <p className="welcome-lead">{t("LACUNA 先替你做初剪：口误、重复、过长的停顿和跑题。你来听、来决定，然后加音乐、导出。")}</p>
       <div className="welcome-ways">
         <article className="card welcome-way">
           <span className="chip chip-ok">{t("不占用你的额度")}</span>
           <h2>{t("先用示例集试一遍")}</h2>
-          <p className="muted">{t("一集两分钟的双人对话，已经剪好第一刀。跟着气泡走一遍全流程，大约 8 分钟。")}</p>
+          <p className="muted">{t("一集两分钟的双人对话，已经做好初剪。跟着气泡走一遍全流程，大约 8 分钟。")}</p>
           <button type="button" className="btn btn-primary" onClick={() => void sample()} disabled={busy} data-testid="welcome-sample">
             {ob.sample ? t("回到示例节目") : t("开始试用示例")}
           </button>

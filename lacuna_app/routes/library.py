@@ -51,7 +51,7 @@ def register(app, ctx) -> None:
         except (PathError, ValueError):
             raise HTTPException(400, "invalid episode id")
         if episode_id not in ctx.ws.episode_ids():
-            raise HTTPException(404, "no such episode")
+            raise HTTPException(404, tr("这一集不存在，可能已经删除了"))
         return episode_id
 
     def album_or_404(album_id: str | None) -> str:

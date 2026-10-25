@@ -160,12 +160,12 @@ def button_png(label: str) -> tuple[bytes, int] | None:
 
 def steps() -> list[tuple[str, str]]:
     """Version B 「专业名词式」 (Leon 2026-10-23): an episode from import to publish, each step in one line."""
-    return [(tr("分轨导入与自动转写"), tr("每位主持人一条分轨，自动转成文字稿")),
+    return [(tr("分轨导入与自动转写"), tr("每位主持人一条分轨，自动转成逐字稿")),
             (tr("LACUNA 智能初剪"), tr("去掉卡顿、口误和多余的话，留住对话的节奏")),
             (tr("逐处审阅，A/B 对比"), tr("每一刀都能前后对比试听、能恢复，最后由你拍板")),
             (tr("配乐编排与响度标准化"), tr("片头片尾、背景音乐，整集响度对齐平台标准")),
-            (tr("Show notes 与封面生成"), tr("按本集内容写好节目介绍和时间轴，配好封面海报")),
-            (tr("多平台导出与发布"), tr("导出成品音频，带上整套发布资料发到各个平台"))]
+            (tr("Show notes 与封面生成"), tr("按本集内容写好节目介绍和时间轴，配好封面")),
+            (tr("导出与发布资料"), tr("导出成品音频，配好标题、简介和封面，方便你上传到各个平台"))]
 
 
 PLAN_LINES = {
@@ -220,7 +220,7 @@ def render(inviter: str, link: str, project: str | None = None, role: str | None
     else:
         subject = tr("{who} 邀请你使用 LACUNA", who=who)
         lead = tr("你会有一个自己的节目。")
-    about = tr("从导入录音到发布上线，一期节目的每一步都在 LACUNA 完成：")
+    about = tr("LACUNA 帮你把一期节目从原始录音做到可以发布：")
     flow = steps()
     if project:
         card_kicker = tr("你将加入的节目")

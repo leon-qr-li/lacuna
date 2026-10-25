@@ -19,6 +19,7 @@ import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
 import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
+import { ErrorState } from "./features/states/States";
 import { openEpisode, type Restoring } from "./features/cold/restore";
 import { Home } from "./features/episodes/Home";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
@@ -110,7 +111,8 @@ function PageScreen({ path }: { path: string }) {
 
 function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [ep, setEp] = useState<Episode | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
   // a toast; `undo` puts a small 撤销 button in it (after a bulk action: 全部通过 / 去掉 um/uh / 统一音量)
   const [toast, setToast] = useState<{ msg: string; undo?: boolean } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -126,14 +128,15 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [restoring, setRestoring] = useState<Restoring | null>(null);
   useEffect(() => {
     let alive = true;
+    setErr(null);
     openEpisode(() => api.episode(id), setRestoring, () => alive)
       .then((e) => alive && setEp(e))
-      .catch((e) => alive && setErr(String(e.message ?? e)))
+      .catch((e) => alive && setErr(e ?? new Error("")))
       .finally(() => alive && setRestoring(null));
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   // new edit version -> swap the stream, keeping the (server-mapped) position
   useEffect(() => {
@@ -210,7 +213,25 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  if (err) return <p className="error pad">{t("无法打开剧集：")}{err}</p>;
+  if (err)
+    return (
+      <div className="app">
+        <header className="topbar">
+          <a className="brand" href="#/">
+            LACUNA
+          </a>
+          <ProjectCrumb />
+          <span className="grow" />
+          <Nav on="episode" />
+        </header>
+        <ErrorState
+          title={t("这一集打不开")}
+          error={err}
+          onRetry={() => setAttempt((n) => n + 1)}
+          back={{ href: "#/", label: t("回首页") }}
+        />
+      </div>
+    );
 
   const pending = ep?.proposals[0]?.edit ?? null;
   const href = (m: Mode) => `#/ep/${encodeURIComponent(id)}/${m}`;
@@ -249,30 +270,32 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       </header>
       <div className="ep-head">
         <div className="ep-head-row">
-          {ep && mode === "listen" && (
-            <a className="small muted ep-lessons-link" href={href("lessons")} data-testid="lessons-link">
-              {t("这一集 LACUNA 学到了什么？")}
-            </a>
-          )}
-          <Presence others={others} />
-          <span className="grow" />
-          {next && <NextStep href={href(next.mode)} label={next.label} />}
-        </div>
-        <nav aria-label={t("制作流程")} className="modes">
-          {steps.map((s, i) => (
-            <Fragment key={s.mode}>
-              {i > 0 && (
-                <span className="mode-sep">
-                  <Icon name="chev" size={14} />
-                </span>
-              )}
-              <a href={stepHref(s.mode)} aria-current={s.on ? "page" : undefined}>
-                {s.label}
-                {s.badge !== undefined && <span className={`mode-badge ${s.badge ? "" : "is-zero"}`}> · {s.badge}</span>}
+          <div className="ep-head-side">
+            {ep && mode === "listen" && (
+              <a className="small muted ep-lessons-link" href={href("lessons")} data-testid="lessons-link">
+                {t("这一集 LACUNA 学到了什么？")}
               </a>
-            </Fragment>
-          ))}
-        </nav>
+            )}
+            <Presence others={others} />
+          </div>
+          <nav aria-label={t("制作流程")} className="modes">
+            {steps.map((s, i) => (
+              <Fragment key={s.mode}>
+                {i > 0 && (
+                  <span className="mode-sep">
+                    <Icon name="chev" size={14} />
+                  </span>
+                )}
+                <a href={stepHref(s.mode)} aria-current={s.on ? "page" : undefined}>
+                  {s.label}
+                  {s.badge !== undefined && <span className={`mode-badge ${s.badge ? "" : "is-zero"}`}> · {s.badge}</span>}
+                </a>
+              </Fragment>
+            ))}
+          </nav>
+          {/* the slot stays when there is no next page, so the step bar never moves (batch 7, T1) */}
+          <div className="ep-head-side ep-head-end">{next && <NextStep href={href(next.mode)} label={next.label} />}</div>
+        </div>
         {curGroup && (
           <nav aria-label={GROUPS[curGroup] ?? curGroup} className="subtabs">
             {tabs

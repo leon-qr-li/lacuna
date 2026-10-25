@@ -30,7 +30,7 @@ export const en: Dict = {
   "附上我现在所在的页面": "Attach the page I'm on",
   "附上这张截图": "Attach this screenshot",
   "附上截图（出错那一刻的画面）": "Attach a screenshot (the screen when it went wrong)",
-  "只截 LACUNA 页面，不录音，只有站长能看": "Only the LACUNA page, no sound; only the LACUNA team sees it",
+  "只截 LACUNA 页面，不录音，只有 LACUNA 团队能看": "Only the LACUNA page, no sound; only the LACUNA team sees it",
   "正在截图…": "Taking a screenshot…",
   "截图预览": "Screenshot preview",
   "这一页没法截图，可以自己换一张": "This page couldn't be captured; you can pick a picture instead",
@@ -43,13 +43,13 @@ export const en: Dict = {
   "App 版本、浏览器、界面语言": "App version, browser, interface language",
   "最近 {n} 步操作和最近一次报错": "Your last {n} steps and the latest error",
   "节目和你选的平台": "Your show and the platforms you picked",
-  "站长会亲自看每一条": "The LACUNA team reads every one",
+  "LACUNA 团队会看每一条": "The LACUNA team reads every one",
   "已帮你填好": "Filled in for you",
   "报错详情已附上": "Error details attached",
   "来自：自动发布": "From: Auto-publish",
   "你选的平台：{list}": "Platforms you picked: {list}",
   "收到了，谢谢你": "Got it, thank you",
-  "站长会亲自看每一条。处理进度和回复会出现在「我的反馈」里，也会发邮件告诉你。":
+  "LACUNA 团队会看每一条。处理进度和回复会出现在「我的反馈」里，也会发邮件告诉你。":
     "The LACUNA team reads every one. Progress and replies show up in My feedback, and we'll email you too.",
   "你的反馈如果被采纳，本月送你 {n} 小时剪辑时长。": "If we adopt your feedback, you get {n} extra editing hour this month.",
   "看我的反馈": "See my feedback",
@@ -70,7 +70,7 @@ export const en: Dict = {
   "你还没有发过反馈。遇到问题、有想法，随时点右上角的「反馈」告诉我们。":
     "You haven't sent any feedback yet. Something wrong, or an idea? Click Feedback at the top right any time.",
   "有截图": "with screenshot",
-  "站长回复": "Reply from the LACUNA team",
+  "LACUNA 团队回复": "Reply from the LACUNA team",
   "新": "New",
   "已采纳，本月送你 {n} 小时剪辑时长": "Adopted: {n} extra editing hour this month",
   "状态：已收到 → 在处理 / 在计划中 → 已修好 / 已上线；暂不做的会写原因。":
@@ -103,7 +103,7 @@ export const en: Dict = {
   "谢谢你，我们都会看。": "Thank you, we read every answer.",
   // a new show's questions
   "让我们更了解你的节目": "Tell us a little about your show",
-  "可跳过 · 只有站长能看到": "Optional · only the LACUNA team sees this",
+  "可跳过 · 只有 LACUNA 团队能看到": "Optional · only the LACUNA team sees this",
   "你和你的听众主要在哪？": "Where are you and most of your listeners?",
   "北美": "North America",
   "欧洲": "Europe",

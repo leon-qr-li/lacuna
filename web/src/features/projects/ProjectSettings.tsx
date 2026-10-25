@@ -65,7 +65,7 @@ export function ProjectSettings() {
     <main className="home settings prj-settings">
       <div className="home-hero">
         <h1>{t("节目设置")}</h1>
-        <p className="muted">{t("这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和海报都按这里来。")}</p>
+        <p className="muted">{t("这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和封面都按这里来。")}</p>
       </div>
       <div className="set-layout">
         <nav className="set-nav" aria-label={t("节目设置")}>

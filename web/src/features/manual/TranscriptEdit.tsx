@@ -148,18 +148,18 @@ export function TranscriptEdit({
   const idx = (name: string) => Math.max(0, ep.tracks.findIndex((tr) => tr.name === name)) % 6;
 
   return (
-    <section className="card ml-tx-card" aria-label={t("文字稿剪辑")} data-testid="transcript-edit">
+    <section className="card ml-tx-card" aria-label={t("逐字稿剪辑")} data-testid="transcript-edit">
       <div className="card-head">
-        <h2>{t("文字稿剪辑")}</h2>
+        <h2>{t("逐字稿剪辑")}</h2>
         <span className="muted small">{t("选中文字 → 删掉；删过的显示删除线，点一下可恢复")}</span>
         <TermFixButton ep={ep} time={time} run={run} />
         <FillerButton ep={ep} time={time} player={player} run={run} />
       </div>
       {!ep.has_transcript ? (
-        <p className="muted">{t("这一集没有文字稿，可以在上面的时间线上拖选来剪。")}</p>
+        <p className="muted">{t("这一集没有逐字稿，可以在上面的时间线上拖选来剪。")}</p>
       ) : (
         <div className="ml-tx" ref={box} data-testid="ml-tx">
-          {lines.length === 0 && <p className="muted small">{chunks.size ? t("这一段没有人说话") : t("正在读文字稿…")}</p>}
+          {lines.length === 0 && <p className="muted small">{chunks.size ? t("这一段没有人说话") : t("正在读逐字稿…")}</p>}
           {lines.map((ln, i) => (
             <div key={ln.words[0].key} className={`ml-line ${i === nowLine ? "is-now" : ""}`} data-line={i}>
               <button type="button" className="ml-t mono" onClick={() => player.seek(ln.start)}>

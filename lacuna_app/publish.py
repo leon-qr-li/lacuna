@@ -20,6 +20,7 @@ Corrected names go to ``<workspace>/names.json`` and are applied to the next epi
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 import threading
@@ -385,8 +386,8 @@ def clean(data: dict, segs: list[Segment]) -> tuple[dict, list[str]]:
         if entries:
             sections.append({"heading": _s(sec.get("heading"), 200) or "（未命名）", "entries": entries})  # i18n-ignore
     sections.sort(key=lambda sec: sec["entries"][0]["base_s"])
-    if dropped:
-        notes.append(tr("有 {dropped} 条时间轴引用了不存在的段落，已丢掉。", dropped=dropped))
+    if dropped:    # an internal slip of the model: logged, not shown to the user (batch 7)
+        logging.getLogger(__name__).info("publish: dropped %d timeline entries citing missing segments", dropped)
     names = []
     for n in data.get("names_to_check") or []:
         heard, sug = _s(n.get("heard"), 100), _s(n.get("suggested"), 100)
@@ -611,7 +612,7 @@ class Publisher:
             return dict(j) if j else None
 
     def start(self, ep: Episode, wait: bool = False) -> dict:
-        job = {"state": "running", "stage": tr("读成品转写"), "started": time.time(), "finished": None, "error": None}
+        job = {"state": "running", "stage": tr("读成品逐字稿"), "started": time.time(), "finished": None, "error": None}
         with self._lock:
             if (self.jobs.get(ep.id) or {}).get("state") == "running":
                 raise PublishBusy(tr("这一集的发布资料正在生成"))
@@ -641,7 +642,7 @@ class Publisher:
     def generate(self, ep: Episode, stage: Callable[[str], None] = lambda s: None) -> dict:
         segs = segments(ep)
         if not segs:
-            raise PublishError(tr("这一集没有转写，写不了 show notes"))
+            raise PublishError(tr("这一集没有逐字稿，写不了 show notes"))
         music = music_info(self.ws, ep)
         names = load_names(self.ws)
         with ep.lock:

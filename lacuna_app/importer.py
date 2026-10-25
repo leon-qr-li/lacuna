@@ -43,7 +43,7 @@ AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", 
 LEGACY_HOSTS = (("L", "Leon"), ("P", "Pei"))      # jobs from before the show profile
 JOB_FILE = "job.json"
 ASR_SHARE = 0.68
-STEP_LABELS = {"models": N_("准备识别模型"), "features": N_("分析停顿、语速和重叠"), "first_cut": N_("AI 第一刀"),
+STEP_LABELS = {"models": N_("准备识别模型"), "features": N_("分析停顿、语速和重叠"), "first_cut": N_("LACUNA 初剪"),
                "episode": N_("生成审阅")}
 
 
@@ -144,7 +144,7 @@ class Importer:
             if job.get("hidden"):
                 continue
             if job.get("state") in ("queued", "running"):
-                job.update(state="interrupted", error=tr("App 在导入途中关闭了，点「继续」从断点接着做。"))
+                job.update(state="interrupted", error=tr("导入中途停了，点「继续」从断点接着做。"))
             self.jobs[job["id"]] = job
 
     def _save(self, job: dict) -> None:
@@ -475,7 +475,7 @@ class Importer:
                 fc.batch = bool(self.batch_on and self.batch_on())
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
-            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（AI 没接上）"))
+            self._progress(job, "first_cut", 0.0, tr("LACUNA 初剪") if fc.name == "claude" else tr("规则初剪（AI 没接上）"))
             try:
                 res = fc.run(doc, duration, tokens, job["id"],
                              progress=lambda f, s: self._progress(job, "first_cut", f, s),
@@ -486,7 +486,7 @@ class Importer:
                 if isinstance(e, FirstCutError):
                     if job["id"] in self._cancel:
                         raise Cancelled()
-                    raise ImportError_(tr("AI 第一刀没做完：{e}。已剪好的段落都存着，点「继续」接着剪。", e=e))
+                    raise ImportError_(tr("LACUNA 初剪没做完：{e}。已剪好的段落都存着，点「继续」接着剪。", e=e))
                 raise
             ops_doc = res.ops_doc
             atomic_write_json(ops_p, ops_doc)

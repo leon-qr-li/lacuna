@@ -73,7 +73,7 @@ test("a project gets a colour, a picture, is archived read-only, then deleted fo
 
 test("节目设置 is on the show's home; archive then delete for good right there (Leon 2026-10-24)", async ({ page }) => {
   await page.request.post("/api/auth/login", { data: { email: "leon@example.com", password: PW } });
-  // one show: 所有节目 is still in the menu
+  // one show: 我的节目 is still in the menu
   expect((await (await page.request.get("/api/spaces")).json()).mine).toHaveLength(1);
   await page.goto("/#/");
   await page.getByTestId("project-menu").click();

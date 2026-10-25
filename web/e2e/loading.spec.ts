@@ -48,8 +48,8 @@ test("an action the person started moves the top line until it answers", async (
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const h = hold(true);
   await page.route(/\/api\/episodes\/[^/]+\/chat$/, (route) => (route.request().method() === "POST" ? h.wait(route) : route.continue()));
-  await page.getByLabel("对 AI 制作人说（锚定在当前播放位置）").fill("这里停顿太长");
-  await page.getByLabel("对 AI 制作人说（锚定在当前播放位置）").press("Enter");
+  await page.getByLabel("对 LACUNA 说（从当前播放位置开始）").fill("这里停顿太长");
+  await page.getByLabel("对 LACUNA 说（从当前播放位置开始）").press("Enter");
   await expect(page.getByTestId("waiting")).toContainText("已用");
   await expect(page.getByTestId("top-line")).toHaveAttribute("data-on", "1");
   h.release();

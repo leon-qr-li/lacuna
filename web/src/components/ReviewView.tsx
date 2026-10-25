@@ -122,7 +122,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
             type="button"
             className="btn btn-outline"
             onClick={() => void onApproveAll()}
-            title={t("按 AI 现在的处理全部确认：删了的保持删，没删的保持原样。一步撤销即可退回。")}
+            title={t("按 LACUNA 现在的处理全部确认：删了的保持删，没删的保持原样。一步撤销即可退回。")}
             data-testid="review-keep-rest"
           >
             {t("剩下的全部保留（{n} 处）", { n: leftCount })}
@@ -160,7 +160,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
 
       <main className="review-main" aria-live="polite">
         {!cur ? (
-          <p className="muted">{t("没有需要过目的改动。")}</p>
+          <p className="muted">{t("没有需要审阅的改动。")}</p>
         ) : (
           <section className="card rv-card">
             <header className="rv-head">

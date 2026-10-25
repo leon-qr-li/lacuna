@@ -4,7 +4,7 @@ export const en: Dict = {
   "导出": "Export",
   "✓ 选中": "✓ Selected",
   "不导出": "Not exported",
-  "下一步可以在「发布」里生成节目简介和封面，再发到各个平台。": "Next, Publish writes the show notes and cover and sends the episode to each platform.",
+  "下一步可以在「发布」里生成节目简介和封面，方便你上传到各个平台。": "Next, Publish writes the show notes and cover for you to upload to each platform.",
   "去发布": "Go to Publish",
   "导出好以后，这里出现下载按钮。": "Download buttons appear here once the export is done.",
   "符合播客平台标准": "Meets podcast platform standards",

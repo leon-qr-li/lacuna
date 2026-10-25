@@ -15,7 +15,7 @@ export const en: Dict = {
   "密码强度：{s}": "Strength: {s}",
   "验证码": "Verification code",
   "欢迎回来": "Welcome back",
-  "登录 LACUNA Studio，继续剪你的节目。": "Sign in to LACUNA Studio and pick up where you left off.",
+  "登录 LACUNA，继续剪你的节目。": "Sign in to LACUNA and pick up where you left off.",
   "30 天内记住我": "Remember me for 30 days",
   "忘记密码？": "Forgot password?",
   "登录": "Sign in",
@@ -119,8 +119,8 @@ export const en: Dict = {
   "用手机上的数字": "Use the code on my phone",
   "登录中的设备": "Signed-in devices",
   "登录于 {a} · 最近使用 {b}": "signed in {a} · last active {b}",
-  "登录时除了密码，还要手机验证器 App 上的 6 位数字。云端版每个账号都必须开。":
-    "Besides your password, sign-in asks for 6 digits from an authenticator app on your phone. Required for every account online.",
+  "登录时除了密码，还要手机验证器 App 上的 6 位数字。每个账号都必须开。":
+    "Besides your password, sign-in asks for 6 digits from an authenticator app on your phone. Required for every account.",
   "登录时除了密码，还要手机验证器 App 上的 6 位数字。这台电脑上可选，上云后必须开。":
     "Besides your password, sign-in asks for 6 digits from an authenticator app on your phone. Optional on this computer, required once LACUNA is online.",
   "确认中…": "Checking…",
@@ -167,7 +167,6 @@ export const en: Dict = {
   "提交申请": "Send request",
   "提交中…": "Sending…",
   "站长": "Owner",
-  "站点管理员": "Site admin",
   "用户": "User",
   "免费体验": "Free trial",
   "基础版": "Basic",
@@ -178,8 +177,8 @@ export const en: Dict = {
   "发邀请": "Invite",
   "忽略": "Dismiss",
   "{role} · {plan} · {by} 邀请 · {exp} 过期": "{role} · {plan} · invited by {by} · expires {exp}",
-  "LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。站点管理员能邀请和管理用户、改套餐；只有站长能设站点管理员、改 AI 密钥和邮件设置。":
-    "LACUNA is invite-only for now. An invite link is tied to one email, works once, for 7 days. Site admins invite and manage users and set plans; only the owner makes site admins and changes the AI key and email settings.",
+  "LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。管理员能邀请和管理用户、改套餐；只有站长能设管理员、改 AI 密钥和邮件设置。":
+    "LACUNA is invite-only for now. An invite link is tied to one email, works once, for 7 days. Admins invite and manage users and set plans; only the owner makes admins and changes the AI key and email settings.",
   "邀请新成员": "Invite someone",
   "对方": "Who",
   "邀请邮件发到这个地址": "The invite email goes to this address",
@@ -201,17 +200,17 @@ export const en: Dict = {
     "Turn off",
   "新成员需站长批准":
     "New members need owner approval",
-  "开着（beta）：节目管理员邀请没有账号的人时，会先变成一条「搭档申请」，出现在下面的试用申请里，你批准后才发邀请。":
+  "开着（beta）：节目管理员邀请没有账号的人时，会先变成一条「协作者申请」，出现在下面的试用申请里，你批准后才发邀请。":
     "On (beta): when a show admin invites someone without an account, it becomes a collaborator request in Access requests below; the invite goes out once you approve it.",
   "已关掉：节目管理员可以直接邀请新人，人数按套餐限制。":
     "Off: show admins invite new people directly, within their plan's seats.",
-  "搭档申请：{by} 邀请 TA 加入「{show}」":
+  "协作者申请：{by} 邀请 TA 加入「{show}」":
     "Collaborator request: {by} invited them to “{show}”",
   "批准并发邀请":
     "Approve and invite",
   "你的名字":
     "Your name",
-  "搭档和邀请邮件里会显示这个名字":
+  "协作者和邀请邮件里会显示这个名字":
     "Shown to your collaborators and in invite emails",
   "请填你的名字":
     "Please enter your name",

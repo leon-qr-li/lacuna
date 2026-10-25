@@ -103,7 +103,7 @@ def test_generate_writes_the_approved_format(ws, ep, pub, fake):
     tl = timeline_lines(md)
     assert tl[0] == "- **00:00** Leon 聊到「我们今天聊一」"
     assert len(tl) == 6                       # the made-up segment s9999 was dropped ...
-    assert any("不存在的段落" in n for n in v["notes"])     # ... and said so
+    assert not any("不存在的段落" in n for n in v["notes"])  # ... quietly (an internal detail, batch 7)
     # no tables (喜马拉雅 can't show them, backlog 26): one line per film
     assert "## 🎬 本期提到的电影\n\n- 《一部电影》：结尾" in md and "|" not in md
     assert "## 😏 内部梗小词典" in md and "- **网大**：夸人用的，真的。" in md
@@ -129,7 +129,7 @@ def test_timeline_entries_are_sorted_and_need_a_real_segment(ep):
     draft, notes = clean(data, segs)
     assert [s["heading"] for s in draft["sections"]] == ["前", "后"]
     assert [e["text"] for e in draft["sections"][1]["entries"]] == ["a", "b"]
-    assert notes == ["有 2 条时间轴引用了不存在的段落，已丢掉。"]
+    assert notes == []                  # dropped quietly: the user can't act on it
 
 
 def test_without_claude_a_rule_draft_still_works(ws, ep, monkeypatch):
@@ -147,7 +147,7 @@ def test_api_failure_is_a_chinese_error(ws, ep):
         beta = types.SimpleNamespace(messages=types.SimpleNamespace(stream=lambda **kw: (_ for _ in ()).throw(RuntimeError("x"))))
     p = Publisher(ws, lambda: ClaudePublisher(client=Broken()))
     job = p.start(ep, wait=True)
-    assert job["state"] == "error" and "调用 AI 服务失败" in job["error"]
+    assert job["state"] == "error" and "LACUNA 暂时用不了" in job["error"] and "RuntimeError" not in job["error"]
     assert p.view(ep)["pack"] is None
 
 

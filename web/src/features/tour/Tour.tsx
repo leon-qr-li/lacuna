@@ -82,7 +82,7 @@ export function Tour({ ep, mode, id, player }: { ep: Episode; mode: string; id: 
 /** After the tour: start it again (the sample goes back to the first cut). */
 function Restart() {
   const again = async () => {
-    if (!(await confirmDialog({ message: t("示例集会回到 LACUNA 第一刀刚做完的样子，你在里面做的改动都会清掉，然后从头开始教程。"), confirmLabel: t("重新开始") })))
+    if (!(await confirmDialog({ message: t("示例集会回到 LACUNA 初剪刚做完的样子，你在里面做的改动都会清掉，然后从头开始教程。"), confirmLabel: t("重新开始") })))
       return;
     const o = await onboardingApi.resetSample();
     window.location.hash = `#/ep/${encodeURIComponent(o.sample?.episode ?? "SAMPLE_01")}/review`;

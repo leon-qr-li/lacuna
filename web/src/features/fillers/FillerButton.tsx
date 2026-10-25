@@ -127,7 +127,7 @@ export function FillerButton({
                   {t("去掉 {n} 个", { n })}
                 </button>
               </div>
-              <p className="muted small fl-note">{t("剪掉的在文字稿里显示删除线，点一下单独恢复；也可以一步撤销。")}</p>
+              <p className="muted small fl-note">{t("剪掉的在逐字稿里显示删除线，点一下单独恢复；也可以一步撤销。")}</p>
             </>
           )}
         </div>

@@ -433,13 +433,13 @@ def test_invite_email_walks_through_the_six_steps():
     from lacuna_app.i18n import speaking
     with speaking("zh"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t")
-    assert m["text"].index("你会有一个自己的节目。") < m["text"].index("1. 分轨导入与自动转写：") < m["text"].index("6. 多平台导出与发布：")
+    assert m["text"].index("你会有一个自己的节目。") < m["text"].index("1. 分轨导入与自动转写：") < m["text"].index("6. 导出与发布资料：")
     assert all(h in m["html"] for h, _ in invite_mail.steps()) and "Show notes 与封面生成" in m["text"]
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "editor")
         heads = [h for h, _ in invite_mail.steps()]
-    assert heads[0] == "Track import & transcription" and heads[-1] == "Multi-platform export"
-    assert "6. Multi-platform export: The finished audio" in m["text"] and "Track import &amp; transcription" in m["html"] and "Track import &amp; transcription" not in m["text"]
+    assert heads[0] == "Track import & transcription" and heads[-1] == "Export & publishing pack"
+    assert "6. Export & publishing pack: The finished audio" in m["text"] and "Track import &amp; transcription" in m["html"] and "Track import &amp; transcription" not in m["text"]
     assert m["text"].index("as Editor") < m["text"].index("1. Track import & transcription")
     assert "：" not in m["text"] and "（" not in m["text"]
 

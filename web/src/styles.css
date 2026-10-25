@@ -141,7 +141,13 @@ a.brand:hover { color: var(--ink); }
 
 /* episode header: status + episode-wide actions, then the flow (a pill of steps), then a group's sub-tabs */
 .ep-head { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 28px 4px; }
-.ep-head-row { width: 100%; max-width: 1360px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ep-head-row { width: 100%; max-width: 1360px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.ep-head-side { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 32px; }
+.ep-head-end { justify-content: flex-end; }
+@media (max-width: 1180px) {
+  .ep-head-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .ep-head-row > .modes { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+}
 .modes { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; padding: 6px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow); backdrop-filter: blur(16px); }
 .modes a { display: inline-flex; align-items: center; gap: 2px; padding: 8px 16px; border-radius: 13px; color: var(--ink-2); text-decoration: none; white-space: nowrap; font-size: 14px; }
 .modes a:hover { background: var(--hover); color: var(--ink); }

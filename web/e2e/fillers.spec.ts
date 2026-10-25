@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { SCOPES_PORT } from "../playwright.config";
 import { undoKey } from "./undo";
 
-// 去掉 um / uh (decision english-fillers): an English episode shows how many um / uh are still heard on 文字稿剪辑;
+// 去掉 um / uh (decision english-fillers): an English episode shows how many um / uh are still heard on 逐字稿剪辑;
 // the panel takes them all out (or one host's) in one undoable step. Runs on the scopes server, which holds an
 // English copy of the synthetic episode (tests/app/synth_en.py).
 test.use({ baseURL: `http://127.0.0.1:${SCOPES_PORT}` });

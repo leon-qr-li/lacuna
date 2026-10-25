@@ -118,7 +118,7 @@ def test_api_failure_resumes_from_cache(ws, rec):
     imp = importer(ws, fake)
     imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
     job = imp.status("EP002")
-    assert job["state"] == "error" and "AI 第一刀没做完" in job["error"] and "继续" in job["error"]
+    assert job["state"] == "error" and "LACUNA 初剪没做完" in job["error"] and "继续" in job["error"]
     assert "asr_P" in job["steps"] and "first_cut" not in job["steps"]
     assert "EP002" not in ws.episode_ids()
 

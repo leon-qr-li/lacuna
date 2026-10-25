@@ -169,7 +169,7 @@ def initial_level(ep: Episode, gains: dict[str, float]) -> None:
             if abs(g) < 0.05:
                 continue
             e = ep.add_edit([{"op": "track_gain", "track": track, "gain_db": g}], "loudness", _title(track, g),
-                            tr("导入时自动统一两人音量"), source="level", status=APPLIED)
+                            tr("导入时自动统一主持人音量"), source="level", status=APPLIED)
             e.approved = True
         ep.timeline_for(ep.enabled)
         ep.save()
@@ -212,7 +212,7 @@ def set_gains(ep: Episode, gains: dict[str, float], label: str | None = None) ->
 
 def auto_level(ep: Episode) -> dict[str, float]:
     """Level an existing episode as one undoable step (「统一两人音量」)."""
-    return set_gains(ep, plan(measurements(ep)), tr("统一两人音量"))
+    return set_gains(ep, plan(measurements(ep)), tr("统一主持人音量"))
 
 
 def level_new_episode(ep: Episode) -> dict[str, float]:
@@ -336,9 +336,9 @@ def chat_volume(ep: Episode, text: str, playhead: float) -> dict | None:
         done = auto_level(ep)
         if done:
             parts = "，".join(f"{t} {g:+.1f} dB" for t, g in done.items())  # i18n-ignore
-            reply = tr("好，两人音量已经统一：{parts}。不满意可以点「撤销」，或者到「声音」页细调。", parts=parts)
+            reply = tr("好，主持人音量已经统一：{parts}。不满意可以点「撤销」，或者到「声音」页细调。", parts=parts)
         else:
-            reply = tr("两人音量已经是一致的，不用再调。到「声音」页可以单独细调。")
+            reply = tr("主持人音量已经一致，不用再调。到「声音」页可以单独细调。")
     else:
         cur = current_gains(ep)
         want = {t: cur.get(t, 0.0) + req["delta_db"] for t in req["tracks"]}

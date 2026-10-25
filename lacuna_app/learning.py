@@ -281,8 +281,8 @@ def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
         if len(restored) >= MIN_RESTORED and rate >= PROTECT_RATE:
             rules.append(Rule(
                 _rid("protect", kind, host), "protect",
-                tr("{what}：AI 删多了，以后少删", what=what),
-                tr("AI 删了 {n_edits} 处{what}，其中{p2}（加权约 {rate}）。例如 {p4}。", n_edits=n_edits, what=what, p2=_sources(restored, tr('恢复了'), tr('没删')), rate=f"{rate:.0%}", p4=_quote(restored)),
+                tr("{what}：LACUNA 删多了，以后少删", what=what),
+                tr("LACUNA 删了 {n_edits} 处{what}，其中{p2}（加权约 {rate}）。例如 {p4}。", n_edits=n_edits, what=what, p2=_sources(restored, tr('恢复了'), tr('没删')), rate=f"{rate:.0%}", p4=_quote(restored)),
                 (f"{W} undid {len(restored)} of {n_edits} pause tightenings ({rate:.0%} weighted): leave more air; "
                  f"tighten only clearly dead gaps." if kind == "pause" else
                  f"{W} kept the words in {len(restored)} of {n_edits} '{kind}' cuts on {_en(host)} ({rate:.0%} "
@@ -292,15 +292,15 @@ def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
         elif routine and len(restored) >= MIN_RESTORED and rate >= REVIEW_RATE and ev["restored_review"]:
             rules.append(Rule(
                 _rid("review", kind, host), "review",
-                tr("{what}：以后放进审阅让你过目", what=what),
+                tr("{what}：以后都放进审阅", what=what),
                 tr("这类原来算常规清理、自动应用，但{p0}（加权约 {rate}），不该不问你就删。例如 {p2}。", p0=_sources(restored, tr('恢复了'), tr('没删')), rate=f"{rate:.0%}", p2=_quote(restored)),
                 "", key, ev, ex, {"review": True}))
         if (not routine and not ev["restored_review"] and rate <= TRUST_RATE
                 and sum(_w(d) for d in considered) >= MIN_TRUSTED):
             rules.append(Rule(
                 _rid("trust", kind, host), "trust",
-                tr("{what}：AI 删得对，以后不用逐条过目", what=what),
-                tr("{p0}{what}，审阅里一处没恢复。以后这类直接应用（仍可在列表里恢复），删掉超过 5 秒说话的仍会让你过目。", p0=_sources(considered, tr('确认了'), tr('也删了')), what=what),
+                tr("{what}：LACUNA 删得对，以后不用逐条审阅", what=what),
+                tr("{p0}{what}，审阅里一处没恢复。以后这类直接应用（仍可在列表里恢复），删掉超过 5 秒说话的仍会让你审阅。", p0=_sources(considered, tr('确认了'), tr('也删了')), what=what),
                 f"{W} agreed with {len(considered)} '{kind}' cuts on {host}'s speech: keep cutting this kind "
                 f"at the same rate.",
                 key, ev, [_example(d) for d in considered[:MAX_EXAMPLES]], {"review": False}))
@@ -317,8 +317,8 @@ def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
             what = _what(kind, host)
             rules.append(Rule(
                 _rid("timid", kind, host), "timid",
-                tr("{what}：AI 太犹豫，该直接删", what=what),
-                tr("AI 没敢删、留给你决定的 {p0} 处{what}里，{p2}。例如 {p3}。", p0=len(g), what=what, p2=_sources(acc, tr('你删了'), tr('删了')), p3=_quote(acc)),
+                tr("{what}：LACUNA 太犹豫，该直接删", what=what),
+                tr("LACUNA 没敢删、留给你决定的 {p0} 处{what}里，{p2}。例如 {p3}。", p0=len(g), what=what, p2=_sources(acc, tr('你删了'), tr('删了')), p3=_quote(acc)),
                 f"When unsure about '{kind}' on {_en(host)}, cut it ({w} cut {len(acc)} of {len(g)} such "
                 f"suggestions): {_prompt_quotes(acc)}.",
                 {"category": kind, "host": host}, {"suggested": len(g), "accepted": len(acc)},
@@ -335,9 +335,9 @@ def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
             what = _what(kind, host) if kind not in ("chat", "manual") else tr("{p0}说的话", p0=tr(HOST_LABELS.get(host, host)))
             rules.append(Rule(
                 _rid("missed", kind, host), "missed",
-                tr("{what}：AI 漏删了，你自己剪了", what=what) if by_hand else tr("{what}：AI 漏删了，你得自己说", what=what),
+                tr("{what}：LACUNA 漏删了，你自己剪了", what=what) if by_hand else tr("{what}：LACUNA 漏删了，你得自己说", what=what),
                 (tr("你自己手动补剪了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g)) if by_hand else
-                 tr("你在聊天里让 AI 补删了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g))),
+                 tr("你在聊天里让 LACUNA 多删了 {p0} 处{what}。例如 {p2}。", p0=len(g), what=what, p2=_quote(g))),
                 (f"{W} cut {len(g)} extra passages of {_en(host)} by hand after the first cut; look for similar "
                  f"passages: {_prompt_quotes(g)}." if by_hand else
                  f"{W} had to ask for {len(g)} extra cuts of this kind ({kind}) on {_en(host)} after the first "
@@ -356,9 +356,9 @@ def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
         missed = [d for d in cut_ if d.verdict == ADDED]
         rules.append(Rule(
             _rid("taste", "content", host), "taste",
-            tr("{who}的内容删减：按你删 / 留的例子学品味", who=who),
-            tr("跑题和啰嗦段落你删了 {p0} 处（如 {p1}），留了 {p2} 处（如 {p3}）", p0=len(cut_), p1=_quote(cut_, 3), p2=len(kept), p3=_quote(kept, 3)) + (tr("；其中 {p0} 处是 AI 没删、你手剪时删掉的", p0=len(missed)) if missed else "")
-            + tr("。这些例子会给 AI 参考，让它挑段落时更像你。"),
+            tr("{who}的内容删减：按你删 / 留的例子学你的取舍", who=who),
+            tr("跑题和啰嗦段落你删了 {p0} 处（如 {p1}），留了 {p2} 处（如 {p3}）", p0=len(cut_), p1=_quote(cut_, 3), p2=len(kept), p3=_quote(kept, 3)) + (tr("；其中 {p0} 处是 LACUNA 没删、你手剪时删掉的", p0=len(missed)) if missed else "")
+            + tr("。这些例子会给 LACUNA 参考，让它挑段落时更像你。"),
             f"{W}'s taste on content trims of {_en(host)} (learn the kind of passage, not the ranges). "
             f"{He} CUT: {_prompt_quotes(cut_[:TASTE_EXAMPLES])}. "
             f"{He} KEPT (do not cut passages like these): {_prompt_quotes(kept[:TASTE_EXAMPLES])}.",
@@ -388,7 +388,7 @@ def learn(ds: list[Decision], who: str = "Leon") -> list[Rule]:
         if thr > REVIEW_CONFIDENCE:
             rules.append(Rule(
                 _rid("threshold", "confidence"), "threshold",
-                tr("AI 把握度低于 {thr} 的常规删除也让你过目", thr=f"{thr:.1f}"),
+                tr("LACUNA 把握度低于 {thr} 的常规删除也让你审阅", thr=f"{thr:.1f}"),
                 tr("按把握度分组，你恢复的比例：")
                 + (", " if lang() == "en" else "，").join(tr("{a}–{p1} 恢复 {r}/{n}", a=f"{a:.1f}", p1=f"{min(b, 1):.1f}", r=r, n=n) for a, b, n, r, _ in buckets if n)
                 + tr("。低于 {thr} 时恢复率偏高，这些不该自动应用。", thr=f"{thr:.1f}"),

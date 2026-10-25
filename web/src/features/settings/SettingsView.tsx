@@ -39,7 +39,7 @@ const SECTIONS: { id: Section; group: "me" | "admin"; label: string; about: stri
   { id: "account", group: "me", label: t("账号与安全"), about: t("登录、密码、两步验证和登录过的设备。") },
   { id: "members", group: "admin", label: t("成员与邀请"), about: t("邀请新账号、管理成员角色。") },
   { id: "mail", group: "admin", label: t("邮件发件人"), about: t("邀请邮件和验证码从哪个地址发出。") },
-  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有节目的文字稿都按它校对的专有名词。") },
+  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有节目的逐字稿都按它校对的专有名词。") },
 ];
 const sectionFromHash = (): Section => {
   const m = /^#\/settings\/([\w-]+)/.exec(window.location.hash)?.[1];

@@ -17,6 +17,7 @@ import { ProjectAvatar } from "../projects/Avatar";
 import { SettingsLink } from "../projects/SettingsLink";
 import { albumHref, useAlbums, type Album } from "../albums/api";
 import { EpisodeCard } from "./EpisodeCard";
+import { ErrorState } from "../states/States";
 import { episodesApi } from "./api";
 
 const go = (id: string, mode = "listen") => {
@@ -28,7 +29,7 @@ const go = (id: string, mode = "listen") => {
 export function Home({ nav }: { nav: ReactNode }) {
   const [list, setList] = useState<EpisodeListItem[] | null>(null);
   const [archived, setArchived] = useState(0);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<unknown>(null);
   const [undo, setUndo] = useState<EpisodeListItem | null>(null);
   const show = useShow();
   const names = hostList(show);
@@ -46,7 +47,7 @@ export function Home({ nav }: { nav: ReactNode }) {
         if (first && !window.location.hash && r.episodes.length === 1 && !r.episodes[0].error && !im.jobs.length)
           go(r.episodes[0].id);
       })
-      .catch((e) => setErr(String(e)));
+      .catch((e) => setErr(e ?? new Error("")));
   }, []);
   useEffect(() => load(true), [load]);
   // signing in with two or more projects: pick one on 所有项目 first (once per visit)
@@ -140,8 +141,8 @@ export function Home({ nav }: { nav: ReactNode }) {
             </div>
             <p className="muted">
               {names
-                ? t("导入 {names} 的分轨，AI 先剪第一刀，你来过目、试听、导出。", { names })
-                : t("导入每位主持人的分轨，AI 先剪第一刀，你来过目、试听、导出。")}
+                ? t("导入 {names} 的分轨，LACUNA 先做初剪，你来审阅、试听、导出。", { names })
+                : t("导入每位主持人的分轨，LACUNA 先做初剪，你来审阅、试听、导出。")}
             </p>
           </div>
         )}
@@ -159,11 +160,11 @@ export function Home({ nav }: { nav: ReactNode }) {
             album={onlyAlbum}
           />
         )}
-        {err && <p className="error">{err}</p>}
+        {err != null && <ErrorState compact error={err} onRetry={() => { setErr(null); load(); }} />}
         {list?.length === 0 && !show?.needs_setup && (
           <p className="muted">{t("这个节目里还没有剧集。点「导入新一集」，选每位主持人的分轨。")}</p>
         )}
-        {!list && !err && <EpisodeListSkeleton />}
+        {!list && err == null && <EpisodeListSkeleton />}
         {(() => {
           const v = albums.view;
           const all = list ?? [];

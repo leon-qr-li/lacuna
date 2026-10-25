@@ -11,21 +11,21 @@ test("chat 记住 → LACUNA's reading → 改一下 → 记住这条 → in for
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const remember = page.getByRole("button", { name: "记住", exact: true });
   await expect(remember).toBeDisabled(); // nothing typed yet
-  await page.getByLabel(/对 AI 制作人说/).fill("Pei 的嗯都别删");
+  await page.getByLabel(/对 LACUNA说/).fill("Pei 的嗯都别删");
   await remember.click();
   const card = page.getByTestId("remember-card").last();
   await expect(card).toContainText("我理解的是：以后每一集剪的时候都按「Pei 的嗯都别删」来");
   await expect(card.getByTestId("remember-rule")).toHaveText("每一期都照做：Pei 的嗯都别删"); // never his raw words
   await expect(card).toContainText("是否记住这条？");
   await expect(page.getByTestId("proposal")).toHaveCount(0);
-  await expect(page.getByLabel(/对 AI 制作人说/)).toHaveValue("");
+  await expect(page.getByLabel(/对 LACUNA说/)).toHaveValue("");
 
   // not stored yet
   const titles = async () =>
     ((await (await page.request.get("/api/learning")).json()).rules as { title: string }[]).map((r) => r.title);
   expect((await titles()).filter((x) => x.includes("Pei 的嗯都别删"))).toEqual([]);
 
-  await page.getByLabel(/对 AI 制作人说/).fill("记住：开头那段闲聊别剪");
+  await page.getByLabel(/对 LACUNA说/).fill("记住：开头那段闲聊别剪");
   await page.getByRole("button", { name: "发送" }).click();
   const card2 = page.getByTestId("remember-card").last();
   await expect(card2.getByTestId("remember-rule")).toHaveText("每一期都照做：开头那段闲聊别剪");

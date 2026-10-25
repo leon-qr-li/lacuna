@@ -76,7 +76,7 @@ test("import: drag both tracks in → progress with time left → straight into 
   const job = page.getByTestId("import-job");
   await expect(job).toHaveAttribute("data-state", /queued|running/);
   await expect(job.getByRole("progressbar")).toBeVisible();
-  await expect(page.getByTestId("import-stage")).toContainText("AI 第一刀");
+  await expect(page.getByTestId("import-stage")).toContainText("LACUNA 初剪");
   await expect(page.getByTestId("import-stage")).toContainText("每段约 10 分钟录音");
   await expect(page.getByTestId("import-progress-left")).toBeVisible();      // the server's estimate
   await expect(page.getByRole("button", { name: "导入新一集" })).toBeEnabled(); // another one would wait its turn
@@ -94,7 +94,7 @@ test("import: drag both tracks in → progress with time left → straight into 
   // back home (no auto-redirect): the episode card says what is left; the finished task card is gone (H8)
   await page.locator("a.brand").click();
   await expect(page.locator(".ep-list")).toContainText("EP001 · 导入测试");
-  await expect(page.locator(".ep-list")).toContainText("2 处待过目");
+  await expect(page.locator(".ep-list")).toContainText("2 处待审阅");
   await expect(page.getByTestId("import-job")).toHaveCount(0);
   await page.locator(".ep-list a").filter({ hasText: "EP001" }).first().click();
   await page.getByRole("link", { name: /审阅改动/ }).click();
@@ -108,7 +108,7 @@ test("import: drag both tracks in → progress with time left → straight into 
   await page.keyboard.press("k");
   await expect(page.getByTestId("review-progress")).toContainText("已看 2 / 2");
   await page.locator("a.brand").click();
-  await expect(page.locator(".ep-list")).toContainText("都过目了");
+  await expect(page.locator(".ep-list")).toContainText("都审阅完了");
   await expect(page.getByRole("heading", { name: "导入任务" })).toHaveCount(0);
 });
 

@@ -477,9 +477,9 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
                 seekMix(at, true);
               }}
             />
+            {/* no browser controls: the row below is the player (batch 7, B8) */}
             <audio
               ref={mixRef}
-              controls
               preload="none"
               src={m.mix_url}
               data-testid="mix-audio"
@@ -499,11 +499,23 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
               onSeeked={(e) => setNow(e.currentTarget.currentTime)}
             />
             <div className="row gap8 wrap mix-controls">
+              <button
+                type="button"
+                className="btn btn-small btn-primary mix-play"
+                onClick={() => {
+                  const a = mixRef.current;
+                  if (a) void (a.paused ? a.play().catch(() => undefined) : a.pause());
+                }}
+                aria-label={playing ? t("暂停") : t("播放")}
+                data-testid="mix-play"
+              >
+                {playing ? "❚❚" : "▶"}
+              </button>
               <button type="button" className="btn btn-small btn-outline" onClick={() => skip(-SKIP_S)} aria-label={t("后退 5 秒")}>
-                {t("−5 秒")}
+                −5s
               </button>
               <button type="button" className="btn btn-small btn-outline" onClick={() => skip(SKIP_S)} aria-label={t("前进 5 秒")}>
-                {t("+5 秒")}
+                +5s
               </button>
               <SpeedButton rate={speed.rate} onChange={speed.setRate} testId="mix-speed" hint={t("播放速度（点一下切换）")} />
               <span className="mono small muted" data-testid="mix-clock">

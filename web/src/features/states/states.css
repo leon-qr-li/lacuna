@@ -1,0 +1,8 @@
+/* Shared error and empty states (batch 7). Centered, quiet, one action. */
+.state-box { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 40px 24px; margin: 24px auto; max-width: 520px; border: 1px dashed var(--line); border-radius: 18px; background: var(--panel); }
+.state-compact { padding: 24px 18px; margin: 12px auto; }
+.state-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--hover); color: var(--ink-2); font-size: 20px; line-height: 1; }
+.state-error .state-icon { background: color-mix(in srgb, var(--danger, #e5484d) 14%, transparent); color: var(--danger, #e5484d); font-weight: 700; }
+.state-title { margin: 0; font-size: 17px; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.state-text { margin: 0; color: var(--ink-2); font-size: 14px; line-height: 1.6; max-width: 46ch; overflow-wrap: anywhere; }
+.state-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }

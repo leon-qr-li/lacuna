@@ -120,7 +120,7 @@ class AppContext:
             ep = self.episodes.get(episode_id) or self._alive.get(episode_id)
             if ep is None:
                 if episode_id not in self.ws.episode_ids():
-                    raise HTTPException(404, "no such episode")
+                    raise HTTPException(404, tr("这一集不存在，可能已经删除了"))
                 ep = self._alive[episode_id] = Episode(self.ws, episode_id)
             return ep
 

@@ -28,7 +28,7 @@ export function EpisodeCard({ e, href, actions, extra }: { e: EpisodeListItem; h
               {e.demo && t(" · 演示数据")}
             </span>
             <span className={`chip ${e.pending_review ? "chip-warn" : "chip-ok"}`}>
-              {e.pending_review ? t("{n} 处待过目", { n: e.pending_review }) : t("都过目了")}
+              {e.pending_review ? t("{n} 处待审阅", { n: e.pending_review }) : t("都审阅完了")}
             </span>
           </>
         )}

@@ -583,7 +583,7 @@ class Auth:
 
     def disable_2fa(self, email: str, code: str) -> None:
         if self.require_2fa:
-            raise AuthError(tr("云端版必须开两步验证"), 403)
+            raise AuthError(tr("每个账号都必须开两步验证"), 403)
         self._check_own_code(email, code)
         with self.lock:
             self.users[email].pop("totp", None)

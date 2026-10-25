@@ -166,7 +166,6 @@ export function XimalayaView({ id, version, flash }: { id: string; version: stri
                   </figure>
                 ))}
               </div>
-              {view.dir && <p className="muted small">{t("也存在 {path}", { path: view.dir })}</p>}
             </section>
           )}
 

@@ -328,9 +328,9 @@ def reply_mail(item: dict, link: str) -> dict:
     rows = [(tr("你的反馈"), said), (tr("提交时间"), when), (tr("状态"), status_name(item["status"]))]
     last = (item.get("replies") or [{}])[-1].get("text")
     if last:
-        rows.append((tr("站长回复"), last))
+        rows.append((tr("LACUNA 团队回复"), last))
     lead = tr("你的反馈有新的进展。谢谢你帮 LACUNA 变得更好。")
     if item.get("adopted"):
-        lead += tr("你的建议被采纳了，本月送你 {n} 小时剪辑时长。", n=item.get("bonus_hours") or ADOPT_HOURS)
+        lead += tr("你的建议被采纳了，本月多给你 {n} 小时音频额度。", n=item.get("bonus_hours") or ADOPT_HOURS)
     return notice_mail.render(tr("你的 LACUNA 反馈有回复了"), lead, rows, tr("查看我的反馈"), link,
                               tr("不用回复这封邮件。想补充什么，在 LACUNA 右上角点「反馈」。"), tr("反馈 · FEEDBACK"))

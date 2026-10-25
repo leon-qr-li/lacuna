@@ -32,7 +32,7 @@ export function SideTabs({ tab, onTab, near, badge }: { tab: SideTab; onTab: (v:
   return (
     <div className="side-tabs" role="tablist" aria-label={t("侧栏")}>
       <button type="button" role="tab" className="side-tab" aria-selected={tab === "ai"} onClick={() => onTab("ai")} data-testid="tab-ai">
-        {t("AI 制作人")} {badge}
+        {t("LACUNA")} {badge}
       </button>
       <button type="button" role="tab" className="side-tab" aria-selected={tab === "near"} onClick={() => onTab("near")} data-testid="tab-near">
         {t("这附近改了什么")}

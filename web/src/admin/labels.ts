@@ -58,12 +58,12 @@ export const EVENT: Record<string, () => string> = {
   "import.cancelled": () => t("取消了导入"),
   "export.start": () => t("导出了"),
   "show.create": () => t("建了节目"),
-  "show.invite": () => t("邀请了搭档"),
+  "show.invite": () => t("邀请了协作者"),
   "invite.send": () => t("发了邀请"),
   "publish.generate": () => t("生成了发布资料"),
   "publish.save": () => t("保存了发布资料"),
-  "poster.generate": () => t("生成了海报"),
-  "poster.choose": () => t("选了海报"),
+  "poster.generate": () => t("生成了封面"),
+  "poster.choose": () => t("选了封面"),
   "chat.message": () => t("用对话改了剪辑"),
   "chat.approve": () => t("批准了对话修改"),
   "review.decide": () => t("审阅了一处改动"),
@@ -76,7 +76,7 @@ export const EVENT: Record<string, () => string> = {
   "lessons.run": () => t("总结学到的规则"),
   feedback: () => t("提交了反馈"),
   "request.trial": () => t("申请试用"),
-  "request.collab": () => t("搭档申请"),
+  "request.collab": () => t("协作者申请"),
 };
 export const eventName = (ev: string) => (EVENT[ev] ? EVENT[ev]() : ev);
 
@@ -125,7 +125,7 @@ export const FEATURE: Record<string, () => string> = {
   first_cut: () => t("初剪"),
   chat: () => t("对话修改"),
   notes: () => t("Show notes"),
-  poster: () => t("海报"),
+  poster: () => t("封面"),
   rules: () => t("学到的规则"),
   music: () => t("配乐"),
   levels: () => t("统一音量"),

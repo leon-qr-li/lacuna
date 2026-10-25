@@ -70,7 +70,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
   const setGain = (track: string, g: number) =>
     run(track, () => levelsApi.setGain(id, track, g, player.time));
   const auto = () =>
-    run("auto", () => levelsApi.auto(id, player.time), t("两人音量已统一"), true);
+    run("auto", () => levelsApi.auto(id, player.time), t("主持人音量已统一"), true);
   const listenAt = (s: number) => {
     player.seek(Math.max(s - 2, 0));
     player.play();
@@ -90,7 +90,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
             {err}
           </p>
         ) : (
-          <PageLoading label={t("正在测量两人的音量…")} shape="list" />
+          <PageLoading label={t("正在测量主持人音量…")} shape="list" />
         )}
       </>
     );
@@ -134,6 +134,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
       </div>
     );
 
+  const solo = lv.tracks.length < 2;
   return (
     <>
       {audio}
@@ -141,20 +142,22 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
         <section className="levels-card">
           <div className="levels-head">
             <div>
-              <h2>{t("两人的音量")}</h2>
+              <h2>{t("主持人音量")}</h2>
               <p className="muted small">
-                {lv.even
+                {solo
+                  ? t("这一集只有一位主持人，不用统一。可以在下面单独调音量。")
+                  : lv.even
                   ? t(
-                      "两人已经一样响（都在 {target} LUFS 左右），审阅和导出听到的是同一个平衡。",
+                      "主持人已经一样响（都在 {target} LUFS 左右），审阅和导出听到的是同一个平衡。",
                       { target: lv.target_lufs },
                     )
                   : t(
-                      "两人现在相差约 {d} dB。点「统一两人音量」，两人都拉到 {target} LUFS。",
+                      "主持人现在相差约 {d} dB。点「统一主持人音量」，大家都拉到 {target} LUFS。",
                       { d: spread.toFixed(1), target: lv.target_lufs },
                     )}
               </p>
             </div>
-            <button
+            {!solo && (<button
               type="button"
               className={`btn ${lv.even ? "btn-outline" : "btn-primary"}`}
               onClick={auto}
@@ -164,10 +167,10 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
             >
               <BusyLabel
                 busy={busy === "auto"}
-                label={lv.even ? t("重新统一") : t("统一两人音量")}
+                label={lv.even ? t("重新统一") : t("统一主持人音量")}
                 busyLabel={t("正在统一…")}
               />
-            </button>
+            </button>)}
           </div>
           <ul className={`levels-tracks${lv.tracks.length > 2 ? " levels-many" : ""}`}>
             {lv.tracks.map((tr, i) => (
@@ -192,7 +195,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
           )}
           <p className="muted small levels-note" data-tour="levels-chat">
             {t(
-              "也可以在「整集试听」里直接对 AI 制作人说「我的声音太低」「{name} 小一点 3 dB」「音量统一一下」。每次调整都能撤销。",
+              "也可以在「整集试听」里直接对 LACUNA 说「我的声音太低」「{name} 小一点 3 dB」「音量统一一下」。每次调整都能撤销。",
               { name: ep.tracks[ep.tracks.length - 1]?.name ?? "" },
             )}
           </p>
@@ -203,7 +206,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
           <Compare id={id} version={ep.version} at={player.time} onPlay={player.pause} />
           <p className="muted small">
             {t(
-              "导出时还会对整集做一次响度标准化（−16 LUFS）和轻压缩；这里调的是两人之间的平衡，以及审阅时听到的音量。",
+              "导出时还会对整集做一次响度标准化（−16 LUFS）和轻压缩；这里调的是主持人之间的平衡，以及审阅时听到的音量。",
             )}
           </p>
         </section>

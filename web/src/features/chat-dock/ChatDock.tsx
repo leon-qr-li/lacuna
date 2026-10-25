@@ -17,7 +17,7 @@ function Svg({ d, size = 16 }: { d: string; size?: number }) {
 
 export function ChatCollapse({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" className="chat-collapse" onClick={onClick} title={t("收起 AI 制作人")} aria-label={t("收起")} data-testid="chat-collapse">
+    <button type="button" className="chat-collapse" onClick={onClick} title={t("收起 LACUNA")} aria-label={t("收起")} data-testid="chat-collapse">
       <span className="chat-collapse-label">{t("收起")}</span> <Svg d={CHEVS} size={14} />
     </button>
   );
@@ -26,7 +26,7 @@ export function ChatCollapse({ onClick }: { onClick: () => void }) {
 export function ChatFab({ onClick }: { onClick: () => void }) {
   return (
     <button type="button" className="chat-fab" onClick={onClick} data-testid="chat-open">
-      <Svg d={CHAT} size={18} /> {t("AI 制作人")}
+      <Svg d={CHAT} size={18} /> {t("LACUNA")}
     </button>
   );
 }

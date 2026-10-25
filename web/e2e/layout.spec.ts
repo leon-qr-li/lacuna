@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
 
 // phase 8 round 2: the AI producer owns the right column at full height and its text box is big enough to read
-test("AI 制作人: full-height column, multi-line box, grows (Shift+Enter = new line)", async ({ page }) => {
+test("LACUNA: full-height column, multi-line box, grows (Shift+Enter = new line)", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
-  const chat = page.getByRole("region", { name: "AI 制作人对话" });
+  const chat = page.getByRole("region", { name: "LACUNA 对话" });
   const box = await chat.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(420);
   expect(box!.height).toBeGreaterThanOrEqual(600); // even with only the opening message
 
-  const say = page.getByLabel(/对 AI 制作人说/);
+  const say = page.getByLabel(/对 LACUNA说/);
   const h0 = (await say.boundingBox())!.height;
   expect(h0).toBeGreaterThanOrEqual(60);
   await say.fill("第一行");

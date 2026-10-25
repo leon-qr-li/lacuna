@@ -1,4 +1,4 @@
-"""「新成员需站长批准」 and 搭档申请 (routes/new_members.py, routes/spaces.py, routes/auth_requests.py):
+"""「新成员需站长批准」 and 协作者申请 (routes/new_members.py, routes/spaces.py, routes/auth_requests.py):
 in beta a show admin can't sign strangers up, the owner approves; after launch the plan's seats decide."""
 from __future__ import annotations
 

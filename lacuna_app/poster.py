@@ -120,18 +120,18 @@ def sanitize(svg: str) -> tuple[str, list[str]]:
     Raises PosterError when it is not a usable SVG at all."""
     notes: list[str] = []
     if len(svg.encode("utf-8")) > MAX_SVG_BYTES:
-        raise PosterError(tr("海报文件太大"))
+        raise PosterError(tr("封面文件太大"))
     if re.search(r"<!(DOCTYPE|ENTITY)", svg, re.I):
-        raise PosterError(tr("海报里有不允许的 DOCTYPE"))
+        raise PosterError(tr("封面里有不允许的 DOCTYPE"))
     try:
         root = ET.fromstring(svg.strip())
     except ET.ParseError as e:
-        raise PosterError(tr("海报 SVG 解析不了（{e}）", e=e)) from e
+        raise PosterError(tr("封面 SVG 解析不了（{e}）", e=e)) from e
     if root.tag != f"{{{SVG_NS}}}svg":
         raise PosterError(tr("交回的不是 SVG"))
     vb = [float(x) for x in re.split(r"[\s,]+", (root.get("viewBox") or "").strip()) if x]
     if len(vb) != 4 or vb[2] <= 0 or abs(vb[2] - vb[3]) > 0.5:
-        raise PosterError(tr("海报不是正方形（viewBox）"))
+        raise PosterError(tr("封面不是正方形（viewBox）"))
     root.set("width", str(CANVAS))
     root.set("height", str(CANVAS))
 
@@ -167,7 +167,7 @@ def sanitize(svg: str) -> tuple[str, list[str]]:
 
     clean(root)
     if dropped_cjk:
-        notes.append(tr("LACUNA 在海报上写了中文，已经去掉（只用英文）。"))
+        notes.append(tr("LACUNA 在封面上写了中文，已经去掉（只用英文）。"))
     return ET.tostring(root, encoding="unicode"), notes
 
 
@@ -184,7 +184,7 @@ def render_png(svg: str, px: int) -> bytes:
                                      font_dirs=[str(FONTS)], font_family="Inter", sans_serif_family="Inter",
                                      serif_family="Inter", monospace_family="Inter")
     except Exception as e:      # noqa: BLE001 - resvg raises ValueError on bad SVG
-        raise PosterError(tr("海报渲染失败（{e}）", e=e)) from e
+        raise PosterError(tr("封面渲染失败（{e}）", e=e)) from e
 
 
 def png_to_jpeg(png: bytes, quality: int = JPEG_QUALITY) -> bytes:
@@ -296,8 +296,8 @@ class ClaudeDesigner:
                 d = dict(block.input)
                 return Design(str(d.get("name", ""))[:60], str(d.get("concept", ""))[:600], str(d.get("svg", "")), usage)
         if resp.stop_reason == "max_tokens":
-            raise PosterError(tr("海报太复杂，回答被截断了"))
-        raise PosterError(tr("LACUNA 没有交回海报"))
+            raise PosterError(tr("封面太复杂，回答被截断了"))
+        raise PosterError(tr("LACUNA 没有交回封面"))
 
     def design(self, context: str, direction: str) -> Design:
         brief = dict((k, b) for k, _, b in DIRECTIONS)[direction]
@@ -385,7 +385,7 @@ class Posters:
                "error": None}
         with self._lock:
             if (self.jobs.get(ep.id) or {}).get("state") == "running":
-                raise PosterBusy(tr("这一集的海报正在生成"))
+                raise PosterBusy(tr("这一集的封面正在生成"))
             self.jobs[ep.id] = job
 
         def set_stage(s: str) -> None:
@@ -412,13 +412,13 @@ class Posters:
     def _context(self, ep: Episode) -> str:
         pack = self.publisher.load(ep)
         if pack is None:
-            raise PosterError(tr("先在「发布资料」里生成标题和简介，海报按它来设计"))
+            raise PosterError(tr("先在「发布资料」里生成标题和简介，封面按它来设计"))
         return brief_context(ep.id, pack, show.load(self.ws.root)["show_name"])
 
     def _designer(self):
         d = self.factory()
         if not getattr(d, "available", True):
-            raise PosterError(tr("还没接上 AI（没有 AI 密钥），画不了海报"))
+            raise PosterError(tr("还没接上 AI（没有 AI 密钥），画不了封面"))
         if hasattr(d, "show"):
             d.show = show.load(self.ws.root)
         return d
@@ -450,14 +450,14 @@ class Posters:
     def generate(self, ep: Episode, directions: list[str] | None = None, wait: bool = False) -> dict:
         keys = directions or [k for k, _, _ in DIRECTIONS]
         if self._rounds_left(ep, self.load(ep)) == 0:
-            raise PosterError(tr("本集海报次数用完"))
+            raise PosterError(tr("本集封面次数用完"))
         context = self._context(ep)
         from .sample import sample_designer
         designer = sample_designer(ep) or self._designer()
 
         def work(stage: Callable[[str], None]) -> None:
             done, errors = [], []
-            stage(tr("LACUNA 在画 {p0} 版海报", p0=len(keys)))
+            stage(tr("LACUNA 在画 {p0} 版封面", p0=len(keys)))
 
             def one(k: str) -> None:
                 try:
@@ -466,7 +466,7 @@ class Posters:
                         self.on_usage(ep.id, d.usage)
                     self._add(ep, d, k)
                     done.append(k)
-                    stage(tr("LACUNA 在画 {p0} 版海报（已完成 {p1}）", p0=len(keys), p1=len(done)))
+                    stage(tr("LACUNA 在画 {p0} 版封面（已完成 {p1}）", p0=len(keys), p1=len(done)))
                 except Exception as e:  # noqa: BLE001 - one bad version must not lose the others
                     if not isinstance(e, PosterError):
                         traceback.print_exc()

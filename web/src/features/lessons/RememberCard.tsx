@@ -56,7 +56,7 @@ export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft
         <>
           {!talk && (
             <>
-              <p className="remember-ask">{t("是否记住这条？记住后从下一期的 AI 初剪开始照做。")}</p>
+              <p className="remember-ask">{t("是否记住这条？记住后从下一期的 LACUNA 初剪开始照做。")}</p>
               <div className="row gap8 wrap">
                 <button type="button" className="btn btn-primary" disabled={!!busy} onClick={() => decide("confirm")}>
                   <BusyLabel busy={busy === "confirm"} label={t("记住这条")} />
@@ -87,7 +87,7 @@ export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft
       )}
       {d.state === "confirmed" && (
         <p className="pstate ok" role="status">
-          {t("✓ 记住了，已生效：从下一期的 AI 初剪开始照做。")}{" "}
+          {t("✓ 记住了，已生效：从下一期的 LACUNA 初剪开始照做。")}{" "}
           <a href="#/learning">{t("想撤回去「学到的规则」")}</a>
         </p>
       )}

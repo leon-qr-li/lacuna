@@ -29,7 +29,6 @@ export const en: Dict = {
   "编辑器贴不进图片：贴好文字后，在【插图】那一行用编辑器的图片按钮上传这张图，再删掉那一行。":
     "The editor can't take images from a paste: after pasting the text, upload each image with the editor's image button on its 【插图】 line, then delete that line.",
   "下载": "Download",
-  "也存在 {path}": "Also saved in {path}",
   "预览": "Preview",
   "大致是贴进喜马拉雅后的样子，以喜马拉雅里实际显示为准": "Roughly how it looks in Ximalaya; what Ximalaya shows is what counts.",
 };

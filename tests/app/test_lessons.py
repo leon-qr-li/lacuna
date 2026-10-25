@@ -261,7 +261,7 @@ def test_lessons_without_key_errors_and_demo(ai_ws, tmp_path):
     assert run(c)["state"] == "no_key"
     c = client(ai_ws, FakeRuleWriter(boom=True), MockEditorAdapter())
     v = run(c)
-    assert v["state"] == "error" and v["error"] == "AI 服务出了点问题"    # never the raw error
+    assert v["state"] == "error" and v["error"] == "LACUNA 暂时出了点问题"    # never the raw error
     w = FakeRuleWriter()
     c = client(ai_ws, w, MockEditorAdapter())
     v = run(c)                                                     # nothing happened yet: an empty answer

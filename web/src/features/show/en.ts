@@ -7,9 +7,9 @@ export const en: Dict = {
   琥珀: "Amber",
   绿: "Green",
   粉: "Pink",
-  比我平时更狠: "Firmer than I usually cut",
+  "比我平时多剪": "More than I usually cut",
   和我平时一样: "Same as I usually cut",
-  比我平时更松: "Lighter than I usually cut",
+  "比我平时少剪": "Less than I usually cut",
   我平时的剪辑力度: "How much I usually cut",
   正常: "Normal",
   节目名: "Show name",
@@ -21,7 +21,7 @@ export const en: Dict = {
   "比如：周末电影院": "e.g. Weekend Cinema",
   一句话介绍: "One-line description",
   "比如：两个朋友的电影闲聊": "e.g. Two friends chatting about films",
-  "AI 剪辑、写 show notes 和画海报时会参考。": "LACUNA uses it when editing, writing show notes and drawing covers.",
+  "LACUNA 剪辑、写 show notes 和画封面时会参考。": "LACUNA uses it when editing, writing show notes and drawing covers.",
   "主持人（每人一条分轨）": "Hosts (one track each)",
   名字: "Name",
   "第 {n} 位主持人的名字": "Name of host {n}",
@@ -30,7 +30,7 @@ export const en: Dict = {
   这位主持人: "this host",
   去掉: "Remove",
   剪辑力度: "How much to cut",
-  "给 AI 的剪辑要求（可不填），比如：保留她的口头禅，跑题的长段可以删":
+  "给 LACUNA 的剪辑要求（可不填），比如：保留她的口头禅，跑题的长段可以删":
     "Editing notes for LACUNA (optional), e.g. keep her catchphrases, long tangents can go",
   "{name} 的剪辑要求": "Editing notes for {name}",
   "+ 加一位主持人": "+ Add a host",
@@ -53,7 +53,7 @@ export const en: Dict = {
   "{list} 和 {last}": "{list} and {last}",
   专有名词: "Names and terms",
   "一行一个，比如：王家卫、花样年华、PULSE": "One per line, e.g. Wong Kar-wai, In the Mood for Love, PULSE",
-  "节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。":
+  "节目里常说的人名、片名、栏目名。逐字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。":
     "Names of people, films and segments the show often mentions. When the transcript mis-hears one as something that sounds alike, it is corrected to this spelling; the recording comes first, nothing that sounds different is forced.",
   "每个节目最多 {n} 位主持人（每人一条分轨）。": "A show can have at most {n} hosts (one track each).",
   "LACUNA 需要每位主持人单独一条录音。Riverside、Zencastr 的分轨下载，或 Zoom 的「为每位参与者单独录制音频」都可以。":

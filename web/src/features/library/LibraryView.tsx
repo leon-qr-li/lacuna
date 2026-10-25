@@ -204,7 +204,7 @@ function AssetRow({ a, kinds, eps, albums, onChange, onRemoved, claude }: { a: A
           onClick={async () => {
             const ok = await confirmDialog({
               title: t("移出素材库"),
-              message: t("把「{name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。", { name: a.name }),
+              message: t("把「{name}」移出素材库？移出后素材库里就看不到它了。", { name: a.name }),
               confirmLabel: t("移出"),
               danger: true,
             });

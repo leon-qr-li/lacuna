@@ -14,21 +14,21 @@ export const en: Dict = {
   "复制失败：{message}": "Copy failed: {message}",
   "发布资料打不开：": "Can't open the publish pack: ",
   "重新生成会覆盖你手改过的 show notes，确定吗？": "Regenerating replaces the show notes you edited by hand. Continue?",
-  "重新生成一版？（会再花一次 AI 的钱）": "Generate a new version? (costs another AI call)",
+  "重新生成一版？当前这版会被替换。": "Generate a new version? This one will be replaced.",
   "发布资料": "Publish pack",
   "标题、简介、show notes 和章节，按现在这版剪辑的成品时间。喜马拉雅是唯一发布源，小宇宙会自动同步。":
     "Title, blurb, show notes and chapters, timed to the current cut. Ximalaya is the single place to publish; Xiaoyuzhou syncs from it automatically.",
   "重新生成": "Regenerate",
   "生成发布资料": "Generate publish pack",
-  "LACUNA 会读这一集剪完后的文字稿，写标题、简介和 show notes，大约 1–2 分钟。":
+  "LACUNA 会读这一集剪完后的逐字稿，写标题、简介和 show notes，大约 1–2 分钟。":
     "LACUNA reads this episode's edited transcript and writes a title, summary and show notes. It takes about 1–2 minutes.",
   "还没接上 AI（{p0}），只能生成按时间切的草稿。": "AI isn't connected ({p0}), so only a time-based draft can be generated.",
   "没找到 AI 密钥": "no AI key found",
   "没生成出来：{error}。可以再点一次「生成发布资料」。": "Generation failed: {error}. You can click “Generate publish pack” again.",
-  "剪辑在生成之后又改过，时间戳和配乐可能不准了。更新只在本机重新对时间，不花钱，你改过的文字会保留。":
-    "The cut changed after this was generated, so timestamps and music may be off. Updating re-times it on this computer, free, and keeps your text edits.",
-  "剪辑在生成之后又改过，时间戳可能不准了。更新只在本机重新对时间，不花钱，你改过的文字会保留。":
-    "The cut changed after this was generated, so timestamps may be off. Updating re-times it on this computer, free, and keeps your text edits.",
+  "剪辑在生成之后又改过，时间戳和配乐可能不准了。更新只重新对一遍时间，不会重写，你改过的文字会保留。":
+    "The cut changed after this was generated, so timestamps and music may be off. Updating only re-times it; nothing is rewritten and your text edits stay.",
+  "剪辑在生成之后又改过，时间戳可能不准了。更新只重新对一遍时间，不会重写，你改过的文字会保留。":
+    "The cut changed after this was generated, so timestamps may be off. Updating only re-times it; nothing is rewritten and your text edits stay.",
   "时间戳已按最新剪辑更新": "Timestamps updated to the latest cut",
   "更新时间戳": "Update timestamps",
   "这些条目说的那段话后来被剪掉了，建议删掉或改写：": "These entries refer to parts that were cut later; delete or rewrite them: ",
@@ -52,13 +52,12 @@ export const en: Dict = {
   "已保存": "Saved",
   "保存": "Save",
   "取消": "Cancel",
-  "也存在 {path}": "Also saved to {path}",
   "章节": "Chapters",
   "章节（成品时间）": "Chapters (final-cut time)",
   "章节已复制": "Chapters copied",
   "复制章节": "Copy chapters",
   "专有名词核对": "Name check",
-  "转写可能听错的片名和人名。改了会记住，下一集自动用对的写法。":
+  "逐字稿里可能听错的片名和人名。改了会记住，下一集自动用对的写法。":
     "Film titles and names the transcript may have misheard. Fixes are remembered for the next episode.",
   "听成「{heard}」→ 应为": "Heard “{heard}” → should be",
   "已全部改成「{suggested}」": "Changed everywhere to “{suggested}”",
@@ -68,7 +67,6 @@ export const en: Dict = {
   "不改": "Left as is",
   "LACUNA 写的": "Written by LACUNA",
   "规则草稿（AI 没接上）": "Rule-based draft (AI not connected)",
-  " · 约 ${p0}": " · about ${p0}",
   "· 生成于 {time}": "· generated {time}",
   "标题、简介、show notes 和章节，按现在这版剪辑的成品时间。和导出的音频一起上传到你的播客托管平台，Apple Podcasts、Spotify 等会通过 RSS 自动同步。":
     "Title, summary, show notes and chapters, timed to the current cut. Upload them with the exported audio to your podcast host; Apple Podcasts, Spotify and others pick it up through RSS.",

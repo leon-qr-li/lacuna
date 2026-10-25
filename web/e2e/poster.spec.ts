@@ -6,11 +6,11 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await page.getByRole("link", { name: "发布", exact: true }).click(); // 发布 step → sub-tabs
-  await page.getByRole("link", { name: "海报", exact: true }).click();
+  await page.getByRole("link", { name: "封面", exact: true }).click();
   await expect(page).toHaveURL(/\/poster$/);
-  await expect(page.getByRole("heading", { name: "海报" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "封面" })).toBeVisible();
   await expect(page.getByTestId("poster-needs-pack")).toBeVisible();
-  await expect(page.getByRole("button", { name: "画 4 版海报" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "画 4 版封面" })).toBeDisabled();
 
   // the publish pack (phase 9) gives the title / blurb the cover is drawn from
   const ep = decodeURIComponent(/#\/ep\/([^/]+)/.exec(page.url())![1]);
@@ -22,7 +22,7 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   // included in the plan: no price anywhere, a few rounds per episode instead
   await expect(page.getByText("每集可以画 3 轮")).toBeVisible();
   await expect(page.locator("main.poster")).not.toContainText("$");
-  await page.getByRole("button", { name: "画 4 版海报" }).click();
+  await page.getByRole("button", { name: "画 4 版封面" }).click();
   await expect(page.getByTestId("poster-running")).toBeVisible();
   const cards = page.getByTestId("poster-card");
   await expect(cards).toHaveCount(4, { timeout: 15_000 });

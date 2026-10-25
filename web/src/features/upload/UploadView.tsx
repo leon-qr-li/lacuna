@@ -152,7 +152,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
             <p className="muted small">{t("想排得更好看、时间戳能点：用")} <a href={tab("ximalaya")}>{t("喜马拉雅版")}</a>{t("（三种排版，一键复制）。")}</p>
             {pack.stale && (
               <p className="warn small">
-                {t("剪辑后来又改过，时间戳可能不准。去")} <a href={tab("publish")}>{t("发布资料")}</a> {t("点「更新时间戳」（本机算，不花钱）。")}
+                {t("剪辑后来又改过，时间戳可能不准。去")} <a href={tab("publish")}>{t("发布资料")}</a> {t("点「更新时间戳」（不会重写内容）。")}
               </p>
             )}
             <p className="muted small">{t("想先改文字，去")} <a href={tab("publish")}>{t("发布资料")}</a> {t("编辑。")}</p>
@@ -191,7 +191,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
           </div>
         ) : (
           <p className="upload-missing">
-            {t("还没选封面。去")} <a href={tab("poster")}>{t("海报")}</a> {t("画一版，点「用这张」。")}
+            {t("还没选封面。去")} <a href={tab("poster")}>{t("封面")}</a> {t("画一版，点「用这张」。")}
           </p>
         )}
       </section>

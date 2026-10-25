@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import { undoKey } from "./undo";
 
 // Leon 2026-10-20 (version B): 整集试听 is one screen — the timeline (player inside; no minimap since round 4) on top, the transcript
-// under it, a side panel with tabs AI 制作人 / 这附近改了什么; 「下一步」 at the top right of every step.
+// under it, a side panel with tabs LACUNA / 这附近改了什么; 「下一步」 at the top right of every step.
 
 async function openListen(page: Page) {
   await page.goto("/");
@@ -35,10 +35,10 @@ test("整集试听 fits one screen: timeline, player and transcript all in view,
   await expect(page.locator(".next-step")).toHaveCount(0);
 });
 
-test("side panel: tabs AI 制作人 / 这附近改了什么, counted, remembered", async ({ page }) => {
+test("side panel: tabs LACUNA / 这附近改了什么, counted, remembered", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openListen(page);
-  const chat = page.getByRole("region", { name: "AI 制作人对话" });
+  const chat = page.getByRole("region", { name: "LACUNA 对话" });
   await expect(page.getByTestId("tab-ai")).toHaveAttribute("aria-selected", "true");
   await expect(page.getByTestId("editor-badge")).toBeVisible();
   await expect(page.getByTestId("chat-log")).toBeVisible();
@@ -50,7 +50,7 @@ test("side panel: tabs AI 制作人 / 这附近改了什么, counted, remembered
   await page.getByTestId("tab-near").click();
   await expect(page.getByTestId("tab-near")).toHaveAttribute("aria-selected", "true");
   await expect(page.getByTestId("chat-log")).toBeHidden();
-  await expect(page.getByLabel(/对 AI 制作人说/)).toBeHidden();
+  await expect(page.getByLabel(/对 LACUNA说/)).toBeHidden();
   const rows = page.locator("[data-testid=nearby] li");
   await expect(rows.first()).toBeVisible();
   await expect(page.getByTestId("tab-near").locator(".side-n")).toHaveText(String(await rows.count()));

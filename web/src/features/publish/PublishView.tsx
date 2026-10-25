@@ -103,7 +103,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
   const generate = async () => {
     if (pack && !(await confirmDialog(pack.edited
       ? { message: t("重新生成会覆盖你手改过的 show notes，确定吗？"), confirmLabel: t("重新生成"), danger: true }
-      : { message: t("重新生成一版？（会再花一次 AI 的钱）"), confirmLabel: t("重新生成") }))) return;
+      : { message: t("重新生成一版？当前这版会被替换。"), confirmLabel: t("重新生成") }))) return;
     setEditing(false);
     void act(publishApi.generatePublish(id));
   };
@@ -139,7 +139,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
       {!pack && !running && (
         <p className="card">
           {claude
-            ? t("LACUNA 会读这一集剪完后的文字稿，写标题、简介和 show notes，大约 1–2 分钟。")
+            ? t("LACUNA 会读这一集剪完后的逐字稿，写标题、简介和 show notes，大约 1–2 分钟。")
             : t("还没接上 AI（{p0}），只能生成按时间切的草稿。", { p0: view.editor_note || t("没找到 AI 密钥") })}
         </p>
       )}
@@ -152,7 +152,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
         <>
           {pack.stale && (
             <div className="banner-card row wrap gap8" data-testid="publish-stale">
-              <span className="grow">{pack.library ? t("剪辑在生成之后又改过，时间戳和配乐可能不准了。更新只在本机重新对时间，不花钱，你改过的文字会保留。") : t("剪辑在生成之后又改过，时间戳可能不准了。更新只在本机重新对时间，不花钱，你改过的文字会保留。")}</span>
+              <span className="grow">{pack.library ? t("剪辑在生成之后又改过，时间戳和配乐可能不准了。更新只重新对一遍时间，不会重写，你改过的文字会保留。") : t("剪辑在生成之后又改过，时间戳可能不准了。更新只重新对一遍时间，不会重写，你改过的文字会保留。")}</span>
               <button type="button" className="btn btn-primary btn-small" disabled={busy} onClick={() => act(publishApi.retimePublish(id), t("时间戳已按最新剪辑更新"))}>
                 {t("更新时间戳")}
               </button>
@@ -296,7 +296,6 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
             ) : (
               <article className="md" data-testid="show-notes" dangerouslySetInnerHTML={{ __html: html }} />
             )}
-            <p className="muted small">{t("也存在 {path}", { path: view.notes_path })}</p>
           </section>
 
           <section className="card" aria-label={t("章节")}>
@@ -323,7 +322,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
             <section className="card" aria-label={t("专有名词核对")}>
               <div className="card-head">
                 <strong>{t("专有名词核对")}</strong>
-                <span className="muted small">{t("转写可能听错的片名和人名。改了会记住，下一集自动用对的写法。")}</span>
+                <span className="muted small">{t("逐字稿里可能听错的片名和人名。改了会记住，下一集自动用对的写法。")}</span>
               </div>
               <ul className="names">
                 {pack.names.map((n) => (
@@ -351,7 +350,7 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
 
           <p className="muted small">
             {pack.adapter === "claude" ? t("LACUNA 写的") : t("规则草稿（AI 没接上）")}
-            {pack.usage?.cost_usd ? t(" · 约 ${p0}", { p0: pack.usage.cost_usd.toFixed(2) }) : ""} {t("· 生成于 {time}", { time: fmtDateTime(pack.generated_at) })}
+            {" "}{t("· 生成于 {time}", { time: fmtDateTime(pack.generated_at) })}
           </p>
         </>
       )}

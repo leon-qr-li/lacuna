@@ -65,7 +65,7 @@ export function MyFeedback({ onWrite }: { onWrite?: () => void }) {
           {m.replies.map((r, i) => (
             <div key={i} className="fb-reply" data-testid="feedback-reply">
               <span className="small fb-reply-who">
-                {t("站长回复")}
+                {t("LACUNA 团队回复")}
                 {m.unread && i === m.replies.length - 1 && <span className="fb-new">{t("新")}</span>}
               </span>
               <p>{r.text}</p>

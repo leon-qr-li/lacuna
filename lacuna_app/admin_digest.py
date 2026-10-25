@@ -129,7 +129,7 @@ class Digest:
         o = self.data.overview()
         t, k = o["todo"], o["kpi"]
         rows = [(tr("新反馈"), str(t["fb"])), (tr("加时长申请"), str(t["hours"])), (tr("试用申请"), str(t["trial"])),
-                (tr("搭档申请"), str(t["collab"])), (tr("账号总数"), f"{k['accounts']['value']}（+{k['accounts']['delta']}）"),
+                (tr("协作者申请"), str(t["collab"])), (tr("账号总数"), f"{k['accounts']['value']}（+{k['accounts']['delta']}）"),
                 (tr("周活跃"), str(k["wau"]["value"])), (tr("本周导出"), str(k["exports"]["value"])),
                 (tr("本月 AI 花费"), f"${k['ai']['value']:.2f} / ${k['ai']['budget']:.0f}"),
                 (tr("磁盘"), f"{round(k['disk']['value'] * 100)}%")]

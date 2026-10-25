@@ -184,7 +184,7 @@ export function FeedbackHost() {
           <div className="fb-body fb-sent" data-testid="feedback-sent">
             <div className="fb-sent-mark" aria-hidden="true">✓</div>
             <h3>{t("收到了，谢谢你")}</h3>
-            <p className="muted">{t("站长会亲自看每一条。处理进度和回复会出现在「我的反馈」里，也会发邮件告诉你。")}</p>
+            <p className="muted">{t("LACUNA 团队会看每一条。处理进度和回复会出现在「我的反馈」里，也会发邮件告诉你。")}</p>
             {sent !== "praise" && (
               <p className="fb-gift">
                 {t("你的反馈如果被采纳，本月送你 {n} 小时剪辑时长。", { n: 1 })}
@@ -302,7 +302,7 @@ export function FeedbackHost() {
                   <span>
                     <b className="small">{fromError ? t("附上截图（出错那一刻的画面）") : t("附上这张截图")}</b>
                     <br />
-                    <span className="small muted">{t("只截 LACUNA 页面，不录音，只有站长能看")}</span>
+                    <span className="small muted">{t("只截 LACUNA 页面，不录音，只有 LACUNA 团队能看")}</span>
                   </span>
                 </label>
                 <div className="fb-shot-row">
@@ -355,7 +355,7 @@ export function FeedbackHost() {
 
             {err && <p className="error small">{err}</p>}
             <footer className="fb-foot">
-              <span className="small muted">{t("站长会亲自看每一条")}</span>
+              <span className="small muted">{t("LACUNA 团队会看每一条")}</span>
               <span className="grow" />
               <button type="button" className="btn btn-outline" onClick={() => setOpen(false)}>
                 {t("取消")}

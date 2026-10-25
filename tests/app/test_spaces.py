@@ -210,7 +210,7 @@ def test_anyone_starts_a_project_and_invites_collaborators(tmp_path):
     assert r.status_code == 200 and r.json()["joined"] == "leon@example.com"
     row = next(s for s in leon.get("/api/spaces").json()["mine"] if s["id"] == sid)
     assert (row["role"], row["by"], row["people"]) == ("editor", "beta@example.com", 2)
-    # beta can't sign up strangers: while 新成员需站长批准 is on it becomes a 搭档申请 for the owner
+    # beta can't sign up strangers: while 新成员需站长批准 is on it becomes a 协作者申请 for the owner
     # (test_new_members.py); the site owner invites at once, and the invite waits in the project's list
     asked = beta.post(f"/api/spaces/{sid}/invite", json={"email": "new@example.com"}).json()
     assert asked["requested"] == "new@example.com" and "link" not in asked

@@ -16,9 +16,9 @@ const COLOR_LABELS: Record<HostColor, string> = {
   pink: t("粉"),
 };
 const ADJUST_LABELS: Record<CutAdjust, string> = {
-  more: t("比我平时更狠"),
+  more: t("比我平时多剪"),
   same: t("和我平时一样"),
-  less: t("比我平时更松"),
+  less: t("比我平时少剪"),
 };
 const ADJUSTS: CutAdjust[] = ["more", "same", "less"];
 
@@ -159,7 +159,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
         <label className="show-field">
           <span>{t("一句话介绍")}</span>
           <input value={about} maxLength={200} onChange={(e) => setAbout(e.target.value)} placeholder={t("比如：两个朋友的电影闲聊")} />
-          <small className="muted">{t("AI 剪辑、写 show notes 和画海报时会参考。")}</small>
+          <small className="muted">{t("LACUNA 剪辑、写 show notes 和画封面时会参考。")}</small>
         </label>
       )}
       {!compact && has("basic") && (
@@ -172,7 +172,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
             placeholder={t("一行一个，比如：王家卫、花样年华、PULSE")}
             data-testid="show-terms"
           />
-          <small className="muted">{t("节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。")}</small>
+          <small className="muted">{t("节目里常说的人名、片名、栏目名。逐字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。")}</small>
         </label>
       )}
       {has("hosts") && (
@@ -234,7 +234,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
                       value={h.style}
                       maxLength={500}
                       onChange={(e) => edit(i, { style: e.target.value })}
-                      placeholder={t("给 AI 的剪辑要求（可不填），比如：保留她的口头禅，跑题的长段可以删")}
+                      placeholder={t("给 LACUNA 的剪辑要求（可不填），比如：保留她的口头禅，跑题的长段可以删")}
                       aria-label={t("{name} 的剪辑要求", { name: h.name || t("这位主持人") })}
                     />
                   </>

@@ -15,7 +15,7 @@ async function shot(page: Page, name: string) {
 test("本集学到的规则: summary with evidence → adopt / edit / tell LACUNA / skip", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
-  await page.getByLabel(/对 AI 制作人说/).fill("这段跑题了删掉");
+  await page.getByLabel(/对 LACUNA说/).fill("这段跑题了删掉");
   await page.getByRole("button", { name: "发送" }).click();
   await page.getByTestId("proposal").getByRole("button", { name: "批准" }).click(); // a review decision too
   await expect(page.getByText(/已批准并应用/)).toBeVisible();
@@ -70,7 +70,7 @@ test("本集学到的规则: summary with evidence → adopt / edit / tell LACUN
 
   // more chat afterwards: the summary says so and can run again; decided lessons stay
   await page.goto(page.url().replace(/\/lessons$/, "/listen"));
-  await page.getByLabel(/对 AI 制作人说/).fill("停顿短一点");
+  await page.getByLabel(/对 LACUNA说/).fill("停顿短一点");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByTestId("proposal").last()).toBeVisible();
   await page.goto(page.url().replace(/\/listen$/, "/lessons"));
