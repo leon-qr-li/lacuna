@@ -698,4 +698,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "可以在「设置 → 套餐与用量」里申请更多时长。": "You can ask for more hours under Settings → Plan & usage.",
     "用的是创建这个节目的人的额度，请让 TA 在「设置 → 套餐与用量」里申请更多时长。":
         "This show uses the hours of the person who created it; ask them to request more under Settings → Plan & usage.",
+    # ---- cloud storage for old episodes' audio (cold.py)
+    "取回音频没有成功，请稍后再打开这一集。": "Couldn't bring the audio back. Please open this episode again in a moment.",
+    "正在取回这一集的音频…": "Bringing this episode's audio back…",
+    "云存储音频搬运（{n} 集）": ("Moving audio to or from cloud storage ({n} episode)", "Moving audio to or from cloud storage ({n} episodes)"),
 }

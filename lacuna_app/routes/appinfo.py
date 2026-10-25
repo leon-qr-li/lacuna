@@ -33,6 +33,9 @@ def register(app, ctx) -> None:
                 out.append(tr("生成发布资料"))
         if n := upload_parts.active():
             out.append(tr("上传（{n} 个文件）", n=n))
+        cold = getattr(app.state, "cold", None)
+        if cold is not None and (n := cold.active()):
+            out.append(tr("云存储音频搬运（{n} 集）", n=n))
         return out
 
     def key_status() -> dict:
