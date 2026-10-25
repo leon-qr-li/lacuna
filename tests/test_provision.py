@@ -313,6 +313,26 @@ def test_registry_gc_keeps_the_site_and_staging_images(monkeypatch):
     assert deleted == ["s2", "s1"]          # main, preview and the three newest builds stay
 
 
+def test_weekly_snapshot_on_a_new_volume_without_snapshots(monkeypatch, capsys):
+    ci = _ci()
+    calls = []
+
+    def doh(method, path, body=None):
+        calls.append((method, path.split("?")[0]))
+        if path.startswith("/v2/volumes?"):
+            return 200, {"volumes": [{"id": "v1"}]}
+        if path.startswith("/v2/volumes/v1/snapshots") and method == "POST":
+            return 201, {"snapshot": {"id": "s1"}}
+        if path.startswith("/v2/volumes/v1/snapshots"):
+            return 200, {"snapshots": None, "links": {}, "meta": {"total": 0}}
+        raise AssertionError(path)
+
+    monkeypatch.setattr(ci, "do", lambda: provision.DigitalOcean(FakeHttp(doh)))
+    assert ci.main(["snapshot"]) == 0
+    assert ("POST", "/v2/volumes/v1/snapshots") in calls and not any(m == "DELETE" for m, _ in calls)
+    assert "snapshot taken" in capsys.readouterr().out
+
+
 def test_pushes_wait_for_a_running_garbage_collection(monkeypatch):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "deploy"))
     import ci
