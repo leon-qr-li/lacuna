@@ -101,6 +101,6 @@ def test_chat_context_carries_the_workspace_show(tmp_path):
     show.save(ws.root, {"show_name": "Ana Talks", "hosts": [{"name": "Ana"}, {"name": "Bo"}]})
     ctx = editor.ChatContext("剪掉这句", 1.0, 10.0, [], None, show=show.load(ws.root))
     req = editor.ClaudeEditorAdapter(client=object()).build_request(ctx)
-    assert "《Ana Talks》" in req["system"] and "Leon" not in req["system"]
+    assert "《Ana Talks》" in req["system"][0]["text"] and "Leon" not in req["system"][0]["text"]
     req = editor.ClaudeEditorAdapter(client=object()).build_request(editor.ChatContext("x", 1.0, 10.0, [], None))
-    assert req["system"].startswith(editor.SYSTEM[:60])
+    assert req["system"][0]["text"].startswith(editor.SYSTEM[:60])

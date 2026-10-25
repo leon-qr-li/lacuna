@@ -271,8 +271,10 @@ def sdk_installed() -> bool:
     return importlib.util.find_spec("anthropic") is not None
 
 
-# USD per million tokens (input, output); unknown models are priced like Opus 5.
-PRICES = {"claude-opus-5-5": (4.0, 20.0), "claude-opus-5": (5.0, 25.0), "claude-sonnet-5-5": (2.0, 10.0)}
+# USD per million tokens (input, output); unknown models are priced like Opus 5. A prompt-cache write costs
+# 1.25x input, a read 0.1x; the Batch API halves everything.
+PRICES = {"claude-opus-5-5": (4.0, 20.0), "claude-opus-5": (5.0, 25.0), "claude-sonnet-5-5": (2.0, 10.0),
+          "claude-haiku-5-5": (0.10, 0.50)}
 
 SYSTEM = """\
 You are the AI producer inside LACUNA Studio, editing 《洛城二三事》, a casual two-host Chinese \
@@ -395,14 +397,18 @@ class ClaudeEditorAdapter:
     Only text and numeric features are sent. `client` can be injected (tests use a fake)."""
 
     name = "claude"
+    # Stays on Opus until the blind comparison with Sonnet (scripts/chat_blind_compare.py) shows no loss;
+    # LACUNA_CHAT_MODEL switches it without a release (decision 2026-10-25-ai-cost-cut).
     model = "claude-opus-5-5"
 
-    def __init__(self, api_key: str | None = None, client: Any = None, effort: str | None = None):
+    def __init__(self, api_key: str | None = None, client: Any = None, effort: str | None = None,
+                 model: str | None = None):
         if api_key is None and client is None:
             api_key, _ = find_api_key()
         self.api_key = api_key
         self._client = client
         self.effort = effort or os.environ.get("LACUNA_AI_EFFORT", "low")
+        self.model = model or os.environ.get("LACUNA_CHAT_MODEL") or type(self).model
 
     @property
     def available(self) -> bool:
@@ -416,7 +422,10 @@ class ClaudeEditorAdapter:
         return self._client
 
     def build_request(self, ctx: ChatContext) -> dict:
-        return dict(model=self.model, max_tokens=8000, system=in_reply_language(system_for(ctx.show)),
+        # tools + system are the same for every turn of a show: cached (the scene, the only varying part, is last)
+        return dict(model=self.model, max_tokens=8000,
+                    system=[{"type": "text", "text": in_reply_language(system_for(ctx.show)),
+                             "cache_control": {"type": "ephemeral"}}],
                     output_config={"effort": self.effort},
                     tools=[in_reply_language(TOOL)], tool_choice={"type": "auto"},
                     messages=[{"role": "user", "content": json.dumps(scene(ctx), ensure_ascii=False)}])
@@ -446,19 +455,23 @@ class ClaudeEditorAdapter:
         return p
 
     def _call(self, ctx: ChatContext):
-        # Server-side fallback lets a refused request be retried on another model.
-        return self.client.beta.messages.create(betas=["server-side-fallback-2026-07-01"],
-                                                fallbacks="default", **self.build_request(ctx))
+        # Server-side fallback lets a refused request be retried on another model (Opus and Sonnet only).
+        req = self.build_request(ctx)
+        if "haiku" in req["model"]:
+            return self.client.beta.messages.create(**req)
+        return self.client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **req)
 
     @staticmethod
-    def _usage(resp, seconds: float) -> dict:
+    def _usage(resp, seconds: float, batch: bool = False) -> dict:
         u = getattr(resp, "usage", None)
-        tin = (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0)
+        fresh = getattr(u, "input_tokens", 0) or 0
+        written = getattr(u, "cache_creation_input_tokens", 0) or 0
+        tin = fresh + written
         cached = getattr(u, "cache_read_input_tokens", 0) or 0
         tout = getattr(u, "output_tokens", 0) or 0
         model = getattr(resp, "model", None) or ClaudeEditorAdapter.model
         pin, pout = PRICES.get(model, (5.0, 25.0))
-        cost = (tin * pin + cached * pin * 0.1 + tout * pout) / 1e6
+        cost = (fresh * pin + written * pin * 1.25 + cached * pin * 0.1 + tout * pout) / 1e6 * (0.5 if batch else 1)
         return {"model": model, "input_tokens": tin + cached, "output_tokens": tout,
                 "seconds": round(seconds, 2), "cost_usd": round(cost, 4),
                 "request_id": getattr(resp, "_request_id", None)}

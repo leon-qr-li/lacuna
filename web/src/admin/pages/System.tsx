@@ -6,6 +6,7 @@ import { PART } from "../labels";
 import type { SystemData } from "../types";
 import { Card, Empty, HBar, LineChart, Loading, PageHead, Pill, ago, duration, fmtBytes, fmtPct, fmtTime, useData } from "../ui";
 import { Alerts } from "./Home";
+import { AiCostCard } from "./AiCost";
 import { StorageCard } from "./Storage";
 
 export function SystemPage({ go, me }: PageProps) {
@@ -105,6 +106,11 @@ export function SystemPage({ go, me }: PageProps) {
       {s.storage && (
         <div className="a-mb">
           <StorageCard data={s.storage} owner={me.role === "owner"} />
+        </div>
+      )}
+      {s.ai && (
+        <div className="a-mb">
+          <AiCostCard data={s.ai} owner={me.role === "owner"} />
         </div>
       )}
       <div className="a-grid g2 a-mb">

@@ -281,6 +281,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "规则第一刀完成": "Rule-based first cut done",
     "第 {p0} 段的回答太长被截断": "The answer for window {p0} was too long and got cut off",
     "AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟录音）": "AI first cut: {p0}/{n} windows done (each about 10 minutes of recording)",
+    "AI 第一刀（省钱模式）：排队处理中，已等 {m} 分钟，通常 10–30 分钟": "AI first cut (saver mode): queued, waited {m} min so far, usually 10–30 min",
     # ---- archived episodes (archive.py, routes/archive.py)
     "有文件正在被使用，删不掉。关掉这一集的其他页面后再试。": "Some files are in use, so it can't be deleted. Close this episode's other pages and try again.",
     "这一集没有归档": "This episode isn't archived",

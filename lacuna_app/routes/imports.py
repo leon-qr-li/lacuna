@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
-from .. import import_tracks, upload_parts
+from .. import ai_settings, import_tracks, upload_parts
 from ..archive import free_deleted_ids
 from ..importer import ImportBusy, ImportError_, Importer, check_track
 from ..quota import QuotaError
@@ -56,8 +56,13 @@ def register(app, ctx) -> None:
         meter = ctx.provide("meter")
         if meter is not None:
             meter.charge(ws.root, episode_id, job)
+    def batch_on() -> bool:
+        meter = ctx.provide("meter")
+        return bool(meter is not None and meter.on and ai_settings.settings(meter.auth.db)["first_cut_batch"])
     if getattr(importer, "allow", None) is None:
         importer.allow = allow
+    if getattr(importer, "batch_on", None) is None:
+        importer.batch_on = batch_on
     if getattr(importer, "on_done", None) is None:
         importer.on_done = charged
 

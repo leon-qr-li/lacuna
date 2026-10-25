@@ -328,6 +328,11 @@ export interface SystemData {
   alerts: Alert[];
   cpus: number;
   storage?: StorageData;
+  ai?: AiSettings;
+}
+
+export interface AiSettings {
+  first_cut_batch: boolean;
 }
 
 export interface StorageData {

@@ -119,6 +119,8 @@ class Importer:
         # called with (episode id, tracks) before an import starts or resumes; raises ImportError_ when the
         # show's account has no audio hours left this month (quota.py)
         self.allow: Callable[[str, dict], None] | None = None
+        # whether the AI first cut goes through the Batch API (half price, slower; ai_settings.py)
+        self.batch_on: Callable[[], bool] | None = None
         self._cancel: set[str] = set()
         self.jobs: dict[str, dict] = {}
         self._history: dict | None = None      # past imports' step times (import_eta.py), read lazily
@@ -469,6 +471,8 @@ class Importer:
                 fc.language = lang
             if hasattr(fc, "on_usage"):
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
+            if hasattr(fc, "batch"):
+                fc.batch = bool(self.batch_on and self.batch_on())
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
             self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（AI 没接上）"))

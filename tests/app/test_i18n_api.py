@@ -76,11 +76,11 @@ def test_ai_writes_meta_text_in_the_interface_language():
     ctx = ChatContext(instruction="x", playhead=0.0, duration=600.0, pauses=[], sentence=None)
     with speaking("en"):
         req = ClaudeEditorAdapter(client=object()).build_request(ctx)
-        assert "Reply in English." in req["system"] and "Simplified Chinese" not in str(req["tools"])
+        assert "Reply in English." in req["system"][0]["text"] and "Simplified Chinese" not in str(req["tools"])
         assert "in English" in window_request(0, 600, 0, 3)
         assert Dictation.language() == "auto"
     with speaking("zh"):
         req = ClaudeEditorAdapter(client=object()).build_request(ctx)
-        assert "Reply in Simplified Chinese." in req["system"]
+        assert "Reply in Simplified Chinese." in req["system"][0]["text"]
         assert "English" not in window_request(0, 600, 0, 3)
         assert Dictation.language() == "zh"

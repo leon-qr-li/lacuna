@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import cloud, notice_mail, plans, retention, system_terms
+from . import ai_settings, cloud, notice_mail, plans, retention, system_terms
 from .admin_metrics import AdminData
 from .admin_store import AdminStore
 from .appinfo import current_version
@@ -150,6 +150,10 @@ class BetaBody(BaseModel):
 class RetentionBody(BaseModel):
     raw_tracks: bool | None = None
     old_exports: bool | None = None
+
+
+class AiBody(BaseModel):
+    first_cut_batch: bool | None = None
 
 
 class QuotaBody(BaseModel):
@@ -897,7 +901,7 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         return {"disk": data.disk(), "parts": sizes["parts"], "sizes_at": sizes["at"], "backup": data.backup(),
                 "running": data.running(), "samples": data.samples, "errors": store.errors(auth.now() - 86400),
                 "started": data.started, "version": current_version(), "alerts": data.alerts(),
-                "cpus": os.cpu_count(), "storage": storage_view()}
+                "cpus": os.cpu_count(), "storage": storage_view(), "ai": ai_settings.settings(auth.db)}
 
     def storage_view() -> dict:
         """存储与保留: cloud storage for old episodes' audio (cold.py) and how long audio is kept (retention.py)."""
@@ -915,6 +919,15 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         retention.save_settings(auth.db, changes)
         store.audit(s["email"], "storage.retention", "", **changes)
         return storage_view()
+
+    @app.put("/api/admin/ai")
+    def ai_switches(body: AiBody, req: Request):
+        """AI 省钱: the first cut through the Batch API (half price, imports slower); off by default."""
+        s = need(req, owner=True)
+        changes = body.model_dump(exclude_none=True)
+        out = ai_settings.save_settings(auth.db, changes)
+        store.audit(s["email"], "ai.settings", "", **changes)
+        return out
 
     # ------------------------------------------------------------ settings
     def settings_view(s: dict) -> dict:

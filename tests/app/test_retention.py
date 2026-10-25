@@ -124,3 +124,14 @@ def test_the_owner_sets_retention_in_the_admin_and_the_reminder_is_mailed(tmp_pa
     app.state.storage_upkeep()
     mails = [m for m in mailer.outbox if "原始音轨" in m["subject"]]
     assert mails and mails[0]["to"] == OWNER
+
+
+def test_the_owner_turns_the_first_cut_batch_switch_on_in_the_admin(tmp_path):
+    """AI 省钱 (decision 2026-10-25-ai-cost-cut): off by default; the owner's change reaches every show's importer."""
+    app, main, mailer = setup(tmp_path)
+    c = sign_in(app)
+    step_up(app, c)
+    assert c.get("/api/admin/system").json()["ai"] == {"first_cut_batch": False}
+    r = c.put("/api/admin/ai", json={"first_cut_batch": True}, headers=WRITE)
+    assert r.status_code == 200 and r.json() == {"first_cut_batch": True}
+    assert c.get("/api/admin/system").json()["ai"]["first_cut_batch"] is True

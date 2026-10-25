@@ -107,6 +107,33 @@ class FakeFirstCutAnthropic:
         self.refuse_models = set(refuse_models or ())      # empty = every model refuses those windows
         self.requests: list[dict] = []
         self.beta = SimpleNamespace(messages=SimpleNamespace(stream=self._stream))
+        # Message Batches (ai_settings.first_cut_batch): ends after `batch_polls` retrieves; `batch_errored`
+        # windows come back errored
+        self.batch_polls = 1
+        self.batch_errored: set[int] = set()
+        self.batches: list[dict] = []
+        self.cancelled: list[str] = []
+        self.messages = SimpleNamespace(batches=SimpleNamespace(
+            create=self._batch_create, retrieve=self._batch_retrieve, results=self._batch_results,
+            cancel=lambda bid: self.cancelled.append(bid)))
+
+    def _batch_create(self, requests):
+        self.batches.append({"requests": requests, "polls": 0})
+        return SimpleNamespace(id=f"msgbatch_{len(self.batches)}", processing_status="in_progress")
+
+    def _batch_retrieve(self, bid):
+        b = self.batches[int(bid.split("_")[1]) - 1]
+        b["polls"] += 1
+        return SimpleNamespace(id=bid, processing_status="ended" if b["polls"] >= self.batch_polls else "in_progress")
+
+    def _batch_results(self, bid):
+        for r in self.batches[int(bid.split("_")[1]) - 1]["requests"]:
+            k = int(r["custom_id"][1:])
+            if k in self.batch_errored:
+                yield SimpleNamespace(custom_id=r["custom_id"], result=SimpleNamespace(type="errored"))
+                continue
+            msg = self._stream(batch=True, **r["params"]).get_final_message()
+            yield SimpleNamespace(custom_id=r["custom_id"], result=SimpleNamespace(type="succeeded", message=msg))
 
     def _stream(self, **kw):
         import time

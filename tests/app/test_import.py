@@ -393,3 +393,65 @@ def test_at_most_four_tracks(ws, rec):
     imp = importer(ws)
     with pytest.raises(ImportError_, match="每个节目最多 4 位主持人，一集最多导入 4 条分轨，收到 5 条"):
         imp.start("EP002", "", [str(rec["Leon"])] * 5)
+
+
+def test_batch_switch_cuts_every_window_in_one_batch_at_half_price(ws, rec, monkeypatch):
+    """ai_settings.first_cut_batch: the windows go out as one Message Batch, billed at half price; a window the
+    batch did not finish is cut the normal way."""
+    fake = FakeFirstCutAnthropic()
+    fake.batch_polls = 3
+    made = []
+
+    def factory():
+        fc = ClaudeFirstCut(client=fake)
+        fc._sleep = lambda s: None
+        fc.BATCH_POLL_S = 0.0
+        made.append(fc)
+        return fc
+    imp = Importer(ws, first_cut_factory=factory, asr_backend=fake_asr)
+    imp.batch_on = lambda: True
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "done", job["error"]
+    assert made[0].batch and len(fake.batches) == 1 and fake.batches[0]["polls"] == 3
+    assert all(r.get("batch") for r in fake.requests)              # nothing went the normal way
+    params = fake.batches[0]["requests"][0]["params"]
+    assert "fallbacks" not in params and params["system"][-1]["cache_control"] == {"type": "ephemeral"}
+    usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
+    # 500 in + 20000 cache write (x1.25) + 900 out at Sonnet prices, halved
+    assert usage[0]["cost_usd"] == pytest.approx((500 * 2 + 20000 * 2 * 1.25 + 900 * 10) / 1e6 / 2, abs=1e-4)
+    ops = json.loads((ws.root / "imports" / "EP002" / "ops.json").read_text(encoding="utf-8"))
+    assert "batch" in ops["model"]
+
+
+def test_batch_window_that_errored_is_cut_the_normal_way(ws, rec):
+    fake = FakeFirstCutAnthropic()
+    fake.batch_errored = {0}
+
+    def factory():
+        fc = ClaudeFirstCut(client=fake)
+        fc.BATCH_POLL_S = 0.0
+        return fc
+    imp = Importer(ws, first_cut_factory=factory, asr_backend=fake_asr)
+    imp.batch_on = lambda: True
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
+    assert imp.status("EP002")["state"] == "done"
+    assert [bool(r.get("batch")) for r in fake.requests] == [False]    # errored in the batch, then cut directly
+
+
+def test_batch_switch_is_off_by_default_and_saved_by_the_owner(tmp_path):
+    from lacuna_app import ai_settings, db as sitedb
+    d = sitedb.DB(tmp_path / "site.db")
+    assert ai_settings.settings(d) == {"first_cut_batch": False}
+    assert ai_settings.save_settings(d, {"first_cut_batch": 1, "other": True}) == {"first_cut_batch": True}
+    assert ai_settings.settings(d)["first_cut_batch"] is True
+
+
+def test_cancel_while_the_batch_waits_cancels_the_batch():
+    fake = FakeFirstCutAnthropic()
+    fake.batch_polls = 100
+    fc = ClaudeFirstCut(client=fake)
+    fc.BATCH_POLL_S = 0.0
+    seen = []
+    out = fc.run_batch("sys", "doc", [(0.0, 600.0)], [0], seen.append, cancelled=lambda: len(seen) >= 2)
+    assert out == {} and fake.cancelled == ["msgbatch_1"] and "省钱模式" in seen[0]

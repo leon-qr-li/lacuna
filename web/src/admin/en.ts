@@ -773,6 +773,13 @@ export const en: Dict = {
   "关闭": "Close",
   // 存储与保留 (pages/Storage.tsx)
   保留规则已保存: "Retention rules saved",
+  "AI 设置已保存": "AI settings saved",
+  "AI 第一刀走省钱模式": "Run the AI first cut in saver mode",
+  "AI 省钱": "AI savings",
+  省钱模式开着: "Saver mode on",
+  正常速度: "Normal speed",
+  "对话已用提示缓存，学习总结和曲名查询已用更便宜的模型；这些不影响速度，一直开着。": "Chat uses prompt caching, and lesson summaries and track lookups use a cheaper model. These don't slow anything down and are always on.",
+  "AI 第一刀的费用减半，但导入要多等，通常 10–30 分钟，高峰时可能几个小时。新用户的第一印象会打折，beta 期间建议关着。": "Halves the cost of the AI first cut, but imports wait longer: usually 10–30 minutes, sometimes hours at peak. New users' first impression suffers, so keep it off during the beta.",
   导出只留最新的: "Keep only the latest export",
   "同一集有了新导出 7 天后，删掉旧的音频文件（导出记录保留）。": "7 days after an episode has a newer export, the older audio files are deleted (the export record stays).",
   "原始音轨保留 12 个月": "Keep raw tracks 12 months",

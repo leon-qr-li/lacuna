@@ -229,6 +229,8 @@ class ClaudeFirstCut:
         self.names: dict[str, str] = {"L": "Leon", "P": "Pei"}   # track tag -> host (set by the importer)
         self.show: dict | None = None                            # the workspace's show (prompt), None = Leon's
         self.language = "zh"                                     # the episode's (set by the importer)
+        self.batch = False                                       # Batch API, half price (set by the importer)
+        self._sleep = time.sleep
 
     @property
     def available(self) -> bool:
@@ -254,13 +256,25 @@ class ClaudeFirstCut:
         with self.client.beta.messages.stream(**extra, **req) as s:
             return s.get_final_message()
 
+    def _who(self) -> str:
+        return "Leon" if show.is_legacy(self.show) and self.language != "en" else "The editor"
+
+    @staticmethod
+    def _ops(resp, k: int) -> tuple[list[dict], str]:
+        for block in resp.content:
+            if block.type == "tool_use" and block.name == "submit_ops":
+                return list(block.input.get("ops") or []), str(block.input.get("notes") or "")
+        if resp.stop_reason == "max_tokens":
+            raise FirstCutError(tr("第 {p0} 段的回答太长被截断", p0=k + 1))
+        raise FirstCutError(tr("LACUNA 没有交回第 {p0} 段的剪辑", p0=k + 1))
+
     def run_window(self, system: str, doc: str, a: float, b: float, k: int, n: int) -> tuple[list[dict], str, dict]:
         """(raw tool ops, notes, usage) for one window; raises FirstCutError with a Chinese message."""
         model = self.model
         while True:
             t0 = time.monotonic()
             try:
-                resp = self._call(self.request(system, doc, window_request(a, b, k, n, "Leon" if show.is_legacy(self.show) and self.language != "en" else "The editor"), model))
+                resp = self._call(self.request(system, doc, window_request(a, b, k, n, self._who()), model))
             except Exception as e:      # noqa: BLE001
                 raise FirstCutError(error_message(e, tail="")) from e
             usage = ClaudeEditorAdapter._usage(resp, time.monotonic() - t0)
@@ -272,12 +286,61 @@ class ClaudeFirstCut:
                 raise FirstCutError(tr("LACUNA 拒绝处理第 {p0} 段", p0=k + 1) + (f"（{cat}）" if cat else ""))
             model = self.FALLBACK_MODEL
         self.on_usage(usage)
-        for block in resp.content:
-            if block.type == "tool_use" and block.name == "submit_ops":
-                return list(block.input.get("ops") or []), str(block.input.get("notes") or ""), usage
-        if resp.stop_reason == "max_tokens":
-            raise FirstCutError(tr("第 {p0} 段的回答太长被截断", p0=k + 1))
-        raise FirstCutError(tr("LACUNA 没有交回第 {p0} 段的剪辑", p0=k + 1))
+        return (*self._ops(resp, k), usage)
+
+    BATCH_POLL_S = 30.0
+    BATCH_MAX_S = 24 * 3600.0           # the API gives up on a batch after 24 hours too
+
+    def run_batch(self, system: str, doc: str, wins: list[tuple[float, float]], todo: list[int],
+                  progress: Callable[[str], None], cancelled: Callable[[], bool]) -> dict[int, tuple[list[dict], str, dict]]:
+        """Half-price path (ai_settings.first_cut_batch): every window in one Message Batch. Returns the windows it
+        finished; one it did not (refused, errored, expired, unreadable) is cut the normal way afterwards."""
+        n = len(wins)
+        reqs = [{"custom_id": f"w{k:02d}", "params": self.request(system, doc, window_request(*wins[k], k, n, self._who()))}
+                for k in todo]
+        t0 = time.monotonic()
+        try:
+            batch = self.client.messages.batches.create(requests=reqs)
+        except Exception as e:      # noqa: BLE001
+            raise FirstCutError(error_message(e, tail="")) from e
+        while batch.processing_status != "ended":
+            waited = time.monotonic() - t0
+            if cancelled() or waited > self.BATCH_MAX_S:
+                try:
+                    self.client.messages.batches.cancel(batch.id)
+                except Exception:   # noqa: BLE001 - it expires on its own
+                    pass
+                return {}
+            progress(tr("AI 第一刀（省钱模式）：排队处理中，已等 {m} 分钟，通常 10–30 分钟", m=int(waited // 60)))
+            end = time.monotonic() + self.BATCH_POLL_S
+            while time.monotonic() < end and not cancelled():
+                self._sleep(min(1.0, self.BATCH_POLL_S))
+            try:
+                batch = self.client.messages.batches.retrieve(batch.id)
+            except Exception:       # noqa: BLE001 - a network blip: ask again next round
+                continue
+        done: dict[int, tuple[list[dict], str, dict]] = {}
+        seconds = time.monotonic() - t0
+        try:
+            results = list(self.client.messages.batches.results(batch.id))
+        except Exception:           # noqa: BLE001 - cut them the normal way
+            return {}
+        for r in results:
+            k = int(r.custom_id[1:])
+            if getattr(r.result, "type", "") != "succeeded":
+                continue
+            msg = r.result.message
+            usage = ClaudeEditorAdapter._usage(msg, seconds, batch=True)
+            if msg.stop_reason == "refusal":
+                cat = getattr(getattr(msg, "stop_details", None), "category", None)
+                self.on_usage(usage | {"refusal": cat or True})
+                continue
+            self.on_usage(usage)
+            try:
+                done[k] = (*self._ops(msg, k), usage)
+            except FirstCutError:
+                continue
+        return done
 
     def run(self, doc: str, duration: float, tokens: dict[str, TrackTokens], episode: str,
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
@@ -303,22 +366,30 @@ class ClaudeFirstCut:
         def report():
             progress(len(results) / n, tr("AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟录音）", p0=len(results), n=n))
 
-        def one(k: int):
-            if cancelled():
-                return
+        def keep(k: int, ops: list[dict], notes: str, usage: dict):
             a, b = wins[k]
-            ops, notes, usage = self.run_window(system, doc, a, b, k, n)
             with lock:
                 results[k] = (ops, notes, usage)
                 if cache_dir:
                     atomic_write_json(cache_dir / f"window_{k:02d}.json",
                                       {"window": [a, b], "system_len": len(system), "ops": ops, "notes": notes,
                                        "usage": usage})
+
+        def one(k: int):
+            if cancelled():
+                return
+            a, b = wins[k]
+            keep(k, *self.run_window(system, doc, a, b, k, n))
             report()
 
         report()
         todo = [k for k in range(n) if k not in results]
-        if todo:
+        if todo and self.batch:
+            for k, r in self.run_batch(system, doc, wins, todo, lambda s: progress(len(results) / n, s), cancelled).items():
+                keep(k, *r)
+            report()
+            todo = [k for k in todo if k not in results]
+        if todo and not cancelled():
             one(todo[0])            # first call alone: it writes the prompt cache the others read
             with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
                 for f in [ex.submit(one, k) for k in todo[1:]]:
@@ -339,7 +410,8 @@ class ClaudeFirstCut:
         for i, o in enumerate(ops):
             o["id"] = f"op{i + 1:04d}"
         models = sorted({u.get("model") for _, _, u in results.values() if u.get("model")} or {self.model})
-        doc_out = {"episode": episode, "model": f"{' + '.join(models)} / LACUNA first cut (effort {self.effort})",
+        doc_out = {"episode": episode, "model": f"{' + '.join(models)} / LACUNA first cut (effort {self.effort}"
+                                                f"{', batch' if self.batch else ''})",
                    "notes": "\n".join(notes), "ops": ops}
         return FirstCutResult(doc_out, usage, notes)
 
