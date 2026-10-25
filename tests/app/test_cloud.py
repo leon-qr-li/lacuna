@@ -13,6 +13,7 @@ from fastapi.testclient import TestClient
 from lacuna_app import cloud, create_app, totp
 from lacuna_app.cloud import AccessVerifier, CloudConfigError
 from lacuna_app.editor import MockEditorAdapter
+from lacuna_app.legal import VERSION
 from tests.app.e2e.auth import FakeMailer
 
 TEAM, AUD = "lacunastudio.cloudflareaccess.com", "aud-tag-123"
@@ -82,7 +83,7 @@ def test_before_sign_in_app_info_is_version_only(client, keys):
     h = hdr(token(keys[0]))
     # the first account in the cloud: setup code from the server, then two-step (docs/decisions/2026-10-19-invites-roles-2fa.md)
     setup = (client.app.state.workspace.root / "auth" / "setup-code.txt").read_text().strip()
-    r = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "setup_code": setup},
+    r = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "agree": VERSION, "setup_code": setup},
                     headers=h)
     assert r.status_code == 200 and r.json()["step"] == "enroll"
     code = totp.code_at(r.json()["secret"], int(time.time() // totp.STEP))
@@ -108,7 +109,7 @@ def owner_signed_in(client, keys, monkeypatch) -> dict:
     """The owner's account, signed in (a cloud server answers nothing but the sign-up screen before)."""
     monkeypatch.setenv("LACUNA_OWNER_EMAIL", "leon@example.com")
     h = hdr(token(keys[0]))
-    out = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW}, headers=h).json()
+    out = client.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "agree": VERSION}, headers=h).json()
     code = totp.code_at(out["secret"], int(time.time() // totp.STEP))
     assert client.post("/api/auth/2fa/enroll", json={"ticket": out["ticket"], "code": code}, headers=h).status_code == 200
     return h
@@ -207,9 +208,9 @@ def test_owner_signs_up_first_without_setup_code(client, keys, monkeypatch):
     assert client.get("/api/auth/status", headers=other).json()["setup_code"] is True
     # someone else through Access, or the owner's Access email with another account email: code still needed
     for h, email in ((other, "pei@example.com"), (other, "leon@example.com"), (leon, "pei@example.com")):
-        r = client.post("/api/auth/register", json={"email": email, "password": PW}, headers=h)
+        r = client.post("/api/auth/register", json={"email": email, "password": PW, "agree": VERSION}, headers=h)
         assert r.status_code == 403, (h, email)
-    r = client.post("/api/auth/register", json={"email": "Leon@example.com", "password": PW}, headers=leon)
+    r = client.post("/api/auth/register", json={"email": "Leon@example.com", "password": PW, "agree": VERSION}, headers=leon)
     assert r.status_code == 200 and r.json()["step"] == "enroll"           # two-step sign-in still required
     assert client.get("/api/auth/status", headers=leon).json()["email"] is None
     assert not (client.app.state.workspace.root / "auth" / "setup-code.txt").exists()

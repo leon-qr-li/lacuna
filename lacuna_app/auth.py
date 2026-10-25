@@ -41,7 +41,7 @@ from pathlib import Path
 from typing import Callable
 
 from . import db as sitedb
-from . import plans, totp
+from . import legal, plans, totp
 from .i18n import lang as ui_lang, normalize as norm_lang, speaking, tr
 from .keystore import find_secret, save_secret
 from .store import read_json
@@ -325,6 +325,15 @@ class Auth:
             self.users[email].update(got)
             self._save_users()
 
+    def agree(self, email: str, version: str) -> None:
+        """用户条款和隐私政策 (lacuna_app/legal.py): the signed-in person agreed to `version`, the current one."""
+        got = legal.record(version, self.now())
+        if not got:
+            raise AuthError(tr("条款已经又更新了，请刷新页面再看一遍"), 409)
+        with self.lock:
+            self.users[email].update(got)
+            self._save_users()
+
     def role(self, email: str | None) -> str | None:
         u = self.users.get(email or "")
         return u["role"] if u else None
@@ -337,7 +346,8 @@ class Auth:
                 "role": u["role"] if u else None, "plan": (u.get("plan") or plans.DEFAULT) if u else None,
                 "twofa": bool(u and u.get("totp")), "require_2fa": self.require_2fa, "cloud": self.cloud,
                 "first": not self.users, "setup_code": bool(self.setup_code) and not self.users,
-                "mail": self.mail_status() if u and u["role"] == "owner" else None}
+                "mail": self.mail_status() if u and u["role"] == "owner" else None,
+                "legal": {"version": legal.VERSION, "agreed": legal.agreed(u)}}
 
     def mail_status(self) -> dict:
         source = find_secret(RESEND_KEY)[1] if isinstance(self.mailer, ResendMailer) else "test"
@@ -593,7 +603,7 @@ class Auth:
 
     # -- accounts
     def register_first(self, email: str, password: str, setup_code: str | None, remember: bool,
-                       agent: str = "", proven: str | None = None, name: str = "") -> dict:
+                       agent: str = "", proven: str | None = None, name: str = "", agreed: str | None = None) -> dict:
         """The owner's account, on the first run (no invite; in the cloud, the setup code, unless Cloudflare
         Access already proved the request comes from `proven`, the owner's email, and that is the email given)."""
         email = norm_email(email)
@@ -605,7 +615,7 @@ class Auth:
                 raise AuthError(tr("初始化码不对：在服务器上的 auth/setup-code.txt 里"), 403)
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
                                  "role": "owner", "verified": False, "id": new_user_id(), "plan": plans.PRO,
-                                 "plan_free": True, **clean_name(name)}
+                                 "plan_free": True, **clean_name(name), **legal.record(agreed, self.now())}
             self._save_users()
             if self.setup_code:
                 (self.dir / SETUP_FILE).unlink(missing_ok=True)
@@ -620,7 +630,8 @@ class Auth:
             raise AuthError(tr("这个邀请链接已经失效（用过了、过期了或被撤回了）。请向邀请你的人要一个新的。"), 404)
         return i
 
-    def register_invite(self, token: str, password: str, remember: bool, agent: str = "", name: str = "") -> dict:
+    def register_invite(self, token: str, password: str, remember: bool, agent: str = "", name: str = "",
+                        agreed: str | None = None) -> dict:
         check_password(password)
         with self.lock:
             i = self.invite_info(token)
@@ -628,7 +639,7 @@ class Auth:
             self.users[email] = {"email": email, "hash": hash_password(password), "created": self.now(),
                                  "role": i["role"], "verified": True, "invited_by": i["by"], "id": new_user_id(),
                                  "plan": plans.check(i.get("plan") or plans.DEFAULT), "lang": i.get("lang"),
-                                 **clean_name(name)}
+                                 **clean_name(name), **legal.record(agreed, self.now())}
             del self.invites[i["hash"]]
             self._save_users()
         for f in self.on_joined:

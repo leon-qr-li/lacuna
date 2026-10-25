@@ -30,6 +30,8 @@ export interface AuthStatus {
   plan?: PlanId | null;
   /** Cloudflare Turnstile's site key when the human check is on (lacuna_app/turnstile.py), else null */
   turnstile?: string | null;
+  /** 用户条款和隐私政策 (lacuna_app/legal.py): the current version and the one this account agreed to */
+  legal?: { version: string; agreed: string | null };
   /** owner only */
   mail: { configured: boolean; source: string | null; sender: string } | null;
 }
@@ -107,10 +109,11 @@ export const authApi = {
       `/api/access-requests/${encodeURIComponent(id)}`,
       { action, lang: uiLang },
     ),
-  registerFirst: (email: string, password: string, setup_code: string | null, name = "") =>
-    req<Step>("POST", "/api/auth/register", { email, password, setup_code, remember: true, name }),
-  registerInvite: (invite: string, password: string, name = "") =>
-    req<Step>("POST", "/api/auth/register", { invite, password, remember: true, name }),
+  /** `agree`: the 用户条款 / 隐私政策 version the box was ticked for */
+  registerFirst: (email: string, password: string, setup_code: string | null, name = "", agree: string | null = null) =>
+    req<Step>("POST", "/api/auth/register", { email, password, setup_code, remember: true, name, agree }),
+  registerInvite: (invite: string, password: string, name = "", agree: string | null = null) =>
+    req<Step>("POST", "/api/auth/register", { invite, password, remember: true, name, agree }),
   /** the signed-in person's name (what others see) */
   setName: (name: string) => req<{ name: string }>("POST", "/api/auth/name", { name }),
   invite: (token: string) =>

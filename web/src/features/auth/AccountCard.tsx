@@ -7,6 +7,7 @@ import { BusyLabel } from "../loading/Loading";
 import { t } from "../../i18n";
 import { InviteForm } from "./InviteForm";
 import { NewMembersSwitch } from "./NewMembers";
+import { withLegalLinks } from "../legal/Legal";
 import "./auth.css";
 
 const KEY_SOURCE: Record<string, string> = {
@@ -160,6 +161,14 @@ export function SecurityCard({ st, setSt }: { st: AuthStatus; setSt: (s: AuthSta
       <TwoStepRow st={st} setSt={setSt} />
       <PasswordRow />
       <Devices />
+      <div className="set-row">
+        <div>
+          <strong>{t("条款与隐私")}</strong>
+          <p className="muted small auth-legal-row" data-testid="account-legal">
+            {withLegalLinks(st.legal?.agreed ? t("{terms} 和 {privacy}，你同意的版本：{v}。", { v: st.legal.agreed }) : t("{terms} 和 {privacy}。"))}
+          </p>
+        </div>
+      </div>
       <Note msg={msg} />
     </section>
   );

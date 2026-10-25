@@ -13,7 +13,7 @@ import threading
 import time
 
 from .. import cloud as cloudflare
-from .. import notice_mail, turnstile
+from .. import legal, notice_mail, turnstile
 from ..auth import COOKIE, RANK, Auth, AuthError
 from ..i18n import speaking, tr
 
@@ -72,6 +72,7 @@ class RegisterBody(BaseModel):
     invite: str | None = None       # everyone else
     remember: bool = True
     name: str = ""                  # what others see (the interface asks for it; new-user batch Q12)
+    agree: str | None = None        # the 用户条款 / 隐私政策 version the box was ticked for (lacuna_app/legal.py)
 
 
 class NameBody(BaseModel):
@@ -270,11 +271,14 @@ def register(app, ctx) -> None:
 
     @app.post("/api/auth/register")
     def register_(body: RegisterBody, request: Request):
+        if auth.cloud and body.agree != legal.VERSION:     # on the internet an account needs the box ticked
+            raise HTTPException(400, tr("请先阅读并勾选同意用户条款和隐私政策"))
         if body.invite:
             return finish(run(lambda: auth.register_invite(body.invite, body.password, body.remember, agent(request),
-                                                           name=body.name)), request)
+                                                           name=body.name, agreed=body.agree)), request)
         return finish(run(lambda: auth.register_first(body.email or "", body.password, body.setup_code, body.remember,
-                                                      agent(request), proven=owner(request), name=body.name)), request)
+                                                      agent(request), proven=owner(request), name=body.name,
+                                                      agreed=body.agree)), request)
 
     @app.post("/api/auth/name")
     def set_name(body: NameBody, request: Request):
