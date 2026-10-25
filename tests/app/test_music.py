@@ -108,8 +108,8 @@ def test_lookup_credit_stores_suggestion_with_sources(lib, song):
     req = fake.calls[0]
     sent = json.loads(req["messages"][0]["content"])
     assert sent["leons_note"] == "这是奥德赛的主题曲" and sent["file_name"] == "odyssey_theme.mp3"
-    assert any(t.get("type") == "web_search_20250305" for t in req["tools"])
-    assert req["model"] == "claude-haiku-5-5" and "fallbacks" not in req      # Haiku: no server-side fallback
+    assert any(t.get("type") == "web_search_20260209" for t in req["tools"])
+    assert req["model"] == "claude-opus-5-5" and req["fallbacks"] == "default"
     assert len(fake.calls) == 2                       # the paused turn was continued
 
 

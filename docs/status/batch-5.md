@@ -31,8 +31,9 @@ https://claude.ai/artifact/3foGFupGircLvbfofN17SE.
 5. Check: admin 系统健康 shows 「云存储已接通」; 14 days later old episodes start moving.
 
 ## Open
-- Chat Opus → Sonnet: run `scripts/chat_blind_compare.py` on Leon-PC (needs the API key, ~$1 for 20 turns × 2
-  models); if Sonnet holds, set `LACUNA_CHAT_MODEL=claude-sonnet-5-5` in the app env (Provision) — Leon sees the
-  blind page first.
+- Model quality check done 2026-10-25 on Leon-PC (`scripts/ai_quality_compare.py`): chat stays Opus, lessons back
+  to Sonnet, credit lookups back to Opus (decision `2026-10-25-ai-cost-cut`, last section).
+- Done 2026-10-25: merged (#203), deployed, Provision apply, deploy-token secrets stored. Left: recreate (typed
+  「重建服务器」).
 - Console monthly spend cap: Leon sets it in the Console.
 - Stress test before launch (beta-launch-todo); not in this batch.
