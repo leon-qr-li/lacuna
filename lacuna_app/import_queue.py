@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import os
 import threading
+import time
+from collections import deque
 from typing import Callable
 
 
@@ -23,11 +25,14 @@ class Gate:
         self._cv = threading.Condition()
         self._waiting: list[str] = []
         self._holding: set[str] = set()
+        self._since: dict[str, float] = {}
+        self.waits: deque[tuple[float, float]] = deque(maxlen=1000)   # (when it started, seconds it waited)
 
     def enter(self, key: str, cancelled: Callable[[], bool] = lambda: False, tick: float = 0.25) -> None:
         """Wait until `key` may run; raises Abandoned if `cancelled()` turns true first."""
         with self._cv:
             self._waiting.append(key)
+            self._since[key] = time.time()
             try:
                 while len(self._holding) + self._waiting.index(key) >= self.slots:
                     if cancelled():
@@ -36,8 +41,11 @@ class Gate:
                 if cancelled():
                     raise Abandoned()
                 self._holding.add(key)
+                now = time.time()
+                self.waits.append((now, now - self._since[key]))
             finally:
                 self._waiting.remove(key)
+                self._since.pop(key, None)
                 self._cv.notify_all()
 
     def leave(self, key: str) -> None:
@@ -54,8 +62,11 @@ class Gate:
             return len(self._holding) + self._waiting.index(key)
 
     def load(self) -> dict:
+        """Now: running, waiting, and how long the longest-waiting import has waited (seconds)."""
         with self._cv:
-            return {"running": len(self._holding), "waiting": len(self._waiting), "slots": self.slots}
+            now = time.time()
+            return {"running": len(self._holding), "waiting": len(self._waiting), "slots": self.slots,
+                    "longest": round(max((now - t for t in self._since.values()), default=0.0), 1)}
 
 
 GATE = Gate(int(os.environ.get("LACUNA_IMPORT_SLOTS", "1") or 1))

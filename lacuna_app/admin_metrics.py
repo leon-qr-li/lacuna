@@ -100,6 +100,8 @@ class AdminData:
         self._sizes: dict = {"at": None, "shows": {}, "parts": {}, "trash": {}}
         self._size_lock = threading.Lock()
         self.samples: list[dict] = []
+        from .capacity import Capacity
+        self.capacity = Capacity(self, store)        # 容量: disk, queue, hours, memory, Access seats (capacity.py)
 
     # ---------------------------------------------------------------- shared
     def uid_map(self) -> dict[str, str]:
@@ -307,15 +309,14 @@ class AdminData:
                         "exports": {"value": exports[-1], "delta": exports[-1] - exports[-2], "spark": exports},
                         "ai": {"value": ai["spent"], "forecast": ai["forecast"], "budget": ai["budget"], "spark": ai["cumulative"][-8:] or [0]},
                         "disk": {"value": disk["pct"], "used": disk["used"], "total": disk["total"]}},
+                "capacity": self.capacity.measures(),
                 "wau": wau, "ai": {k: ai[k] for k in ("spent", "forecast", "days", "cumulative", "budget")},
                 "activity": recent}
 
     def alerts(self, disk: dict | None = None, ai: dict | None = None) -> list[dict]:
         disk = disk or self.disk()
         ai = ai or self.ai_month()
-        out = []
-        if disk["pct"] >= DISK_WARN:
-            out.append({"level": "warn", "kind": "disk", "pct": disk["pct"], "used": disk["used"], "total": disk["total"]})
+        out = self.capacity.alerts()        # the disk among them (70% / 80% / 90%, or filling within 21 days)
         if ai["budget"] and ai["spent"] >= 0.8 * ai["budget"]:
             out.append({"level": "bad" if ai["spent"] >= ai["budget"] else "warn", "kind": "ai",
                         "spent": ai["spent"], "budget": ai["budget"]})

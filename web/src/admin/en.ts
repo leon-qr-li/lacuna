@@ -784,4 +784,29 @@ export const en: Dict = {
   "{d} 天没打开的剧集，音频搬到云存储；打开时自动取回（10–30 秒）。": "Audio of episodes not opened for {d} days moves to cloud storage and comes back when opened (10–30 s).",
   "现在放在云存储的音频：{b}": "Audio in cloud storage now: {b}",
   "服务器还没有云存储的密钥，音频都留在服务器上。": "The server has no cloud storage key yet, so all audio stays on the server.",
+  // 容量 (pages/Capacity.tsx)
+  容量: "Capacity",
+  数据盘: "Data disk",
+  导入排队: "Import queue",
+  本月音频: "Audio this month",
+  "Access 名额": "Access seats",
+  注意: "Watch",
+  该行动: "Act now",
+  紧急: "Urgent",
+  "超过阈值立刻发邮件，每天早上的汇总里也有": "Mailed as soon as a threshold is crossed, and in the morning digest",
+  "磁盘超过 70% 或 21 天内写满": "Disk over 70% or full within 21 days",
+  "导入排队太久、本月音频接近服务器上限、内存吃紧、Access 名额快满": "Long import queue, monthly audio near the server's limit, tight memory, Access seats nearly gone",
+  // the demo's capacity lines (the real ones come from the server in the reader's language)
+  "数据盘已用 {pct}%（{used} / {total}）": "Data disk {pct}% used ({used} / {total})",
+  "，按最近 7 天的速度约 {d} 天后写满": ", full in about {d} days at the last 7 days' pace",
+  "先清回收区；不够就在 DigitalOcean 把数据盘再扩 50–100 GB（在线扩，约 15 分钟，每 100 GB 每月 +$10）。":
+    "Empty the recycle bin first; if that isn't enough, grow the data disk by 50–100 GB in DigitalOcean (online, about 15 minutes, +$10 a month per 100 GB).",
+  "导入排队：近 7 天 90% 的等待在 {p} 分钟以内，最长 {l} 分钟；现在 {w} 集在等":
+    "Import queue: 90% of waits in the last 7 days were under {p} min, the longest {l} min; {w} waiting now",
+  "本月已处理 {u} 小时音频，按现在的速度月底约 {p} 小时（这台服务器每月约 {b} 小时）":
+    "{u} h of audio processed this month, about {p} h by month end at this pace (this server handles about {b} h a month)",
+  "内存最高用到 {p}%": "Memory peaked at {p}%",
+  "账号 {n} 个，Cloudflare Access 免费名额 {s} 个": "{n} accounts; Cloudflare Access has {s} free seats",
+  "到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。":
+    "Past 50, each person costs $7 a month: before then, switch sign-in to LACUNA's own (turn off Access), or pause new invites.",
 };

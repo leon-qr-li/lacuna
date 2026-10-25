@@ -713,4 +713,38 @@ EN: dict[str, str | tuple[str, str]] = {
     "想继续保留哪一集，打开它一次就行，保留期会从那天重新算 12 个月。":
         "To keep an episode's raw tracks, just open it once: its 12 months start again from that day.",
     "保留提醒 · NOTICE": "Retention · NOTICE",
+    # ---- capacity (capacity.py, admin_digest.py)
+    "注意": "Watch",
+    "紧急": "Urgent",
+    "该行动": "Act now",
+    "LACUNA 容量提醒（{grade}）": "LACUNA capacity alert ({grade})",
+    "同一件事一天只提醒一次，升级时马上再提醒。": "Each issue is mailed at most once a day, and again at once if it gets worse.",
+    "容量 · CAPACITY": "Capacity · CAPACITY",
+    "容量 · {name}": "Capacity · {name}",
+    "导入排队": "Import queue",
+    "数据盘": "Data disk",
+    "本月音频": "Audio this month",
+    "Access 名额": "Access seats",
+    "内存": "Memory",
+    "，约 {d} 天写满": ", full in about {d} days",
+    "90% 等待 ≤ {p} 分钟，最长 {l} 分钟": "90% wait ≤ {p} min, longest {l} min",
+    "{u} / {b} 小时（月底约 {p}）": "{u} / {b} h (about {p} by month end)",
+    "数据盘已用 {pct}%（{used} / {total}）": "Data disk {pct}% used ({used} / {total})",
+    "，按最近 7 天的速度约 {d} 天后写满": ", full in about {d} days at the last 7 days' pace",
+    "先清回收区；不够就在 DigitalOcean 把数据盘再扩 50–100 GB（在线扩，约 15 分钟，每 100 GB 每月 +$10）。":
+        "Empty the recycle bin first; if that isn't enough, grow the data disk by 50–100 GB in DigitalOcean (online, about 15 minutes, +$10 a month per 100 GB).",
+    "导入排队：近 7 天 90% 的等待在 {p} 分钟以内，最长 {l} 分钟；现在 {w} 集在等":
+        "Import queue: 90% of waits in the last 7 days were under {p} min, the longest {l} min; {w} waiting now",
+    "该把同时识别的数量从 1 调到 2，并把服务器升到 8 核 16 GB（扩容路线第 3 步，每月约 +$64）。":
+        "Time to run 2 recognitions at once and move the server to 8 cores / 16 GB (step 3 of the scaling plan, about +$64 a month).",
+    "本月已处理 {u} 小时音频，按现在的速度月底约 {p} 小时（这台服务器每月约 {b} 小时）":
+        "{u} h of audio processed this month, about {p} h by month end at this pace (this server handles about {b} h a month)",
+    "准备扩容路线的下一步（升到 8 核 16 GB 或加识别工作机）；在那之前可以先暂停发新邀请。":
+        "Prepare the next scaling step (8 cores / 16 GB, or a recognition worker); until then you can pause new invites.",
+    "内存吃紧时最容易整站掉线：先确认同时识别是 1 个，再考虑升到 16 GB 内存。":
+        "Tight memory is what takes the whole site down: check that only 1 recognition runs at a time, then consider 16 GB of memory.",
+    "内存最高用到 {p}%": "Memory peaked at {p}%",
+    "账号 {n} 个，Cloudflare Access 免费名额 {s} 个": "{n} accounts; Cloudflare Access has {s} free seats",
+    "到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。":
+        "Past 50, each person costs $7 a month: before then, switch sign-in to LACUNA's own (turn off Access), or pause new invites.",
 }

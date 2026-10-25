@@ -222,7 +222,7 @@ def test_cancel_while_waiting(ws, rec):
         assert imp.status("EP002")["state"] == "queued" and imp.status("EP002")["ahead"] == 1
         imp.cancel("EP002")
         assert _wait(imp, "EP002")["state"] == "cancelled"
-        assert import_queue.GATE.load() == {"running": 1, "waiting": 0, "slots": 1}
+        assert import_queue.GATE.load() == {"running": 1, "waiting": 0, "slots": 1, "longest": 0.0}
     finally:
         import_queue.GATE.leave("someone else's import")
 
