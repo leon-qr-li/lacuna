@@ -160,7 +160,7 @@ def registry_collect() -> None:
 def registry_gc() -> None:
     d = do()
     name = d.registry(apply=False)
-    tags = d.http("GET", f"/v2/registry/{name}/repositories/{REPO_IMAGE}/tags?per_page=100").get("tags", [])
+    tags = d.http("GET", f"/v2/registry/{name}/repositories/{REPO_IMAGE}/tags?per_page=100").get("tags") or []
     tags.sort(key=lambda t: t.get("updated_at", ""), reverse=True)
     builds = [t["tag"] for t in tags if t["tag"] not in ALWAYS_KEEP]
     keep = ALWAYS_KEEP | set(builds[:KEEP_TAGS])
@@ -185,12 +185,13 @@ def r2_env() -> None:
 
 def snapshot() -> None:
     d = do()
-    vols = d.http("GET", f"/v2/volumes?name={VOLUME}").get("volumes", [])
+    vols = d.http("GET", f"/v2/volumes?name={VOLUME}").get("volumes") or []
     if not vols:
         raise ProvisionError("no data volume yet")
     vid = vols[0]["id"]
     d.http("POST", f"/v2/volumes/{vid}/snapshots", {"name": f"{VOLUME}-{time.strftime('%Y%m%d')}", "tags": ["lacuna"]})
-    snaps = d.http("GET", f"/v2/volumes/{vid}/snapshots?per_page=100").get("snapshots", [])
+    # a volume with no snapshots yet (a new server) answers "snapshots": null
+    snaps = d.http("GET", f"/v2/volumes/{vid}/snapshots?per_page=100").get("snapshots") or []
     snaps.sort(key=lambda s: s.get("created_at", ""), reverse=True)
     for s in snaps[KEEP_SNAPSHOTS:]:
         d.http("DELETE", f"/v2/snapshots/{s['id']}")
