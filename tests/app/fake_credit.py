@@ -24,5 +24,5 @@ class OverlappingCreditFake:
                                 cache_creation_input_tokens=0)
         found = {"title": f"Concurrent Theme {m.group(1)}", "artist": None, "composer": "Test Composer", "album": None,
                  "film": None, "year": 2020, "confidence": 0.9, "note": ""}
-        return SimpleNamespace(stop_reason="tool_use", model="claude-opus-5-5", usage=usage,
+        return SimpleNamespace(stop_reason="tool_use", model="claude-haiku-5-5", usage=usage,
                                content=[SimpleNamespace(type="tool_use", name="submit_credit", input=found)])

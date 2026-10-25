@@ -14,7 +14,10 @@ export interface Me {
 
 export interface Alert {
   level: "bad" | "warn" | "info";
-  kind: "disk" | "ai" | "backup" | "imports" | "errors" | "maintenance";
+  kind: "disk" | "ai" | "backup" | "imports" | "errors" | "maintenance" | "capacity";
+  line?: string; // capacity: what it is now, and what to do (in the reader's language)
+  advice?: string;
+  measure?: CapacityMeasure["key"];
   pct?: number;
   used?: number;
   total?: number;
@@ -39,6 +42,13 @@ export interface Kpi {
   spark: number[];
 }
 
+export interface CapacityMeasure {
+  key: "disk" | "queue" | "hours" | "memory" | "people";
+  level: "ok" | "warn" | "act" | "urgent";
+  line: string;
+  advice: string;
+}
+
 export interface Overview {
   todo: { fb: number; hours: number; trial: number; collab: number };
   alerts: Alert[];
@@ -52,6 +62,7 @@ export interface Overview {
   wau: number[];
   ai: { spent: number; forecast: number; days: number; cumulative: number[]; budget: number };
   activity: Activity[];
+  capacity?: CapacityMeasure[];
 }
 
 export type FbStatus = "received" | "working" | "planned" | "fixed" | "shipped" | "declined";
@@ -214,12 +225,33 @@ export interface AccessData {
   mail_error?: string | null;
 }
 
+export interface QuotaRules {
+  enforce: boolean;
+  must_fit: boolean;
+  staff_exempt: boolean;
+  repeat_free: boolean;
+}
+
 export interface HoursData {
   requests: HourReq[];
   decided: HourReq[];
-  usage: { email: string; name: string | null; plan: string; hours: number | null; used: number | null }[];
+  usage: {
+    email: string;
+    name: string | null;
+    plan: string;
+    hours: number | null;
+    used: number | null;
+    /** extra hours this month (approved requests, adopted feedback) */
+    bonus?: { granted: number; feedback: number } | null;
+    /** the trial: one allowance, ever */
+    once?: boolean;
+  }[];
   plans: PlanLimits[];
   beta_end: string | null;
+  /** the metering rules (lacuna_app/quota.py); null where the site doesn't meter */
+  quota?: QuotaRules | null;
+  /** audio hours every show imported this month (the server's work) */
+  month_hours?: number | null;
   willing: { email: string; name: string | null; at: number; reason: string; where: string }[];
 }
 
@@ -295,6 +327,17 @@ export interface SystemData {
   version: string;
   alerts: Alert[];
   cpus: number;
+  storage?: StorageData;
+  ai?: AiSettings;
+}
+
+export interface AiSettings {
+  first_cut_batch: boolean;
+}
+
+export interface StorageData {
+  retention: { raw_tracks: boolean; old_exports: boolean };
+  cold: { on: boolean; moving: boolean; bytes: number; after_days: number };
 }
 
 export interface SettingsData {

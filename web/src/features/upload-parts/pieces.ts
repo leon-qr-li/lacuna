@@ -4,7 +4,9 @@
 /** Files above this go in pieces; smaller ones in one request, as before. */
 export const PIECES_ABOVE = 48 * 1024 ** 2;
 export const PIECE = 32 * 1024 ** 2;
-const TRIES = 3;
+/** Waits before each new try of a piece (seconds): about 2 minutes in all, enough to ride out a dropped
+ *  Wi-Fi or the server restarting for an update. */
+export const BACKOFF = [1, 2, 4, 8, 15, 30, 30, 30];
 
 function newId(): string {
   const b = new Uint8Array(16);
@@ -15,7 +17,7 @@ function newId(): string {
 /**
  * Send `file` as pieces to /api/uploads/parts; resolves with the id to pass as `part=` to the
  * endpoint that takes the file (its body then stays empty). A piece that fails is sent again
- * (up to 3 tries) from the same offset. `onProgress` gets 0..1 over the whole file.
+ * from the same offset, waiting longer each time (BACKOFF). `onProgress` gets 0..1 over the whole file.
  */
 export function sendPieces(file: File, onProgress: (f: number) => void): { done: Promise<string>; abort: () => void } {
   const id = newId();
@@ -53,8 +55,8 @@ export function sendPieces(file: File, onProgress: (f: number) => void): { done:
         } catch (e) {
           const status = (e as { status?: number }).status ?? 0;
           // a refusal (signed out, not allowed) won't change on a retry; a dropped connection may
-          if (aborted || (status >= 400 && status < 500) || attempt >= TRIES) throw e;
-          await new Promise((r) => setTimeout(r, 1000 * attempt));
+          if (aborted || (status >= 400 && status < 500) || attempt > BACKOFF.length) throw e;
+          await new Promise((r) => setTimeout(r, 1000 * BACKOFF[attempt - 1]));
         }
       }
     }

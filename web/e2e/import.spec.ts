@@ -79,7 +79,7 @@ test("import: drag both tracks in → progress with time left → straight into 
   await expect(page.getByTestId("import-stage")).toContainText("AI 第一刀");
   await expect(page.getByTestId("import-stage")).toContainText("每段约 10 分钟录音");
   await expect(page.getByTestId("import-progress-left")).toBeVisible();      // the server's estimate
-  await expect(page.getByRole("button", { name: "导入新一集" })).toBeDisabled(); // one import at a time
+  await expect(page.getByRole("button", { name: "导入新一集" })).toBeEnabled(); // another one would wait its turn
 
   // done → the app opens the review by itself
   await expect(page).toHaveURL(/#\/ep\/EP001\/review$/, { timeout: 30_000 });
@@ -121,6 +121,34 @@ test("import: a file dropped anywhere on 剧集 opens the form; a slot takes a d
   await expect(page.getByTestId("import-pei")).toHaveText("Leon.wav");
   await page.getByRole("button", { name: "取消" }).click();
   await expect(page.getByTestId("import-drop")).toHaveCount(0);
+});
+
+test("import: tracks keep uploading on another page; the top bar shows them; the form comes back as it was", async ({ page }) => {
+  // hold the server's answer, so the track is still "uploading" while we look elsewhere
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await page.route("**/api/imports/tracks?*", async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto("/#/");
+  await page.getByRole("button", { name: "导入新一集" }).click();
+  await page.getByTestId("import-title").fill("还在传");
+  await page.getByTestId("import-file-leon").setInputFiles(LEON);
+  await expect(page.getByTestId("import-leon")).toContainText("正在读入 Leon.wav");
+  await expect(page.getByTestId("upload-badge")).toHaveCount(0); // the form is on screen: no badge
+  await page.goto("/#/settings");
+  const badge = page.getByTestId("upload-badge");
+  await expect(badge).toContainText(/正在上传 EP\d+ · \d+%/);
+  await badge.click();
+  await expect(page).toHaveURL(/#\/$/);
+  release();
+  await expect(page.getByTestId("import-title")).toHaveValue("还在传");
+  await expect(page.getByTestId("import-leon")).toHaveText("Leon.wav"); // finished while we were away
+  await expect(page.getByTestId("upload-badge")).toHaveCount(0);
+  await page.getByTestId("import-cancel").click();
+  await expect(page.getByTestId("import-drop")).toHaveCount(0);
+  await page.unroute("**/api/imports/tracks?*");
 });
 
 test("archive the imported episode, then delete it for good", async ({ page }) => {

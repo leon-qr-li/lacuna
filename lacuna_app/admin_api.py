@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import cloud, notice_mail, plans, system_terms
+from . import ai_settings, cloud, notice_mail, plans, retention, system_terms
 from .admin_metrics import AdminData
 from .admin_store import AdminStore
 from .appinfo import current_version
@@ -147,6 +147,22 @@ class BetaBody(BaseModel):
     beta_end: str | None = Field(None, max_length=10)
 
 
+class RetentionBody(BaseModel):
+    raw_tracks: bool | None = None
+    old_exports: bool | None = None
+
+
+class AiBody(BaseModel):
+    first_cut_batch: bool | None = None
+
+
+class QuotaBody(BaseModel):
+    enforce: bool | None = None
+    must_fit: bool | None = None
+    staff_exempt: bool | None = None
+    repeat_free: bool | None = None
+
+
 class NoticeBody(BaseModel):
     on: bool
     zh: str = Field("", max_length=300)
@@ -193,6 +209,10 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
     spaces: Spaces = ctx.provide("spaces")
     fb: Feedback = ctx.provide("feedback")
     store: AdminStore = ctx.provide("admin_store", lambda: AdminStore(auth.db, auth.now))
+    def metered():
+        """The audio-hour meter (routes/quota.py, registered after the admin), when this site meters."""
+        m = getattr(main_app.state, "meter", None)
+        return m if m is not None and m.on else None
     data: AdminData = ctx.provide("admin_data", lambda: AdminData(auth, spaces, fb, store, ctx.ws.root, main_app.state))
     secure = bool(auth.cloud)
     cookie = _cookie_name(secure)
@@ -739,8 +759,11 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
                              for r in reqs if r["status"] == "new"],
                 "decided": [r | {"name": auth.name(r["email"])} for r in reqs if r["status"] != "new"][:50],
                 "usage": [{"email": r["email"], "name": r["name"], "plan": r["plan"], "hours": r["hours"],
-                           "used": r["hours_used"]} for r in rows if r["role"] == "member"],
+                           "used": r["hours_used"], "bonus": r.get("bonus"), "once": r.get("hours_once")}
+                          for r in rows if r["role"] == "member"],
                 "plans": plans.public(), "beta_end": store.get("beta_end"),
+                "quota": metered().settings() if metered() else None,
+                "month_hours": metered().month_total() if metered() else None,
                 "willing": [{"email": r["email"], "name": auth.name(r["email"]), "at": r["created"], "reason": r.get("reason"),
                              "where": "hours"} for r in pay]}
 
@@ -775,6 +798,18 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         s = need(req, owner=True)
         store.put("beta_end", body.beta_end or None)
         store.audit(s["email"], "beta.end", "", beta_end=body.beta_end)
+        return hours_view()
+
+    @app.put("/api/admin/hours/quota")
+    def quota_settings(body: QuotaBody, req: Request):
+        """The metering rules (quota.py), while the business model is being decided."""
+        s = need(req, owner=True)
+        meter = metered()
+        if meter is None:
+            raise HTTPException(409, tr("这个站点不计量音频时长"))
+        changes = body.model_dump(exclude_none=True)
+        meter.save_settings(changes)
+        store.audit(s["email"], "quota.rules", "", **changes)
         return hours_view()
 
     # ------------------------------------------------------------ shows
@@ -866,7 +901,33 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         return {"disk": data.disk(), "parts": sizes["parts"], "sizes_at": sizes["at"], "backup": data.backup(),
                 "running": data.running(), "samples": data.samples, "errors": store.errors(auth.now() - 86400),
                 "started": data.started, "version": current_version(), "alerts": data.alerts(),
-                "cpus": os.cpu_count()}
+                "cpus": os.cpu_count(), "storage": storage_view(), "ai": ai_settings.settings(auth.db)}
+
+    def storage_view() -> dict:
+        """存储与保留: cloud storage for old episodes' audio (cold.py) and how long audio is kept (retention.py)."""
+        cold = getattr(main_app.state, "cold", None)
+        return {"retention": retention.settings(auth.db),
+                "cold": {"on": bool(cold is not None and cold.on), "moving": bool(cold is not None and cold.freezing),
+                         "bytes": cold.stored_bytes([ctx.ws.root]) if cold is not None and cold.on else 0,
+                         "after_days": round(cold.after_s / 86400) if cold is not None else 14}}
+
+    @app.put("/api/admin/storage/retention")
+    def retention_settings(body: RetentionBody, req: Request):
+        """Raw-track retention (off during the beta) and keeping only the latest export."""
+        s = need(req, owner=True)
+        changes = body.model_dump(exclude_none=True)
+        retention.save_settings(auth.db, changes)
+        store.audit(s["email"], "storage.retention", "", **changes)
+        return storage_view()
+
+    @app.put("/api/admin/ai")
+    def ai_switches(body: AiBody, req: Request):
+        """AI 省钱: the first cut through the Batch API (half price, imports slower); off by default."""
+        s = need(req, owner=True)
+        changes = body.model_dump(exclude_none=True)
+        out = ai_settings.save_settings(auth.db, changes)
+        store.audit(s["email"], "ai.settings", "", **changes)
+        return out
 
     # ------------------------------------------------------------ settings
     def settings_view(s: dict) -> dict:

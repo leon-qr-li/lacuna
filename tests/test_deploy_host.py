@@ -188,3 +188,33 @@ def test_provision_cloud_init_carries_host_scripts_and_secret_files():
         assert paths[f"/usr/local/bin/{name}"]["permissions"] == "0755"
     assert "/etc/systemd/system/lacuna-update.timer" in paths
     assert cfg["runcmd"] == [["/usr/local/bin/lacuna-bootstrap"]]
+
+
+def test_staging_links_the_audio_instead_of_copying_it(host, tmp_path):
+    """batch 5: the staging copy hard-links recordings and exports (no extra disk); everything else is a real copy"""
+    set_state, run = host
+    real, data = tmp_path / "real", tmp_path / "preview"
+    track = real / "imported_tracks" / "abc" / "Leon.WAV"
+    track.parent.mkdir(parents=True)
+    track.write_bytes(b"RIFF" + b"\0" * 1000)
+    (real / "exports" / "EP1").mkdir(parents=True)
+    (real / "exports" / "EP1" / "EP1_1.mp3").write_bytes(b"ID3")
+    (real / "episodes" / "EP1").mkdir(parents=True)
+    (real / "episodes" / "EP1" / "state.json").write_text("real")
+    staging = {"LACUNA_NAME": "lacuna-preview", "LACUNA_DATA": str(data), "LACUNA_SEED_FROM": str(real),
+               "LACUNA_OWNER": f"{os.getuid()}:{os.getgid()}"}
+    for img in ("img1", "img2"):                               # a fresh copy each new version, links each time
+        set_state(tags={"reg/lacuna:main": img})
+        code, s, st = run(**staging)
+        assert code == 0 and st["state"] == "deployed", st
+        ws = data / "workspace"
+        linked = ws / "imported_tracks" / "abc" / "Leon.WAV"
+        assert linked.stat().st_ino == track.stat().st_ino
+        assert (ws / "exports" / "EP1" / "EP1_1.mp3").stat().st_ino == (real / "exports" / "EP1" / "EP1_1.mp3").stat().st_ino
+        copied = ws / "episodes" / "EP1" / "state.json"
+        assert copied.read_text() == "real" and copied.stat().st_ino != (real / "episodes" / "EP1" / "state.json").stat().st_ino
+    # an audio file gone from the real site is gone from the next copy too
+    track.unlink()
+    set_state(tags={"reg/lacuna:main": "img3"})
+    run(**staging)
+    assert not (data / "workspace" / "imported_tracks" / "abc" / "Leon.WAV").exists()

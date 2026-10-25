@@ -202,7 +202,7 @@ async function send<T>(method: string, url: string, body?: unknown): Promise<T> 
 
 /** A failed request: `status`, and `stale` when the change was refused because someone else changed
  *  the same thing first (co-editing, features/coedit): the page should load the latest. */
-export type RequestError = Error & { status?: number; stale?: boolean };
+export type RequestError = Error & { status?: number; stale?: boolean; restoring?: { progress: number; failed: boolean } };
 
 /** The error for a failed request (the server's `detail`); a 401 also brings the sign-in screen
  *  back (features/auth/AuthGate). Every raw fetch of the app goes through this. */
@@ -210,16 +210,19 @@ export async function failure(res: Response, url: string): Promise<RequestError>
   if (res.status === 401 && !url.startsWith("/api/auth/")) window.dispatchEvent(new Event("lacuna:auth"));
   let msg = res.statusText;
   let stale = false;
+  let restoring: RequestError["restoring"];
   try {
     const body = await res.json();
     msg = body.detail ?? msg;
     stale = body.stale === true;
+    restoring = body.restoring; // 423: the episode's audio is coming back from cloud storage (features/cold)
   } catch {
     /* not JSON */
   }
   const err: RequestError = new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
   err.status = res.status;
   if (stale) err.stale = true;
+  if (restoring) err.restoring = restoring;
   return err;
 }
 

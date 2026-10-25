@@ -16,7 +16,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from .cold import Restoring
 from .editor import EditorAdapter, make_adapter
+from .i18n import tr
 from .episode import ConflictError, Episode
 from .store import PathError, Workspace, now_iso
 
@@ -88,7 +90,18 @@ class AppContext:
     KEEP_OPEN = 3
 
     def get(self, episode_id: str) -> Episode:
-        """The episode, loaded if needed, marked as most recently used."""
+        """The episode, loaded if needed, marked as most recently used. An episode whose audio is in cloud
+        storage (cold.py) starts coming back and answers 423 until it is here."""
+        cold = self.provide("cold")
+        if cold is not None and cold.on:
+            self.peek(episode_id)               # 400 / 404 first
+            try:
+                cold.opening(self.ws, episode_id)
+            except Restoring:
+                with self.lock:                 # a copy loaded while the audio was away is not kept
+                    self.episodes.pop(episode_id, None)
+                    self._alive.pop(episode_id, None)
+                raise
         ep = self.peek(episode_id)
         with self.lock:
             self.episodes[episode_id] = ep
@@ -152,6 +165,12 @@ def create_app(workspace: str | Path, adapter: EditorAdapter | None = None, web_
     @app.exception_handler(ConflictError)
     async def _conflict(_req, exc: ConflictError):
         return JSONResponse({"detail": str(exc)}, status_code=409)
+
+    @app.exception_handler(Restoring)
+    async def _restoring(_req, exc: Restoring):
+        detail = tr("取回音频没有成功，请稍后再打开这一集。") if exc.error else tr("正在取回这一集的音频…")
+        return JSONResponse({"detail": detail, "restoring": {"progress": round(exc.progress, 3), "failed": bool(exc.error)}},
+                            status_code=423)
 
     routes.register_all(app, ctx)
 

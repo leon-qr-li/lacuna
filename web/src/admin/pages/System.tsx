@@ -6,8 +6,10 @@ import { PART } from "../labels";
 import type { SystemData } from "../types";
 import { Card, Empty, HBar, LineChart, Loading, PageHead, Pill, ago, duration, fmtBytes, fmtPct, fmtTime, useData } from "../ui";
 import { Alerts } from "./Home";
+import { AiCostCard } from "./AiCost";
+import { StorageCard } from "./Storage";
 
-export function SystemPage({ go }: PageProps) {
+export function SystemPage({ go, me }: PageProps) {
   const { data: s, error } = useData<SystemData>("/api/admin/system");
   if (!s)
     return (
@@ -101,6 +103,16 @@ export function SystemPage({ go }: PageProps) {
           <p className="a-muted small">{t("超过 70% 发告警邮件。先清回收区最快。")}</p>
         </Card>
       </div>
+      {s.storage && (
+        <div className="a-mb">
+          <StorageCard data={s.storage} owner={me.role === "owner"} />
+        </div>
+      )}
+      {s.ai && (
+        <div className="a-mb">
+          <AiCostCard data={s.ai} owner={me.role === "owner"} />
+        </div>
+      )}
       <div className="a-grid g2 a-mb">
         <Card title="CPU" sub={t("每 5 分钟一个点")}>
           {samples.length > 1 ? (
@@ -153,7 +165,7 @@ export function SystemPage({ go }: PageProps) {
         <Card title={t("告警邮件")} sub={t("发到你的邮箱：每种告警一天最多一封；每天早上 8 点（温哥华）另发一封汇总")} pad={false}>
           <table className="a-t">
             <tbody>
-              {[t("磁盘超过 70%"), t("超过 26 小时没备份"), t("导入连续失败 3 次"), t("AI 花费到预算的 80% 和 100%"), t("服务器报错"), t("维护模式开着")].map((x) => (
+              {[t("磁盘超过 70% 或 21 天内写满"), t("导入排队太久、本月音频接近服务器上限、内存吃紧、Access 名额快满"), t("超过 26 小时没备份"), t("导入连续失败 3 次"), t("AI 花费到预算的 80% 和 100%"), t("服务器报错"), t("维护模式开着")].map((x) => (
                 <tr key={x}>
                   <td>{x}</td>
                   <td className="n">

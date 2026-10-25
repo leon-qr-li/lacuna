@@ -25,3 +25,10 @@
 .plan-more-list li span:first-child { min-width: 64px; }
 .plan-more-st { margin-left: auto; font-size: 12px; }
 .plan-more-st.st-approved { color: var(--ok, #0a734d); }
+
+/* audio hours this month (HoursMeter) */
+.plan-bar { display: block; height: 6px; margin: 6px 0 2px; border-radius: 3px; background: var(--hover); overflow: hidden; }
+.plan-bar > span { display: block; height: 100%; background: var(--accent); }
+.plan-bar-near > span { background: var(--warn); }
+.plan-bar-out > span { background: var(--danger); }
+.plan-meter em.plan-out { color: var(--danger); }

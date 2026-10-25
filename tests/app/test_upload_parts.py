@@ -75,7 +75,7 @@ def test_bad_pieces_are_refused(setup, monkeypatch):
     assert r.status_code == 422 and not list((ws.root / "imported_tracks").glob("*/*"))
 
 
-def test_unfinished_pieces_are_pruned_after_a_day(setup):
+def test_unfinished_pieces_are_pruned_after_an_hour(setup):
     ws, rec, c = setup
     assert piece(c, b"abc", 0).status_code == 200
     p = upload_parts.part_path(ws, ID)
@@ -83,3 +83,32 @@ def test_unfinished_pieces_are_pruned_after_a_day(setup):
     os.utime(p, (old, old))
     upload_parts.prune(ws)
     assert not p.exists()
+
+
+def test_an_upload_under_way_holds_off_the_updater(setup):
+    """Batch 5: /api/app lists an upload in pieces as work in progress until its file is taken."""
+    ws, rec, c = setup
+    data = rec["Leon"].read_bytes()
+    assert c.get("/api/app").json()["busy"] == []
+    size = len(data) // 2 + 1
+    assert piece(c, data[:size], 0).status_code == 200
+    assert c.get("/api/app").json()["busy"] == ["上传（1 个文件）"]
+    assert upload_parts.active(now=time.time() + upload_parts.LIVE_S + 1) == 0     # gone quiet: not under way
+    assert piece(c, data[size:], size).status_code == 200
+    r = c.post("/api/imports/tracks", params={"name": "Leon.wav", "part": ID}, headers=OCTET)
+    assert r.status_code == 200 and c.get("/api/app").json()["busy"] == []
+
+
+def test_the_finished_file_is_moved_not_copied(setup, monkeypatch):
+    ws, rec, c = setup
+    data = rec["Pei"].read_bytes()
+    send_in_pieces(c, data, len(data) // 2 + 1)
+    ino = upload_parts.part_path(ws, ID).stat().st_ino
+    r = c.post("/api/imports/tracks", params={"name": "Pei.wav", "part": ID}, headers=OCTET)
+    assert r.status_code == 200, r.text
+    assert Path(r.json()["track"]["path"]).stat().st_ino == ino
+    from lacuna_app import import_tracks
+    send_in_pieces(c, data, len(data))
+    monkeypatch.setattr(import_tracks, "MAX_TRACK", 10)
+    r = c.post("/api/imports/tracks", params={"name": "Pei.wav", "part": ID}, headers=OCTET)
+    assert r.status_code == 413 and not upload_parts.part_path(ws, ID).exists()

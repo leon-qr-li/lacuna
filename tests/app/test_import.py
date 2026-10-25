@@ -177,7 +177,16 @@ def test_restart_marks_running_job_interrupted(ws, rec):
     assert importer(ws).status() == []
 
 
-def test_cancel_and_one_job_at_a_time(ws, rec):
+def _wait(imp, eid, states=("queued", "running"), limit=30):
+    t = time.time()
+    while imp.status(eid)["state"] in states:
+        assert time.time() - t < limit
+        time.sleep(0.05)
+    return imp.status(eid)
+
+
+def test_a_second_import_waits_its_turn_and_cancel(ws, rec):
+    """Batch 5: a second episode no longer gets 「正在导入」; it waits in line behind the first."""
     gate = threading.Event()
 
     def slow_asr(tag, x, progress):
@@ -186,16 +195,80 @@ def test_cancel_and_one_job_at_a_time(ws, rec):
         return fake_asr(tag, x, progress)
     imp = Importer(ws, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=slow_asr)
     imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])])
-    with pytest.raises(Exception, match="正在导入"):
-        imp.start("EP003", "", [str(rec["Leon"]), str(rec["Pei"])])
+    _wait(imp, "EP002", ("queued",))
+    imp.start("EP003", "", [str(rec["Leon"]), str(rec["Pei"])])
+    t = time.time()
+    while imp.status("EP003").get("ahead") is None:        # its thread is joining the line
+        assert time.time() - t < 10
+        time.sleep(0.02)
+    second = imp.status("EP003")
+    assert second["state"] == "queued" and second["ahead"] == 1 and "前面还有 1 集" in second["stage"]
+    assert imp._running == "EP002" and imp.active() == ["EP002", "EP003"]
     imp.cancel("EP002")
     gate.set()
-    t = time.time()
-    while imp.status("EP002")["state"] in ("queued", "running"):
-        assert time.time() - t < 30
-        time.sleep(0.05)
-    assert imp.status("EP002")["state"] == "cancelled"
+    assert _wait(imp, "EP002")["state"] == "cancelled"
     assert "EP002" not in ws.episode_ids()
+    assert _wait(imp, "EP003")["state"] == "done"          # its turn came once the first one stopped
+    assert "EP003" in ws.episode_ids()
+
+
+def test_cancel_while_waiting(ws, rec):
+    from lacuna_app import import_queue
+    import_queue.GATE.enter("someone else's import")
+    try:
+        imp = importer(ws)
+        imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])])
+        time.sleep(0.3)
+        assert imp.status("EP002")["state"] == "queued" and imp.status("EP002")["ahead"] == 1
+        imp.cancel("EP002")
+        assert _wait(imp, "EP002")["state"] == "cancelled"
+        assert import_queue.GATE.load() == {"running": 1, "waiting": 0, "slots": 1, "longest": 0.0}
+    finally:
+        import_queue.GATE.leave("someone else's import")
+
+
+def test_one_queue_for_every_show(tmp_path, rec):
+    """Two shows' imports never recognise at the same time (memory), but both finish."""
+    seen, now = [], set()
+    lock = threading.Lock()
+
+    def asr(tag, x, progress):
+        with lock:
+            now.add(tag)
+            seen.append(len(now))
+        time.sleep(0.2)
+        with lock:
+            now.discard(tag)
+        return fake_asr(tag, x, progress)
+    a = Workspace(tmp_path / "a").ensure()
+    b = Workspace(tmp_path / "b").ensure()
+    ia = Importer(a, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=asr)
+    ib = Importer(b, first_cut_factory=lambda: ClaudeFirstCut(client=FakeFirstCutAnthropic()), asr_backend=asr)
+    ia.start("EP001", "", [str(rec["Leon"]), str(rec["Pei"])])
+    ib.start("EP001", "", [str(rec["Leon"]), str(rec["Pei"])])
+    assert _wait(ia, "EP001")["state"] == "done" and _wait(ib, "EP001")["state"] == "done"
+    assert max(seen) == 1
+
+
+def test_new_import_under_an_old_id_drops_the_old_cache(ws, rec, tmp_path):
+    imp = importer(ws)
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
+    d = ws.root / "imports" / "EP002"
+    stale = json.loads((d / "asr_L.json").read_text(encoding="utf-8"))
+    stale["segments"] = [{"text": "旧的文字稿"}]
+    (d / "asr_L.json").write_text(json.dumps(stale, ensure_ascii=False), encoding="utf-8")
+    imp.forget("EP002")
+    shutil.rmtree(ws.episode_dir("EP002"))
+    # the same files again: the saved steps are kept
+    imp._fresh_cache("EP002", {t: check_track(rec[n]) for t, n in (("L", "Leon"), ("P", "Pei"))})
+    assert "旧的文字稿" in (d / "asr_L.json").read_text(encoding="utf-8")
+    # other files under the same id: nothing of the old import is reused
+    other = tmp_path / "other"
+    other.mkdir()
+    copies = [shutil.copy(rec[n], other / f"{n}.wav") for n in ("Leon", "Pei")]
+    imp.start("EP002", "", [str(p) for p in copies], wait=True)
+    assert imp.status("EP002")["state"] == "done"
+    assert "旧的文字稿" not in (d / "asr_L.json").read_text(encoding="utf-8")
 
 
 def test_rules_fallback_without_claude(ws, rec):
@@ -320,3 +393,65 @@ def test_at_most_four_tracks(ws, rec):
     imp = importer(ws)
     with pytest.raises(ImportError_, match="每个节目最多 4 位主持人，一集最多导入 4 条分轨，收到 5 条"):
         imp.start("EP002", "", [str(rec["Leon"])] * 5)
+
+
+def test_batch_switch_cuts_every_window_in_one_batch_at_half_price(ws, rec, monkeypatch):
+    """ai_settings.first_cut_batch: the windows go out as one Message Batch, billed at half price; a window the
+    batch did not finish is cut the normal way."""
+    fake = FakeFirstCutAnthropic()
+    fake.batch_polls = 3
+    made = []
+
+    def factory():
+        fc = ClaudeFirstCut(client=fake)
+        fc._sleep = lambda s: None
+        fc.BATCH_POLL_S = 0.0
+        made.append(fc)
+        return fc
+    imp = Importer(ws, first_cut_factory=factory, asr_backend=fake_asr)
+    imp.batch_on = lambda: True
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
+    job = imp.status("EP002")
+    assert job["state"] == "done", job["error"]
+    assert made[0].batch and len(fake.batches) == 1 and fake.batches[0]["polls"] == 3
+    assert all(r.get("batch") for r in fake.requests)              # nothing went the normal way
+    params = fake.batches[0]["requests"][0]["params"]
+    assert "fallbacks" not in params and params["system"][-1]["cache_control"] == {"type": "ephemeral"}
+    usage = [json.loads(x) for x in (ws.root / "ai_usage.jsonl").read_text(encoding="utf-8").splitlines()]
+    # 500 in + 20000 cache write (x1.25) + 900 out at Sonnet prices, halved
+    assert usage[0]["cost_usd"] == pytest.approx((500 * 2 + 20000 * 2 * 1.25 + 900 * 10) / 1e6 / 2, abs=1e-4)
+    ops = json.loads((ws.root / "imports" / "EP002" / "ops.json").read_text(encoding="utf-8"))
+    assert "batch" in ops["model"]
+
+
+def test_batch_window_that_errored_is_cut_the_normal_way(ws, rec):
+    fake = FakeFirstCutAnthropic()
+    fake.batch_errored = {0}
+
+    def factory():
+        fc = ClaudeFirstCut(client=fake)
+        fc.BATCH_POLL_S = 0.0
+        return fc
+    imp = Importer(ws, first_cut_factory=factory, asr_backend=fake_asr)
+    imp.batch_on = lambda: True
+    imp.start("EP002", "", [str(rec["Leon"]), str(rec["Pei"])], wait=True)
+    assert imp.status("EP002")["state"] == "done"
+    assert [bool(r.get("batch")) for r in fake.requests] == [False]    # errored in the batch, then cut directly
+
+
+def test_batch_switch_is_off_by_default_and_saved_by_the_owner(tmp_path):
+    from lacuna_app import ai_settings, db as sitedb
+    d = sitedb.DB(tmp_path / "site.db")
+    assert ai_settings.settings(d) == {"first_cut_batch": False}
+    assert ai_settings.save_settings(d, {"first_cut_batch": 1, "other": True}) == {"first_cut_batch": True}
+    assert ai_settings.settings(d)["first_cut_batch"] is True
+
+
+def test_cancel_while_the_batch_waits_cancels_the_batch():
+    fake = FakeFirstCutAnthropic()
+    fake.batch_polls = 100
+    fc = ClaudeFirstCut(client=fake)
+    fc.BATCH_POLL_S = 0.0
+    seen = []
+    out = fc.run_batch("sys", "doc", [(0.0, 600.0)], [0], seen.append, cancelled=lambda: len(seen) >= 2)
+    assert out == {} and fake.cancelled == ["msgbatch_1"] and "省钱模式" in seen[0]

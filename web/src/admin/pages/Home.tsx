@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import { eventName } from "../labels";
 import type { Alert, Overview } from "../types";
 import { Card, Icon, LineChart, Loading, PageHead, Spark, ago, fmtBytes, fmtNum, fmtPct, fmtUsd, useData, weekLabels } from "../ui";
+import { CapacityCard } from "./Capacity";
 
 export function alertText(a: Alert): string {
   switch (a.kind) {
@@ -24,6 +25,8 @@ export function alertText(a: Alert): string {
       return t("过去 24 小时服务器报错 {n} 次。", { n: a.n ?? 0 });
     case "maintenance":
       return t("维护模式开着：用户现在不能上传和导入。");
+    case "capacity":
+      return `${a.line ?? ""}${t("。")}${a.advice ?? ""}`;
   }
 }
 
@@ -122,6 +125,11 @@ export function Home({ me, go }: PageProps) {
         <Kpi label={t("本月 AI 花费")} value={fmtUsd(k.ai.value, 0)} sub={t("预计月底 {v}", { v: fmtUsd(k.ai.forecast, 0) })} tone={k.ai.forecast > k.ai.budget ? "dn" : "mu"} spark={k.ai.spark} />
         <Kpi label={t("磁盘")} value={fmtPct(k.disk.value)} sub={`${fmtBytes(k.disk.used)} / ${fmtBytes(k.disk.total)}`} tone={k.disk.value >= 0.7 ? "dn" : "mu"} spark={[k.disk.value, k.disk.value]} />
       </div>
+      {o.capacity && (
+        <div className="a-mb">
+          <CapacityCard measures={o.capacity} />
+        </div>
+      )}
       <div className="a-grid g2">
         <Card title={t("周活跃")} sub={t("近 8 周")} right={<button type="button" className="a-btn ghost sm" onClick={() => go("/growth")}>{t("增长与留存 →")}</button>}>
           <LineChart series={[o.wau]} labels={weekLabels(o.wau.length)} />

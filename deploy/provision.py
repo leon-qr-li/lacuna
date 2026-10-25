@@ -3,7 +3,8 @@
     python deploy/provision.py plan        # show what exists / would be created, change nothing
     python deploy/provision.py apply       # create what is missing; never deletes data
     python deploy/provision.py recreate    # also replace the server (data volume kept): new host config, rotated keys
-    python deploy/provision.py version-door  # only the public /api/version address (Cloudflare Access), patiently
+    python deploy/provision.py close-version-door  # only: remove the old public /api/version address, patiently
+    python deploy/provision.py deploy-token  # (re)make the deploy check's Access service token, sealed for GitHub
     python deploy/provision.py mail-plan     # the email sending domain in Resend + its DNS: show only
     python deploy/provision.py mail-domain   # add the domain to Resend, its DNS records to Cloudflare, verify
 
@@ -11,12 +12,16 @@ Run by .github/workflows/provision.yml with the repo's secrets in the environmen
 DIGITALOCEAN_TOKEN, CLOUDFLARE_API_TOKEN, ACCESS_EMAILS, BACKUP_PASSWORD, ANTHROPIC_API_KEY, RESEND_API_KEY.
 
 What it sets up
-- DigitalOcean (SFO3): container registry, a 50 GB data volume (`/data`, the whole workspace), a firewall
+- DigitalOcean (SFO3): container registry, a 100 GB data volume (an older, smaller one is grown in place) (`/data`, the whole workspace), a firewall
   with NO inbound rules, one 4 vCPU / 8 GB droplet whose first boot (cloud-init, deploy/host/) mounts the
   volume, installs Docker, restic and the updater, and starts cloudflared.
 - Cloudflare: a remotely managed tunnel to the app, the DNS record, an Access application with an email
-  allow-list group (one-time email codes), an R2 bucket for backups, and two narrow API tokens for the
-  server (backup bucket only; Access groups only, for in-app invites).
+  allow-list group (one-time email codes), an R2 bucket for backups, an R2 bucket for the audio of episodes not
+  opened for 14 days (decision 2026-10-25-audio-cold-storage), and narrow API tokens for the server (backup
+  bucket only; audio bucket only, read-only for staging; Access groups only, for in-app invites).
+- The deploy check (decision 2026-10-25-withdraw-public-version): the deploy workflow reads /api/health through
+  Access with a long-lived service token (GitHub secrets CF_DEPLOY_CLIENT_ID / CF_DEPLOY_CLIENT_SECRET, made by
+  `deploy-token`); the public /api/version address of 2026-10-20 is removed by apply / recreate.
 - The site door (decision 2026-10-21-app-sign-in), deploy/site-door.txt: "access" (default) keeps Cloudflare
   Access in front of the site; "open" lets everyone reach the app's own sign-in (password + two-step code +
   Turnstile + new-device email) and adds a Turnstile widget. Takes effect with `recreate` only (the server's
@@ -52,7 +57,7 @@ REGION = os.environ.get("LACUNA_REGION", "sfo3")
 SIZE = os.environ.get("LACUNA_SIZE", "s-4vcpu-8gb")
 # same price class (4 vCPU / 8 GB): DigitalOcean sometimes stops offering one of these in a region
 SIZE_FALLBACKS = ("s-4vcpu-8gb", "s-4vcpu-8gb-amd", "s-4vcpu-8gb-intel")
-VOLUME_GB = int(os.environ.get("LACUNA_VOLUME_GB", "50"))
+VOLUME_GB = int(os.environ.get("LACUNA_VOLUME_GB", "100"))
 NAME = "lacuna"
 TAG = "lacuna"
 VOLUME = "lacuna-data"
@@ -62,6 +67,7 @@ REPO_IMAGE = "lacuna"
 # "starter" (free) stores only 500 MB; the image (ffmpeg, speech recognition, CJK fonts) is bigger
 REGISTRY_TIER = "basic"
 BUCKET = "lacuna-backup"
+AUDIO_BUCKET = "lacuna-audio"       # old episodes' audio (lacuna_app/cold.py)
 ACCESS_GROUP = "LACUNA invited"
 ACCESS_APP = "LACUNA"
 PREVIEW_APP = "LACUNA preview"
@@ -70,15 +76,19 @@ ADMIN_APP = "LACUNA admin"          # admin.<domain>: the same container, owner 
 ADMIN_POLICY = "LACUNA admin owner"
 ACCESS_POLICY = "LACUNA invited people"
 DEPLOY_POLICY = "LACUNA deploy checks"
-VERSION_POLICY = "LACUNA version (public)"
+VERSION_POLICY = "LACUNA version (public)"     # withdrawn (close_version_door): only to find and delete it
 OPEN_POLICY = "LACUNA open door"
 DOOR_FILE = HERE / "site-door.txt"
 TURNSTILE_WIDGET = "LACUNA sign-in"
-VERSION_PATH = "/api/version"       # answers the version string only (lacuna_app/cloud.py VERSION_PATH)
+VERSION_PATH = "/api/version"       # the withdrawn public version address
+DEPLOY_TOKEN = "lacuna-deploy"      # Access service token of the deploy check (deploy/ci.py wait_live)
 APP_PORT = 8765
 TOKEN_BACKUP = "lacuna-server-backup"
 TOKEN_INVITES = "lacuna-server-invites"
+TOKEN_AUDIO = "lacuna-server-audio"
+TOKEN_AUDIO_READ = "lacuna-staging-audio"
 PERM_R2_BUCKET = "Workers R2 Storage Bucket Item Write"
+PERM_R2_READ = "Workers R2 Storage Bucket Item Read"
 PERM_ACCESS_GROUPS = "Access: Organizations, Identity Providers, and Groups Write"
 
 
@@ -318,33 +328,42 @@ class Cloudflare:
             log(f"created the Access application {ADMIN_APP}")
         return app["aud"]
 
-    def version_door(self, apply: bool, domain: str | None = None, name: str = ACCESS_APP) -> None:
-        """A path-scoped Access application that lets anyone read <domain>/api/version, so the deploy check
-        needs no Cloudflare API call or service token at deploy time (Cloudflare's service-token API answered
-        504 for hours on 2026-10-20). The app answers that path with the version string and nothing else.
-        Leon's call, to be withdrawn before public launch (docs/decisions/2026-10-20-public-version-check.md)."""
-        target = f"{domain or self.domain}{VERSION_PATH}"
+    def close_version_door(self, apply: bool) -> None:
+        """Remove the public /api/version address (decision 2026-10-25-withdraw-public-version, Leon's typed OK
+        2026-10-25): the path-scoped Access applications on the site and on staging, then their bypass policy
+        (a reusable Access policy is only gone once deleted through the API). The deploy check reads
+        /api/health with a service token instead."""
         a = self.account
-        want = {"decision": "bypass", "include": [{"everyone": {}}]}
-        pols = self.r("GET", f"/accounts/{a}/access/policies") or []
-        have = next((x for x in pols if x.get("name") == VERSION_POLICY), None)
-        # only write what is missing or different: Cloudflare's Access API often answered 504 to writes
-        if have and all(have.get(k) == v for k, v in want.items()):
-            pol = have["id"]
+        targets = {f"{d}{VERSION_PATH}" for d in (self.domain, self.preview)}
+        for app in list(self.r("GET", f"/accounts/{a}/access/apps") or []):
+            if app.get("domain") in targets:
+                if apply:
+                    self.r("DELETE", f"/accounts/{a}/access/apps/{app['id']}")
+                    log(f"removed the Access application {app.get('name')}")
+                else:
+                    log(f"would remove the Access application {app.get('name')}")
+        for pol in list(self.r("GET", f"/accounts/{a}/access/policies") or []):
+            if pol.get("name") == VERSION_POLICY:
+                if apply:
+                    self.r("DELETE", f"/accounts/{a}/access/policies/{pol['id']}")
+                    log(f"removed the Access policy {VERSION_POLICY}")
+                else:
+                    log(f"would remove the Access policy {VERSION_POLICY}")
+
+    def deploy_token(self) -> tuple[str, str]:
+        """The deploy check's Access service token: made once, a new secret every run (rotate). (client id, secret)."""
+        a = self.account
+        have = next((t for t in self.r("GET", f"/accounts/{a}/access/service_tokens") or []
+                     if t.get("name") == DEPLOY_TOKEN), None)
+        if have:
+            out = self.r("POST", f"/accounts/{a}/access/service_tokens/{have['id']}/rotate")
+            cid = out.get("client_id") or have.get("client_id")
         else:
-            pol = self.policy(VERSION_POLICY, want, apply)
-        apps = self.r("GET", f"/accounts/{a}/access/apps") or []
-        app = next((x for x in apps if x.get("domain") == target), None)
-        body = {"name": f"{name} version", "type": "self_hosted", "domain": target, "app_launcher_visible": False,
-                "policies": [{"id": pol, "precedence": 1}]}
-        if not apply:
-            log(f"Access application {name} version: " + ("ok" if app else "would be created"))
-        elif app:
-            if [x.get("id") for x in app.get("policies") or []] != [pol]:
-                self.r("PUT", f"/accounts/{a}/access/apps/{app['id']}", body)
-        else:
-            self.r("POST", f"/accounts/{a}/access/apps", body)
-            log(f"created the Access application {name} version")
+            out = self.r("POST", f"/accounts/{a}/access/service_tokens", {"name": DEPLOY_TOKEN, "duration": "8760h"})
+            cid = out["client_id"]
+        mask(cid)
+        mask(out["client_secret"])
+        return cid, out["client_secret"]
 
     # ---- R2 + scoped tokens for the server
     def turnstile(self, apply: bool) -> tuple[str, str] | None:
@@ -368,19 +387,19 @@ class Cloudflare:
         mask(w["secret"])
         return w["sitekey"], w["secret"]
 
-    def bucket(self, apply: bool) -> None:
+    def bucket(self, apply: bool, name: str = BUCKET, what: str = "backup") -> None:
         a = self.account
         try:
             names = [b["name"] for b in (self.r("GET", f"/accounts/{a}/r2/buckets") or {}).get("buckets", [])]
         except ProvisionError as e:
             raise ProvisionError("R2 is not enabled on the Cloudflare account yet (dashboard → R2)") from e
-        if BUCKET in names:
+        if name in names:
             return
         if apply:
-            self.r("POST", f"/accounts/{a}/r2/buckets", {"name": BUCKET, "locationHint": "wnam"})
-            log("created the backup bucket")
+            self.r("POST", f"/accounts/{a}/r2/buckets", {"name": name, "locationHint": "wnam"})
+            log(f"created the {what} bucket")
         else:
-            log("would create the backup bucket")
+            log(f"would create the {what} bucket")
 
     def _perm(self, name: str) -> str:
         groups = self.r("GET", "/user/tokens/permission_groups") or []
@@ -406,6 +425,16 @@ class Cloudflare:
         mask(secret)
         return {"RESTIC_REPOSITORY": f"s3:https://{self.account}.r2.cloudflarestorage.com/{BUCKET}",
                 "AWS_ACCESS_KEY_ID": tid, "AWS_SECRET_ACCESS_KEY": secret, "AWS_DEFAULT_REGION": "auto"}
+
+    def audio_credentials(self, read_only: bool = False) -> dict:
+        """The app's settings for the audio bucket (lacuna_app/r2.py Bucket.from_env); staging only reads."""
+        tid, value = self.server_token(TOKEN_AUDIO_READ if read_only else TOKEN_AUDIO,
+                                       PERM_R2_READ if read_only else PERM_R2_BUCKET,
+                                       {f"com.cloudflare.edge.r2.bucket.{self.account}_default_{AUDIO_BUCKET}": "*"})
+        secret = hashlib.sha256(value.encode()).hexdigest()
+        mask(secret)
+        return {"LACUNA_AUDIO_STORE": f"https://{self.account}.r2.cloudflarestorage.com/{AUDIO_BUCKET}",
+                "LACUNA_AUDIO_KEY_ID": tid, "LACUNA_AUDIO_SECRET": secret}
 
     def invites_token(self) -> str:
         return self.server_token(TOKEN_INVITES, PERM_ACCESS_GROUPS,
@@ -453,7 +482,16 @@ class DigitalOcean:
     def volume(self, apply: bool) -> str | None:
         vols = self.http("GET", f"/v2/volumes?name={VOLUME}&region={REGION}").get("volumes", [])
         if vols:
-            return vols[0]["id"]
+            v = vols[0]
+            have = int(v.get("size_gigabytes") or VOLUME_GB)
+            if have < VOLUME_GB:       # grown in place (never shrunk); the server's filesystem follows at its next boot
+                if apply:
+                    self.http("POST", f"/v2/volumes/{v['id']}/actions",
+                              {"type": "resize", "size_gigabytes": VOLUME_GB, "region": REGION})
+                    log(f"data volume: grown from {have} GB to {VOLUME_GB} GB")
+                else:
+                    log(f"data volume: would grow from {have} GB to {VOLUME_GB} GB")
+            return v["id"]
         if not apply:
             log(f"would create the {VOLUME_GB} GB data volume")
             return None
@@ -672,6 +710,26 @@ def cloud_init(files: dict[str, tuple[str, str]], host_dir: Path = HERE / "host"
     return "#cloud-config\n" + json.dumps(doc)    # JSON is valid YAML
 
 
+def seal(public_key_b64: str, value: str) -> str:
+    """`value` encrypted for a GitHub Actions secret (libsodium sealed box to the repo's public key), base64."""
+    from nacl import encoding, public       # pip install pynacl (only the deploy-token run needs it)
+    box = public.SealedBox(public.PublicKey(public_key_b64.encode(), encoding.Base64Encoder()))
+    return base64.b64encode(box.encrypt(value.encode())).decode()
+
+
+def deploy_token_sealed(cf: "Cloudflare", sealer=seal) -> dict:
+    """Make (or rotate) the deploy check's service token and print it sealed to the repo's Actions public key
+    (GH_SECRETS_KEY / GH_SECRETS_KEY_ID, from `gh api repos/<repo>/actions/secrets/public-key`): only GitHub can
+    open it, so the public log is safe. `gh api -X PUT .../actions/secrets/<NAME> -f encrypted_value=... -f key_id=...`
+    stores each one."""
+    key, key_id = need("GH_SECRETS_KEY"), need("GH_SECRETS_KEY_ID")
+    cid, secret = cf.deploy_token()
+    out = {"CF_DEPLOY_CLIENT_ID": sealer(key, cid), "CF_DEPLOY_CLIENT_SECRET": sealer(key, secret)}
+    for name, value in out.items():
+        log(f"sealed {name} (key {key_id}): {value}")
+    return out
+
+
 def emails_from(raw: str) -> list[str]:
     out = []
     for e in raw.replace(";", ",").replace("\n", ",").split(","):
@@ -729,9 +787,9 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean, door: str | None = None) ->
         aud = cf.application(group, idp, apply, open_door=opening)
     preview_aud = cf.application(group, idp, apply, cf.preview, PREVIEW_APP)
     admin_aud = cf.admin_application(emails[0], idp, apply)
-    cf.version_door(apply)
-    cf.version_door(apply, cf.preview, PREVIEW_APP)
+    cf.close_version_door(apply)
     cf.bucket(apply)
+    cf.bucket(apply, AUDIO_BUCKET, "audio")
     registry = do.registry(apply)
     volume = do.volume(apply)
     do.firewall(apply)
@@ -748,7 +806,7 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean, door: str | None = None) ->
                "CF_ACCOUNT_ID": cf.account, "CF_ACCESS_GROUP_ID": group, "CF_ACCESS_API_TOKEN": cf.invites_token(),
                "LACUNA_PUBLIC_URL": f"https://{DOMAIN}", "LACUNA_OWNER_EMAIL": emails[0], "ANTHROPIC_API_KEY": need("ANTHROPIC_API_KEY"),
                "RESEND_API_KEY": need("RESEND_API_KEY"),
-               "LACUNA_ADMIN_HOST": cf.admin, "CF_ADMIN_ACCESS_AUD": admin_aud}
+               "LACUNA_ADMIN_HOST": cf.admin, "CF_ADMIN_ACCESS_AUD": admin_aud} | cf.audio_credentials()
     if human:
         app_env |= {"LACUNA_ACCESS": "off", "TURNSTILE_SITE_KEY": human[0], "TURNSTILE_SECRET_KEY": human[1]}
     # staging: its own Access audience and address; no Access token, so an invite tried out there never
@@ -756,7 +814,8 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean, door: str | None = None) ->
     preview_env = {k: v for k, v in app_env.items()
                    if k not in ("CF_ACCESS_API_TOKEN", "LACUNA_ACCESS", "TURNSTILE_SITE_KEY", "TURNSTILE_SECRET_KEY",
                                 "LACUNA_ADMIN_HOST", "CF_ADMIN_ACCESS_AUD")} | {
-        "CF_ACCESS_AUD": preview_aud, "LACUNA_PUBLIC_URL": f"https://{cf.preview}", "LACUNA_STAGING": "1"}
+        "CF_ACCESS_AUD": preview_aud, "LACUNA_PUBLIC_URL": f"https://{cf.preview}", "LACUNA_STAGING": "1"} \
+        | cf.audio_credentials(read_only=True)
     backup_env = cf.backup_credentials() | {"RESTIC_PASSWORD": need("BACKUP_PASSWORD")}
     files = {
         "/etc/lacuna/lacuna.env": (env_file(app_env), "0600"),
@@ -779,16 +838,19 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean, door: str | None = None) ->
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     mode = argv[0] if argv else "plan"
-    if mode not in ("plan", "apply", "recreate", "version-door", "mail-domain", "mail-plan"):
+    if mode not in ("plan", "apply", "recreate", "close-version-door", "deploy-token", "mail-domain", "mail-plan"):
         print(__doc__)
         return 2
     try:
         cf = Cloudflare(Http("https://api.cloudflare.com/client/v4", need("CLOUDFLARE_API_TOKEN")))
-        if mode == "version-door":
-            # only the public version address (decision public-version-check), patient with Cloudflare's API
+        if mode == "close-version-door":
+            # only the old public version address (decision 2026-10-25-withdraw-public-version), patiently
             cf.http.RETRY_WAITS = (5, 15, 45, 90, 180, 300)
-            cf.version_door(True)
-            cf.version_door(True, cf.preview, PREVIEW_APP)
+            cf.close_version_door(True)
+            log("done")
+            return 0
+        if mode == "deploy-token":
+            deploy_token_sealed(cf)
             log("done")
             return 0
         if mode in ("mail-domain", "mail-plan"):

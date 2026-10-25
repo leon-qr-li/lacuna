@@ -78,7 +78,7 @@ test("申请试用 → the owner's email and list → invite with a plan; 套餐
   await lp.goto("/#/settings/plan");
   await expect(lp.getByTestId("plan-name")).toHaveText("专业版");
   await expect(lp.getByTestId("my-plan")).toContainText("你的套餐由 LACUNA 免费提供。");
-  await expect(lp.getByTestId("my-plan")).toContainText("计时稍后开放");
+  await expect(lp.getByTestId("my-plan")).toContainText("已用 0 小时本月共 12 小时");     // audio hours are metered now (quota.py)
   await expect(lp.getByTestId("plan-table")).toContainText("一次性 1 小时");
   await expect(lp.getByTestId("plan-table")).toContainText("每月 12 小时");
   await expect(lp.getByTestId("plan-table").locator("th.is-mine")).toContainText("专业版");

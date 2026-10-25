@@ -6,9 +6,10 @@ from typing import Annotated
 from fastapi import HTTPException, Request
 from pydantic import BaseModel, Field
 
-from .. import import_tracks, upload_parts
+from .. import ai_settings, import_tracks, upload_parts
 from ..archive import free_deleted_ids
 from ..importer import ImportBusy, ImportError_, Importer, check_track
+from ..quota import QuotaError
 from ..server import next_episode_id
 from ..store import META_FILE, PathError, read_json
 from ..i18n import tr
@@ -42,6 +43,29 @@ def register(app, ctx) -> None:
 
     import_tracks.prune(ws, tracks_in_use())
 
+    # audio hours (quota.py): the meter comes from the main app, which may register after this module
+    def allow(episode_id: str, tracks: dict) -> None:
+        meter = ctx.provide("meter")
+        if meter is not None:
+            try:
+                meter.allow(ws.root, tracks)
+            except QuotaError as e:
+                raise ImportError_(str(e))
+
+    def charged(episode_id: str, job: dict) -> None:
+        meter = ctx.provide("meter")
+        if meter is not None:
+            meter.charge(ws.root, episode_id, job)
+    def batch_on() -> bool:
+        meter = ctx.provide("meter")
+        return bool(meter is not None and meter.on and ai_settings.settings(meter.auth.db)["first_cut_batch"])
+    if getattr(importer, "allow", None) is None:
+        importer.allow = allow
+    if getattr(importer, "batch_on", None) is None:
+        importer.batch_on = batch_on
+    if getattr(importer, "on_done", None) is None:
+        importer.on_done = charged
+
     @app.post("/api/imports/tracks")
     async def upload_track(request: Request, name: str, part: str = ""):
         """A raw track dragged into (or picked in) the import form: the raw bytes, copied into the
@@ -54,17 +78,29 @@ def register(app, ctx) -> None:
         if Path(name).suffix.lower() not in AUDIO_EXT:
             raise HTTPException(422, tr("不是音频文件：{name}", name=name))
         try:
+            import_tracks.prune(ws, tracks_in_use())       # copies from forms nobody finished
+        except OSError:
+            pass
+        try:
             target = import_tracks.new_target(ws, name)
         except PathError:
             raise HTTPException(422, tr("不是音频文件：{name}", name=name))
         size = 0
         try:
-            with target.open("wb") as f:
-                async for chunk in upload_parts.source(request, ws, part):
-                    size += len(chunk)
-                    if size > import_tracks.MAX_TRACK:
+            if part:            # sent in pieces: move the finished file into place (no second copy)
+                try:
+                    size = upload_parts.take(ws, part, target, import_tracks.MAX_TRACK)
+                except upload_parts.PartError as e:
+                    if str(e) == "too big":
                         raise HTTPException(413, tr("文件太大"))
-                    f.write(chunk)
+                    raise
+            else:
+                with target.open("wb") as f:
+                    async for chunk in upload_parts.source(request, ws, part):
+                        size += len(chunk)
+                        if size > import_tracks.MAX_TRACK:
+                            raise HTTPException(413, tr("文件太大"))
+                        f.write(chunk)
             if not size:
                 raise HTTPException(422, tr("文件是空的"))
             return {"track": check_track(target)}
@@ -127,6 +163,8 @@ def register(app, ctx) -> None:
             raise HTTPException(404, "no such import")
         except ImportBusy as e:
             raise HTTPException(409, str(e))
+        except ImportError_ as e:
+            raise HTTPException(422, str(e))
 
     @app.post("/api/imports/{episode_id}/cancel")
     def cancel_import(episode_id: str):

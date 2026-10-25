@@ -67,3 +67,9 @@ cookie in cloud mode and call `cloud.access_allow(email)` / `access_revoke(email
   `docs/decisions/2026-10-20-public-version-check.md`): `GET /api/version` answers the version only, a
   path-scoped Access bypass lets it through, and wait-live reads it with no Cloudflare API call. Needs
   Provision apply once to create the two bypass apps. Withdraw before public launch (beta-launch-todo).
+- 2026-10-25 (batch 5, `docs/status/batch-5.md`): the public `/api/version` is withdrawn (decision
+  `2026-10-25-withdraw-public-version`; Provision mode `close-version-door` runs in apply), wait-live reads
+  `/api/health` with a long-lived Access service token (Provision mode `deploy-token`, secrets
+  `CF_DEPLOY_CLIENT_*`). Audio bucket `lacuna-audio` + server / staging tokens, data volume 100 GB, staging
+  hard-links audio instead of copying it (`lacuna-update` `seed`). Live after Provision apply + deploy-token +
+  recreate (recreate needs Leon's typed 「重建服务器」).

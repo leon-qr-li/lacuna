@@ -17,6 +17,8 @@ fi
 mkdir -p /data
 grep -q "$DEV" /etc/fstab || echo "$DEV /data ext4 defaults,nofail,discard,noatime 0 2" >> /etc/fstab
 mountpoint -q /data || mount /data
+# the volume may have been grown (deploy/provision.py VOLUME_GB): the filesystem follows, online, at no risk
+resize2fs "$DEV" || echo "resize2fs did nothing"
 mkdir -p /data/workspace /data/home /data/tmp /data/preview/workspace /data/preview/home /data/preview/tmp
 chown -R 10001:10001 /data/workspace /data/home /data/tmp /data/preview
 

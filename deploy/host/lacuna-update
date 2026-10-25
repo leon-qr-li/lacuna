@@ -5,7 +5,7 @@
 #     remembers the bad one so it isn't retried until a newer image arrives
 #   - the staging site runs the same script (lacuna-update-preview.service) with its own container name,
 #     image, env file and data folder; LACUNA_SEED_FROM makes each new version start on a fresh copy of
-#     the real workspace (decision staging-site)
+#     the real workspace (decision staging-site), its audio hard-linked rather than copied (no extra disk)
 # Status: /var/lib/lacuna/deploy.json. Tested with a fake docker in tests/test_deploy_host.py.
 set -uo pipefail
 STATE=${LACUNA_STATE_DIR:-/var/lib/lacuna}
@@ -47,12 +47,27 @@ start() {  # start <image id>
     --stop-timeout 30 "$1" >/dev/null
 }
 
+# audio (by extension, any case): hard-linked into the staging copy, not copied; the app never writes an audio file
+# in place (new files are written aside and renamed in), so staging can't change the real site's recordings
+AUDIO_EXT="wav mp3 m4a aac flac ogg opus aif aiff"
+audio_patterns() {  # audio_patterns <rsync|du>: one glob per extension, case-insensitive
+  local e c pat
+  for e in $AUDIO_EXT; do
+    pat=""
+    for (( i=0; i<${#e}; i++ )); do c=${e:i:1}; pat+="[${c}${c^^}]"; done
+    if [ "$1" = du ]; then printf -- '--exclude=*.%s\n' "$pat"; else printf -- '*.%s\n' "$pat"; fi
+  done
+}
+
 seed() {  # staging only: replace its workspace with a fresh copy of the real one (never the other way)
   [ -n "$SEED_FROM" ] || return 0
-  local need have free
+  local need have free pats dux
   mkdir -p "$DATA/workspace"
-  need=$(du -sb --exclude=tmp "$SEED_FROM" 2>/dev/null | cut -f1)
-  have=$(du -sb "$DATA/workspace" 2>/dev/null | cut -f1)
+  mapfile -t pats < <(audio_patterns rsync)
+  mapfile -t dux < <(audio_patterns du)
+  # only what is copied counts: the audio is linked and takes no room
+  need=$(du -sb --exclude=tmp "${dux[@]}" "$SEED_FROM" 2>/dev/null | cut -f1)
+  have=$(du -sb "${dux[@]}" "$DATA/workspace" 2>/dev/null | cut -f1)
   free=$(df -B1 --output=avail "$DATA" | tail -1)
   if [ $(( ${need:-0} - ${have:-0} )) -gt $(( ${free:-0} - ${LACUNA_SEED_MARGIN:-2147483648} )) ]; then
     status no-space "$new" "not enough disk to copy the workspace for staging"
@@ -60,7 +75,14 @@ seed() {  # staging only: replace its workspace with a fresh copy of the real on
   fi
   docker rm -f "$NAME" >/dev/null 2>&1
   mkdir -p "$DATA/workspace" "$DATA/home" "$DATA/tmp"
-  rsync -a --delete --exclude /tmp/ "$SEED_FROM/" "$DATA/workspace/" || { status seed-failed "$new" "could not copy the workspace"; return 1; }
+  local ex=() in=()
+  for p in "${pats[@]}"; do ex+=(--exclude "$p"); in+=(--include "$p"); done
+  # 1. everything but the audio, copied (the audio from last time goes too: it is linked afresh below)
+  rsync -a --delete --delete-excluded --exclude /tmp/ "${ex[@]}" "$SEED_FROM/" "$DATA/workspace/" \
+    || { status seed-failed "$new" "could not copy the workspace"; return 1; }
+  # 2. the audio, as hard links to the real files (same disk; copied only if linking is impossible)
+  rsync -a --link-dest="$SEED_FROM" --exclude /tmp/ --include '*/' "${in[@]}" --exclude '*' "$SEED_FROM/" "$DATA/workspace/" \
+    || { status seed-failed "$new" "could not link the workspace's audio"; return 1; }
   chown -R "${LACUNA_OWNER:-10001:10001}" "$DATA"
 }
 

@@ -6,11 +6,19 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: plan | apply | recreate | version-door (only the public /api/version address) | mail-plan / mail-domain (email sending domain in Resend)
+        description: plan | apply | recreate | close-version-door (only remove the old public /api/version address) | deploy-token (the deploy check's Access token, sealed for GitHub secrets) | mail-plan / mail-domain (email sending domain in Resend)
         required: true
         default: plan
         type: choice
-        options: [plan, apply, recreate, version-door, mail-plan, mail-domain]
+        options: [plan, apply, recreate, close-version-door, deploy-token, mail-plan, mail-domain]
+      secrets_key:
+        description: deploy-token only - the repo's Actions public key (gh api repos/OWNER/REPO/actions/secrets/public-key → key)
+        required: false
+        default: ""
+      secrets_key_id:
+        description: deploy-token only - its key_id
+        required: false
+        default: ""
 
 concurrency:
   group: deploy
@@ -25,6 +33,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Sealing library (deploy-token only)
+        if: inputs.mode == 'deploy-token'
+        run: python3 -m pip install --quiet --break-system-packages pynacl==1.5.0
       - name: Provision
         env:
           DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
@@ -33,4 +44,6 @@ jobs:
           BACKUP_PASSWORD: ${{ secrets.BACKUP_PASSWORD }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GH_SECRETS_KEY: ${{ inputs.secrets_key }}
+          GH_SECRETS_KEY_ID: ${{ inputs.secrets_key_id }}
         run: python3 deploy/provision.py "${{ inputs.mode }}"

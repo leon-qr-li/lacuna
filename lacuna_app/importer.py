@@ -29,6 +29,7 @@ from lacuna_core.media import MediaRef, conform
 
 from . import asr as asr_mod
 from . import import_eta
+from . import import_queue
 from . import learning
 from . import show as show_mod
 from .ai_cut import TrackTokens, build_episode, report_dict
@@ -98,7 +99,7 @@ def check_track(path: str | Path) -> dict:
 
 class Importer:
     def __init__(self, ws: Workspace, first_cut_factory: Callable[[], Any] | None = None,
-                 asr_backend: Any = None, models_dir: Path | None = None):
+                 asr_backend: Any = None, models_dir: Path | None = None, gate: import_queue.Gate | None = None):
         from .first_cut import make_first_cut
         self.ws = ws
         self.root = ws.root / "imports"
@@ -112,7 +113,14 @@ class Importer:
         self.term_fixer: Any = None
         self._lock = threading.Lock()
         self._usage_lock = threading.Lock()
-        self._running: str | None = None
+        self._gate = gate                       # None = the server's one queue (import_queue.GATE)
+        # called with (episode id, job) when an import finishes: counts its audio hours (quota.py)
+        self.on_done: Callable[[str, dict], None] | None = None
+        # called with (episode id, tracks) before an import starts or resumes; raises ImportError_ when the
+        # show's account has no audio hours left this month (quota.py)
+        self.allow: Callable[[str, dict], None] | None = None
+        # whether the AI first cut goes through the Batch API (half price, slower; ai_settings.py)
+        self.batch_on: Callable[[], bool] | None = None
         self._cancel: set[str] = set()
         self.jobs: dict[str, dict] = {}
         self._history: dict | None = None      # past imports' step times (import_eta.py), read lazily
@@ -151,8 +159,29 @@ class Importer:
                 return self._view(j) if j else None
             return sorted((self._view(j) for j in self.jobs.values()), key=lambda j: j.get("created", ""), reverse=True)
 
+    @property
+    def gate(self) -> import_queue.Gate:
+        return self._gate or import_queue.GATE
+
+    def _key(self, episode_id: str) -> str:
+        return f"{self.ws.root}::{episode_id}"
+
+    @property
+    def _running(self) -> str | None:
+        """The import of this workspace that is running now (others may wait behind it)."""
+        return next((j["id"] for j in list(self.jobs.values()) if j.get("state") == "running"), None)
+
+    def active(self) -> list[str]:
+        """Imports of this workspace that run or wait their turn."""
+        return [j["id"] for j in list(self.jobs.values()) if j.get("state") in ("queued", "running")]
+
     def _view(self, job: dict) -> dict:
         out = dict(job)
+        if job.get("state") == "queued":
+            ahead = self.gate.ahead(self._key(job["id"]))
+            out["ahead"] = ahead
+            if ahead:
+                out["stage"] = tr("排队中，前面还有 {n} 集", n=ahead)
         if job.get("state") == "running":
             if self._history is None:
                 self._history = import_eta.history(self.root)
@@ -198,11 +227,33 @@ class Importer:
             old = self.jobs.get(episode_id)
             if old and old["state"] in ("queued", "running"):
                 raise ImportBusy(tr("这一集已经在导入"))
+        if self.allow is not None:
+            self.allow(episode_id, tracks)
+        self._fresh_cache(episode_id, tracks)
         job = {"id": episode_id, "title": title.strip() or episode_id, "tracks": tracks,
                "hosts": [list(h) for h in hosts], "language": language,
                "state": "queued", "progress": 0.0, "step": None, "stage": tr("排队"), "steps": {},
                "created": now(), "started": None, "finished": None, "error": None, "result": None}
         return self._launch(job, wait)
+
+    def _fresh_cache(self, episode_id: str, tracks: dict) -> None:
+        """A new import under an id used before (a failed or removed one): the saved steps belong to the
+        old tracks, so they go unless the tracks are the very same files."""
+        d = self.dir_for(episode_id)
+        if not d.is_dir():
+            return
+        try:
+            before = {t: x.get("path") for t, x in (read_json(d / JOB_FILE).get("tracks") or {}).items()}
+        except (OSError, ValueError):
+            before = None
+        if before == {t: x["path"] for t, x in tracks.items()}:
+            return
+        import shutil
+        for p in d.iterdir():
+            if p.is_dir():
+                shutil.rmtree(p, ignore_errors=True)
+            else:
+                p.unlink(missing_ok=True)
 
     def resume(self, episode_id: str, wait: bool = False) -> dict:
         with self._lock:
@@ -211,6 +262,8 @@ class Importer:
             raise KeyError(episode_id)
         if job["state"] not in ("error", "interrupted", "cancelled"):
             raise ImportBusy(tr("这一集不需要继续"))
+        if self.allow is not None:
+            self.allow(episode_id, job["tracks"])
         job = dict(job, state="queued", error=None, stage=tr("排队"))
         return self._launch(job, wait)
 
@@ -240,9 +293,6 @@ class Importer:
 
     def _launch(self, job: dict, wait: bool) -> dict:
         with self._lock:
-            if self._running:
-                raise ImportBusy(tr("{_running} 正在导入，等它做完再导入下一集", _running=self._running))
-            self._running = job["id"]
             self._cancel.discard(job["id"])
             self.jobs[job["id"]] = job
         self._save(job)
@@ -279,6 +329,15 @@ class Importer:
 
     def _run(self, job: dict) -> None:
         d = self.dir_for(job["id"])
+        key = self._key(job["id"])
+        try:
+            self.gate.enter(key, lambda: job["id"] in self._cancel)
+        except import_queue.Abandoned:
+            with self._lock:
+                job.update(state="cancelled", stage=tr("已取消"), error=tr("已取消。点「继续」从断点接着做。"), finished=now())
+                self._cancel.discard(job["id"])
+            self._save(job)
+            return
         with self._lock:
             job.update(state="running", started=job.get("started") or now(), run_started=now())
         self._save(job)
@@ -299,9 +358,9 @@ class Importer:
                 job.update(state="error", error=tr("{p0}出错：{p1}", p0=step_label(job, job.get("step")), p1=e or type(e).__name__),
                            finished=now())
         finally:
+            self.gate.leave(key)
             with self._lock:
                 job["elapsed_s"] = round(job.get("elapsed_s", 0) + time.monotonic() - t0, 1)
-                self._running = None
                 self._cancel.discard(job["id"])
                 self._history = None             # this run's step times count from now on
             self._save(job)
@@ -310,6 +369,11 @@ class Importer:
                   tracks=len(job["tracks"]), language=job.get("language") or "zh",
                   edits=(job.get("result") or {}).get("edits"), to_review=(job.get("result") or {}).get("to_review"),
                   failed_step=job.get("step") if job["state"] == "error" else None)
+            if job["state"] == "done" and self.on_done is not None:
+                try:
+                    self.on_done(job["id"], dict(job))
+                except Exception:      # noqa: BLE001 - the episode is made; a metering failure must not undo that
+                    traceback.print_exc()
 
     def _steps(self, job: dict, d: Path) -> None:
         backend = self.asr_backend
@@ -388,6 +452,7 @@ class Importer:
             self._done_step(job, "features", {"tokens": {t: len(v) for t, v in tokens_doc["tracks"].items()},
                                               "fillers": feats["stats"].get("filler_candidates", 0)})
         audio16.clear()
+        self.gate.leave(self._key(job["id"]))      # the AI first cut waits on the network: the next import may start
         tokens_doc = read_json(tok_p)
         tokens = {tag: TrackTokens(t) for tag, t in tokens_doc["tracks"].items()}
         doc = doc_p.read_text(encoding="utf-8")
@@ -406,6 +471,8 @@ class Importer:
                 fc.language = lang
             if hasattr(fc, "on_usage"):
                 fc.on_usage = lambda u: self._log_usage(job["id"], u)     # logged per call, failures included
+            if hasattr(fc, "batch"):
+                fc.batch = bool(self.batch_on and self.batch_on())
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
             self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（AI 没接上）"))

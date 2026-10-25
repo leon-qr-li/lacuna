@@ -4,8 +4,9 @@ import { api, fmt } from "../../api";
 import { t } from "../../i18n";
 import { JobProgress } from "../loading/Loading";
 import type { JobStep } from "../loading/Loading";
-import { importApi, uploadTrack, type ImportJobView, type PickedTrack } from "./api";
-import { hostList, LANGUAGE_LABELS, LANGUAGES, useShow, type Host, type Language, type Show } from "../show/api";
+import { importApi, type ImportJobView } from "./api";
+import { add as addFiles, discard, finish, formOnScreen, openDraft, patch, swap, useDraft, type Draft, type Who } from "./draft";
+import { hostList, LANGUAGE_LABELS, LANGUAGES, useShow, type Language, type Show } from "../show/api";
 import { TrackNote } from "../show/ShowForm";
 import "./import.css";
 import { TellUs } from "../feedback/parts";
@@ -56,119 +57,28 @@ function startedAt(j: ImportJob): number | undefined {
   return j.run_started ? Date.parse(j.run_started) - (j.elapsed_s ?? 0) * 1000 : undefined;
 }
 
-/** A host's track slot, by the host's tag (lacuna_app/show.py). */
-type Who = string;
-/** One track slot: a file being copied to the app, or one it has. */
-interface Slot {
-  key: object;
-  name: string;
-  progress: number;
-  track?: PickedTrack;
-  error?: string;
-  abort?: () => void;
-}
-
 const hasFiles = (e: DragEvent | React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
 
-/** Which slot each dropped file belongs to: by a host's name in the file name ("Leon.wav"), else the
- *  free slots in order. `hosts`: [tag, name] of every slot. */
-export function assign(files: File[], free: Who[], hosts: Host[]): [Who, File][] {
-  const out = new Map<Who, File>();
-  const rest: File[] = [];
-  // longer names first, so "Anna" wins over "Ann" in "anna.wav"
-  const byName = [...hosts].filter((h) => h.name.trim().length >= 2).sort((a, b) => b.name.length - a.name.length);
-  for (const f of files) {
-    const n = f.name.toLowerCase();
-    const who = byName.find((h) => n.includes(h.name.trim().toLowerCase()) && !out.has(h.tag))?.tag;
-    if (who) out.set(who, f);
-    else rest.push(f);
-  }
-  const order = [...free, ...hosts.map((h) => h.tag).filter((w) => !free.includes(w))];
-  for (const f of rest) {
-    const who = order.find((w) => !out.has(w));
-    if (who) out.set(who, f);
-  }
-  return [...out];
-}
+const tooMany = (n: number) => t("这个节目有 {n} 位主持人，只用了前 {n} 条分轨（每个节目最多 4 位主持人，每人一条）。", { n });
 
-function NewImport({
-  nextId,
-  hosts,
-  showLanguage,
-  dropped,
-  albums,
-  album: albumAtStart,
-  onStarted,
-  onCancel,
-}: {
-  nextId: string;
-  albums: { id: string; name: string }[];
-  album: string;
-  hosts: Host[];
-  showLanguage: Language;
-  dropped: File[] | null;
-  onStarted: () => void;
-  onCancel: () => void;
-}) {
-  const [id, setId] = useState(nextId);
-  const [title, setTitle] = useState("");
-  const [language, setLanguage] = useState<Language>(showLanguage);
-  const [album, setAlbum] = useState(albumAtStart);
-  const [slots, setSlots] = useState<Record<Who, Slot | null>>(() => Object.fromEntries(hosts.map((h) => [h.tag, null])));
+/** The import form. What is in it (and the uploads) lives in draft.ts, so it survives a visit to another page. */
+function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; name: string }[]; onStarted: () => void }) {
+  const { hosts, slots, id, title, language, album } = d;
   const [over, setOver] = useState<Who | "all" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const live = useRef(slots);
-  live.current = slots;
-  const started = useRef(false);
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const many = hosts.length > 1;
   const names = hostList({ hosts } as Show);
+  useEffect(() => {
+    formOnScreen(true);
+    return () => formOnScreen(false);
+  }, []);
 
-  const letGo = (s: Slot | null) => {
-    s?.abort?.();
-    if (s?.track) void importApi.removeTrack(s.track.path).catch(() => undefined);
-  };
-  // leaving the form without importing: the app drops the copies it made
-  useEffect(
-    () => () => {
-      if (!started.current) Object.values(live.current).forEach(letGo);
-    },
-    [],
-  );
-
-  const put = (who: Who, file: File) => {
-    letGo(live.current[who]);
-    const key = {}; // this upload, so a late answer for a replaced file is ignored
-    const mine = (s: Record<Who, Slot | null>) => s[who]?.key === key;
-    const up = uploadTrack(file, (p) => setSlots((s) => (mine(s) && !s[who]!.track ? { ...s, [who]: { ...s[who]!, progress: p } } : s)));
-    setSlots((s) => ({ ...s, [who]: { key, name: file.name, progress: 0, abort: up.abort } }));
-    up.done
-      .then((track) => {
-        if (!mine(live.current)) void importApi.removeTrack(track.path).catch(() => undefined);
-        setSlots((s) => (mine(s) ? { ...s, [who]: { key, name: file.name, progress: 1, track } } : s));
-      })
-      .catch((e: Error) => {
-        if (e.name !== "AbortError") setSlots((s) => (mine(s) ? { ...s, [who]: { key, name: file.name, progress: 0, error: e.message } } : s));
-      });
-  };
   const add = (files: File[], only?: Who) => {
     setErr(null);
-    if (only) {
-      if (files[0]) put(only, files[0]);
-      return;
-    }
-    const free = hosts.map((h) => h.tag).filter((w) => !live.current[w]);
-    if (files.length > hosts.length)
-      setErr(
-        t("这个节目有 {n} 位主持人，只用了前 {n} 条分轨（每个节目最多 4 位主持人，每人一条）。", { n: hosts.length }),
-      );
-    for (const [who, f] of assign(files.slice(0, hosts.length), free, hosts)) put(who, f);
+    patch({ note: addFiles(files, only) ? tooMany(hosts.length) : null });
   };
-  useEffect(() => {
-    if (dropped?.length) add(dropped);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dropped]);
 
   const paths = hosts.map((h) => slots[h.tag]?.track?.path ?? "");
   const copying = Object.values(slots).some((s) => s && !s.track && !s.error);
@@ -177,7 +87,7 @@ function NewImport({
     setErr(null);
     try {
       await api.startImport({ id: id.trim(), title: title.trim(), tracks: paths, language, ...(album ? { album } : {}) });
-      started.current = true;
+      finish();
       onStarted();
     } catch (e) {
       setErr((e as Error).message);
@@ -239,15 +149,15 @@ function NewImport({
       <div className="import-grid">
         <label>
           {t("剧集编号")}
-          <input value={id} onChange={(e) => setId(e.target.value)} data-testid="import-id" />
+          <input value={id} onChange={(e) => patch({ id: e.target.value })} data-testid="import-id" />
         </label>
         <label>
           {t("标题（可不填）")}
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={`${id} · …`} data-testid="import-title" />
+          <input value={title} onChange={(e) => patch({ title: e.target.value })} placeholder={`${id} · …`} data-testid="import-title" />
         </label>
         <label>
           {t("这一集说的语言")}
-          <select value={language} onChange={(e) => setLanguage(e.target.value as Language)} data-testid="import-language">
+          <select value={language} onChange={(e) => patch({ language: e.target.value as Language })} data-testid="import-language">
             {LANGUAGES.map((l) => (
               <option key={l} value={l}>
                 {LANGUAGE_LABELS[l]}
@@ -258,7 +168,7 @@ function NewImport({
         {albums.length > 0 && (
           <label>
             {t("放进专辑")}
-            <select value={album} onChange={(e) => setAlbum(e.target.value)} data-testid="import-album">
+            <select value={album} onChange={(e) => patch({ album: e.target.value })} data-testid="import-album">
               <option value="">{t("不放进专辑")}</option>
               {albums.map((a) => (
                 <option key={a.id} value={a.id}>
@@ -335,7 +245,7 @@ function NewImport({
           <button
             type="button"
             className="btn btn-small btn-ghost import-swap"
-            onClick={() => setSlots((s) => ({ [hosts[0].tag]: s[hosts[1].tag], [hosts[1].tag]: s[hosts[0].tag] }))}
+            onClick={() => swap(hosts[0].tag, hosts[1].tag)}
             data-testid="import-swap"
           >
             {t("⇅ 对调 {a} 和 {b}", { a: hosts[0].name, b: hosts[1].name })}
@@ -346,12 +256,13 @@ function NewImport({
       <p className="muted small">
         {t("原始录音只读，只在 LACUNA 的服务器上处理，不交给第三方；AI 只看文字稿和停顿等数字，拿不到录音。关掉页面不影响进度。")}
       </p>
+      {d.note && <p className="error small">{d.note}</p>}
       {err && <p className="error small">{err}</p>}
       <div className="row gap8">
         <button type="button" className="btn btn-primary" disabled={paths.some((p) => !p) || !id.trim() || busy || copying} onClick={() => void start()}>
           {t("开始导入")}
         </button>
-        <button type="button" className="btn" onClick={onCancel}>
+        <button type="button" className="btn" onClick={discard} data-testid="import-cancel">
           {t("取消")}
         </button>
       </div>
@@ -378,7 +289,7 @@ function JobRow({ j, toReview, onChange }: { j: ImportJobView; toReview: number;
       {running && (
         <JobProgress
           flat
-          title={j.state === "queued" ? t("排队中，马上开始") : t("正在导入")}
+          title={j.state === "queued" ? (j.ahead ? t("排队中，前面还有 {n} 集", { n: j.ahead }) : t("排队中，马上开始")) : t("正在导入")}
           stage={j.stage}
           progress={j.progress}
           steps={jobSteps(j)}
@@ -449,8 +360,7 @@ export function ImportPanel({
 }) {
   const [jobs, setJobs] = useState<ImportJobView[] | null>(null);
   const [nextId, setNextId] = useState("EP001");
-  const [form, setForm] = useState(false);
-  const [dropped, setDropped] = useState<File[] | null>(null);
+  const d = useDraft();
   const prev = useRef<Map<string, string>>(new Map());
   const show = useShow();
   const hosts = show?.hosts ?? [];
@@ -487,8 +397,10 @@ export function ImportPanel({
     return () => window.clearInterval(t);
   }, [active, refresh]);
 
-  // files dropped anywhere else on the page (the form's own areas handle theirs); while an import
-  // runs a drop is ignored - never the browser's default, which would open the file in this tab
+  const openForm = () =>
+    openDraft({ id: nextId, title: "", language: show?.language ?? "zh", album, hosts });
+  // files dropped anywhere else on the page (the form's own areas handle theirs); never the browser's
+  // default, which would open the file in this tab. Another import running is fine: this one waits its turn.
   useEffect(() => {
     const over = (e: DragEvent) => {
       if (!hasFiles(e)) return;
@@ -499,9 +411,10 @@ export function ImportPanel({
       if (!hasFiles(e)) return;
       e.preventDefault();
       const files = Array.from(e.dataTransfer?.files ?? []);
-      if (!files.length || active) return;
-      setForm(true);
-      setDropped(files);
+      if (!files.length || !hosts.length) return;
+      openForm();
+      const left = addFiles(files);
+      if (left) patch({ note: tooMany(hosts.length) });
     };
     window.addEventListener("dragover", over);
     window.addEventListener("drop", drop);
@@ -509,34 +422,16 @@ export function ImportPanel({
       window.removeEventListener("dragover", over);
       window.removeEventListener("drop", drop);
     };
-  }, [active]);
+  });
 
   return (
     <div className="imports">
-      {!form && (
-        <button type="button" className="btn btn-primary" onClick={() => setForm(true)} disabled={active}>
+      {!d && (
+        <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
           {t("导入新一集")}
         </button>
       )}
-      {form && hosts.length > 0 && (
-        <NewImport
-          nextId={nextId}
-          hosts={hosts}
-          showLanguage={show?.language ?? "zh"}
-          dropped={dropped}
-          albums={albums}
-          album={album}
-          onCancel={() => {
-            setForm(false);
-            setDropped(null);
-          }}
-          onStarted={() => {
-            setForm(false);
-            setDropped(null);
-            void refresh();
-          }}
-        />
-      )}
+      {d && hosts.length > 0 && <NewImport d={d} albums={albums} onStarted={() => void refresh()} />}
       {!!shown.length && (
         <section aria-label={t("导入任务")}>
           <h2 className="sub">{t("导入任务")}</h2>

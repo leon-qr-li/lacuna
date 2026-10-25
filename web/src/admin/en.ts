@@ -461,8 +461,23 @@ export const en: Dict = {
 
   // hours
   "用户点「想要更多时长」的申请。每一条都由你批，不会自动加时长。": "Requests from “I need more hours”. You approve each one; hours are never added automatically.",
-  "规则还没定：beta 时长、到期以后怎么收费，等商业模式定了再填。用量要等第 5 批做完额度计量才有数字。":
-    "Rules pending: the beta length and post-beta pricing come with the business model decision. Usage numbers arrive with hour metering in batch 5.",
+  "商业模式还没定：beta 时长、到期以后怎么收费，定了再填。计量规则先按推荐设好，可以在「套餐与 beta」里改。":
+    "The business model isn't settled: beta length and pricing after it come later. Metering rules are set to the recommendation; change them under Plans & beta.",
+  一次性: "once",
+  "加了 {n} h": "+{n} h given",
+  "反馈奖励 {n} h": "+{n} h feedback",
+  计量规则已保存: "Metering rules saved",
+  用完就不能再导入: "Stop imports when hours run out",
+  "关掉以后只计数，不拦。": "Off: count only, never stop.",
+  整集都要放得下: "The whole episode must fit",
+  "关着时，只要还剩一点就能导入，最后一集可以超出一些。": "Off: an import starts while any hours are left; the last episode may go over.",
+  站长和管理员不拦: "Never stop the owner and admins",
+  "你们自己的节目照样计数。": "Your own shows are still counted.",
+  同一个月重导同样的文件不重复算: "Same files again in a month count once",
+  "删掉一集再用同样的分轨导入，只算一次。": "Deleting an episode and importing the same tracks again counts once.",
+  计量规则: "Metering rules",
+  "按每集导入成功时的长度算（最长那条分轨），导入失败不算；算在创建节目的人头上；每月 1 日（UTC）重新计算。本月全站共导入 {n} 小时。":
+    "Each episode counts its length (longest track) when its import succeeds; failed imports are free; hours go to the show's creator; the count restarts on the 1st (UTC). Imported this month, all shows: {n} h.",
   "待批": "Pending",
   "用量对比额度": "Usage vs allowance",
   "套餐与 beta": "Plans & beta",
@@ -756,4 +771,49 @@ export const en: Dict = {
   "输入「{w}」确认": "Type “{w}” to confirm",
   "加载中…": "Loading…",
   "关闭": "Close",
+  // 存储与保留 (pages/Storage.tsx)
+  保留规则已保存: "Retention rules saved",
+  "AI 设置已保存": "AI settings saved",
+  "AI 第一刀走省钱模式": "Run the AI first cut in saver mode",
+  "AI 省钱": "AI savings",
+  省钱模式开着: "Saver mode on",
+  正常速度: "Normal speed",
+  "对话已用提示缓存，学习总结和曲名查询已用更便宜的模型；这些不影响速度，一直开着。": "Chat uses prompt caching, and lesson summaries and track lookups use a cheaper model. These don't slow anything down and are always on.",
+  "AI 第一刀的费用减半，但导入要多等，通常 10–30 分钟，高峰时可能几个小时。新用户的第一印象会打折，beta 期间建议关着。": "Halves the cost of the AI first cut, but imports wait longer: usually 10–30 minutes, sometimes hours at peak. New users' first impression suffers, so keep it off during the beta.",
+  导出只留最新的: "Keep only the latest export",
+  "同一集有了新导出 7 天后，删掉旧的音频文件（导出记录保留）。": "7 days after an episode has a newer export, the older audio files are deleted (the export record stays).",
+  "原始音轨保留 12 个月": "Keep raw tracks 12 months",
+  "一集 12 个月没打开就删原始分轨，提前 30 天邮件提醒创建节目的人；逐字稿、剪辑记录、节目介绍和最新导出永久保留。beta 期间关着。":
+    "Raw tracks of an episode not opened for 12 months are deleted, with an email to the show's creator 30 days before; transcripts, edit history, show notes and the latest export are kept for good. Off during the beta.",
+  存储与保留: "Storage & retention",
+  云存储已接通: "Cloud storage connected",
+  云存储未接通: "Cloud storage not connected",
+  "{d} 天没打开的剧集，音频搬到云存储；打开时自动取回（10–30 秒）。": "Audio of episodes not opened for {d} days moves to cloud storage and comes back when opened (10–30 s).",
+  "现在放在云存储的音频：{b}": "Audio in cloud storage now: {b}",
+  "服务器还没有云存储的密钥，音频都留在服务器上。": "The server has no cloud storage key yet, so all audio stays on the server.",
+  // 容量 (pages/Capacity.tsx)
+  容量: "Capacity",
+  数据盘: "Data disk",
+  导入排队: "Import queue",
+  本月音频: "Audio this month",
+  "Access 名额": "Access seats",
+  注意: "Watch",
+  该行动: "Act now",
+  紧急: "Urgent",
+  "超过阈值立刻发邮件，每天早上的汇总里也有": "Mailed as soon as a threshold is crossed, and in the morning digest",
+  "磁盘超过 70% 或 21 天内写满": "Disk over 70% or full within 21 days",
+  "导入排队太久、本月音频接近服务器上限、内存吃紧、Access 名额快满": "Long import queue, monthly audio near the server's limit, tight memory, Access seats nearly gone",
+  // the demo's capacity lines (the real ones come from the server in the reader's language)
+  "数据盘已用 {pct}%（{used} / {total}）": "Data disk {pct}% used ({used} / {total})",
+  "，按最近 7 天的速度约 {d} 天后写满": ", full in about {d} days at the last 7 days' pace",
+  "先清回收区；不够就在 DigitalOcean 把数据盘再扩 50–100 GB（在线扩，约 15 分钟，每 100 GB 每月 +$10）。":
+    "Empty the recycle bin first; if that isn't enough, grow the data disk by 50–100 GB in DigitalOcean (online, about 15 minutes, +$10 a month per 100 GB).",
+  "导入排队：近 7 天 90% 的等待在 {p} 分钟以内，最长 {l} 分钟；现在 {w} 集在等":
+    "Import queue: 90% of waits in the last 7 days were under {p} min, the longest {l} min; {w} waiting now",
+  "本月已处理 {u} 小时音频，按现在的速度月底约 {p} 小时（这台服务器每月约 {b} 小时）":
+    "{u} h of audio processed this month, about {p} h by month end at this pace (this server handles about {b} h a month)",
+  "内存最高用到 {p}%": "Memory peaked at {p}%",
+  "账号 {n} 个，Cloudflare Access 免费名额 {s} 个": "{n} accounts; Cloudflare Access has {s} free seats",
+  "到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。":
+    "Past 50, each person costs $7 a month: before then, switch sign-in to LACUNA's own (turn off Access), or pause new invites.",
 };

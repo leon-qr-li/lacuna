@@ -26,3 +26,5 @@ Analysis and prices: `/mnt/project-files/lacuna/docs/云端部署分析_2026-10-
 **Why this and not …**: see the analysis (AWS / Fly / Hetzner / Render compared). DOCR instead of GHCR
 because the image must stay pullable if the repo goes private; pull-based updater instead of SSH push so
 the droplet needs no inbound port and no long-lived deploy key.
+
+Changed by: 2026-10-25-audio-cold-storage

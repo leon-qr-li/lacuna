@@ -15,3 +15,31 @@
 /* id · title · language on one row */
 .import-grid { grid-template-columns: 1fr 2fr minmax(8rem, auto); }
 @media (max-width: 600px) { .import-grid { grid-template-columns: 1fr; } }
+
+/* top bar while tracks upload elsewhere (UploadBadge.tsx) */
+.upload-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  white-space: nowrap;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+.upload-badge-bar {
+  width: 48px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent-mid);
+  overflow: hidden;
+}
+.upload-badge-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}

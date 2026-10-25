@@ -193,6 +193,7 @@ def test_request_shape():
     assert req["model"] == "claude-opus-5-5" and req["fallbacks"] == "default"
     assert req["betas"] == ["server-side-fallback-2026-07-01"]
     assert req["tool_choice"] == {"type": "auto"} and "thinking" not in req
+    assert req["system"][-1]["cache_control"] == {"type": "ephemeral"}     # tools + system cached per show
     tool = req["tools"][0]
     assert tool["name"] == "propose_edit" and tool["strict"] is True
     items = tool["input_schema"]["properties"]["actions"]["items"]
@@ -200,7 +201,7 @@ def test_request_shape():
     assert req["output_config"]["effort"] in ("low", "medium", "high")
     sc = fake.last_scene
     assert [u["id"] for u in sc["utterances"]] == ["u1", "u2", "u3"] and sc["pauses"][0]["id"] == "p1"
-    assert "never add" in req["system"].lower() or "can never add" in req["system"].lower()
+    assert "never add" in req["system"][0]["text"].lower() or "can never add" in req["system"][0]["text"].lower()
 
 
 # ---------------------------------------------------------------- through the API
@@ -373,3 +374,47 @@ def test_editor_status(monkeypatch):
     assert not ClaudeEditorAdapter().available
     assert "AI 组件" in editor_status(MockEditorAdapter())["editor_note"]
     assert editor_status(ClaudeEditorAdapter(client=object())) == {"editor": "claude", "editor_note": ""}
+
+
+def test_chat_model_switch_and_cache_aware_cost(monkeypatch):
+    """LACUNA_CHAT_MODEL moves the chat to Sonnet after the blind comparison, without a release; cache writes
+    cost 1.25x input, reads 0.1x, and Haiku answers without a server-side fallback."""
+    monkeypatch.delenv("LACUNA_CHAT_MODEL", raising=False)
+    assert ClaudeEditorAdapter(client=object()).model == "claude-opus-5-5"
+    monkeypatch.setenv("LACUNA_CHAT_MODEL", "claude-sonnet-5-5")
+    assert ClaudeEditorAdapter(client=object()).model == "claude-sonnet-5-5"
+    resp = SimpleNamespace(model="claude-sonnet-5-5", usage=SimpleNamespace(
+        input_tokens=1000, cache_creation_input_tokens=2000, cache_read_input_tokens=10000, output_tokens=500))
+    u = ClaudeEditorAdapter._usage(resp, 1.0)
+    assert u["input_tokens"] == 13000
+    assert u["cost_usd"] == pytest.approx((1000 * 2 + 2000 * 2.5 + 10000 * 0.2 + 500 * 10) / 1e6, abs=1e-4)
+    assert ClaudeEditorAdapter._usage(resp, 1.0, batch=True)["cost_usd"] == pytest.approx(u["cost_usd"] / 2, abs=1e-4)
+
+
+def test_blind_comparison_replays_past_requests_on_both_models(ws, tmp_path, monkeypatch):
+    """scripts/chat_blind_compare.py: the host's past requests go to both models with the history they had then;
+    A / B sides are shuffled, the key and the costs are written apart, and nothing in the episode changes."""
+    from scripts import chat_blind_compare as cbc
+    ws = Workspace(ws)
+    ep = Episode(ws, AI_EPISODE)
+    for i, said in enumerate(["这里停顿短一点", "再短一点", "前面那句剪掉"]):
+        ep.log_turn(said, 2.0 + i, f"回复 {i}")
+    before = (ws.episode_dir(AI_EPISODE) / "state.json").read_bytes()
+    seen = []
+
+    def fake_call(self, ctx):
+        seen.append((self.model, ctx.instruction, len(ctx.history)))
+        return tool_response(answer([], message=f"{self.model} 说好"), model=self.model)
+    monkeypatch.setattr(cbc, "find_api_key", lambda: ("k", "env"))
+    monkeypatch.setattr(ClaudeEditorAdapter, "_call", fake_call)
+    out = tmp_path / "blind"
+    assert cbc.main(["--workspace", str(ws.root), "--episode", AI_EPISODE, "--turns", "2", "--out", str(out)]) == 0
+    assert seen == [("claude-opus-5-5", "再短一点", 1), ("claude-sonnet-5-5", "再短一点", 1),
+                    ("claude-opus-5-5", "前面那句剪掉", 2), ("claude-sonnet-5-5", "前面那句剪掉", 2)]
+    page = (out / "blind.html").read_text(encoding="utf-8")
+    assert "前面那句剪掉" in page and "claude-" not in page.split("<h1>")[1].replace("claude-opus-5-5 说好", "").replace("claude-sonnet-5-5 说好", "")
+    key = json.loads((out / "key.json").read_text(encoding="utf-8"))
+    assert {k["A"] for k in key} | {k["B"] for k in key} == {"claude-opus-5-5", "claude-sonnet-5-5"}
+    totals = json.loads((out / "results.json").read_text(encoding="utf-8"))["totals"]
+    assert totals["claude-sonnet-5-5"]["cost_usd"] < totals["claude-opus-5-5"]["cost_usd"]
+    assert (ws.episode_dir(AI_EPISODE) / "state.json").read_bytes() == before

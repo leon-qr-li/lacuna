@@ -264,7 +264,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "剧集编号不能含 \\ / : * ? \" < > | 等字符": "An episode ID can't contain \\ / : * ? \" < > |",
     "这一集已经在导入": "This episode is already importing",
     "正在导入，先取消": "It's importing; cancel it first",
-    "{_running} 正在导入，等它做完再导入下一集": "{_running} is importing; wait for it to finish before the next one",
+    "排队中，前面还有 {n} 集": "Waiting in line: {n} ahead",
+    "上传（{n} 个文件）": "Uploads ({n} files)",
     "没装语音识别组件 sherpa-onnx（pip install -e \".[asr]\"）": "The speech recogniser sherpa-onnx isn't installed (pip install -e \".[asr]\")",
     "规则第一刀（AI 没接上）": "Rule-based first cut (AI not connected)",
     "App 在导入途中关闭了，点「继续」从断点接着做。": "The app closed during the import. Click “Resume” to pick up where it stopped.",
@@ -280,6 +281,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "规则第一刀完成": "Rule-based first cut done",
     "第 {p0} 段的回答太长被截断": "The answer for window {p0} was too long and got cut off",
     "AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟录音）": "AI first cut: {p0}/{n} windows done (each about 10 minutes of recording)",
+    "AI 第一刀（省钱模式）：排队处理中，已等 {m} 分钟，通常 10–30 分钟": "AI first cut (saver mode): queued, waited {m} min so far, usually 10–30 min",
     # ---- archived episodes (archive.py, routes/archive.py)
     "有文件正在被使用，删不掉。关掉这一集的其他页面后再试。": "Some files are in use, so it can't be deleted. Close this episode's other pages and try again.",
     "这一集没有归档": "This episode isn't archived",
@@ -690,4 +692,60 @@ EN: dict[str, str | tuple[str, str]] = {
     "去后台处理": "Handle it in the admin",
     "理由": "Reason",
     "正在维护，几分钟后再试。已经在跑的任务不受影响。": "Down for maintenance. Try again in a few minutes; jobs already running are not affected.",
+    "这个站点不计量音频时长": "This site doesn't meter audio hours",
+    "这个月的 {n} 小时音频额度已经用完了。": "This month's {n} hours of audio are used up.",
+    "免费体验的 {n} 小时已经用完了。": "The free trial's {n} hours are used up.",
+    "这一集 {need} 小时，本月额度只剩 {left} 小时。": "This episode is {need} h; only {left} h are left this month.",
+    "可以在「设置 → 套餐与用量」里申请更多时长。": "You can ask for more hours under Settings → Plan & usage.",
+    "用的是创建这个节目的人的额度，请让 TA 在「设置 → 套餐与用量」里申请更多时长。":
+        "This show uses the hours of the person who created it; ask them to request more under Settings → Plan & usage.",
+    # ---- cloud storage for old episodes' audio (cold.py)
+    "取回音频没有成功，请稍后再打开这一集。": "Couldn't bring the audio back. Please open this episode again in a moment.",
+    "正在取回这一集的音频…": "Bringing this episode's audio back…",
+    "云存储音频搬运（{n} 集）": ("Moving audio to or from cloud storage ({n} episode)", "Moving audio to or from cloud storage ({n} episodes)"),
+    # ---- raw-track retention reminder (retention.py, notice_mail.raw_tracks_reminder)
+    "{date} 删除": "deleted on {date}",
+    "还有": "And",
+    "{n} 集": ("{n} more episode", "{n} more episodes"),
+    "「{show}」有 {n} 集的原始音轨 30 天后删除": ("{show}: the raw tracks of {n} episode will be deleted in 30 days",
+                                          "{show}: the raw tracks of {n} episodes will be deleted in 30 days"),
+    "这些剧集已经将近 12 个月没有打开过了。到期后只删除原始分轨；逐字稿、剪辑记录、节目介绍和最新的导出成品都会一直保留。":
+        "These episodes haven't been opened for almost 12 months. Only the raw tracks will be deleted; transcripts, edit history, show notes and the latest export are kept for good.",
+    "想继续保留哪一集，打开它一次就行，保留期会从那天重新算 12 个月。":
+        "To keep an episode's raw tracks, just open it once: its 12 months start again from that day.",
+    "保留提醒 · NOTICE": "Retention · NOTICE",
+    # ---- capacity (capacity.py, admin_digest.py)
+    "注意": "Watch",
+    "紧急": "Urgent",
+    "该行动": "Act now",
+    "LACUNA 容量提醒（{grade}）": "LACUNA capacity alert ({grade})",
+    "同一件事一天只提醒一次，升级时马上再提醒。": "Each issue is mailed at most once a day, and again at once if it gets worse.",
+    "容量 · CAPACITY": "Capacity · CAPACITY",
+    "容量 · {name}": "Capacity · {name}",
+    "导入排队": "Import queue",
+    "数据盘": "Data disk",
+    "本月音频": "Audio this month",
+    "Access 名额": "Access seats",
+    "内存": "Memory",
+    "，约 {d} 天写满": ", full in about {d} days",
+    "90% 等待 ≤ {p} 分钟，最长 {l} 分钟": "90% wait ≤ {p} min, longest {l} min",
+    "{u} / {b} 小时（月底约 {p}）": "{u} / {b} h (about {p} by month end)",
+    "数据盘已用 {pct}%（{used} / {total}）": "Data disk {pct}% used ({used} / {total})",
+    "，按最近 7 天的速度约 {d} 天后写满": ", full in about {d} days at the last 7 days' pace",
+    "先清回收区；不够就在 DigitalOcean 把数据盘再扩 50–100 GB（在线扩，约 15 分钟，每 100 GB 每月 +$10）。":
+        "Empty the recycle bin first; if that isn't enough, grow the data disk by 50–100 GB in DigitalOcean (online, about 15 minutes, +$10 a month per 100 GB).",
+    "导入排队：近 7 天 90% 的等待在 {p} 分钟以内，最长 {l} 分钟；现在 {w} 集在等":
+        "Import queue: 90% of waits in the last 7 days were under {p} min, the longest {l} min; {w} waiting now",
+    "该把同时识别的数量从 1 调到 2，并把服务器升到 8 核 16 GB（扩容路线第 3 步，每月约 +$64）。":
+        "Time to run 2 recognitions at once and move the server to 8 cores / 16 GB (step 3 of the scaling plan, about +$64 a month).",
+    "本月已处理 {u} 小时音频，按现在的速度月底约 {p} 小时（这台服务器每月约 {b} 小时）":
+        "{u} h of audio processed this month, about {p} h by month end at this pace (this server handles about {b} h a month)",
+    "准备扩容路线的下一步（升到 8 核 16 GB 或加识别工作机）；在那之前可以先暂停发新邀请。":
+        "Prepare the next scaling step (8 cores / 16 GB, or a recognition worker); until then you can pause new invites.",
+    "内存吃紧时最容易整站掉线：先确认同时识别是 1 个，再考虑升到 16 GB 内存。":
+        "Tight memory is what takes the whole site down: check that only 1 recognition runs at a time, then consider 16 GB of memory.",
+    "内存最高用到 {p}%": "Memory peaked at {p}%",
+    "账号 {n} 个，Cloudflare Access 免费名额 {s} 个": "{n} accounts; Cloudflare Access has {s} free seats",
+    "到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。":
+        "Past 50, each person costs $7 a month: before then, switch sign-in to LACUNA's own (turn off Access), or pause new invites.",
 }

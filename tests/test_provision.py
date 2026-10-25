@@ -72,6 +72,9 @@ class FakeAPI:
                 item = body | {"id": n, "aud": "aud-xyz" if name != "apps" or not self.apps else f"aud-{n}"}
                 coll.append(item)
                 return ok(item)
+            if re.search(f"/access/{name}/[^/]+$", p) and method == "DELETE":
+                coll[:] = [x for x in coll if x["id"] != p.rsplit("/", 1)[1]]
+                return ok({})
             if re.search(f"/access/{name}/[^/]+$", p):
                 item = next(x for x in coll if x["id"] == p.rsplit("/", 1)[1])
                 item.update(body)
@@ -93,11 +96,13 @@ class FakeAPI:
             return ok({})
         if p == "/user/tokens/permission_groups":
             return ok([{"id": "pg-r2", "name": provision.PERM_R2_BUCKET},
+                       {"id": "pg-r2-read", "name": provision.PERM_R2_READ},
                        {"id": "pg-acc", "name": provision.PERM_ACCESS_GROUPS}])
         if p == "/user/tokens":
             if method == "GET":
                 return ok(self.tokens)
-            t = {"id": self.id(), "name": body["name"], "value": f"token-value-{self.n}"}
+            t = {"id": self.id(), "name": body["name"], "value": f"token-value-{self.n}",
+                 "perm": body["policies"][0]["permission_groups"][0]["id"], "resources": body["policies"][0]["resources"]}
             self.tokens.append(t)
             return ok(t)
         if p.startswith("/user/tokens/"):
@@ -124,9 +129,14 @@ class FakeAPI:
         if p == "/v2/volumes":
             if method == "GET":
                 return 200, {"volumes": self.volumes}
-            v = {"id": self.id(), "droplet_ids": []}
+            v = {"id": self.id(), "droplet_ids": [], "size_gigabytes": body["size_gigabytes"]}
             self.volumes.append(v)
             return 201, {"volume": v}
+        if re.fullmatch(r"/v2/volumes/[^/]+/actions", p):
+            v = next(v for v in self.volumes if v["id"] == p.split("/")[3])
+            assert body["type"] == "resize" and body["size_gigabytes"] > v.get("size_gigabytes", 0)
+            v["size_gigabytes"] = body["size_gigabytes"]
+            return 201, {"action": {"id": 7, "status": "in-progress"}}
         if p.startswith("/v2/volumes/"):
             return 200, {"volume": {"droplet_ids": []}}
         if p == "/v2/firewalls":
@@ -203,13 +213,11 @@ def test_apply_builds_everything_once(api, capsys):
     assert [r["email"]["email"] for r in a.groups[0]["include"]] == ["leon@example.com", "pei@example.com"]
     assert a.apps[0]["domain"] == provision.DOMAIN and len(a.apps[0]["policies"]) == 2
     assert a.apps[1]["domain"] == provision.PREVIEW_DOMAIN and a.apps[1]["policies"] == a.apps[0]["policies"]
-    # only the version path is open to everyone, on each site
-    assert a.apps[2]["domain"] == provision.ADMIN_DOMAIN
-    assert [x["domain"] for x in a.apps[3:]] == [f"{provision.DOMAIN}/api/version", f"{provision.PREVIEW_DOMAIN}/api/version"]
-    bypass = [p for p in a.policies if p["decision"] == "bypass"]
-    assert len(bypass) == 1 and bypass[0]["include"] == [{"everyone": {}}]
-    assert all(x["policies"] == [{"id": bypass[0]["id"], "precedence": 1}] for x in a.apps[3:])
-    assert a.buckets == [provision.BUCKET] and a.registry and len(a.volumes) == 1
+    # no path is open to everyone any more (the public /api/version was withdrawn)
+    assert [x["domain"] for x in a.apps] == [provision.DOMAIN, provision.PREVIEW_DOMAIN, provision.ADMIN_DOMAIN]
+    assert not [p for p in a.policies if p["decision"] == "bypass"]
+    assert a.buckets == [provision.BUCKET, provision.AUDIO_BUCKET] and a.registry and len(a.volumes) == 1
+    assert a.volumes[0]["size_gigabytes"] == 100
     assert a.firewalls[0]["inbound_rules"] == []
     assert len(a.droplets) == 1
     files = user_data(a)
@@ -217,6 +225,10 @@ def test_apply_builds_everything_once(api, capsys):
     assert "LACUNA_CLOUD=1" in env and "CF_ACCESS_AUD=aud-xyz" in env and "ANTHROPIC_API_KEY=sk-ant-secret" in env
     assert "CF_ACCESS_TEAM_DOMAIN=lacunastudio.cloudflareaccess.com" in env
     assert "LACUNA_OWNER_EMAIL=leon@example.com" in env
+    assert f"LACUNA_AUDIO_STORE=https://acc1.r2.cloudflarestorage.com/{provision.AUDIO_BUCKET}" in env
+    audio = next(t for t in a.tokens if t["name"] == provision.TOKEN_AUDIO)
+    assert audio["perm"] == "pg-r2" and list(audio["resources"]) == [f"com.cloudflare.edge.r2.bucket.acc1_default_{provision.AUDIO_BUCKET}"]
+    assert f"LACUNA_AUDIO_KEY_ID={audio['id']}" in env
     assert "TUNNEL_TOKEN=tunnel-token-secret" in files["/etc/lacuna/tunnel.env"]
     assert "RESTIC_PASSWORD=restic-pw-123456" in files["/etc/lacuna/backup.env"]
     assert "registry.digitalocean.com" in files["/etc/lacuna/image"]
@@ -249,6 +261,9 @@ def test_staging_site_has_its_own_address_door_and_data(api):
     assert env["LACUNA_PUBLIC_URL"] == f"https://{provision.PREVIEW_DOMAIN}" and env["LACUNA_STAGING"] == "1"
     assert "CF_ACCESS_API_TOKEN" not in env and "CF_ACCESS_API_TOKEN=" in real and "LACUNA_STAGING" not in real
     assert "LACUNA_ADMIN_HOST" not in env and "CF_ADMIN_ACCESS_AUD" not in env     # no admin on staging
+    # staging reads old episodes' audio from cloud storage with its own read-only token, and never moves any
+    read = next(t for t in a.tokens if t["name"] == provision.TOKEN_AUDIO_READ)
+    assert read["perm"] == "pg-r2-read" and env["LACUNA_AUDIO_KEY_ID"] == read["id"]
     assert files["/etc/lacuna/preview-image"].strip().endswith("/lacuna:preview")
     assert "/etc/systemd/system/lacuna-update-preview.timer" in files
     unit = files["/etc/systemd/system/lacuna-update-preview.service"]
@@ -348,7 +363,7 @@ def test_recreate_replaces_only_the_server_and_rotates_its_tokens(api):
     run("recreate")
     assert len(a.droplets) == 1 and a.droplets[0]["id"] != first
     assert len(a.volumes) == 1 and len(a.tunnels) == 1
-    assert len(a.tokens) == 2 and not old_tokens & {t["id"] for t in a.tokens}
+    assert len(a.tokens) == 4 and not old_tokens & {t["id"] for t in a.tokens}
 
 
 def test_missing_secret_is_named(api, monkeypatch):
@@ -358,25 +373,87 @@ def test_missing_secret_is_named(api, monkeypatch):
         run("apply")
 
 
-def test_version_door_mode_writes_only_what_is_missing(api, monkeypatch):
+def test_apply_removes_the_old_public_version_address(api, monkeypatch):
+    """decision 2026-10-25-withdraw-public-version: the two path-scoped Access apps and their bypass policy go;
+    close-version-door does only that"""
     a, run = api
+    bypass = {"id": "polv", "name": provision.VERSION_POLICY, "decision": "bypass", "include": [{"everyone": {}}]}
+    olds = [{"id": f"v{i}", "name": f"{n} version", "domain": f"{d}/api/version", "policies": [{"id": "polv"}]}
+            for i, (n, d) in enumerate(((provision.ACCESS_APP, provision.DOMAIN), (provision.PREVIEW_APP, provision.PREVIEW_DOMAIN)))]
+    a.policies.append(dict(bypass))
+    a.apps.extend(dict(o) for o in olds)
+    run("plan")
+    assert len(a.apps) == 2 and a.writes == []                     # plan only says so
+    run("apply")
+    assert not [x for x in a.apps if x["domain"].endswith("/api/version")]
+    assert not [p for p in a.policies if p["name"] == provision.VERSION_POLICY]
+    # the mode that does only this, patient with Cloudflare's API
+    a2 = FakeAPI()
+    a2.policies.append(dict(bypass))
+    a2.apps.extend(dict(o) for o in olds)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
-    monkeypatch.setattr(provision.Http, "send", lambda self, m, p, b=None: a.cf(m, p, b))
-    monkeypatch.setattr(provision.time, "sleep", lambda s: None)
-    assert provision.main(["version-door"]) == 0
-    assert [x["domain"] for x in a.apps] == [f"{provision.DOMAIN}/api/version", f"{provision.PREVIEW_DOMAIN}/api/version"]
-    assert [p["name"] for p in a.policies] == [provision.VERSION_POLICY]
-    writes = len(a.writes)
-    assert provision.main(["version-door"]) == 0 and len(a.writes) == writes      # nothing to do the second time
-    assert not a.droplets and not a.tunnels                                          # touches nothing else
+    monkeypatch.setattr(provision.Http, "send", lambda self, m, p, b=None: a2.cf(m, p, b))
+    assert provision.main(["close-version-door"]) == 0
+    assert a2.apps == [] and a2.policies == [] and not a2.droplets and not a2.tunnels
 
 
-def test_ci_wait_live_reads_the_public_version_without_a_token(monkeypatch):
+def test_an_older_smaller_volume_is_grown_in_place(api):
+    a, run = api
+    a.volumes.append({"id": "vol1", "droplet_ids": [], "size_gigabytes": 50})
+    run("plan")
+    assert a.volumes[0]["size_gigabytes"] == 50
+    run("apply")
+    assert a.volumes == [{"id": "vol1", "droplet_ids": [], "size_gigabytes": 100}]
+    assert "resize2fs" in (Path(__file__).resolve().parent.parent / "deploy" / "host" / "lacuna-bootstrap").read_text()
+
+
+def test_deploy_token_is_printed_only_sealed(api, monkeypatch, capsys):
+    a, _ = api
+    tokens = []
+
+    def cfh(method, path, body=None):
+        p = path.split("?")[0]
+        if p == "/zones":
+            return 200, {"success": True, "result": [{"id": "z", "account": {"id": "acc"}}]}
+        if p.endswith("/service_tokens") and method == "GET":
+            return 200, {"success": True, "result": list(tokens)}
+        if p.endswith("/service_tokens") and method == "POST":
+            assert body["name"] == provision.DEPLOY_TOKEN
+            t = {"id": "st1", "name": body["name"], "client_id": "cid-1.access"}
+            tokens.append(t)
+            return 200, {"success": True, "result": t | {"client_secret": "first-secret"}}
+        if p.endswith("/st1/rotate"):
+            return 200, {"success": True, "result": {"client_id": "cid-1.access", "client_secret": "second-secret"}}
+        raise AssertionError(f"{method} {path}")
+
+    monkeypatch.setenv("GH_SECRETS_KEY", "pubkey")
+    monkeypatch.setenv("GH_SECRETS_KEY_ID", "kid1")
+    cf = provision.Cloudflare(FakeHttp(cfh))
+    sealer = lambda key, v: f"sealed[{key}]({v[::-1]})"          # noqa: E731 - stands in for the sealed box
+    out = provision.deploy_token_sealed(cf, sealer)
+    assert out["CF_DEPLOY_CLIENT_SECRET"] == sealer("pubkey", "first-secret")
+    assert provision.deploy_token_sealed(cf, sealer)["CF_DEPLOY_CLIENT_SECRET"] == sealer("pubkey", "second-secret")
+    assert len(tokens) == 1                                       # made once, then rotated
+    printed = capsys.readouterr().out
+    assert "first-secret" not in printed and "second-secret" not in printed and "cid-1.access" not in printed
+    monkeypatch.delenv("GH_SECRETS_KEY")
+    with pytest.raises(provision.ProvisionError, match="GH_SECRETS_KEY"):
+        provision.deploy_token_sealed(cf, sealer)
+
+
+def _ci():
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "deploy"))
     import ci
     sys.path.pop(0)
+    return ci
+
+
+def test_ci_wait_live_reads_health_through_access_with_the_deploy_token(monkeypatch):
+    ci = _ci()
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
-    tokens = [{"id": "old1", "name": "lacuna-deploy-check-1"}, {"id": "keep", "name": "someone-else"}]
+    monkeypatch.setenv("CF_DEPLOY_CLIENT_ID", "cid.access")
+    monkeypatch.setenv("CF_DEPLOY_CLIENT_SECRET", "sec")
+    tokens = [{"id": "old1", "name": "lacuna-deploy-check-1"}, {"id": "keep", "name": provision.DEPLOY_TOKEN}]
 
     def cfh(method, path, body=None):
         p = path.split("?")[0]
@@ -387,18 +464,19 @@ def test_ci_wait_live_reads_the_public_version_without_a_token(monkeypatch):
         if "/service_tokens/" in p and method == "DELETE":
             tokens[:] = [t for t in tokens if t["id"] != p.rsplit("/", 1)[1]]
             return 200, {"success": True, "result": {}}
-        raise AssertionError(f"{method} {path}")       # never creates a token
+        raise AssertionError(f"{method} {path}")       # never creates a token when the secret is there
 
     monkeypatch.setattr(ci, "cf", lambda: provision.Cloudflare(FakeHttp(cfh)))
     monkeypatch.setattr(ci.time, "sleep", lambda s: None)
-    answers = iter([(302, {}), (200, {"version": "old"}), (200, {"version": "abc"})])
+    answers = iter([(403, {}), (200, {"version": "old"}), (200, {"version": "abc"})])
     seen = []
     monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append((url, h)), next(answers))[1])
     ci.wait_live("abc")
-    assert seen[-1] == (f"https://{provision.DOMAIN}/api/version", {})
-    assert tokens == [{"id": "keep", "name": "someone-else"}]           # the old check's leftovers deleted
+    assert seen[-1] == (f"https://{provision.DOMAIN}/api/health",
+                        {"CF-Access-Client-Id": "cid.access", "CF-Access-Client-Secret": "sec"})
+    assert tokens == [{"id": "keep", "name": provision.DEPLOY_TOKEN}]     # leftovers deleted, the long-lived one kept
     answers = iter([(200, {"version": "abc"})])
-    assert ci.main(["wait-live", "abc", "preview"]) == 0 and seen[-1][0] == f"https://{provision.PREVIEW_DOMAIN}/api/version"
+    assert ci.main(["wait-live", "abc", "preview"]) == 0 and seen[-1][0] == f"https://{provision.PREVIEW_DOMAIN}/api/health"
 
     monkeypatch.setattr(ci, "_get", lambda url, h: (200, {"version": "old"}))
     with pytest.raises(provision.ProvisionError, match="not live"):
@@ -411,6 +489,37 @@ def test_ci_wait_live_reads_the_public_version_without_a_token(monkeypatch):
     monkeypatch.setattr(provision.Http, "RETRY_WAITS", ())
     monkeypatch.setattr(ci, "_get", lambda url, h: (200, {"version": "abc"}))
     ci.wait_live("abc")
+
+
+def test_ci_wait_live_without_the_secret_uses_a_token_for_this_run(monkeypatch):
+    ci = _ci()
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
+    monkeypatch.delenv("CF_DEPLOY_CLIENT_ID", raising=False)
+    monkeypatch.delenv("CF_DEPLOY_CLIENT_SECRET", raising=False)
+    monkeypatch.setenv("GITHUB_RUN_ID", "42")
+    tokens = []
+
+    def cfh(method, path, body=None):
+        p = path.split("?")[0]
+        if p == "/zones":
+            return 200, {"success": True, "result": [{"id": "z", "account": {"id": "acc"}}]}
+        if p.endswith("/service_tokens") and method == "POST":
+            t = {"id": "run", "name": body["name"], "client_id": "c.access"}
+            tokens.append(t)
+            return 200, {"success": True, "result": t | {"client_secret": "s"}}
+        if p.endswith("/service_tokens"):
+            return 200, {"success": True, "result": list(tokens)}
+        if "/service_tokens/" in p and method == "DELETE":
+            tokens[:] = [t for t in tokens if t["id"] != p.rsplit("/", 1)[1]]
+            return 200, {"success": True, "result": {}}
+        raise AssertionError(f"{method} {path}")
+
+    monkeypatch.setattr(ci, "cf", lambda: provision.Cloudflare(FakeHttp(cfh)))
+    seen = []
+    monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append(h), (200, {"version": "abc"}))[1])
+    ci.wait_live("abc")
+    assert seen == [{"CF-Access-Client-Id": "c.access", "CF-Access-Client-Secret": "s"}]
+    assert tokens == []                                   # this run's token is deleted afterwards
 
 
 def test_server_size_falls_back_when_the_region_stops_offering_it(api):

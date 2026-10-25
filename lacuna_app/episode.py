@@ -38,7 +38,7 @@ from lacuna_core.edl import Op
 from lacuna_core.refine import snap_cut
 
 from .words import join_words
-from . import analysis, declip, room_tone, show
+from . import analysis, cold, declip, room_tone, show
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
@@ -304,11 +304,15 @@ class Episode:
     def missing_sources(self) -> list[dict]:
         """Recordings the episode plays that are not on this machine (an episode moved from the
         desktop kept its raw tracks' desktop paths): every listen, review clip, music mix and export
-        fails until they are uploaded again (`relink`, routes/sources.py)."""
+        fails until they are uploaded again (`relink`, routes/sources.py). Files in cloud storage (cold.py)
+        are not missing: they come back when the episode is opened."""
         tracks = {c.media_id: t.name for t in self.base.tracks for c in t.clips}
+        away = [m for m in self.media.values() if not Path(m.path).is_file()]
+        if away and (stored := cold.cold_paths(self.dir)):
+            away = [m for m in away if str(Path(m.path).resolve()) not in stored]
         return [{"media_id": m.media_id, "track": tracks.get(m.media_id, ""),
                  "file": PureWindowsPath(m.path).name, "duration": round(m.frames / m.sample_rate, 1)}
-                for m in self.media.values() if not Path(m.path).is_file()]
+                for m in away]
 
     def relink(self, media_id: str, path: Path) -> None:
         """Point a recording at its re-uploaded copy (same bytes: the media id is their sha256)."""

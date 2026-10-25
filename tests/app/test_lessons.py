@@ -138,7 +138,7 @@ def test_rule_writer_request_and_answer():
     # forced tool_choice is refused (400) by the current models: auto + the prompt names the tool (V6)
     assert all(k["tool_choice"] == {"type": "auto"} for k in seen)
     assert "calling the submit_rule tool" in seen[0]["system"]
-    assert all("sonnet" in k["model"] and k["tools"][0]["strict"] for k in seen)
+    assert all(k["model"] == "claude-haiku-5-5" and k["tools"][0]["strict"] for k in seen)
     assert "Never store his words as they are" in seen[0]["system"]
     assert json.loads(seen[0]["messages"][0]["content"])["said"] == "Pei 的嗯别删"
 

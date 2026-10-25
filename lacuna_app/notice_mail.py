@@ -150,3 +150,16 @@ def collab_declined(email: str, show: str) -> dict:
                   tr("你邀请 {email} 加入「{show}」的申请这次没有通过，没有发出邀请。", email=email, show=show),
                   [(tr("邮箱"), email), (tr("节目"), show or "—")], None, None,
                   tr("对方以后也可以自己在 LACUNA 登录页申请试用。"), tr("搭档申请 · REQUEST"))
+
+
+def raw_tracks_reminder(show: str, episodes: list[dict], origin: str | None) -> dict:
+    """To a show's creator, 30 days before raw tracks are deleted (retention.py, decision 2026-10-25-audio-retention).
+    `episodes`: {"title", "on" (epoch seconds)}."""
+    import time as _time
+    rows = [(e["title"], tr("{date} 删除", date=_time.strftime("%Y-%m-%d", _time.gmtime(e["on"])))) for e in episodes[:20]]
+    if len(episodes) > 20:
+        rows.append((tr("还有"), tr("{n} 集", n=len(episodes) - 20)))
+    return render(tr("「{show}」有 {n} 集的原始音轨 30 天后删除", show=show or "LACUNA", n=len(episodes)),
+                  tr("这些剧集已经将近 12 个月没有打开过了。到期后只删除原始分轨；逐字稿、剪辑记录、节目介绍和最新的导出成品都会一直保留。"),
+                  rows, tr("打开 LACUNA") if origin else None, origin,
+                  tr("想继续保留哪一集，打开它一次就行，保留期会从那天重新算 12 个月。"), tr("保留提醒 · NOTICE"))

@@ -37,7 +37,7 @@ def test_trial_cannot_invite_and_plan_page(tmp_path):
     assert r.status_code == 403 and "不能邀请协作者" in r.json()["detail"]
     p = t.get("/api/plan").json()
     assert p["plan"] == "trial" and p["limits"]["hours"] == 1 and p["limits"]["hours_once"] is True
-    assert p["shows"] == 1 and p["hours_used"] is None
+    assert p["shows"] == 1 and p["hours_used"] == 0 and p["hours"]["allowance"] == 1 and p["hours"]["once"] is True
     assert [x["id"] for x in p["plans"]] == ["trial", "basic", "pro"]
     assert leon.get("/api/plan").json() | {} and leon.get("/api/plan").json()["plan"] == "pro"   # the owner
     assert leon.get("/api/plan").json()["free"] is True

@@ -1,6 +1,7 @@
 // 演示数据 (decision 2026-10-24-admin-site): made-up people and numbers that show what every page looks like with a
 // few hundred users. Nothing here is real and nothing is ever saved (ui.tsx act() only shows a toast). The
 // mock content is data, not interface text, so its Chinese lines carry `i18n-ignore`.
+import { t } from "./i18n";
 import type {
   AccessData,
   AiData,
@@ -179,16 +180,31 @@ function overview(): Overview {
   const spentCum = Array.from({ length: 24 }, (_, i) => Math.round((i + 1) * 7.6 * 100) / 100);
   return {
     todo: { fb: 6, hours: 3, trial: 4, collab: 1 },
-    alerts: [{ level: "warn", kind: "disk", pct: 0.72, used: 36e9, total: 50e9 }],
+    alerts: [
+      {
+        level: "warn",
+        kind: "capacity",
+        measure: "disk",
+        line: t("数据盘已用 {pct}%（{used} / {total}）", { pct: 72, used: "72 GB", total: "100 GB" }) + t("，按最近 7 天的速度约 {d} 天后写满", { d: 19 }),
+        advice: t("先清回收区；不够就在 DigitalOcean 把数据盘再扩 50–100 GB（在线扩，约 15 分钟，每 100 GB 每月 +$10）。"),
+      },
+    ],
     kpi: {
       accounts: { value: 186, delta: 12, spark: [120, 131, 140, 151, 160, 168, 174, 186] },
       wau: { value: 97, delta: 6, spark: [61, 66, 72, 78, 84, 88, 91, 97] },
       exports: { value: 142, delta: -8, spark: [96, 104, 121, 133, 128, 141, 150, 142] },
       ai: { value: 182, forecast: 234, budget: 300, spark: spentCum },
-      disk: { value: 0.72, used: 36e9, total: 50e9 },
+      disk: { value: 0.72, used: 72e9, total: 100e9 },
     },
     wau: [61, 66, 72, 78, 84, 88, 91, 97],
     ai: { spent: 182.4, forecast: 234, days: 31, cumulative: spentCum, budget: 300 },
+    capacity: [
+      { key: "disk", level: "warn", line: t("数据盘已用 {pct}%（{used} / {total}）", { pct: 72, used: "72 GB", total: "100 GB" }) + t("，按最近 7 天的速度约 {d} 天后写满", { d: 19 }), advice: t("先清回收区；不够就在 DigitalOcean 把数据盘再扩 50–100 GB（在线扩，约 15 分钟，每 100 GB 每月 +$10）。") },
+      { key: "queue", level: "ok", line: t("导入排队：近 7 天 90% 的等待在 {p} 分钟以内，最长 {l} 分钟；现在 {w} 集在等", { p: 4.5, l: 12, w: 0 }), advice: "" },
+      { key: "hours", level: "ok", line: t("本月已处理 {u} 小时音频，按现在的速度月底约 {p} 小时（这台服务器每月约 {b} 小时）", { u: 96, p: 124, b: 400 }), advice: "" },
+      { key: "memory", level: "ok", line: t("内存最高用到 {p}%", { p: 61 }), advice: "" },
+      { key: "people", level: "warn", line: t("账号 {n} 个，Cloudflare Access 免费名额 {s} 个", { n: 41, s: 50 }), advice: t("到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。") },
+    ],
     activity: [
       { ts: t0 - 6 * 60, ev: "export.start", who: "chen.podcast@gmail.com", name: "chen", show: SHOWS[0], ep: "EP12" },
       { ts: t0 - 22 * 60, ev: "import.done", who: "huang.y@qq.com", name: "huang", show: SHOWS[1], ep: "EP7" },
@@ -303,6 +319,8 @@ function hours(): HoursData {
       { id: "pro", name: "", hours: 12, hours_once: false, shows: 5, collaborators: null },
     ],
     beta_end: null,
+    quota: { enforce: true, must_fit: false, staff_exempt: true, repeat_free: true },
+    month_hours: 31.5,
     willing: [
       { email: us[2].email, name: us[2].name, at: t0 - 3 * H, reason: "这个月录了两期特别节目，每期两个多小时。", where: "hours" }, // i18n-ignore
       { email: us[8].email, name: us[8].name, at: t0 - 2 * D, reason: "", where: "hours" },
@@ -438,6 +456,8 @@ function system(): SystemData {
     version: "a1b2c3d4e5",
     alerts: overview().alerts,
     cpus: 4,
+    storage: { retention: { raw_tracks: false, old_exports: true }, cold: { on: true, moving: true, bytes: 41e9, after_days: 14 } },
+    ai: { first_cut_batch: false },
   };
 }
 

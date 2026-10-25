@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { t } from "../../i18n";
+import { joinList, t } from "../../i18n";
 import { plansApi, type MyPlan, type PlanLimits } from "./api";
 import { MoreHours } from "./MoreHours";
 
@@ -27,7 +27,7 @@ export function PlanCard() {
         </div>
         {p.free && <p className="muted small">{t("你的套餐由 LACUNA 免费提供。")}</p>}
         <div className="plan-meters">
-          <Meter label={t("音频时长")} value={p.hours_used === null ? "—" : String(p.hours_used)} of={hours(lim)} note={p.hours_used === null ? t("计时稍后开放") : null} />
+          <HoursMeter p={p} lim={lim} />
           <Meter label={t("节目数")} value={String(p.shows)} of={t("最多 {n} 个", { n: many(lim.shows) })} testid="plan-shows" />
         </div>
         <MoreHours />
@@ -86,6 +86,39 @@ export function PlanCard() {
         <p className="muted small">{t("想换套餐，请回复邀请邮件联系我们。")}</p>
       </section>
     </>
+  );
+}
+
+const num = (x: number) => String(Math.round(x * 10) / 10);
+
+/** Audio hours this month: used of the allowance, a bar, and where extra hours came from. */
+function HoursMeter({ p, lim }: { p: MyPlan; lim: PlanLimits }) {
+  const h = p.hours;
+  if (!h) return <Meter label={t("音频时长")} value="—" of={hours(lim)} />;
+  const of = h.allowance === null ? t("不限") : h.once ? t("共 {n} 小时（一次性）", { n: num(h.allowance) }) : t("本月共 {n} 小时", { n: num(h.allowance) });
+  const pct = h.allowance ? Math.min(100, (h.used / h.allowance) * 100) : 0;
+  const extra = [
+    h.bonus.granted ? t("LACUNA 加给你 {n} 小时", { n: num(h.bonus.granted) }) : null,
+    h.bonus.feedback ? t("反馈被采纳奖励 {n} 小时", { n: num(h.bonus.feedback) }) : null,
+  ].filter((x): x is string => !!x);
+  const out = h.left !== null && h.left <= 0;
+  return (
+    <div className="plan-meter plan-hours" data-testid="plan-hours">
+      <span className="muted small">{t("音频时长")}</span>
+      <strong>{t("已用 {n} 小时", { n: num(h.used) })}</strong>
+      <span className="muted small">{of}</span>
+      {h.allowance !== null && (
+        <span className={`plan-bar${out ? " plan-bar-out" : pct >= 80 ? " plan-bar-near" : ""}`} aria-hidden>
+          <span style={{ width: `${Math.max(pct, h.used ? 2 : 0)}%` }} />
+        </span>
+      )}
+      {extra.length > 0 && <em className="small">{t("含：{list}", { list: joinList(extra) })}</em>}
+      {out ? (
+        <em className="small plan-out">{h.once ? t("免费体验的时长用完了。") : t("这个月的时长用完了，下个月 1 日恢复。")}</em>
+      ) : (
+        !h.once && h.allowance !== null && <span className="muted small">{t("每月 1 日重新计算，按每集导入时的长度算，导入失败不算。")}</span>
+      )}
+    </div>
   );
 }
 

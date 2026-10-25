@@ -19,6 +19,7 @@ import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
 import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
+import { openEpisode, type Restoring } from "./features/cold/restore";
 import { Home } from "./features/episodes/Home";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
 import { Presence } from "./features/coedit/Presence";
@@ -121,8 +122,17 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [sideTab, setSideTab] = useState<SideTab>(readSideTab);
   useEffect(() => writeSideTab(sideTab), [sideTab]);
 
+  // an episode not opened for a while: its audio comes back from cloud storage first (features/cold)
+  const [restoring, setRestoring] = useState<Restoring | null>(null);
   useEffect(() => {
-    api.episode(id).then(setEp).catch((e) => setErr(String(e.message ?? e)));
+    let alive = true;
+    openEpisode(() => api.episode(id), setRestoring, () => alive)
+      .then((e) => alive && setEp(e))
+      .catch((e) => alive && setErr(String(e.message ?? e)))
+      .finally(() => alive && setRestoring(null));
+    return () => {
+      alive = false;
+    };
   }, [id]);
 
   // new edit version -> swap the stream, keeping the (server-mapped) position
@@ -291,7 +301,14 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       {/* one audio element shared by both modes: the playhead is common */}
       <audio ref={raw.ref} preload="auto" data-testid="main-audio" />
       {!ep ? (
-        <PageLoading label={t("正在打开这一集…")} shape="episode" />
+        restoring ? (
+          <div className="cold-restoring" data-testid="audio-restoring">
+            <PageLoading label={t("正在取回这一集的音频… {p}%", { p: Math.round(restoring.progress * 100) })} shape="episode" />
+            <p className="muted pad">{t("这一集很久没打开了，音频放在云端，取回来大约要 10–30 秒。")}</p>
+          </div>
+        ) : (
+          <PageLoading label={t("正在打开这一集…")} shape="episode" />
+        )
       ) : (
         <>
           {/* Full Listen stays mounted in review mode so the conversation is kept */}

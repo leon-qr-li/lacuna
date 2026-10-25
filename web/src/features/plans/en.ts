@@ -9,7 +9,6 @@ export const en: Dict = {
   "我的套餐": "My plan",
   "你的套餐由 LACUNA 免费提供。": "Your plan is on the house from LACUNA.",
   "音频时长": "Audio",
-  "计时稍后开放": "Counting starts soon",
   "节目数": "Shows",
   "最多 {n} 个": "up to {n}",
   "每个节目的协作者": "Collaborators per show",
@@ -33,4 +32,14 @@ export const en: Dict = {
   "发出申请": "Send request",
   "每一条都有人亲自看，结果会发邮件告诉你。": "Every request is read by a person; you'll get an email with the answer.",
   "{n} 小时": "{n} h",
+  "共 {n} 小时（一次性）": "{n} h in all (once)",
+  "本月共 {n} 小时": "{n} h this month",
+  "LACUNA 加给你 {n} 小时": "{n} h added by LACUNA",
+  "反馈被采纳奖励 {n} 小时": "{n} h for adopted feedback",
+  "已用 {n} 小时": "{n} h used",
+  "含：{list}": "Includes: {list}",
+  "免费体验的时长用完了。": "The free trial's hours are used up.",
+  "这个月的时长用完了，下个月 1 日恢复。": "This month's hours are used up; they come back on the 1st.",
+  "每月 1 日重新计算，按每集导入时的长度算，导入失败不算。":
+    "Counted from the 1st of each month, by each episode's length when imported. Failed imports don't count.",
 };
