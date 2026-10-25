@@ -13,7 +13,7 @@ Version 2026-10-25 · Effective 2026-10-25
 
 ## 1. Who is responsible for your data
 
-LACUNA is operated by [TBD: operating entity name and place of registration] ("we", "us"), the controller of your personal data (the party that decides how it is processed). Contact details are in section 13.
+LACUNA is operated by [TBD: operating entity name], a company registered in British Columbia, Canada ("we", "us"), the controller of your personal data (the party that decides how it is processed). Contact details are in section 13.
 
 ## 2. What we collect
 
@@ -67,7 +67,7 @@ To get the list of our providers by name, contact us as in section 13.
 
 ## 7. Where your data is stored
 
-Your data is stored in the **United States**: servers in San Francisco, cloud storage and backups in Western North America, all encrypted at rest. If you use the Service from outside the US (for example Europe, the UK, Canada or Asia), your data is transferred to and processed in the US. For data from the EEA and the UK we use [TBD: Standard Contractual Clauses or another lawful transfer safeguard].
+Your data is stored in the **United States**: servers in San Francisco, cloud storage and backups in Western North America, all encrypted at rest. If you use the Service from outside the US (for example Europe, the UK, Canada or Asia), your data is transferred to and processed in the US. We operate from Canada and store data in the US, so it may be accessible to US courts, law-enforcement and national-security authorities under US law. For data from the EEA and the UK we use [TBD: Standard Contractual Clauses or another lawful transfer safeguard].
 
 ## 8. How long we keep it
 
