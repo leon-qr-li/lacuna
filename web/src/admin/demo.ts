@@ -440,6 +440,7 @@ function system(): SystemData {
     version: "a1b2c3d4e5",
     alerts: overview().alerts,
     cpus: 4,
+    storage: { retention: { raw_tracks: false, old_exports: true }, cold: { on: true, moving: true, bytes: 41e9, after_days: 14 } },
   };
 }
 

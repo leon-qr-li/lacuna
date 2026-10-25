@@ -771,4 +771,17 @@ export const en: Dict = {
   "输入「{w}」确认": "Type “{w}” to confirm",
   "加载中…": "Loading…",
   "关闭": "Close",
+  // 存储与保留 (pages/Storage.tsx)
+  保留规则已保存: "Retention rules saved",
+  导出只留最新的: "Keep only the latest export",
+  "同一集有了新导出 7 天后，删掉旧的音频文件（导出记录保留）。": "7 days after an episode has a newer export, the older audio files are deleted (the export record stays).",
+  "原始音轨保留 12 个月": "Keep raw tracks 12 months",
+  "一集 12 个月没打开就删原始分轨，提前 30 天邮件提醒创建节目的人；逐字稿、剪辑记录、节目介绍和最新导出永久保留。beta 期间关着。":
+    "Raw tracks of an episode not opened for 12 months are deleted, with an email to the show's creator 30 days before; transcripts, edit history, show notes and the latest export are kept for good. Off during the beta.",
+  存储与保留: "Storage & retention",
+  云存储已接通: "Cloud storage connected",
+  云存储未接通: "Cloud storage not connected",
+  "{d} 天没打开的剧集，音频搬到云存储；打开时自动取回（10–30 秒）。": "Audio of episodes not opened for {d} days moves to cloud storage and comes back when opened (10–30 s).",
+  "现在放在云存储的音频：{b}": "Audio in cloud storage now: {b}",
+  "服务器还没有云存储的密钥，音频都留在服务器上。": "The server has no cloud storage key yet, so all audio stays on the server.",
 };

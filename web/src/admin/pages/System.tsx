@@ -6,8 +6,9 @@ import { PART } from "../labels";
 import type { SystemData } from "../types";
 import { Card, Empty, HBar, LineChart, Loading, PageHead, Pill, ago, duration, fmtBytes, fmtPct, fmtTime, useData } from "../ui";
 import { Alerts } from "./Home";
+import { StorageCard } from "./Storage";
 
-export function SystemPage({ go }: PageProps) {
+export function SystemPage({ go, me }: PageProps) {
   const { data: s, error } = useData<SystemData>("/api/admin/system");
   if (!s)
     return (
@@ -101,6 +102,11 @@ export function SystemPage({ go }: PageProps) {
           <p className="a-muted small">{t("超过 70% 发告警邮件。先清回收区最快。")}</p>
         </Card>
       </div>
+      {s.storage && (
+        <div className="a-mb">
+          <StorageCard data={s.storage} owner={me.role === "owner"} />
+        </div>
+      )}
       <div className="a-grid g2 a-mb">
         <Card title="CPU" sub={t("每 5 分钟一个点")}>
           {samples.length > 1 ? (

@@ -702,4 +702,15 @@ EN: dict[str, str | tuple[str, str]] = {
     "取回音频没有成功，请稍后再打开这一集。": "Couldn't bring the audio back. Please open this episode again in a moment.",
     "正在取回这一集的音频…": "Bringing this episode's audio back…",
     "云存储音频搬运（{n} 集）": ("Moving audio to or from cloud storage ({n} episode)", "Moving audio to or from cloud storage ({n} episodes)"),
+    # ---- raw-track retention reminder (retention.py, notice_mail.raw_tracks_reminder)
+    "{date} 删除": "deleted on {date}",
+    "还有": "And",
+    "{n} 集": ("{n} more episode", "{n} more episodes"),
+    "「{show}」有 {n} 集的原始音轨 30 天后删除": ("{show}: the raw tracks of {n} episode will be deleted in 30 days",
+                                          "{show}: the raw tracks of {n} episodes will be deleted in 30 days"),
+    "这些剧集已经将近 12 个月没有打开过了。到期后只删除原始分轨；逐字稿、剪辑记录、节目介绍和最新的导出成品都会一直保留。":
+        "These episodes haven't been opened for almost 12 months. Only the raw tracks will be deleted; transcripts, edit history, show notes and the latest export are kept for good.",
+    "想继续保留哪一集，打开它一次就行，保留期会从那天重新算 12 个月。":
+        "To keep an episode's raw tracks, just open it once: its 12 months start again from that day.",
+    "保留提醒 · NOTICE": "Retention · NOTICE",
 }

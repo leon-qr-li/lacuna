@@ -316,6 +316,12 @@ export interface SystemData {
   version: string;
   alerts: Alert[];
   cpus: number;
+  storage?: StorageData;
+}
+
+export interface StorageData {
+  retention: { raw_tracks: boolean; old_exports: boolean };
+  cold: { on: boolean; moving: boolean; bytes: number; after_days: number };
 }
 
 export interface SettingsData {

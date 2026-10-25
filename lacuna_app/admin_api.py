@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import cloud, notice_mail, plans, system_terms
+from . import cloud, notice_mail, plans, retention, system_terms
 from .admin_metrics import AdminData
 from .admin_store import AdminStore
 from .appinfo import current_version
@@ -145,6 +145,11 @@ class NumberBody(BaseModel):
 
 class BetaBody(BaseModel):
     beta_end: str | None = Field(None, max_length=10)
+
+
+class RetentionBody(BaseModel):
+    raw_tracks: bool | None = None
+    old_exports: bool | None = None
 
 
 class QuotaBody(BaseModel):
@@ -892,7 +897,24 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         return {"disk": data.disk(), "parts": sizes["parts"], "sizes_at": sizes["at"], "backup": data.backup(),
                 "running": data.running(), "samples": data.samples, "errors": store.errors(auth.now() - 86400),
                 "started": data.started, "version": current_version(), "alerts": data.alerts(),
-                "cpus": os.cpu_count()}
+                "cpus": os.cpu_count(), "storage": storage_view()}
+
+    def storage_view() -> dict:
+        """存储与保留: cloud storage for old episodes' audio (cold.py) and how long audio is kept (retention.py)."""
+        cold = getattr(main_app.state, "cold", None)
+        return {"retention": retention.settings(auth.db),
+                "cold": {"on": bool(cold is not None and cold.on), "moving": bool(cold is not None and cold.freezing),
+                         "bytes": cold.stored_bytes([ctx.ws.root]) if cold is not None and cold.on else 0,
+                         "after_days": round(cold.after_s / 86400) if cold is not None else 14}}
+
+    @app.put("/api/admin/storage/retention")
+    def retention_settings(body: RetentionBody, req: Request):
+        """Raw-track retention (off during the beta) and keeping only the latest export."""
+        s = need(req, owner=True)
+        changes = body.model_dump(exclude_none=True)
+        retention.save_settings(auth.db, changes)
+        store.audit(s["email"], "storage.retention", "", **changes)
+        return storage_view()
 
     # ------------------------------------------------------------ settings
     def settings_view(s: dict) -> dict:
