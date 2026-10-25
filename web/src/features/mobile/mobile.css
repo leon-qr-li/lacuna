@@ -2,10 +2,9 @@
 .topnav { display: contents; }
 .topnav-toggle { display: none; }
 
-@media (max-width: 760px) {
-  .topbar { flex-wrap: nowrap; gap: 8px; padding: 10px 16px; }
-  .topbar .crumb-sep, .topbar .ep-title { display: none; }
-  .topbar .brand { letter-spacing: 0.12em; }
+/* Narrow windows and tablets: the links fold into the menu, so the bar stays one row (English at 1024 px wrapped) */
+@media (max-width: 1180px) {
+  .topbar { flex-wrap: nowrap; }
   .topnav-toggle { display: inline-grid; place-items: center; width: 38px; min-height: 38px; padding: 0; margin-left: auto; }
   .topnav { display: none; }
   .topnav.is-open {
@@ -16,6 +15,12 @@
   }
   .topnav.is-open > * { justify-content: flex-start; }
   .topnav.is-open .btn { width: 100%; justify-content: flex-start; min-height: 40px; }
+}
+
+@media (max-width: 760px) {
+  .topbar { gap: 8px; padding: 10px 16px; }
+  .topbar .crumb-sep, .topbar .ep-title { display: none; }
+  .topbar .brand { letter-spacing: 0.12em; }
   /* every page fits the phone's width */
   .app, main { max-width: 100vw; }
   main { padding-left: 16px !important; padding-right: 16px !important; }

@@ -41,16 +41,19 @@ test("LACUNA: collapse on the panel, reopen from the floating button, remembered
   await expect(page.getByTestId("chat-open")).toHaveCount(0);
 });
 
-test("LACUNA: on a narrow window the panel slides over from the right, not to the page bottom", async ({ page }) => {
-  await page.setViewportSize({ width: 1000, height: 760 });
+test("LACUNA: on a phone-width window the panel is a drawer from the right, below the top bar, starting closed", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 760 });
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   const chat = page.getByRole("region", { name: "LACUNA 对话" });
+  await expect(chat).toBeHidden(); // narrower than 1280: starts closed (batch 7, B26)
+  await page.getByTestId("chat-open").click();
   await expect(chat).toBeVisible();
   const b = (await chat.boundingBox())!;
-  expect(b.y).toBeLessThan(40);
+  const bar = (await page.locator(".topbar").boundingBox())!;
+  expect(b.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1);
   expect(b.y + b.height).toBeLessThanOrEqual(760);
-  expect(1000 - (b.x + b.width)).toBeLessThan(24);
+  expect(700 - (b.x + b.width)).toBeLessThanOrEqual(24);
   await chat.getByRole("button", { name: "收起" }).click();
   await expect(chat).toBeHidden();
   await expect(page.getByTestId("chat-open")).toBeVisible();

@@ -39,7 +39,7 @@ test("opening an episode and a tab shows what is opening, then the page", async 
   await page.getByRole("link", { name: "发布", exact: true }).click();
   await expect(loading).toContainText("正在打开发布资料…");
   p.release();
-  await expect(page.getByRole("heading", { name: "发布资料" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "发布资料", exact: true })).toBeVisible();
   await expect(loading).toHaveCount(0);
 });
 

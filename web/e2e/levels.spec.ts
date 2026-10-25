@@ -155,7 +155,7 @@ test.describe.serial("声音", () => {
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/levels_${theme}.png`, fullPage: true });
       await page.evaluate(() => localStorage.setItem("lacuna.lang", "en"));
       await page.reload();
-      await expect(page.getByTestId("levels")).toContainText("The hosts' volume");
+      await expect(page.getByTestId("levels")).toContainText("Host volume");
       await expect(page.getByRole("link", { name: "Volume", exact: true })).toBeVisible();
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/levels_${theme}_en.png`, fullPage: true });
       // back to Chinese, so the server's language (kept from the last request) is Chinese again

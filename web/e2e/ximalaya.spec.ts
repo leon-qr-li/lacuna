@@ -13,7 +13,7 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
 
   // without a publish pack the tab points to 发布资料 (unless an earlier test made one)
   await page.goto(`/#/ep/${ep}/publish`);
-  await expect(page.getByRole("heading", { name: "发布资料" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "发布资料", exact: true })).toBeVisible();
   const gen = page.getByRole("button", { name: "生成发布资料" });
   // wait until the page knows whether a pack exists (a bare isVisible() raced the load on slow runners)
   await expect(gen.or(page.getByTestId("publish-title"))).toBeVisible({ timeout: 15_000 });

@@ -117,8 +117,8 @@ test("下一步 sits at the top right on every step, after 导出", async ({ pag
     withNext++;
     const b = (await next.boundingBox())!;
     expect(b.y).toBeLessThan(140);
-    expect(1440 - (b.x + b.width)).toBeLessThan(60);
-    await expect(page.locator(".ep-head-row > :last-child")).toHaveAttribute("data-testid", "next-step");
+    expect(1440 - (b.x + b.width)).toBeLessThanOrEqual(81); // the right edge of the 1280 px workbench (batch 7, T2)
+    await expect(page.locator(".ep-head-row > .ep-head-end").getByTestId("next-step")).toBeVisible(); // its own slot at the row's end (batch 7, T1)
   }
   expect(withNext).toBe(pages.length - 1); // every page but the last one
 });
@@ -127,7 +127,7 @@ test("English: the tabs and 收起 fit the side panel; the header does not overl
   await page.addInitScript(() => localStorage.setItem("lacuna.lang", "en"));
   await page.setViewportSize({ width: 1440, height: 900 });
   await openListen(page);
-  const chat = page.getByRole("region", { name: "AI producer chat" });
+  const chat = page.getByRole("region", { name: "LACUNA chat" });
   const near = (await page.getByTestId("tab-near").boundingBox())!;
   const col = (await chat.getByTestId("chat-collapse").boundingBox())!;
   const pb = (await chat.boundingBox())!;

@@ -23,7 +23,7 @@ widths: reading steps 880 px, workbench steps 1280 px (`--w-read`, `--w-work`) a
 Episode tiles show the chosen cover else the show's colour, with a status stripe; the home buttons are one
 primary plus one row of secondary. Empty pages: icon + one sentence + the next action. The current plan has a
 brand-edge column and a 「当前」 tag. 两步验证已开启 is green. The sign-in theme button uses the app's sun/moon.
-The admin uses the LACUNA mark and the 夜航 palette (layout unchanged). Phones: the top bar folds into a menu,
+The admin uses the LACUNA mark and the 夜航 palette (layout unchanged). Under 1180 px the top bar's links fold into a menu (English wrapped to two rows at 1024); phones:
 the LACUNA panel is a drawer, no page scrolls sideways. Under 1280 px the LACUNA panel starts closed and
 pushes the page over. Members are managed only in 节目设置 → 协作者 (the top-bar 邀请协作 opens it).
 

@@ -114,6 +114,7 @@ test("import: drag both tracks in → progress with time left → straight into 
 
 test("import: a file dropped anywhere on 剧集 opens the form; a slot takes a drop of its own", async ({ page }) => {
   await page.goto("/#/");
+  await expect(page.getByText("导入 Leon 和 Pei 的分轨")).toBeVisible(); // the hosts are loaded, so a drop has slots to fill
   await dropFiles(page, page.locator("main.home"), [LEON]);
   await expect(page.getByTestId("import-leon")).toHaveText("Leon.wav");
   await expect(page.getByTestId("import-pei")).toHaveText("还没选");

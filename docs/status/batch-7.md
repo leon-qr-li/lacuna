@@ -19,7 +19,9 @@ Leon picked every recommended option (one PR). Done on this branch: all of W1–
 B1–B26, T1–T11 and S1; the record is decision `2026-10-25-copy-sweep`. New pieces: `features/states`
 (error / empty states), `features/mobile` (phone menu), `lacuna_app/speedtest.py` (+ admin `测速`),
 `tests/app/test_batch7.py`, `web/e2e/batch7.spec.ts`. Leon's rule for copy changes: every changed screen is
-screenshot in zh/en, dark/light, 1440 / 1024 / 390 and checked for overflow before shipping.
+screenshot in zh/en, dark/light, 1440 / 1024 / 390 and checked for overflow before shipping. The re-check
+found the English top bar wrapping to two rows at 1024 px; under 1180 px its links now fold into the menu.
+E2E assertions that named old wording (AI producer chat, Firm, AI 删多了, The hosts' volume) follow the new copy.
 
 ## Next action
 CI green → squash merge → prod, then code freeze (full regression, Leon's week of testing).

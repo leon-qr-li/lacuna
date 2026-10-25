@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { t } from "../../i18n";
 
-/** The top bar's links. On wide screens they sit in the bar as before; on a phone they fold behind a menu
+/** The top bar's links. On wide screens they sit in the bar as before; under 1180 px they fold behind a menu
  *  button so the bar stays one line (batch 7, T9). */
 export function MenuNav({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);

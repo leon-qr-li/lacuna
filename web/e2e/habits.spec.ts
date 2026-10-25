@@ -48,6 +48,6 @@ test("editing habits in English", async ({ page }) => {
   await page.reload();
   const card = page.getByTestId("habits-card");
   await expect(card.getByRole("heading")).toHaveText("Editing habits");
-  await expect(card.getByRole("radio", { name: "Firm" })).toBeVisible();
+  await expect(card.getByRole("radio", { name: "Cut more" })).toBeVisible();
   await page.evaluate(() => localStorage.removeItem("lacuna.lang"));
 });

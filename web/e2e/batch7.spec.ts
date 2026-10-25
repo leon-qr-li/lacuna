@@ -71,6 +71,16 @@ test("T9: on a phone the top bar folds into a menu and pages fit the width", asy
   }
 });
 
+test("T9: at 1024 wide in English the top bar stays one row", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("lacuna.lang", "en"));
+  await page.setViewportSize({ width: 1024, height: 768 });
+  for (const path of ["/#/settings", "/#/archive", "/#/library", "/#/feedback"]) {
+    await page.goto(path);
+    await expect(page.getByTestId("menu-toggle")).toBeVisible();
+    expect((await page.locator(".topbar").boundingBox())!.height, path).toBeLessThan(70);
+  }
+});
+
 test("B9: the feedback page has one 写新反馈", async ({ page }) => {
   await page.goto("/#/feedback");
   await expect(page.getByRole("heading", { name: "我的反馈" })).toBeVisible();
