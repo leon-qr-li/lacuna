@@ -21,5 +21,7 @@ Decision: docs/decisions/2026-10-24-admin-site.md.
 ## Next
 - Live after `provision apply` + `recreate`; Leon looks at it himself (no per-batch checklist; the full regression
   after code freeze is the acceptance).
-- Then remove the main-site staff cards (成员与邀请 etc.).
+- Done 2026-10-24 (Leon passed the admin): on the shared server 设置 no longer shows the 管理 group (成员与邀请 +
+  回收区, 邮件发件人, AI 与专有名词); the owner gets 「打开后台」 instead. A local checkout keeps the cards
+  (`web/e2e/settings_admin_link.spec.ts`).
 - Before launch: passkeys.
