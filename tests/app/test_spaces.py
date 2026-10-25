@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from lacuna_app import create_app
 from lacuna_app import db as sitedb
 from lacuna_app.editor import MockEditorAdapter
+from lacuna_app.legal import VERSION
 from tests.app import site_db
 from tests.app.e2e.auth import FakeMailer
 from tests.app.synth import EPISODE, make_workspace
@@ -168,10 +169,10 @@ def test_cloud_access_check_also_guards_other_workspaces(tmp_path, monkeypatch):
         assert c.post("/api/auth/2fa/enroll", json={"ticket": out["ticket"], "code": code}).status_code == 200
 
     setup = (tmp_path / "ws" / "auth" / "setup-code.txt").read_text().strip()
-    signed_up(leon, leon.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "setup_code": setup}))
+    signed_up(leon, leon.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "agree": VERSION, "setup_code": setup}))
     link = leon.post("/api/auth/invites", json={"email": "beta@example.com"}).json()["link"]
     beta = TestClient(app, base_url="https://testserver", headers=h)
-    signed_up(beta, beta.post("/api/auth/register", json={"invite": link.rsplit("/", 1)[1], "password": PW}))
+    signed_up(beta, beta.post("/api/auth/register", json={"invite": link.rsplit("/", 1)[1], "password": PW, "agree": VERSION}))
     assert beta.get("/api/episodes").status_code == 200
     beta.headers.pop("Cf-Access-Jwt-Assertion")
     assert beta.get("/api/episodes").status_code == 403          # session cookie alone is not enough

@@ -90,6 +90,7 @@ test("申请试用 → the owner's email and list → invite with a plan; 套餐
   await tia.getByTestId("auth-name").fill("Tia");
   await tia.getByTestId("auth-password").fill(PW);
   await tia.getByTestId("auth-password2").fill(PW);
+  await tia.getByTestId("legal-agree").check();
   await tia.getByRole("button", { name: "创建账号" }).click();
   await expect(tia.locator(".topbar")).toBeVisible();
   await tia.goto("/#/settings/plan");

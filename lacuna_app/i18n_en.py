@@ -748,4 +748,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "账号 {n} 个，Cloudflare Access 免费名额 {s} 个": "{n} accounts; Cloudflare Access has {s} free seats",
     "到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。":
         "Past 50, each person costs $7 a month: before then, switch sign-in to LACUNA's own (turn off Access), or pause new invites.",
+    # 用户条款和隐私政策 (lacuna_app/legal.py)
+    "请先阅读并勾选同意用户条款和隐私政策": "Please read and agree to the Terms of Service and Privacy Policy first",
+    "条款已经又更新了，请刷新页面再看一遍": "The terms were updated again; reload the page and have another look",
 }

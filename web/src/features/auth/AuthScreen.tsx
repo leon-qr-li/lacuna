@@ -5,6 +5,7 @@ import { Turnstile } from "./Turnstile";
 import { BusyLabel } from "../loading/Loading";
 import { currentTheme, setTheme } from "../theme/theme";
 import { lang, langChosen, setLang, t } from "../../i18n";
+import { AgreeBox, withLegalLinks } from "../legal/Legal";
 
 type View =
   | { v: "login" }
@@ -87,6 +88,9 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
             </>
           )}
         </div>
+        <p className="auth-legal" data-testid="auth-legal">
+          {withLegalLinks("{terms} · {privacy}")}
+        </p>
       </main>
     </div>
   );
@@ -334,6 +338,7 @@ function NameField({ name, setName, autoFocus }: { name: string; setName: (v: st
 /** The owner's account, on the first run (in the cloud also the setup code from the server). */
 function First({ status, email, setEmail, next }: FormProps) {
   const [name, setName] = useState("");
+  const [agree, setAgree] = useState(false);
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [setup, setSetup] = useState("");
@@ -346,7 +351,13 @@ function First({ status, email, setEmail, next }: FormProps) {
     const bad = checkNew(pw, pw2);
     if (bad) return setErr(bad);
     if (!name.trim()) return setErr(t("请填你的名字"));
-    run(async () => next(await authApi.registerFirst(email, pw, status.setup_code ? setup : null, name.trim()), email.trim().toLowerCase()));
+    if (!agree) return setErr(t("请先勾选同意用户条款和隐私政策"));
+    run(async () =>
+      next(
+        await authApi.registerFirst(email, pw, status.setup_code ? setup : null, name.trim(), status.legal?.version ?? null),
+        email.trim().toLowerCase(),
+      ),
+    );
   };
   return (
     <form onSubmit={submit}>
@@ -366,6 +377,7 @@ function First({ status, email, setEmail, next }: FormProps) {
       <NameField name={name} setName={setName} autoFocus />
       <EmailField email={email} setEmail={setEmail} />
       <NewPassword pw={pw} setPw={setPw} pw2={pw2} setPw2={setPw2} />
+      <AgreeBox checked={agree} onChange={setAgree} />
       <Err err={err} />
       <button className="auth-btn" disabled={busy}>
         <BusyLabel busy={busy} label={t("创建账号")} busyLabel={t("创建中…")} />
@@ -387,10 +399,11 @@ const inviterName = (email: string) => {
 };
 
 /** Sign-up from an invite link: the email is fixed by the invite. */
-function FromInvite({ token, go, next }: FormProps & { token: string }) {
+function FromInvite({ status, token, go, next }: FormProps & { token: string }) {
   const [info, setInfo] = useState<{ email: string; by: string; by_name?: string | null } | null>(null);
   const [gone, setGone] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [agree, setAgree] = useState(false);
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const { busy, err, setErr, run } = useSubmit();
@@ -406,8 +419,9 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
     const bad = checkNew(pw, pw2);
     if (bad) return setErr(bad);
     if (!name.trim()) return setErr(t("请填你的名字"));
+    if (!agree) return setErr(t("请先勾选同意用户条款和隐私政策"));
     run(async () => {
-      const s = await authApi.registerInvite(token, pw, name.trim());
+      const s = await authApi.registerInvite(token, pw, name.trim(), status.legal?.version ?? null);
       dropInvite();
       next(s, info!.email);
     });
@@ -435,6 +449,7 @@ function FromInvite({ token, go, next }: FormProps & { token: string }) {
         </span>
       </Field>
       <NewPassword pw={pw} setPw={setPw} pw2={pw2} setPw2={setPw2} />
+      <AgreeBox checked={agree} onChange={setAgree} />
       <Err err={err} />
       <button className="auth-btn" disabled={busy || !info}>
         <BusyLabel busy={busy} label={t("创建账号")} busyLabel={t("创建中…")} />
@@ -626,6 +641,7 @@ function AskAccess({ status, email, setEmail, go }: FormProps) {
       <button className="auth-btn" disabled={busy || !tracks || (!!status.turnstile && !human)}>
         <BusyLabel busy={busy} label={t("提交申请")} busyLabel={t("提交中…")} />
       </button>
+      <p className="auth-legal">{withLegalLinks(t("提交即表示你已阅读 {privacy}。"))}</p>
       <p className="auth-foot">
         <button type="button" className="auth-link" onClick={() => go("login")}>
           ← {t("返回登录")}

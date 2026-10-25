@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from lacuna_app import create_app, totp
 from lacuna_app.auth import Auth, AuthError, MailError
 from lacuna_app.editor import MockEditorAdapter
+from lacuna_app.legal import VERSION
 from tests.app import site_db
 from tests.app.e2e.auth import FakeMailer
 
@@ -195,9 +196,9 @@ def test_cloud_requires_two_step_from_the_first_sign_in(tmp_path, mailer):
     assert st["require_2fa"] is True and st["setup_code"] is True
     code_file = tmp_path / "ws" / "auth" / "setup-code.txt"
     setup = code_file.read_text().strip()
-    assert c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW,
+    assert c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "agree": VERSION,
                                               "setup_code": "wrong"}).status_code == 403
-    r = c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "setup_code": setup})
+    r = c.post("/api/auth/register", json={"email": "leon@example.com", "password": PW, "agree": VERSION, "setup_code": setup})
     out = r.json()
     assert out["step"] == "enroll" and "set-cookie" not in r.headers           # no session before the code
     assert c.get("/api/episodes").status_code == 401

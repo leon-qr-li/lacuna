@@ -69,6 +69,9 @@ test("first run: create the owner account, then the app opens", async ({ page })
   await expect(page.getByRole("alert")).toHaveText("两次输入的密码不一样");
   await page.getByTestId("auth-password2").fill(PW);
   await page.getByRole("button", { name: "创建账号" }).click();
+  await expect(page.getByRole("alert")).toHaveText("请先勾选同意用户条款和隐私政策");
+  await page.getByTestId("legal-agree").check();
+  await page.getByRole("button", { name: "创建账号" }).click();
   await expect(page.getByRole("heading", { name: "创建你的账号" })).toBeHidden();
   await expect(page.locator(".topbar")).toBeVisible();
 });
@@ -142,6 +145,7 @@ test("设置: owner invites Pei by email; the login page has no open sign-up", a
   await p.getByTestId("auth-name").fill("Pei");
   await p.getByTestId("auth-password").fill(PW);
   await p.getByTestId("auth-password2").fill(PW);
+  await p.getByTestId("legal-agree").check();
   await p.getByRole("button", { name: "创建账号" }).click();
   await expect(p.locator(".topbar")).toBeVisible();
   expect(new URL(p.url()).hash).toBe("#/");
@@ -246,6 +250,7 @@ test("cloud: the first sign-in sets up two-step before the app opens", async ({ 
   await page.getByTestId("auth-name").fill("Leon");
   await page.getByTestId("auth-password").fill(PW);
   await page.getByTestId("auth-password2").fill(PW);
+  await page.getByTestId("legal-agree").check();
   await page.getByRole("button", { name: "创建账号" }).click();
   await expect(page.getByRole("heading", { name: "设置两步验证" })).toBeVisible();
   expect((await page.request.get("/api/episodes")).status()).toBe(401); // no session before the code

@@ -29,6 +29,7 @@ test("welcome → sample show with the tour → own show → clean home", async 
   await sam.getByTestId("auth-name").fill("Sam");
   await sam.getByTestId("auth-password").fill(PW);
   await sam.getByTestId("auth-password2").fill(PW);
+  await sam.getByTestId("legal-agree").check();
   await sam.getByRole("button", { name: "创建账号" }).click();
   const welcome = sam.getByTestId("welcome");
   await expect(welcome.getByRole("heading", { level: 1 })).toHaveText("欢迎，Sam");

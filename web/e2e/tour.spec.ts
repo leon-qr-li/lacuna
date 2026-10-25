@@ -21,6 +21,7 @@ async function newcomer(page: Page) {
   await page.getByTestId("auth-name").fill("Tia");
   await page.getByTestId("auth-password").fill(PW);
   await page.getByTestId("auth-password2").fill(PW);
+  await page.getByTestId("legal-agree").check();
   await page.getByRole("button", { name: "创建账号" }).click();
   await page.getByTestId("welcome-sample").click();
   await expect(page).toHaveURL(/SAMPLE_01\/review/);

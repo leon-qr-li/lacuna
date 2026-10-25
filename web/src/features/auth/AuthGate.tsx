@@ -2,13 +2,23 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { AUTH_EVENT, authApi, type AuthStatus } from "./api";
 import { AuthScreen, dropInvite, inviteToken } from "./AuthScreen";
 import { PageLoading } from "../loading/Loading";
+import { LegalPage, legalPath } from "../legal/Legal";
+import { ConsentGate } from "../legal/Consent";
 import { t } from "../../i18n";
 import "./auth.css";
 
+/** 用户条款 / 隐私政策 (/legal/terms, /legal/privacy) open for everyone, signed in or not; every other page is
+ *  behind the sign-in. */
+export function AuthGate({ children }: { children: ReactNode }) {
+  const doc = legalPath();
+  return doc ? <LegalPage doc={doc} /> : <Gate>{children}</Gate>;
+}
+
 /** Shows the sign-in screens until there is a session (or, before the first account exists, the
  *  "create your account" screen). Any 401 from the API brings the sign-in screen back. Signing in
- *  (or creating the account) always lands on 剧集, not on the page the sign-out happened on (设置). */
-export function AuthGate({ children }: { children: ReactNode }) {
+ *  (or creating the account) always lands on 剧集, not on the page the sign-out happened on (设置).
+ *  In the cloud, an account that hasn't agreed to the current 用户条款 / 隐私政策 agrees first. */
+function Gate({ children }: { children: ReactNode }) {
   const [st, setSt] = useState<AuthStatus | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const signedOut = useRef(false);
@@ -43,6 +53,17 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return <AuthScreen status={st} onDone={check} />;
   }
   if (inviteToken()) return <InviteWhileSignedIn email={st.email} onDone={check} />;
+  if (st.cloud && st.email && st.legal && st.legal.agreed !== st.legal.version)
+    return (
+      <ConsentGate
+        version={st.legal.version}
+        before={st.legal.agreed}
+        onDone={check}
+        onSignOut={() => {
+          authApi.logout().finally(check);
+        }}
+      />
+    );
   if (signedOut.current) {
     signedOut.current = false;
     if (!["", "#", "#/"].includes(window.location.hash)) window.history.replaceState(null, "", "#/");
