@@ -6,7 +6,7 @@ Version 2026-10-25 · Effective 2026-10-25
 
 ## 1. About these terms
 
-LACUNA is an online service that helps you edit podcasts with AI (the "Service"). The Service is provided by [TBD: operating entity name and place of registration] ("we", "us"). By creating an account, ticking the box to agree, or continuing to use the Service, you accept these Terms of Service and our Privacy Policy. If you use the Service on behalf of a team or company, you confirm you are allowed to accept these terms for it.
+LACUNA is an online service that helps you edit podcasts with AI (the "Service"). The Service is provided by [TBD: operating entity name], a company registered in British Columbia, Canada ("we", "us"). By creating an account, ticking the box to agree, or continuing to use the Service, you accept these Terms of Service and our Privacy Policy. If you use the Service on behalf of a team or company, you confirm you are allowed to accept these terms for it.
 
 ## 2. Your account
 
@@ -86,7 +86,7 @@ If a third party makes a claim against us because of content you uploaded, your 
 
 ## 13. Governing law and disputes
 
-These terms are governed by [TBD: governing law, e.g. the laws of British Columbia, Canada, or of a U.S. state]. If there is a dispute, please contact us first and we will try to resolve it amicably; if that fails, it will be resolved by [TBD: competent courts or arbitration body]. Any extra rights your local consumer-protection law gives you are not affected.
+These terms are governed by the laws of the Province of British Columbia and the federal laws of Canada applicable there. If there is a dispute, please contact us first and we will try to resolve it amicably; if that fails, it will be resolved by the courts of British Columbia sitting in Vancouver. Any extra rights your local consumer-protection law gives you are not affected.
 
 ## 14. Changes to these terms
 

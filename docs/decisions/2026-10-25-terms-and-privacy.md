@@ -32,3 +32,9 @@ Placeholders (`【待定：…】` / `[TBD: …]`, highlighted on the page) to f
 and its address (Canada vs US not decided), governing law and court, DMCA designated agent (US Copyright Office,
 $6), contact / privacy email (no inbox exists yet; 「反馈」 in the app is the channel meanwhile), cross-border
 safeguard for EEA/UK (SCCs), EU/UK representative if required, which language prevails.
+
+Update 2026-10-25: Leon decided the company is Canadian (decision `2026-10-25-company-in-canada`). The documents now
+name a company registered in British Columbia, BC law + federal Canadian law, courts in Vancouver. The privacy policy
+says data operated from Canada and stored in the US may be accessible to US authorities (PIPEDA transparency). Entity
+name/address, DMCA agent, emails, SCCs, EU/UK representative and prevailing language stay open. `VERSION` not bumped:
+still a pre-beta draft agreed only by Leon and Pei; bump it with the lawyer's version.
