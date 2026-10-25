@@ -166,8 +166,8 @@ def _clean(s: Any, n: int = MAX_ASK) -> str:
 class ClaudeRuleWriter:
     """Rewrites asks into rules and summarises an episode's lessons; `client` can be injected (tests)."""
 
-    # Haiku: short structured rewrites of the host's own words (decision 2026-10-25-ai-cost-cut)
-    model = "claude-haiku-5-5"
+    # Sonnet: the blind check on Leon's data (2026-10-25) found Haiku missing important lessons; quality first
+    model = "claude-sonnet-5-5"
 
     def __init__(self, api_key: str | None = None, client: Any = None):
         self.api_key = api_key

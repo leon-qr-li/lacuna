@@ -418,3 +418,42 @@ def test_blind_comparison_replays_past_requests_on_both_models(ws, tmp_path, mon
     totals = json.loads((out / "results.json").read_text(encoding="utf-8"))["totals"]
     assert totals["claude-sonnet-5-5"]["cost_usd"] < totals["claude-opus-5-5"]["cost_usd"]
     assert (ws.episode_dir(AI_EPISODE) / "state.json").read_bytes() == before
+
+
+def test_quality_comparison_runs_chat_and_lessons_without_writing(ws, tmp_path, monkeypatch):
+    """scripts/ai_quality_compare.py: same inputs to the old and the new model per kind; the workspace is untouched."""
+    import hashlib
+    from scripts import ai_quality_compare as aq
+    from lacuna_app.lessons import ClaudeRuleWriter
+    ws = Workspace(ws)
+    ep = Episode(ws, AI_EPISODE)
+    ep.log_turn("这里停顿短一点", 2.0, "好")
+    ep.log_turn("记住：Pei 的笑声别剪", 3.0, "记下了", remember=True)
+
+    def snapshot():
+        return {p: hashlib.sha1(p.read_bytes()).hexdigest() for p in ws.root.rglob("*") if p.is_file()}
+    before = snapshot()
+    calls = []
+
+    def fake_call(self, ctx):
+        calls.append(("chat", self.model))
+        return tool_response(answer([], message=f"{self.model} 说好"), model=self.model)
+
+    def fake_writer(self, system, tool, payload, max_tokens):
+        calls.append((tool["name"], self.model))
+        if "lessons" in tool["input_schema"]["properties"]:
+            return {"lessons": [{"title": "笑声留着", "instruction": "keep laughs", "why": "x"}]}, {"cost_usd": 0.001}
+        return {"title": "Pei 的笑声别剪", "understood": "我理解的是…", "instruction": "keep", "same_as": ""}, {"cost_usd": 0.001}
+    monkeypatch.setattr(aq, "find_api_key", lambda: ("k", "env"))
+    monkeypatch.setattr(ClaudeEditorAdapter, "_call", fake_call)
+    monkeypatch.setattr(ClaudeRuleWriter, "_call", fake_writer)
+    out = tmp_path / "q"
+    assert aq.main(["--workspace", str(ws.root), "--episode", AI_EPISODE, "--only", "chat,lessons", "--out", str(out)]) == 0
+    kinds = {(k, m) for k, m in calls}
+    assert ("chat", "claude-opus-5-5") in kinds and ("chat", "claude-sonnet-5-5") in kinds
+    assert {m for k, m in calls if k != "chat"} == {"claude-sonnet-5-5", "claude-haiku-5-5"}
+    key = json.loads((out / "key.json").read_text(encoding="utf-8"))
+    assert {k["kind"] for k in key} == {"chat", "summary", "rewrite"}
+    page = (out / "compare.html").read_text(encoding="utf-8")
+    assert "Pei 的笑声别剪" in page and "笑声留着" in page
+    assert snapshot() == before

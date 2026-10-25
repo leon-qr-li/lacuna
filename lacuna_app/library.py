@@ -648,7 +648,7 @@ def lookup_system(profile: dict | None = None) -> str:
     ])
 
 
-LOOKUP_MODEL = "claude-haiku-5-5"
+LOOKUP_MODEL = "claude-opus-5-5"
 
 
 def lookup_request(asset: dict, profile: dict | None = None) -> dict:
@@ -656,11 +656,11 @@ def lookup_request(asset: dict, profile: dict | None = None) -> dict:
     info = {"file_name": asset.get("name"), "embedded_tags": asset.get("tags") or {},
             "duration_s": asset.get("duration_s"), ("leons_note" if legacy else "editors_note"): asset.get("note") or "",
             "used_as": KINDS.get(asset.get("kind"), "")}
-    # Haiku with the basic web search: finding a track's official credit needs no deep reasoning
-    # (decision 2026-10-25-ai-cost-cut)
+    # Opus: Haiku got a composer's name wrong in the blind check on Leon's data (2026-10-25); a lookup is rare,
+    # so quality first (decision 2026-10-25-ai-cost-cut)
     return dict(model=LOOKUP_MODEL, max_tokens=16000, system=lookup_system(profile),
                 output_config={"effort": "medium"},
-                tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}, _credit_tool(legacy)],
+                tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 5}, _credit_tool(legacy)],
                 tool_choice={"type": "auto"},
                 messages=[{"role": "user", "content": json.dumps(info, ensure_ascii=False)}])
 
@@ -685,7 +685,8 @@ def lookup_credit(lib: Library, asset_id: str, client: Any = None) -> dict:
         messages = list(req.pop("messages"))
         resp = None
         for _ in range(4):           # web search may pause a long turn; continue it
-            resp = client.beta.messages.create(messages=messages, **req)     # Haiku: no server-side fallback
+            resp = client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default",
+                                               messages=messages, **req)
             if resp.stop_reason != "pause_turn":
                 break
             messages = messages + [{"role": "assistant", "content": resp.content}]
