@@ -12,6 +12,6 @@ US venture money is ever raised.
 
 - The company is incorporated in British Columbia before LACUNA charges anyone. Leon talks to an accountant (timing,
   structure) and a lawyer (ToS, privacy, DMCA agent) first.
-- Leon is the only owner, no partners for now. Pei is not a partner (he still co-hosts the show and helps test).
+- Leon is the only owner, no partners for now. Pei is not a partner (Pei still co-hosts the show and helps test).
 - The terms and privacy policy name a BC company, BC law and Vancouver courts; the entity's name and address are filled
   once it is registered.
