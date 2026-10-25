@@ -35,6 +35,6 @@ https://claude.ai/artifact/3foGFupGircLvbfofN17SE.
   to Sonnet, credit lookups back to Opus (decision `2026-10-25-ai-cost-cut`, last section).
 - Done 2026-10-25: merged (#203), deployed, Provision apply, deploy-token secrets stored, Provision recreate (Leon
   2026-10-25 「该重建服务器就重建服务器，不要我批准了」; run 40158591554) and a Deploy re-run that went live on the
-  new server with the long-lived token (run 40158719277). Left: step 5 check (admin 系统健康 「云存储已接通」).
+  new server with the long-lived token (run 40158719277). Step 5 checked by Leon 2026-10-25: episodes play, admin 系统健康 shows 「云存储已接通」.
 - Console monthly spend cap: Leon sets it in the Console.
 - Stress test before launch (beta-launch-todo); not in this batch.
