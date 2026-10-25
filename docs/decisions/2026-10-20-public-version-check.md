@@ -18,3 +18,5 @@ check failed although both sites ran fine (the server updater pulls and rolls ba
 ## Withdraw before public launch
 Leon wants the safest way before launch: remove the open path and use a long-lived service token stored as a
 GitHub secret. Tracked in `docs/status/beta-launch-todo.md`.
+
+Changed by: 2026-10-25-withdraw-public-version

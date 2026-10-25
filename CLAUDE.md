@@ -16,7 +16,7 @@ Local-first AI podcast producer for the two-host Chinese film podcast 《洛城�
 - Never add words / synthetic speech; edits reference source audio ranges only.
 - Original audio is read-only; all edits non-destructive (EDL).
 - Runtime AI = Claude API via Max-included API credits (D23). Never use subscription OAuth in product code.
-- Audio and user media never go to the AI; only text + numeric features go to the API. In the cloud they stay on our own server (encrypted volume + encrypted off-site backup; decision `cloud-deploy`).
+- Audio and user media never go to the AI; only text + numeric features go to the API. In the cloud they stay in our own storage: the server's encrypted volume, our private R2 bucket for episodes not opened for 14 days, and the encrypted off-site backup (decisions `cloud-deploy`, `2026-10-25-audio-cold-storage`).
 - Claude owns QA: every change ships with automated tests.
 - Users never see the AI vendor: interface text (zh + en), AI replies and errors call the AI "LACUNA", never Claude / Anthropic (decision `ai-called-lacuna`; checked by `npm run build`, `tests/test_brand_text.py`, `web/e2e/brand_text.spec.ts`). Code, identifiers, env vars and engineering docs are unaffected.
 
