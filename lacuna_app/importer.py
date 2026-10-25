@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextvars
 import json
+import re
 import threading
 import time
 import traceback
@@ -42,6 +43,8 @@ from .i18n import N_, tr
 AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", ".aac"}
 LEGACY_HOSTS = (("L", "Leon"), ("P", "Pei"))      # jobs from before the show profile
 JOB_FILE = "job.json"
+INVISIBLE = re.compile(r"[\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]")
+MIN_TRACK_S = 1          # a 0-second track would fail deep inside the analysis with a raw error
 ASR_SHARE = 0.68
 STEP_LABELS = {"models": N_("准备识别模型"), "features": N_("分析停顿、语速和重叠"), "first_cut": N_("LACUNA 初剪"),
                "episode": N_("生成审阅")}
@@ -200,6 +203,8 @@ class Importer:
         `language`: what the hosts speak (asr.LANGUAGES); None = the show's language."""
         try:
             check_id(episode_id)
+            if INVISIBLE.search(episode_id):  # "EP​1" would sit next to "EP1" looking the same
+                raise PathError(episode_id)
         except PathError:
             raise ImportError_(tr("剧集编号不能含 \\ / : * ? \" < > | 等字符"))
         if episode_id in self.ws.episode_ids():
@@ -219,6 +224,8 @@ class Importer:
         tracks = {tag: check_track(p) for (tag, _), p in zip(hosts, paths)}
         seen: dict[str, str] = {}
         for tag, name in hosts:
+            if tracks[tag]["duration"] is not None and tracks[tag]["duration"] < MIN_TRACK_S:
+                raise ImportError_(tr("{name} 的分轨太短（不到 {s} 秒），换一个文件", name=name, s=MIN_TRACK_S))
             other = seen.get(tracks[tag]["path"])
             if other:
                 raise ImportError_(tr("{a} 和 {b} 选了同一个文件", a=other, b=name))

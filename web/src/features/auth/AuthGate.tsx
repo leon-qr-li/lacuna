@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { AUTH_EVENT, authApi, type AuthStatus } from "./api";
+import { AUTH_EVENT, authApi, signedOutOnPurpose, type AuthStatus } from "./api";
 import { AuthScreen, dropInvite, inviteToken } from "./AuthScreen";
 import { PageLoading } from "../loading/Loading";
 import { LegalPage, legalPath } from "../legal/Legal";
@@ -22,10 +22,13 @@ function Gate({ children }: { children: ReactNode }) {
   const [st, setSt] = useState<AuthStatus | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const signedOut = useRef(false);
+  const wasIn = useRef(false);
+  const [expired, setExpired] = useState(false);
   const check = useCallback(() => {
     authApi
       .status()
       .then((s) => {
+        if (s.email) wasIn.current = true;
         setSt(s);
         setErr(null);
       })
@@ -33,8 +36,14 @@ function Gate({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => {
     check();
-    window.addEventListener(AUTH_EVENT, check);
-    return () => window.removeEventListener(AUTH_EVENT, check);
+    // AUTH_EVENT = an API call answered 401: if we were signed in, the session ran out (not a sign-out)
+    const on401 = () => {
+      if (signedOutOnPurpose()) wasIn.current = false;
+      else if (wasIn.current) setExpired(true);
+      check();
+    };
+    window.addEventListener(AUTH_EVENT, on401);
+    return () => window.removeEventListener(AUTH_EVENT, on401);
   }, [check]);
   if (!st) {
     if (err)
@@ -50,7 +59,16 @@ function Gate({ children }: { children: ReactNode }) {
   }
   if (st.setup || (st.accounts && !st.email)) {
     signedOut.current = true;
-    return <AuthScreen status={st} onDone={check} />;
+    return (
+      <AuthScreen
+        status={st}
+        expired={expired}
+        onDone={() => {
+          setExpired(false);
+          check();
+        }}
+      />
+    );
   }
   if (inviteToken()) return <InviteWhileSignedIn email={st.email} onDone={check} />;
   if (st.cloud && st.email && st.legal && st.legal.agreed !== st.legal.version)

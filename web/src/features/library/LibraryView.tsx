@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GrowText } from "../../components/GrowText";
 import type { AlbumRef, Asset, Credit, CreditStatus, EpisodeRef, LibraryView as Lib } from "./api";
 import { fmt } from "../../api";
+import type { RequestError } from "../../api";
 import { libraryApi } from "./api";
 import { t } from "../../i18n";
 import { BusyLabel, PageLoading } from "../loading/Loading";
@@ -208,7 +209,21 @@ function AssetRow({ a, kinds, eps, albums, onChange, onRemoved, claude }: { a: A
               confirmLabel: t("移出"),
               danger: true,
             });
-            if (ok) void libraryApi.removeAsset(a.id).then(onRemoved);
+            if (!ok) return;
+            try {
+              await libraryApi.removeAsset(a.id);
+            } catch (e) {
+              if ((e as RequestError).status !== 409) throw e;
+              const again = await confirmDialog({
+                title: t("移出素材库"),
+                message: (e as Error).message,
+                confirmLabel: t("仍然移出"),
+                danger: true,
+              });
+              if (!again) return;
+              await libraryApi.removeAsset(a.id, true);
+            }
+            onRemoved();
           }}
         >
           {t("移出素材库")}

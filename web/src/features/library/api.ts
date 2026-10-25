@@ -204,7 +204,8 @@ export const libraryApi = {
     req<{ asset: Asset }>("PATCH", `/api/library/assets/${aid}`, body),
   lookupCredit: (aid: string) =>
     req<{ asset: Asset; message: string; usage: Usage | null }>("POST", `/api/library/assets/${aid}/lookup`),
-  removeAsset: (aid: string) => req<{ ok: boolean }>("DELETE", `/api/library/assets/${aid}`),
+  /** 409 while an episode's music uses it (the message names them); `force` removes it anyway. */
+  removeAsset: (aid: string, force = false) => req<{ ok: boolean }>("DELETE", `/api/library/assets/${aid}${force ? "?force=true" : ""}`),
   music: (id: string) => req<MusicView>("GET", `${ep(id)}/music`),
   addPlacement: (id: string, body: PlacementPatch & { asset_id: string; role: Role }) =>
     req<MusicView>("POST", `${ep(id)}/music`, body),

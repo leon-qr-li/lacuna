@@ -15,6 +15,7 @@ export const en: Dict = {
   "密码强度：{s}": "Strength: {s}",
   "验证码": "Verification code",
   "欢迎回来": "Welcome back",
+  "登录已过期，请重新登录。": "Your session has ended. Please sign in again.",
   "登录 LACUNA，继续剪你的节目。": "Sign in to LACUNA and pick up where you left off.",
   "30 天内记住我": "Remember me for 30 days",
   "忘记密码？": "Forgot password?",

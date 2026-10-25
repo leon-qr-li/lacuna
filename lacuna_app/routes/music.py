@@ -198,6 +198,7 @@ def register(app, ctx) -> None:
     @app.get("/api/episodes/{episode_id}/mix/{version}.wav")
     def mix_audio(episode_id: str, version: str, request: Request):
         m = music(episode_id)
+        m.ep.previewer    # recordings missing: a clear 409 now, not a stream cut off after its headers
         enabled = m.ep.enabled
         if version != m.mix_key(enabled):
             raise HTTPException(404, "unknown or expired version")

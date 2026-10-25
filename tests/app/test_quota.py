@@ -55,7 +55,7 @@ def test_nothing_left_refuses_the_next_import_with_a_way_out(site, tmp_path):
     # over HTTP, in the show's own app: the import is refused before anything runs
     rec = write_recordings(tmp_path / "rec")
     r = beta.post("/api/imports", json={"id": "EP003", "tracks": [str(rec["Leon"]), str(rec["Pei"])]})
-    assert r.status_code == 422 and "额度已经用完" in r.json()["detail"] and "申请更多时长" in r.json()["detail"]
+    assert r.status_code == 422 and "额度已经用完" in r.json()["detail"] and "「想要更多时长」" in r.json()["detail"]
     # the owner approves 2 more hours this month: it starts again
     from lacuna_app.admin_store import AdminStore
     store = AdminStore(meter.auth.db, meter.auth.now)

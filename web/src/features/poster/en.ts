@@ -21,6 +21,7 @@ export const en: Dict = {
   "已选：{name}": "Selected: {name}",
   "{px}×{px} 的封面已经存好，上传喜马拉雅用 cover.jpg（{mb} MB），cover.png 是无损备份。": "The {px}×{px} cover is saved: upload cover.jpg ({mb} MB) to Ximalaya; cover.png is a lossless backup.",
   "打不开文件夹：{message}": "Can't open the folder: {message}",
+  "{px}×{px} 的封面已经做好（JPG，{mb} MB），各个播客平台都能用。": "The {px}×{px} cover is ready (JPG, {mb} MB) for any podcast platform.",
   "打开文件夹": "Open folder",
   "大图": "Large view",
   "封面 {name}": "Cover {name}",
