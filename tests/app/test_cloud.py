@@ -95,11 +95,13 @@ def test_before_sign_in_app_info_is_version_only(client, keys):
         assert set(info) == {"ok", "version", "cloud"}, path
 
 
-def test_the_version_alone_is_open_without_a_token(client, keys):
-    r = client.get("/api/version")
-    assert r.status_code == 200 and set(r.json()) == {"version"}
-    for method, path in (("POST", "/api/version"), ("GET", "/api/version/x"), ("GET", "/api/versions")):
+def test_no_path_is_open_without_a_token_any_more(client, keys):
+    """the public /api/version of 2026-10-20 is withdrawn (decision 2026-10-25-withdraw-public-version): the deploy
+    check reads /api/health through Access with a service token, and gets the version only"""
+    for method, path in (("GET", "/api/version"), ("GET", "/api/health"), ("GET", "/api/app")):
         assert client.request(method, path).status_code == 403, (method, path)
+    info = client.get("/api/health", headers=hdr(token(keys[0]))).json()
+    assert set(info) == {"ok", "version", "cloud"}
 
 
 def owner_signed_in(client, keys, monkeypatch) -> dict:

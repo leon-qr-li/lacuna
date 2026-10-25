@@ -29,6 +29,8 @@ jobs:
     env:
       DIGITALOCEAN_TOKEN: ${{ secrets.DIGITALOCEAN_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_DEPLOY_CLIENT_ID: ${{ secrets.CF_DEPLOY_CLIENT_ID }}           # the deploy check's Access service token
+      CF_DEPLOY_CLIENT_SECRET: ${{ secrets.CF_DEPLOY_CLIENT_SECRET }}
       SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Cloud set up?

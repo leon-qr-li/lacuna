@@ -9,10 +9,9 @@ Off unless ``LACUNA_CLOUD=1``; a local development checkout never sees any of th
   with ``docker exec``) is exempt.
 * Local-only actions answer 404: saving API keys from the browser (keys
   come from the server's environment), opening folders on the server.
-* Before sign-in, ``/api/app`` and ``/api/health`` answer only the version.
-* ``GET /api/version`` answers the version string and nothing else, with no Access token: the deploy check
-  reads it through a path-scoped Access bypass (deploy/provision.py), so a deploy needs no Cloudflare API
-  call (decision ``public-version-check``; withdrawn before public launch).
+* Before sign-in, ``/api/app`` and ``/api/health`` answer only the version. The deploy check reads
+  ``/api/health`` through Access with a service token (deploy/ci.py wait_live). The public ``/api/version``
+  of 2026-10-20 is gone (decision 2026-10-25-withdraw-public-version): every path needs the Access token.
 
 ``LACUNA_ACCESS=off`` (deploy/site-door.txt "open", decision 2026-10-21-app-sign-in): Cloudflare Access no
 longer stands in front of the site, so there is no token to check; the app's own sign-in (password +
@@ -48,7 +47,6 @@ BLOCKED = [
 ]
 # answered with the version only until the visitor has signed in to the app
 PUBLIC_INFO = {"/api/app", "/api/health"}
-VERSION_PATH = "/api/version"        # the version string only; open to anyone (deploy/provision.py VERSION_PATH)
 
 
 class CloudConfigError(RuntimeError):
@@ -133,8 +131,6 @@ class CloudGate:
 
         if scope["type"] not in ("http", "websocket"):
             return await self.app(scope, receive, send)
-        if scope["type"] == "http" and scope["method"] == "GET" and scope["path"] == VERSION_PATH:
-            return await JSONResponse({"version": self.version()})(scope, receive, send)
         client = (scope.get("client") or ("", 0))[0]
         headers = dict(scope.get("headers") or [])
         if client not in LOOPBACK and self.verifier is not None:

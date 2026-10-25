@@ -2,7 +2,7 @@
 
     python deploy/ci.py registry               # print the registry name, write a push login to ~/.docker
     python deploy/ci.py wait-live <version> [preview]   # wait until https://<domain> (or the staging site)
-                                                        # serves <version> (through Access)
+                                                        # serves <version> (through Access, service token)
     python deploy/ci.py registry-gc            # drop old image tags (after each deploy)
     python deploy/ci.py registry-collect       # garbage-collect the registry (daily; pushes wait for it)
     python deploy/ci.py r2-env                 # S3 credentials for the backup bucket, as GITHUB_ENV lines
@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from provision import (BUCKET, DOMAIN, PREVIEW_DOMAIN, REPO_IMAGE, VOLUME, Cloudflare, DigitalOcean, Http,  # noqa: E402
-                       VERSION_PATH, ProvisionError, log, mask, need)
+                       ProvisionError, log, mask, need)
 
 KEEP_TAGS = 3          # the newest builds by commit (the newest is main)
 ALWAYS_KEEP = {"main", "preview"}     # the real site's and the staging site's current images
@@ -75,35 +75,61 @@ def _get(url: str, headers: dict) -> tuple[int, dict]:
         return 0, {}
 
 
+HEALTH_PATH = "/api/health"     # before sign-in it answers the version only (lacuna_app/cloud.py PUBLIC_INFO)
+CHECK_PREFIX = "lacuna-deploy-check-"
+
+
+def _run_token(c) -> tuple[str, str, str]:
+    """A service token for this run only (id, client id, secret): the fallback while the long-lived one
+    (provision.py deploy-token) is not in GitHub secrets yet."""
+    name = f"{CHECK_PREFIX}{os.environ.get('GITHUB_RUN_ID') or int(time.time())}"
+    out = c.r("POST", f"/accounts/{c.account}/access/service_tokens", {"name": name, "duration": "1h"})
+    mask(out["client_id"])
+    mask(out["client_secret"])
+    return out["id"], out["client_id"], out["client_secret"]
+
+
 def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20, domain: str = DOMAIN) -> None:
-    """Poll <domain>/api/version (open through a path-scoped Access bypass, deploy/provision.py) until the
-    server runs `version`. No Cloudflare API call: its service-token API answered 504 for hours (2026-10-20)."""
-    end, seen = time.time() + timeout, None
-    while time.time() < end:
-        status, body = _get(f"https://{domain}{VERSION_PATH}", {})
-        live = body.get("version")
-        if live == version:
-            log(f"live: {version}")
-            break
-        if (status, live) != seen:
-            log(f"waiting: site answers {status}, version {live or '-'}")
-            seen = (status, live)
-        time.sleep(poll)
+    """Poll <domain>/api/health through Cloudflare Access until the server runs `version`
+    (decision 2026-10-25-withdraw-public-version). The service token is the long-lived one in GitHub secrets
+    (CF_DEPLOY_CLIENT_ID / CF_DEPLOY_CLIENT_SECRET): no Cloudflare API call at deploy time. Without them, a
+    one-hour token is made for this run and deleted afterwards."""
+    cid, secret = os.environ.get("CF_DEPLOY_CLIENT_ID", "").strip(), os.environ.get("CF_DEPLOY_CLIENT_SECRET", "").strip()
+    if cid and secret:
+        mask(cid)
+        mask(secret)
     else:
-        raise ProvisionError(f"{version} not live after {int(timeout / 60)} min: a long job (import/export) may "
-                             "still be running on the server, or the new version failed to start and the server "
-                             "went back to the previous one")
+        log("no deploy token in GitHub secrets (run Provision deploy-token): using a token for this run")
+        _, cid, secret = _run_token(cf())
+    headers = {"CF-Access-Client-Id": cid, "CF-Access-Client-Secret": secret}
+    end, seen = time.time() + timeout, None
     try:
-        _sweep_check_tokens(cf())
-    except ProvisionError as e:
-        log(f"could not delete old check tokens (tried again next deploy): {e}")
+        while time.time() < end:
+            status, body = _get(f"https://{domain}{HEALTH_PATH}", headers)
+            live = body.get("version")
+            if live == version:
+                log(f"live: {version}")
+                break
+            if (status, live) != seen:
+                log(f"waiting: site answers {status}, version {live or '-'}")
+                seen = (status, live)
+            time.sleep(poll)
+        else:
+            raise ProvisionError(f"{version} not live after {int(timeout / 60)} min: a long job (import/export) may "
+                                 "still be running on the server, or the new version failed to start and the server "
+                                 "went back to the previous one")
+    finally:
+        try:
+            _sweep_check_tokens(cf())      # this run's token, and any a cancelled run left behind
+        except ProvisionError as e:
+            log(f"could not delete old check tokens (tried again next deploy): {e}")
 
 
 def _sweep_check_tokens(c) -> None:
-    """Delete the service tokens the old check made per run (lacuna-deploy-check-*): runs cancelled or
-    answered 504 left some behind, and the account caps how many it keeps."""
+    """Delete the per-run check tokens (lacuna-deploy-check-*; never the long-lived lacuna-deploy): runs cancelled
+    or answered 504 leave some behind, and the account caps how many it keeps."""
     for t in c.r("GET", f"/accounts/{c.account}/access/service_tokens") or []:
-        if t.get("name", "").startswith("lacuna-deploy-check-"):
+        if t.get("name", "").startswith(CHECK_PREFIX):
             c.r("DELETE", f"/accounts/{c.account}/access/service_tokens/{t['id']}")
 
 
