@@ -35,7 +35,7 @@ const R = () => {
 const pick = <T>(a: T[]) => a[Math.floor(R() * a.length)];
 
 const HANDLES = ["chen.podcast", "morning.talk", "huang.y", "kimi.audio", "lisa.w", "film.cast", "nightowl.fm", "two.cities", "bookclub.la", "jasmine.k", "oak.radio", "mapleleaf", "sunset.pod", "tofu.talks", "harbor.show", "ming.z", "cinema.paradiso", "wenwen", "ridge.fm", "slow.radio", "aurora.cast", "tea.time", "mono.no", "kevin.l", "rainy.days", "nyc.chinese", "sydney.yu", "berlin.zh", "ocean.fm", "yuki.s", "lantern.pod", "papercut"];
-const DOMS = ["gmail.com", "outlook.com", "icloud.com", "qq.com", "hotmail.com"];
+const DOMS = ["example.com", "example.net", "example.org"];
 const SHOWS = [
   "深夜电影院", // i18n-ignore
   "两个城市", // i18n-ignore
@@ -206,12 +206,12 @@ function overview(): Overview {
       { key: "people", level: "warn", line: t("账号 {n} 个，Cloudflare Access 免费名额 {s} 个", { n: 41, s: 50 }), advice: t("到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。") },
     ],
     activity: [
-      { ts: t0 - 6 * 60, ev: "export.start", who: "chen.podcast@gmail.com", name: "chen", show: SHOWS[0], ep: "EP12" },
-      { ts: t0 - 22 * 60, ev: "import.done", who: "huang.y@qq.com", name: "huang", show: SHOWS[1], ep: "EP7" },
-      { ts: t0 - 50 * 60, ev: "feedback", who: "kimi.audio@icloud.com", name: "kimi", show: null, ep: null },
-      { ts: t0 - 2 * H, ev: "user.signup", who: "yuki.s@gmail.com", name: "yuki", show: null, ep: null },
-      { ts: t0 - 3 * H, ev: "poster.generate", who: "film.cast@outlook.com", name: "film", show: SHOWS[5], ep: "EP9" },
-      { ts: t0 - 5 * H, ev: "import.error", who: "oak.radio@gmail.com", name: "oak", show: SHOWS[9], ep: "EP4" },
+      { ts: t0 - 6 * 60, ev: "export.start", who: "chen.podcast@example.com", name: "chen", show: SHOWS[0], ep: "EP12" },
+      { ts: t0 - 22 * 60, ev: "import.done", who: "huang.y@example.net", name: "huang", show: SHOWS[1], ep: "EP7" },
+      { ts: t0 - 50 * 60, ev: "feedback", who: "kimi.audio@example.com", name: "kimi", show: null, ep: null },
+      { ts: t0 - 2 * H, ev: "user.signup", who: "yuki.s@example.com", name: "yuki", show: null, ep: null },
+      { ts: t0 - 3 * H, ev: "poster.generate", who: "film.cast@example.org", name: "film", show: SHOWS[5], ep: "EP9" },
+      { ts: t0 - 5 * H, ev: "import.error", who: "oak.radio@example.com", name: "oak", show: SHOWS[9], ep: "EP4" },
     ],
   };
 }
@@ -242,9 +242,9 @@ function prompts(): Prompts {
     pmf: { very: 34, somewhat: 29, not: 11 },
     nps: { scores: { "10": 18, "9": 22, "8": 14, "7": 9, "6": 4, "5": 2, "3": 1 }, n: 70, score: 37, promoters: 40, passives: 23, detractors: 7 },
     quotes: [
-      { kind: "rate", at: t0 - 4 * H, email: "chen.podcast@gmail.com", name: "chen", text: "停顿处理比我自己剪还自然。", stars: 5 }, // i18n-ignore
-      { kind: "pmf", at: t0 - 30 * H, email: "two.cities@qq.com", name: "two", text: "已经离不开了，每周省两个小时。", choice: "very" }, // i18n-ignore
-      { kind: "nps", at: t0 - 50 * H, email: "lisa.w@gmail.com", name: "lisa", text: "如果能自动发布就推荐给所有朋友。", score: 8 }, // i18n-ignore
+      { kind: "rate", at: t0 - 4 * H, email: "chen.podcast@example.com", name: "chen", text: "停顿处理比我自己剪还自然。", stars: 5 }, // i18n-ignore
+      { kind: "pmf", at: t0 - 30 * H, email: "two.cities@example.net", name: "two", text: "已经离不开了，每周省两个小时。", choice: "very" }, // i18n-ignore
+      { kind: "nps", at: t0 - 50 * H, email: "lisa.w@example.com", name: "lisa", text: "如果能自动发布就推荐给所有朋友。", score: 8 }, // i18n-ignore
     ],
     profiles: { n: 64, region: { na: 38, eu: 9, oceania: 7, asia: 6, cn: 4 }, editing: { self: 33, hired: 8, none: 12, new: 11 }, lang: { zh: 52, en: 12 } },
   };
@@ -279,16 +279,16 @@ function access(): AccessData {
   const t0 = now();
   return {
     trials: [
-      { id: "ar_d1", email: "anna.zhou@gmail.com", show: "东京漫步", note: "两个人在东京和温哥华远程录，想试试。", created: t0 - 5 * H, tracks: "separate", lang: "zh", status: "new" }, // i18n-ignore
-      { id: "ar_d2", email: "mike.chan@outlook.com", show: "Weekend Brunch", note: "", created: t0 - 26 * H, tracks: "mixed", lang: "en", status: "new" },
-      { id: "ar_d3", email: "xiaomei@qq.com", show: "灯下聊", note: "从小宇宙看到的。", created: t0 - 3 * D, tracks: "unsure", lang: "zh", status: "new" }, // i18n-ignore
-      { id: "ar_d4", email: "dj.wang@gmail.com", show: "Echo Room", note: "Podcast about music production.", created: t0 - 4 * D, tracks: "separate", lang: "en", status: "new" },
+      { id: "ar_d1", email: "anna.zhou@example.com", show: "东京漫步", note: "两个人在东京和温哥华远程录，想试试。", created: t0 - 5 * H, tracks: "separate", lang: "zh", status: "new" }, // i18n-ignore
+      { id: "ar_d2", email: "mike.chan@example.org", show: "Weekend Brunch", note: "", created: t0 - 26 * H, tracks: "mixed", lang: "en", status: "new" },
+      { id: "ar_d3", email: "xiaomei@example.net", show: "灯下聊", note: "从小宇宙看到的。", created: t0 - 3 * D, tracks: "unsure", lang: "zh", status: "new" }, // i18n-ignore
+      { id: "ar_d4", email: "dj.wang@example.com", show: "Echo Room", note: "Podcast about music production.", created: t0 - 4 * D, tracks: "separate", lang: "en", status: "new" },
     ],
-    collabs: [{ id: "ar_d5", email: "pei.cohost@gmail.com", show: SHOWS[1], note: "", created: t0 - 8 * H, kind: "collab", by: "two.cities@qq.com", by_name: "two", status: "new" }],
+    collabs: [{ id: "ar_d5", email: "pei.cohost@example.com", show: SHOWS[1], note: "", created: t0 - 8 * H, kind: "collab", by: "two.cities@example.net", by_name: "two", status: "new" }],
     waitlist: [],
     invites: [
-      { id: "inv1", email: "sydney.yu@gmail.com", role: "member", by: "leon@example.com", plan: "basic", created: t0 - 2 * D, exp: t0 + 5 * D, space: "new", source: "xiaoyuzhou" },
-      { id: "inv2", email: "berlin.zh@gmail.com", role: "member", by: "leon@example.com", plan: "basic", created: t0 - 5 * D, exp: t0 + 2 * D, space: "new", source: "friend" },
+      { id: "inv1", email: "sydney.yu@example.com", role: "member", by: "leon@example.com", plan: "basic", created: t0 - 2 * D, exp: t0 + 5 * D, space: "new", source: "xiaoyuzhou" },
+      { id: "inv2", email: "berlin.zh@example.com", role: "member", by: "leon@example.com", plan: "basic", created: t0 - 5 * D, exp: t0 + 2 * D, space: "new", source: "friend" },
     ],
     seats: { used: 17, total: 20 },
     approval: true,
@@ -347,8 +347,8 @@ function shows(): ShowsData {
       language: i === 4 || i === 5 || i === 9 ? "en" : "zh",
     })),
     stuck: [
-      { sid: "s9", show: SHOWS[9], ep: "EP4", last: t0 - 5 * H, who: "oak.radio@gmail.com", ev: "import.error", why: "failed" },
-      { sid: "s3", show: SHOWS[3], ep: "EP6", last: t0 - 17 * D, who: "sunset.pod@gmail.com", ev: "import.done", why: "idle" },
+      { sid: "s9", show: SHOWS[9], ep: "EP4", last: t0 - 5 * H, who: "oak.radio@example.com", ev: "import.error", why: "failed" },
+      { sid: "s3", show: SHOWS[3], ep: "EP6", last: t0 - 17 * D, who: "sunset.pod@example.com", ev: "import.done", why: "idle" },
     ],
     votes: { apple: 21, spotify: 17, youtube: 9, amazon: 3 },
     voters: 26,
@@ -360,8 +360,8 @@ function trash(): TrashData {
   const t0 = now();
   return {
     items: [
-      { kind: "show", id: "s_old-1", name: "周末不加班", by: "tofu.talks@gmail.com", deleted_at: t0 - 8 * D, left_days: 52, size: 2.1e9 }, // i18n-ignore
-      { kind: "user", id: "ridge.fm@gmail.com", name: "ridge.fm@gmail.com", by: "ridge.fm@gmail.com", deleted_at: t0 - 53 * D, left_days: 7, size: null },
+      { kind: "show", id: "s_old-1", name: "周末不加班", by: "tofu.talks@example.com", deleted_at: t0 - 8 * D, left_days: 52, size: 2.1e9 }, // i18n-ignore
+      { kind: "user", id: "ridge.fm@example.com", name: "ridge.fm@example.com", by: "ridge.fm@example.com", deleted_at: t0 - 53 * D, left_days: 7, size: null },
     ],
     keep_days: 60,
   };
@@ -474,7 +474,7 @@ function settings(): SettingsData {
     maintenance: { on: false },
     staff: [
       { email: "leon@example.com", name: "Leon", role: "owner", twofa: true, last_admin: t0 - 40 * 60 },
-      { email: "lisa.w@gmail.com", name: "lisa", role: "admin", twofa: true, last_admin: null },
+      { email: "lisa.w@example.com", name: "lisa", role: "admin", twofa: true, last_admin: null },
     ],
     sessions: [
       { id: "a1", email: "leon@example.com", created: t0 - 40 * 60, exp: t0 + 7 * H, agent: "Chrome · Windows", country: "Canada", current: true },
@@ -503,11 +503,11 @@ function audit(): { rows: AuditRow[] } {
   const t0 = now();
   const rows: [number, string, string, Record<string, unknown>][] = [
     [40 * 60, "admin.login", "leon@example.com", {}],
-    [2 * H, "hours.approve", "kimi.audio@icloud.com", { hours: 2 }],
+    [2 * H, "hours.approve", "kimi.audio@example.com", { hours: 2 }],
     [3 * H, "feedback.reply", "fb_demo1", { status: "shipped", adopted: true }],
-    [26 * H, "invite.send", "sydney.yu@gmail.com", { role: "member", source: "xiaoyuzhou" }],
+    [26 * H, "invite.send", "sydney.yu@example.com", { role: "member", source: "xiaoyuzhou" }],
     [2 * D, "trash.restore.show", "s_old-2", {}],
-    [3 * D, "user.update", "lisa.w@gmail.com", { plan: "pro" }],
+    [3 * D, "user.update", "lisa.w@example.com", { plan: "pro" }],
     [5 * D, "site.notice", "", { on: true }],
   ];
   return { rows: rows.map(([ago, action, target, data], i) => ({ id: 100 - i, ts: t0 - ago, email: "leon@example.com", action, target, data })) };

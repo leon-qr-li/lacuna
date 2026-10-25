@@ -66,8 +66,12 @@ def test_upload_checks(setup):
     assert c.post("/api/imports/tracks", params={"name": "a.wav"}, content=b"", headers=OCTET).status_code == 422
     assert c.post("/api/imports/tracks", params={"name": "../../evil.wav"}, content=rec["Leon"].read_bytes(),
                   headers=OCTET).json()["track"]["name"] == "evil.wav"
-    # failed uploads leave nothing behind; only the good one is there
-    assert len(list((ws.root / "imported_tracks").iterdir())) == 1
+    # odd names answer 422 / keep their type, never 500 (regression, batch 8)
+    assert upload(c, rec["Leon"], "....wav").status_code == 422
+    long = upload(c, rec["Leon"], "长" * 400 + ".wav")
+    assert long.status_code == 200 and long.json()["track"]["name"].endswith(".wav")
+    # failed uploads leave nothing behind; only the good ones are there
+    assert len(list((ws.root / "imported_tracks").iterdir())) == 2
 
 
 def test_form_lets_go_of_a_copy(setup):

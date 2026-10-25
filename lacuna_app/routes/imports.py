@@ -107,6 +107,9 @@ def register(app, ctx) -> None:
         except upload_parts.PartError:
             import_tracks.remove(ws, target)
             raise HTTPException(422, tr("上传没有完成，请重新上传"))
+        except ImportError_ as e:  # e.g. "....wav", whose name keeps no type once cleaned
+            import_tracks.remove(ws, target)
+            raise HTTPException(422, str(e))
         except BaseException:
             import_tracks.remove(ws, target)
             raise

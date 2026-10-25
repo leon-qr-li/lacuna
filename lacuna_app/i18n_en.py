@@ -250,6 +250,8 @@ EN: dict[str, str | tuple[str, str]] = {
         "{name} just changed the show settings. The page now shows the latest version; your change was not saved, please make it again on the latest version.",
     "已经有一集叫 {episode_id}，换个编号": "There's already an episode called {episode_id}; pick another ID",
     "{a} 和 {b} 选了同一个文件": "{a} and {b} have the same file",
+    "「{name}」还用在 {episodes} 的配乐里。移出后这些剧集的配乐就没有它了，导出时也不会有。": "“{name}” is still in the music of {episodes}. Once removed, it is gone from their music and from their exports.",
+    "{name} 的分轨太短（不到 {s} 秒），换一个文件": "{name}'s track is too short (under {s} s); pick another file",
     "先在「节目」里填好主持人": "Add the hosts under Show first",
     "要 {n} 条分轨（每位主持人一条），收到 {got} 条": "{n} tracks are needed (one per host), got {got}",
     "这一集不需要继续": "This episode doesn't need resuming",
@@ -684,9 +686,9 @@ EN: dict[str, str | tuple[str, str]] = {
     "这个月的 {n} 小时音频额度已经用完了。": "This month's {n} hours of audio are used up.",
     "免费体验的 {n} 小时已经用完了。": "The free trial's {n} hours are used up.",
     "这一集 {need} 小时，本月额度只剩 {left} 小时。": "This episode is {need} h; only {left} h are left this month.",
-    "可以在「设置 → 套餐与用量」里申请更多时长。": "You can ask for more hours under Settings → Plan & usage.",
-    "用的是创建这个节目的人的额度，请让 TA 在「设置 → 套餐与用量」里申请更多时长。":
-        "This show uses the hours of the person who created it; ask them to request more under Settings → Plan & usage.",
+    "可以在「设置 → 套餐与用量」点「想要更多时长」。": "Click “Ask for more hours” under Settings → Plan & usage.",
+    "用的是创建这个节目的人的额度，请让 TA 在「设置 → 套餐与用量」点「想要更多时长」。":
+        "This show uses the hours of the person who created it; ask them to click “Ask for more hours” under Settings → Plan & usage.",
     # ---- cloud storage for old episodes' audio (cold.py)
     "取回音频没有成功，请稍后再打开这一集。": "Couldn't bring the audio back. Please open this episode again in a moment.",
     "正在取回这一集的音频…": "Bringing this episode's audio back…",

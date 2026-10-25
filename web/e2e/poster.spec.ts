@@ -87,6 +87,22 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   await expect(page.getByTestId("poster-cover")).toBeVisible();
   await expect(page.getByTestId("poster-card")).toHaveCount(5);
 
+  // on the cloud server: no server folder or 打开文件夹, the cover downloads from the page instead (regression, batch 8)
+  await page.route("**/api/auth/status", async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { ...(await res.json()), cloud: true } });
+  });
+  await page.reload();
+  const cloudCover = page.getByTestId("poster-cover");
+  await expect(cloudCover).toContainText("各个播客平台都能用");
+  await expect(cloudCover).not.toContainText("cover.png");
+  await expect(cloudCover.getByRole("button", { name: "打开文件夹" })).toHaveCount(0);
+  await expect(cloudCover.locator(".mono")).toHaveCount(0);
+  const dl = page.getByTestId("poster-download");
+  const jpg = await page.request.get((await dl.getAttribute("href"))!);
+  expect(jpg.headers()["content-type"]).toBe("image/jpeg");
+  await page.unroute("**/api/auth/status");
+
   // the home page's episode tile now shows the chosen cover instead of the letter
   await page.goto("/#/");
   await page.reload();

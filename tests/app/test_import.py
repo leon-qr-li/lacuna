@@ -109,7 +109,13 @@ def test_bad_requests(ws, rec, tmp_path):
     (tmp_path / "notes.txt").write_text("x")
     assert "不是音频" in post(leon, str(tmp_path / "notes.txt")).json()["detail"]
     assert "要 2 条分轨" in post(leon).json()["detail"]
+    # a 0-second track is refused up front, not deep in the analysis with a raw error (regression, batch 8)
+    import soundfile as sf, numpy as np
+    empty = tmp_path / "empty.wav"
+    sf.write(str(empty), np.zeros(0, dtype="float32"), 48000)
+    assert "Pei 的分轨太短" in post(leon, str(empty)).json()["detail"]
     assert post(leon, pei, id="../x").status_code == 422
+    assert post(leon, pei, id="EP\u200b9").status_code == 422   # looks like EP9 (regression, batch 8)
     assert c.post("/api/imports/EP404/resume").status_code == 404
 
 

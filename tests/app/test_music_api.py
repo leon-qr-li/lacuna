@@ -218,3 +218,13 @@ def test_suggestions_chat_nudge_and_stale_export(ws, tmp_path):
     assert job["music_stale"] is False
     rec = json.loads(next(Path(job["result"]["folder"]).glob(f"{job['basename']}*.json")).read_text("utf-8"))
     assert [c["role"] for c in rec["music"]] == ["intro", "interlude"] and rec["music_version"] == job["music_version"]
+
+
+def test_removing_an_asset_an_episode_plays_asks_first(client, tmp_path):
+    # regression, batch 8: 移出素材库 used to drop an intro from an episode's mix and export without a word
+    jingle = upload(client, write_music(tmp_path / "in" / "jingle.wav", 4.0), kind="intro").json()["asset"]["id"]
+    assert client.post(f"{EP}/music", json={"asset_id": jingle, "role": "intro"}).status_code == 200
+    r = client.delete(f"/api/library/assets/{jingle}")
+    assert r.status_code == 409 and EPISODE in r.json()["detail"]
+    assert any(a["id"] == jingle for a in client.get("/api/library").json()["assets"])
+    assert client.delete(f"/api/library/assets/{jingle}", params={"force": True}).json() == {"ok": True}

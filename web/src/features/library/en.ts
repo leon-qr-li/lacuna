@@ -38,6 +38,7 @@ export const en: Dict = {
   "手动改": "Edit by hand",
   "把「{name}」移出素材库？移出后素材库里就看不到它了。": "Remove “{name}” from the library? It will no longer appear there.",
   "移出素材库": "Remove from library",
+  "仍然移出": "Remove anyway",
   "保存署名": "Save credit",
   "素材库里已经有这首（{name}）": "Already in the library ({name})",
   "新加入 {length} 个文件": { one: "Added {length} file", other: "Added {length} files" },

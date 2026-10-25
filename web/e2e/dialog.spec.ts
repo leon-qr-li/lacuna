@@ -107,3 +107,31 @@ test("the dialog speaks English in the English interface", async ({ page }) => {
   await expect(row).toHaveCount(0);
   await page.evaluate(() => localStorage.removeItem("lacuna.lang"));
 });
+
+// batch 8 regression: a file an episode's music plays is named in a second question before it goes
+test("移出素材库: a file an episode still uses asks once more, naming the episode", async ({ page }) => {
+  const name = "dialog_in_use.wav";
+  await addAsset(page, name);
+  let tries = 0;
+  await page.route(/\/api\/library\/assets\/[^/]+$/, async (route) => {
+    if (route.request().method() !== "DELETE") return route.fallback();
+    tries++;
+    if (!route.request().url().includes("force=true"))
+      return route.fulfill({ status: 409, json: { detail: `「${name}」还用在 EP001 的配乐里。移出后这些剧集的配乐就没有它了，导出时也不会有。` } });
+    return route.fallback();
+  });
+  await page.goto("/#/library");
+  const row = page.getByTestId("asset-row").filter({ hasText: name });
+  const dlg = page.getByRole("alertdialog");
+  await row.getByRole("button", { name: "移出素材库" }).click();
+  await dlg.getByRole("button", { name: "移出", exact: true }).click();
+  await expect(dlg).toContainText("还用在 EP001 的配乐里");
+  await dlg.getByRole("button", { name: "取消" }).click();
+  await expect(row).toHaveCount(1);                      // kept
+  await row.getByRole("button", { name: "移出素材库" }).click();
+  await dlg.getByRole("button", { name: "移出", exact: true }).click();
+  await dlg.getByRole("button", { name: "仍然移出" }).click();
+  await expect(row).toHaveCount(0);
+  expect(tries).toBe(3);                                // asked, asked, then removed with force
+  await page.unroute(/\/api\/library\/assets\/[^/]+$/);
+});

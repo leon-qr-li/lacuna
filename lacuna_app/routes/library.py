@@ -9,7 +9,7 @@ from starlette.concurrency import run_in_threadpool
 from .. import upload_parts
 from ..library import Library, LibraryError, lookup_credit
 from ..store import PathError, check_id
-from ..i18n import tr
+from ..i18n import join_list, tr
 
 MAX_UPLOAD = 4 * 1024 ** 3   # a 2-hour 48 kHz stereo WAV is ~1.4 GB
 
@@ -177,8 +177,12 @@ def register(app, ctx) -> None:
         return out
 
     @app.delete("/api/library/assets/{asset_id}")
-    def library_remove(asset_id: str):
-        asset_or_404(library, asset_id)
+    def library_remove(asset_id: str, force: bool = False):
+        a = asset_or_404(library, asset_id)
+        users = sorted(library._used_by_music("").get(asset_id, ()))
+        if users and not force:  # the page asks once more, naming them, then sends force
+            raise HTTPException(409, tr("「{name}」还用在 {episodes} 的配乐里。移出后这些剧集的配乐就没有它了，导出时也不会有。",
+                                        name=a.get("name") or asset_id, episodes=join_list(users)))
         library.remove(asset_id)
         return {"ok": True}
 

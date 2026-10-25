@@ -8,6 +8,7 @@ import { uploadApi } from "./api";
 import { fmtDateTime, joinList, t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { useShow } from "../show/api";
+import { useCloud } from "../auth/cloud";
 
 const mb = (b: number) => `${(b / 1024 / 1024).toFixed(b >= 100 * 1024 * 1024 ? 0 : 1)} MB`;
 
@@ -20,6 +21,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
   const [pub, setPub] = useState<PublishView | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
+  const cloud = useCloud();
 
   useEffect(() => {
     Promise.all([uploadApi.upload(id), publishApi.publish(id)])
@@ -41,6 +43,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
 
   // the browser download still happens (the link); this also puts the cover next to the WAV / MP3
   const saveCover = () => {
+    if (cloud !== false) return; // on the cloud server the browser download is the copy; a server folder means nothing to the user
     uploadApi.saveCover(id).then(
       (r) => {
         setSaved(r.path);
@@ -96,13 +99,15 @@ export function UploadView({ id, version, flash }: { id: string; version: string
               <a className="btn btn-primary btn-small" href={uploadApi.wavUrl(id, view.audio.name)} download={view.audio.name}>
                 {t("下载 WAV")}
               </a>
-              <button
-                type="button"
-                className="btn btn-outline btn-small"
-                onClick={() => api.openExports(id).then((r) => flash(t("已打开 {folder}", { folder: r.folder })), (e) => flash(t("打不开：{message}", { message: e.message })))}
-              >
-                {t("打开所在文件夹")}
-              </button>
+              {cloud === false && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-small"
+                  onClick={() => api.openExports(id).then((r) => flash(t("已打开 {folder}", { folder: r.folder })), (e) => flash(t("打不开：{message}", { message: e.message })))}
+                >
+                  {t("打开所在文件夹")}
+                </button>
+              )}
             </div>
           </>
         ) : (

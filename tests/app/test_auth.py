@@ -186,8 +186,8 @@ def test_settings_endpoints(client, mailer, monkeypatch):
     assert client.post("/api/auth/test-mail").json() == {"sent": True, "to": "leon@example.com"}
     assert mailer.outbox[-1]["to"] == "leon@example.com"
     assert client.post("/api/auth/config", json={"sender": "no address"}).status_code == 400
-    st = client.post("/api/auth/config", json={"sender": "LACUNA <hi@lacuna.fm>"}).json()
-    assert st["mail"]["sender"] == "LACUNA <hi@lacuna.fm>"
+    st = client.post("/api/auth/config", json={"sender": "LACUNA <hi@example.com>"}).json()
+    assert st["mail"]["sender"] == "LACUNA <hi@example.com>"
     assert client.post("/api/auth/resend-key", json={"key": "sk-ant-wrong"}).status_code == 400
     saved = {}
     monkeypatch.setattr("lacuna_app.auth.save_secret", lambda n, v: saved.setdefault(n, v) and "file")

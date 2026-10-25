@@ -8,6 +8,8 @@ import { joinList, lang, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 import { confirmDialog } from "../dialog/Dialog";
 import { EmptyState } from "../states/States";
+import { useCloud } from "../auth/cloud";
+import { uploadApi } from "../upload/api";
 
 /** 海报: the AI (LACUNA to Leon) draws several square covers (SVG) from the publish pack, rendered on this machine;
  *  Leon picks one (rendered at 3000×3000 into the publish folder) or changes one with a sentence. */
@@ -18,6 +20,7 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
   const [health, setHealth] = useState<Health | null>(null);
   const [big, setBig] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
+  const cloud = useCloud();
   const shown = useRef<string | null>(id); // the episode on screen; null once the page is gone
 
   // one polling chain at most, and none after the page is left or another episode is opened
@@ -141,16 +144,37 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
           <img src={posterApi.posterPreview(id, chosen.id)} alt={t("选定的封面 {name}", { name: chosen.name })} />
           <div className="grow">
             <strong>{t("已选：{name}", { name: chosen.name })}</strong>
-            <p className="small">
-              {t("{px}×{px} 的封面已经存好，上传喜马拉雅用 cover.jpg（{mb} MB），cover.png 是无损备份。", {
-                px: view.cover.px,
-                mb: (view.cover.jpg_bytes / 1024 / 1024).toFixed(1),
-              })}
-            </p>
-            <p className="muted small mono">{view.cover.folder}</p>
-            <button type="button" className="btn btn-outline btn-small" onClick={() => api.openExports(id).catch((e) => flash(t("打不开文件夹：{message}", { message: e.message })))}>
-              {t("打开文件夹")}
-            </button>
+            {cloud === false ? (
+              <>
+                <p className="small">
+                  {t("{px}×{px} 的封面已经存好，上传喜马拉雅用 cover.jpg（{mb} MB），cover.png 是无损备份。", {
+                    px: view.cover.px,
+                    mb: (view.cover.jpg_bytes / 1024 / 1024).toFixed(1),
+                  })}
+                </p>
+                <p className="muted small mono">{view.cover.folder}</p>
+                <button type="button" className="btn btn-outline btn-small" onClick={() => api.openExports(id).catch((e) => flash(t("打不开文件夹：{message}", { message: e.message })))}>
+                  {t("打开文件夹")}
+                </button>
+              </>
+            ) : cloud ? (
+              <>
+                <p className="small">
+                  {t("{px}×{px} 的封面已经做好（JPG，{mb} MB），各个播客平台都能用。", {
+                    px: view.cover.px,
+                    mb: (view.cover.jpg_bytes / 1024 / 1024).toFixed(1),
+                  })}
+                </p>
+                <a
+                  className="btn btn-outline btn-small"
+                  href={uploadApi.coverUrl(id, view.cover.rendered_at)}
+                  download={`${id}_cover.jpg`}
+                  data-testid="poster-download"
+                >
+                  {t("下载封面")}
+                </a>
+              </>
+            ) : null}
           </div>
         </section>
       )}

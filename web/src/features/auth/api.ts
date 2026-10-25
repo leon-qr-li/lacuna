@@ -122,7 +122,10 @@ export const authApi = {
   enroll: (ticket: string, code: string) => req<Step>("POST", "/api/auth/2fa/enroll", { ticket, code }),
   sendCode: (email: string) => req<{ sent: true }>("POST", "/api/auth/code", { email, purpose: "reset" }),
   reset: (email: string, code: string, password: string) => req<Step>("POST", "/api/auth/reset", { email, code, password }),
-  logout: () => req<{ ok: true }>("POST", "/api/auth/logout"),
+  logout: () => {
+    leaving = true;
+    return req<{ ok: true }>("POST", "/api/auth/logout");
+  },
   // my account
   password: (old: string, next: string) => req<{ ok: true }>("POST", "/api/auth/password", { old, new: next }),
   setup2fa: () => req<{ secret: string; uri: string }>("POST", "/api/auth/2fa/setup"),
@@ -151,3 +154,11 @@ export const authApi = {
   saveResendKey: (key: string) => req<AuthStatus & { saved: true; where: string }>("POST", "/api/auth/resend-key", { key }),
   testMail: () => req<{ sent: true; to: string }>("POST", "/api/auth/test-mail"),
 };
+
+let leaving = false;
+/** Was the last sign-out asked for (退出登录), rather than a session that ran out? Asking clears it. */
+export function signedOutOnPurpose(): boolean {
+  const v = leaving;
+  leaving = false;
+  return v;
+}

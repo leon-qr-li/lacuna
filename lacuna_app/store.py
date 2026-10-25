@@ -86,8 +86,10 @@ class Workspace:
     def episode_ids(self) -> list[str]:
         if not self.episodes_dir.is_dir():
             return []
-        return sorted(p.name for p in self.episodes_dir.iterdir()
-                      if (p / META_FILE).is_file() and (p / STATE_FILE).is_file())
+        # a crash between the two renames of atomic_write_json leaves only the .bak: still an episode
+        # (read_json reads it), so its id is never handed out again and its recordings are never pruned
+        has = lambda p, n: (p / n).is_file() or (p / (n + ".bak")).is_file()  # noqa: E731
+        return sorted(p.name for p in self.episodes_dir.iterdir() if has(p, META_FILE) and has(p, STATE_FILE))
 
 
 def _retry_windows(fn, attempts: int = 20, delay: float = 0.025):
