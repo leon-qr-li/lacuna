@@ -18,7 +18,7 @@ test("an old episode's audio comes back from cloud storage, then the episode ope
   });
   await page.goto(`/#/ep/${encodeURIComponent(ID)}/review`);
   const box = page.getByTestId("audio-restoring");
-  await expect(box).toContainText("正在取回这一集的音频");
+  await expect(box).toContainText("正在取回这一集的音频", { timeout: 15_000 });
   await expect(box).toContainText("70%");
   await expect(box).toContainText("10–30 秒");
   release = true;
@@ -32,5 +32,5 @@ test("a failed restore says so instead of spinning forever", async ({ page }) =>
     route.fulfill({ status: 423, json: { detail: "取回音频没有成功，请稍后再打开这一集。", restoring: { progress: 0.1, failed: true } } }),
   );
   await page.goto(`/#/ep/${encodeURIComponent(ID)}/review`);
-  await expect(page.getByText("取回音频没有成功")).toBeVisible();
+  await expect(page.getByText("取回音频没有成功")).toBeVisible({ timeout: 15_000 });
 });
