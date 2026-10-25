@@ -50,7 +50,7 @@ test("side panel: tabs LACUNA / 这附近改了什么, counted, remembered", asy
   await page.getByTestId("tab-near").click();
   await expect(page.getByTestId("tab-near")).toHaveAttribute("aria-selected", "true");
   await expect(page.getByTestId("chat-log")).toBeHidden();
-  await expect(page.getByLabel(/对 LACUNA说/)).toBeHidden();
+  await expect(page.getByLabel(/对 LACUNA ?说/)).toBeHidden();
   const rows = page.locator("[data-testid=nearby] li");
   await expect(rows.first()).toBeVisible();
   await expect(page.getByTestId("tab-near").locator(".side-n")).toHaveText(String(await rows.count()));

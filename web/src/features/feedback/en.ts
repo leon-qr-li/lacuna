@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "还没有反馈": "No feedback yet",
   // top bar and panel
   "反馈": "Feedback",
   "反馈（有新回复）": "Feedback (new reply)",

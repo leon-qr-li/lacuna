@@ -37,6 +37,9 @@
   --shadow-pop: 0 20px 50px rgb(20 24 40 / 0.18);
   --r: 22px;
   --r-sm: 12px;
+  /* batch 7 (T2): two page widths, reading steps and workbench steps */
+  --w-read: 880px;
+  --w-work: 1280px;
   --sans: "Inter Variable", "MiSans VF", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   --mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", Consolas, monospace;
 
@@ -103,6 +106,8 @@ a:hover { color: var(--accent); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 ::selection { background: var(--accent-soft); }
 h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+/* one title style for every step page of an episode (batch 7, T2) */
+h1.step-title { margin: 0 0 6px; font-size: 24px; line-height: 1.3; }
 h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
 h2.sub { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 6px; }
 
@@ -141,7 +146,7 @@ a.brand:hover { color: var(--ink); }
 
 /* episode header: status + episode-wide actions, then the flow (a pill of steps), then a group's sub-tabs */
 .ep-head { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 28px 4px; }
-.ep-head-row { width: 100%; max-width: 1360px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
+.ep-head-row { width: 100%; max-width: var(--w-work); display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; }
 .ep-head-side { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 32px; }
 .ep-head-end { justify-content: flex-end; }
 @media (max-width: 1180px) {
@@ -156,7 +161,7 @@ a.brand:hover { color: var(--ink); }
 .mode-badge { font-weight: 700; color: var(--warn); }
 .mode-badge.is-zero { color: inherit; font-weight: 400; opacity: 0.6; }
 .modes a[aria-current="page"] .mode-badge:not(.is-zero) { color: inherit; }
-.next-step { width: 100%; max-width: 1360px; margin: 0 auto; padding: 8px 28px 120px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+.next-step { width: 100%; max-width: var(--w-work); margin: 0 auto; padding: 8px 28px 120px; display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
 .subtabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 14px; background: var(--hover); }
 .subtabs a { padding: 6px 16px; border-radius: 11px; color: var(--ink-2); text-decoration: none; font-size: 13.5px; white-space: nowrap; }
 .subtabs a[aria-current="page"] { background: var(--solid); color: var(--ink); font-weight: 600; box-shadow: var(--shadow); }
@@ -187,7 +192,7 @@ a.btn, a.btn:hover { text-decoration: none; color: var(--ink); }
 .btn-ghost { background: none; border-color: transparent; color: var(--ink-2); }
 .btn-ondark { background: transparent; border-color: var(--line-2); color: var(--ink); }
 .btn-ondark.is-on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); font-weight: 600; }
-.btn.sq { min-width: 42px; min-height: 42px; padding: 0; border-radius: 50%; }
+.btn.sq { min-width: 42px; min-height: 42px; padding: 0 9px; border-radius: 21px; white-space: nowrap; }
 .btn-block { width: 100%; justify-content: center; }
 .linkish { border: 0; background: none; padding: 0; color: var(--muted); cursor: pointer; text-decoration: underline dotted; }
 .linkbtn { display: inline-flex; align-items: center; text-decoration: none; }
@@ -220,7 +225,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .note { margin: 0; padding: 10px 14px; border-radius: var(--r-sm); background: var(--accent-soft); }
 
 /* ---------- episode workspace */
-.workspace { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; }
+.workspace { flex: 1; width: 100%; max-width: var(--w-work); margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; }
 .workspace > .chat { order: 2; margin: 24px 28px 24px 0; align-self: stretch; }
 .workspace.chat-closed > .chat { display: none; }
 .center { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 18px; padding: 24px 28px 40px; }
@@ -300,7 +305,7 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 .dark-bar .muted { color: var(--muted); }
 
 /* ---------- review */
-.review { flex: 1; width: 100%; max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 24px 28px 24px; }
+.review { flex: 1; width: 100%; max-width: var(--w-work); margin: 0 auto; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 24px 28px 24px; }
 .review-nav { flex: 1 1 300px; max-width: 360px; display: flex; flex-direction: column; gap: 18px; padding: 18px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); box-shadow: var(--shadow); }
 .review-nav section { display: flex; flex-direction: column; }
 .review-nav h2 { margin: 0 6px 4px; font-size: 15px; }

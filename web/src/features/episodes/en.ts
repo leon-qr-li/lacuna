@@ -1,6 +1,9 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "没有归档的剧集": "No archived episodes",
+  "归档的剧集会放在这里，随时可以恢复。": "Archived episodes are kept here; you can restore them any time.",
+  "已导出": "Exported",
   "归档「{title}」": "Archive “{title}”",
   "归档：从列表里收起来，随时能在「已归档」里恢复": "Archive: put it away; restore it any time from Archived",
   "归档": "Archive",
@@ -12,7 +15,6 @@ export const en: Dict = {
   "正在打开已归档…": "Opening Archived…",
   "归档的剧集不在剧集列表里显示，文件都还在。可以恢复，也可以永久删除；学到的习惯永远保留。":
     "Archived episodes are hidden from Episodes; their files are still here. Restore them, or delete them for good. What LACUNA learned from them always stays.",
-  "没有归档的剧集。": "No archived episodes.",
   "归档于 {at}": "Archived {at}",
   "恢复": "Restore",
   "永久删除": "Delete for good",

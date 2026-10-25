@@ -3,6 +3,11 @@
 import type { Dict } from "../i18n";
 
 export const en: Dict = {
+  "正在取回…": "Fetching back…",
+  "正在上传…": "Uploading…",
+  "测速": "Speed test",
+  "传一个 {size} 的测试文件到云存储再取回来，测完自动删掉，大约 1–3 分钟。": "Sends a {size} test file to cloud storage and back, then deletes it. About 1–3 minutes.",
+  "上传 {up} 秒（{upm} Mbps），取回 {down} 秒（{downm} Mbps）": "Upload {up} s ({upm} Mbps), fetch back {down} s ({downm} Mbps)",
   // shell
   "工作": "Work",
   "首页": "Home",

@@ -4,6 +4,7 @@ import { PageLoading } from "../loading/Loading";
 import { confirmDialog } from "../dialog/Dialog";
 import { EpisodeCard } from "./EpisodeCard";
 import { episodesApi, type ArchivedItem } from "./api";
+import { EmptyState } from "../states/States";
 
 const mb = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${Math.max(Math.round(b / 1e6), 0)} MB`);
 
@@ -67,7 +68,19 @@ export function ArchiveView() {
         </p>
       )}
       {err && <p className="error">{err}</p>}
-      {list?.length === 0 && <p className="muted">{t("没有归档的剧集。")}</p>}
+      {list?.length === 0 && (
+        <EmptyState
+          icon="▢"
+          title={t("没有归档的剧集")}
+          text={t("归档的剧集会放在这里，随时可以恢复。")}
+          action={
+            <a className="btn btn-outline btn-small linkbtn" href="#/">
+              {t("回首页")}
+            </a>
+          }
+          testid="archive-empty"
+        />
+      )}
       <ul className="ep-list">
         {list?.map((e) => (
           <EpisodeCard

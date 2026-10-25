@@ -1,20 +1,20 @@
-/* LACUNA Admin — style B 石墨控制台 (decision 2026-10-24-admin-site): graphite neutrals, one indigo accent,
-   red / amber / green only for status. Light by default, dark on html[data-theme="dark"]. Every class starts "a-".
+/* LACUNA Admin — style B 石墨控制台 (decision 2026-10-24-admin-site), in the main site's 夜航 colours since
+   batch 7 (T8): navy neutrals, the brand orange as the one accent, red / amber / green only for status. Light by default, dark on html[data-theme="dark"]. Every class starts "a-".
    Layout: 232px sidebar | main column; under 900px the sidebar becomes a drawer and a tab bar sits at the bottom. */
 :root {
-  --bg: #f6f6f7;
+  --bg: #f4f4f8;
   --panel: #ffffff;
-  --side: #fbfbfc;
-  --sunk: #f1f1f3;
-  --hover: #f0f0f2;
-  --line: #e4e4e7;
-  --line-2: #d4d4d8;
-  --ink: #0f1115;
-  --ink-2: #52555f;
-  --ink-3: #6f727d;
-  --acc: #4f46e5;
-  --acc-ink: #4338ca;
-  --acc-soft: #eef0ff;
+  --side: #f8f9fc;
+  --sunk: #eef0f6;
+  --hover: #eef0f6;
+  --line: #e3e4ec;
+  --line-2: #cfd1de;
+  --ink: #12152e;
+  --ink-2: #4a4e66;
+  --ink-3: #6f7389;
+  --acc: #e8622a;
+  --acc-ink: #b8460f;
+  --acc-soft: #fff0e7;
   --on-acc: #ffffff;
   --ok: #15803d;
   --ok-soft: #e8f6ed;
@@ -24,7 +24,7 @@
   --bad-soft: #fdecee;
   --info: #2563eb;
   --info-soft: #e8f0fe;
-  --heat0: #f1f1f3;
+  --heat0: #eef0f6;
   --shadow: 0 1px 2px rgb(15 17 21 / 0.05), 0 8px 24px rgb(15 17 21 / 0.06);
   --shadow-pop: 0 24px 60px rgb(15 17 21 / 0.22);
   --sans: "Geist Variable", "Geist", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
@@ -32,20 +32,20 @@
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --bg: #0c0d10;
-  --panel: #131418;
-  --side: #101115;
-  --sunk: #1a1b20;
-  --hover: #1d1e24;
-  --line: #24262c;
-  --line-2: #33363d;
-  --ink: #ececef;
-  --ink-2: #a5a8b3;
-  --ink-3: #8a8d98;
-  --acc: #7c78ff;
-  --acc-ink: #a5a2ff;
-  --acc-soft: #22214a;
-  --on-acc: #0c0d10;
+  --bg: #080a1a;
+  --panel: #12152f;
+  --side: #0d1024;
+  --sunk: #171a37;
+  --hover: #1b1f40;
+  --line: #22264a;
+  --line-2: #30355e;
+  --ink: #eef0fa;
+  --ink-2: #b0b5ca;
+  --ink-3: #868ba3;
+  --acc: #ff8a4c;
+  --acc-ink: #ffb48c;
+  --acc-soft: #3a2216;
+  --on-acc: #12152e;
   --ok: #4ade80;
   --ok-soft: #10291a;
   --warn: #fbbf24;
@@ -54,7 +54,7 @@
   --bad-soft: #341219;
   --info: #60a5fa;
   --info-soft: #0f2240;
-  --heat0: #1a1b20;
+  --heat0: #171a37;
   --shadow: none;
   --shadow-pop: 0 24px 60px rgb(0 0 0 / 0.55);
   color-scheme: dark;
@@ -202,14 +202,9 @@ p {
 .mk {
   width: 26px;
   height: 26px;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--bg);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 13px;
   flex: none;
+  background: url("../features/brand/logo.svg") center / contain no-repeat;
+  filter: drop-shadow(0 3px 8px rgb(255 79 123 / 0.25));
 }
 .a-brand b {
   font-weight: 600;
@@ -1806,3 +1801,8 @@ svg.a-chart {
     transition: none !important;
   }
 }
+
+/* 测速 on 存储与保留 (batch 7, S1) */
+.a-speed { display: grid; gap: 6px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.a-speed p { margin: 0; }
+.a-bad-text { color: var(--bad); }

@@ -180,8 +180,8 @@ export const en: Dict = {
   "只属于这一集；在素材库可以改成整个专辑或整个节目都能用。": "Only for this episode; in Library you can make it available to an album or the whole show.",
   "片头：{name}": "Intro: {name}",
   "片尾：{name}": "Outro: {name}",
-  "音乐保存在 LACUNA 的服务器上，原文件不动。查曲名时只把文件名、标签和你的备注发给 LACUNA 的 AI。":
-    "Music is kept on LACUNA's servers; your original files are untouched. To look up a title, only the file name, tags and your note go to LACUNA's AI.",
+  "音乐保存在 LACUNA 的服务器上，原文件不动。查曲名时只把文件名、标签和你的备注发给 LACUNA。":
+    "Music is kept on LACUNA's servers; your original files are untouched. To look up a title, only the file name, tags and your note are sent to LACUNA.",
   "先加片头和片尾音乐":
     "Start by adding intro and outro music",
   "素材库还是空的。从电脑添加音乐文件后，就能把它放进这一集。请只用你有权使用的音乐。":

@@ -22,13 +22,13 @@ function MinePage() {
   return (
     <main className="fb-page">
       <div className="row fb-page-head">
-        <h1>{t("我的反馈")}</h1>
+        <h1 className="step-title">{t("我的反馈")}</h1>
         <span className="grow" />
         <button type="button" className="btn btn-primary" onClick={() => openFeedback()}>
           {t("写新反馈")}
         </button>
       </div>
-      <MyFeedback onWrite={() => openFeedback()} />
+      <MyFeedback />
     </main>
   );
 }

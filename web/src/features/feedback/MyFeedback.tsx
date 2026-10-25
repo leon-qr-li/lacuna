@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { locale, t } from "../../i18n";
 import { feedbackApi, type Kind, type Mine, type Status } from "./api";
 import { setUnread } from "./unread";
+import { EmptyState } from "../states/States";
 
 export const KIND_LABEL: Record<Kind, string> = { bug: t("问题"), idea: t("想法"), praise: t("夸一句") };
 export const STATUS_LABEL: Record<Status, string> = {
@@ -24,6 +25,7 @@ const STATUS_TONE: Record<Status, string> = {
 const day = (s: number) => new Date(s * 1000).toLocaleDateString(locale, { month: "short", day: "numeric" });
 
 /** 我的反馈: what the person sent, its status and the site owner's answers. Looking marks the answers read. */
+/** onWrite: only inside the panel; the 我的反馈 page has its own 写新反馈 next to the title (batch 7, B9). */
 export function MyFeedback({ onWrite }: { onWrite?: () => void }) {
   const [items, setItems] = useState<Mine[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -41,14 +43,19 @@ export function MyFeedback({ onWrite }: { onWrite?: () => void }) {
   return (
     <div className="fb-mine" data-testid="feedback-mine">
       {items.length === 0 && (
-        <div className="fb-empty">
-          <p className="muted">{t("你还没有发过反馈。遇到问题、有想法，随时点右上角的「反馈」告诉我们。")}</p>
-          {onWrite && (
-            <button type="button" className="btn btn-outline btn-small" onClick={onWrite}>
-              {t("写新反馈")}
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon="✉"
+          title={t("还没有反馈")}
+          text={t("你还没有发过反馈。遇到问题、有想法，随时点右上角的「反馈」告诉我们。")}
+          testid="feedback-empty"
+          action={
+            onWrite && (
+              <button type="button" className="btn btn-outline btn-small" onClick={onWrite}>
+                {t("写新反馈")}
+              </button>
+            )
+          }
+        />
       )}
       {items.map((m) => (
         <article key={m.id} className={`fb-item${m.unread ? " is-new" : ""}`} data-testid="feedback-item">

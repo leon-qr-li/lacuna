@@ -62,7 +62,7 @@ export function LessonsView({ id, pauseMain }: { id: string; pauseMain: () => vo
   return (
     <main className="lessons" data-testid="lessons">
       <header className="lessons-head">
-        <h2>{t("本集学到的规则")}</h2>
+        <h1 className="step-title">{t("本集学到的规则")}</h1>
         <p className="muted">
           {t("如果这一集已经剪完了，请点「总结」：LACUNA 会根据你们的对话和你的审阅决定，生成这一集新学到的剪辑习惯。逐条看：满意就「采用」，想改可以直接改字，或者跟 LACUNA 说怎么改。")}
         </p>
@@ -195,7 +195,7 @@ function LessonCard({ epId, x, onChange, pauseMain }: { epId: string; x: Lesson;
       {relation && <p className="small lesson-related">{relation}</p>}
       {x.reply && <p className="lesson-reply">{x.reply}</p>}
       {x.fallback && x.error && (
-        <p className="small warn">{t("这次没能改写（{message}），先按你说的原样用作这条的说法。", { message: x.error })}</p>
+        <p className="small warn">{t("这次没能改写：{message}。先按你说的原样用作这条的说法。", { message: x.error })}</p>
       )}
       {x.why && <p className="prose lesson-why">{x.why}</p>}
       {n > 0 && (

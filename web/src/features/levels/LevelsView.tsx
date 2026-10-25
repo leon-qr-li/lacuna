@@ -142,7 +142,7 @@ export function LevelsView({ id, ep, flash, onPauseMain, onEpisode }: Props) {
         <section className="levels-card">
           <div className="levels-head">
             <div>
-              <h2>{t("主持人音量")}</h2>
+              <h1 className="step-title">{t("主持人音量")}</h1>
               <p className="muted small">
                 {solo
                   ? t("这一集只有一位主持人，不用统一。可以在下面单独调音量。")
@@ -247,10 +247,16 @@ function Meter({ raw, now, target }: { raw: number | null; now: number | null; t
       </div>
       <div className="levels-meter-scale muted">
         <span>{t("−30 轻")}</span>
-        <span>
-          <span className="levels-key-raw">│</span> {t("原始")} <span className="levels-key-target">│</span> {t("目标 {n}", { n: target })}
-        </span>
         <span>{t("响 −6 LUFS")}</span>
+      </div>
+      {/* a legend of its own, so the labels never crowd the scale (batch 7, B20) */}
+      <div className="levels-meter-legend muted">
+        <span>
+          <span className="levels-key-raw">│</span> {t("原始")}
+        </span>
+        <span>
+          <span className="levels-key-target">│</span> {t("目标 {n}", { n: target })}
+        </span>
       </div>
     </div>
   );

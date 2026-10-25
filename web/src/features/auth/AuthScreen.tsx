@@ -6,6 +6,7 @@ import { BusyLabel } from "../loading/Loading";
 import { currentTheme, setTheme } from "../theme/theme";
 import { lang, langChosen, setLang, t } from "../../i18n";
 import { AgreeBox, withLegalLinks } from "../legal/Legal";
+import { ThemeGlyph } from "../theme/Glyph";
 
 type View =
   | { v: "login" }
@@ -114,7 +115,7 @@ function Corner() {
       </button>
       <button
         type="button"
-        className="btn btn-outline btn-small"
+        className="btn btn-outline btn-small auth-theme"
         aria-label={theme === "dark" ? t("浅色") : t("深色")}
         onClick={() => {
           const next = theme === "dark" ? "light" : "dark";
@@ -122,7 +123,7 @@ function Corner() {
           setT(next);
         }}
       >
-        {theme === "dark" ? "☀" : "☾"}
+        <ThemeGlyph theme={theme} />
       </button>
     </div>
   );

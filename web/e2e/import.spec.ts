@@ -168,7 +168,7 @@ test("archive the imported episode, then delete it for good", async ({ page }) =
   await row.getByRole("button", { name: "永久删除" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "永久删除" }).click();
   await expect(page.getByRole("status").filter({ hasText: "已永久删除" })).toContainText("学到的习惯都还在");
-  await expect(page.getByText("没有归档的剧集。")).toBeVisible();
+  await expect(page.getByTestId("archive-empty")).toBeVisible();
   expect((await page.request.get("/api/episodes/EP001")).status()).toBe(404);
   // the id is free again: the next import suggests EP001 and starts from scratch
   await page.goto("/#/");

@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "专辑里还没有剧集": "No episodes in this album yet",
   "删除专辑「{name}」？": "Delete the album “{name}”?",
   "里面的剧集不会删，会变成「不在专辑里」；只给这个专辑用的素材会变成整个节目都能用。":
     "Its episodes stay and move to “Not in an album”; media only for this album becomes available to the whole show.",

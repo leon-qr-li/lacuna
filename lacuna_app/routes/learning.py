@@ -27,7 +27,14 @@ def register(app, ctx) -> None:
 
     @app.get("/api/learning")
     def learning_overview():
-        return learning.overview(ctx.open_episodes())
+        titles: dict[str, str] = {}
+
+        def eps():
+            for ep in ctx.open_episodes():
+                titles[ep.id] = ep.meta.get("title") or ep.id
+                yield ep
+        # the page names a source by its title, not its id (batch 7, B10)
+        return learning.overview(eps()) | {"titles": titles}
 
     @app.post("/api/learning/rules")
     def learning_decide(body: RuleBody):

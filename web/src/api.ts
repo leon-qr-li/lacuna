@@ -69,6 +69,8 @@ export interface EpisodeListItem {
   error?: string;
   /** the chosen cover's preview, null: none chosen (the tile shows its letter) */
   poster?: string | null;
+  /** exported at least once (the tile's status stripe) */
+  exported?: boolean;
 }
 
 export interface ABSide {

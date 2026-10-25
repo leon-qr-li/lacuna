@@ -319,13 +319,14 @@ def test_failed_rewrite_and_summary_explain_in_words(ai_ws):
     c = client(ai_ws, writer, MockEditorAdapter())
     d = c.post(f"{EP}/remember", json={"text": "开头别剪", "playhead": 1.0}).json()["remember"]
     assert d["fallback"] and d["title"] == "开头别剪"
-    assert d["error"] == "AI 服务返回错误（400）" and "tool_choice" not in json.dumps(d)
+    plain = "LACUNA 暂时用不了（请稍后再试，一直这样请点右上角「反馈」告诉我们）"     # batch 7: no status codes
+    assert d["error"] == plain and "tool_choice" not in json.dumps(d) and "400" not in d["error"]
     v = run(c)
-    assert v["state"] == "error" and v["error"] == "AI 服务返回错误（400）"
+    assert v["state"] == "error" and v["error"] == plain
     # in English too, and never naming the AI vendor
     c.cookies.set("lacuna_lang", "en")
     d = c.post(f"{EP}/remember", json={"text": "keep the intro", "playhead": 1.0}).json()["remember"]
-    assert d["error"].startswith("The AI service") and "Claude" not in d["error"]
+    assert d["error"].startswith("LACUNA isn't available") and "Claude" not in d["error"]
     c.cookies.set("lacuna_lang", "zh")
     c.get(f"{EP}/lessons")
 

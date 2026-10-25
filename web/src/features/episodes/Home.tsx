@@ -17,7 +17,7 @@ import { ProjectAvatar } from "../projects/Avatar";
 import { SettingsLink } from "../projects/SettingsLink";
 import { albumHref, useAlbums, type Album } from "../albums/api";
 import { EpisodeCard } from "./EpisodeCard";
-import { ErrorState } from "../states/States";
+import { EmptyState, ErrorState } from "../states/States";
 import { episodesApi } from "./api";
 
 const go = (id: string, mode = "listen") => {
@@ -87,6 +87,8 @@ export function Home({ nav }: { nav: ReactNode }) {
   // the one album that holds every episode: new imports go there too unless Leon picks otherwise
   const v0 = albums.view;
   const onlyAlbum = v0?.albums.length === 1 && list?.length && list.every((e) => v0.episodes[e.id]) ? v0.albums[0].id : "";
+  // the album row has its own 「＋ 新专辑」 tile; otherwise it sits in the button row
+  const albumRow = !!v0?.albums.length && !onlyAlbum;
   const cards = (eps: EpisodeListItem[]) => (
     <ul className="ep-list">
       {eps.map((e) => (
@@ -137,7 +139,6 @@ export function Home({ nav }: { nav: ReactNode }) {
                 {proj && <ProjectAvatar p={proj} size={40} />}
                 {proj?.name ?? show?.show_name ?? t("剧集")}
               </h1>
-              <SettingsLink />
             </div>
             <p className="muted">
               {names
@@ -158,11 +159,21 @@ export function Home({ nav }: { nav: ReactNode }) {
             onOpen={open}
             albums={albums.view?.albums}
             album={onlyAlbum}
+            actions={
+              <>
+                {albums.view && !!list?.length && !albumRow && (
+                  <button type="button" className="btn btn-outline" onClick={() => setDialog({})} data-testid="album-new">
+                    {t("＋ 新专辑")}
+                  </button>
+                )}
+                <SettingsLink />
+              </>
+            }
           />
         )}
         {err != null && <ErrorState compact error={err} onRetry={() => { setErr(null); load(); }} />}
         {list?.length === 0 && !show?.needs_setup && (
-          <p className="muted">{t("这个节目里还没有剧集。点「导入新一集」，选每位主持人的分轨。")}</p>
+          <EmptyState icon="♪" title={t("还没有剧集")} text={t("这个节目里还没有剧集。点「导入新一集」，选每位主持人的分轨。")} testid="home-empty" />
         )}
         {!list && err == null && <EpisodeListSkeleton />}
         {(() => {
@@ -171,11 +182,6 @@ export function Home({ nav }: { nav: ReactNode }) {
           if (!v || !v.albums.length)
             return (
               <>
-                {v && !!all.length && (
-                  <button type="button" className="btn btn-outline btn-small home-new-album" onClick={() => setDialog({})} data-testid="album-new">
-                    {t("＋ 新专辑")}
-                  </button>
-                )}
                 {!!all.length && <div className="home-sec"><h2 className="sub">{t("剧集")}</h2><span className="muted small">{t("{n} 集", { n: all.length })}</span></div>}
                 {cards(all)}
               </>
@@ -194,9 +200,6 @@ export function Home({ nav }: { nav: ReactNode }) {
                   <a className="btn btn-ghost btn-small" href={albumHref(only.id)}>
                     {t("打开专辑页")}
                   </a>
-                  <button type="button" className="btn btn-outline btn-small" onClick={() => setDialog({})} data-testid="album-new">
-                    {t("＋ 新专辑")}
-                  </button>
                 </p>
                 <div className="home-sec">
                   <h2 className="sub">{t("剧集")}</h2>

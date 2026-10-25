@@ -156,7 +156,7 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
         {summary}
         <div className="card xstd" data-testid="export-standard" data-tour="export-standard">
           <div className="xstd-head">
-            <b>{t("符合播客平台标准")}</b>
+            <b>{done ? t("符合播客平台标准") : t("播客平台标准")}</b>
             {done && okLufs && okPeak && <span className="ok">✓</span>}
           </div>
           {done ? (
@@ -197,7 +197,11 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
           ) : (
             <span className="small muted">{t("导出后在这里显示响度、真峰值和压缩量。")}</span>
           )}
-          <span className="small muted">{t("已按播客平台的响度标准处理，可以直接上传到 Apple Podcasts、Spotify、小宇宙等任何播客平台。")}</span>
+          <span className="small muted" data-testid="export-standard-note">
+            {done
+              ? t("已按播客平台的响度标准处理，可以直接上传到 Apple Podcasts、Spotify、小宇宙等任何播客平台。")
+              : t("导出时会处理到播客平台标准（−16 LUFS），导出后可以直接上传到 Apple Podcasts、Spotify、小宇宙等任何播客平台。")}
+          </span>
         </div>
       </aside>
     </div>

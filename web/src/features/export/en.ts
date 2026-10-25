@@ -8,6 +8,8 @@ export const en: Dict = {
   "去发布": "Go to Publish",
   "导出好以后，这里出现下载按钮。": "Download buttons appear here once the export is done.",
   "符合播客平台标准": "Meets podcast platform standards",
+  "播客平台标准": "Podcast platform standards",
+  "导出时会处理到播客平台标准（−16 LUFS），导出后可以直接上传到 Apple Podcasts、Spotify、小宇宙等任何播客平台。": "Export masters it to podcast standards (−16 LUFS), ready to upload to Apple Podcasts, Spotify, Xiaoyuzhou or any other platform.",
   "（原始 {in}）": "(original {in})",
   "（上限 −1）": "(limit −1)",
   "导出后在这里显示响度、真峰值和压缩量。": "Loudness, true peak and compression show here after the export.",

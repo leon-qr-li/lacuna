@@ -61,7 +61,7 @@ export function UploadView({ id, version, flash }: { id: string; version: string
   return (
     <main className="upload">
       <div>
-        <h1>{t("上传喜马拉雅")}</h1>
+        <h1 className="step-title">{t("上传喜马拉雅")}</h1>
         <p className="muted small">
           {t("按喜马拉雅上传页的顺序排好了：下载音频、复制标题和简介、下载封面，你自己上传。小宇宙会从喜马拉雅自动同步。")}
         </p>

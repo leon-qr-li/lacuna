@@ -100,7 +100,7 @@ test.describe.serial("LACUNA Studio", () => {
     await openEpisode(page);
     await page.getByRole("slider", { name: "播放位置" }).fill("15.5");
     await expect(page.locator(".at-chip")).toHaveText("@ 0:15");
-    await page.getByLabel(/对 LACUNA说/).fill("这里停顿短一点");
+    await page.getByLabel(/对 LACUNA ?说/).fill("这里停顿短一点");
     await page.keyboard.press("Enter");
     const proposal = page.getByTestId("proposal");
     await expect(proposal).toBeVisible();

@@ -158,8 +158,8 @@ export function SettingsView() {
               <section className="card" aria-label={t("版本")}>
                 <div className="card-head">
                   <h2>{t("版本")}</h2>
-                  <span className="badge" data-testid="app-version">
-                    {info.cloud ? info.version.slice(0, 7) : info.version === "dev" ? t("开发版") : info.version}
+                  <span className="badge" data-testid="app-version" title={info.version === "dev" ? undefined : info.version.slice(0, 7)}>
+                    {info.version === "dev" ? t("开发版") : info.release ?? info.version.slice(0, 7)}
                   </span>
                 </div>
                 {info.cloud && <p className="muted small" data-testid="cloud-auto-update">{t("新版本测试通过后会自动上线，不用手动更新。")}</p>}
@@ -202,7 +202,7 @@ export function SettingsView() {
                         ? t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上（钥匙串），不会显示出来。")
                         : t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上，不会显示出来。")}
                     </p>
-                    <div className="row gap">
+                    <div className="row gap8">
                       <input
                         className="grow"
                         type="password"

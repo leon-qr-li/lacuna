@@ -354,7 +354,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     <main className="home music music-b">
       <header className="music-hero">
         <div className="grow">
-          <h1>{t("配乐")}</h1>
+          <h1 className="step-title">{t("配乐")}</h1>
           <p className="muted small">
             <span className="mono">
               {t("人声剪辑 {voice} → 成品 {final}", { voice: fmt(m.voice_duration), final: fmt(m.duration) })}
@@ -512,10 +512,10 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
                 {playing ? "❚❚" : "▶"}
               </button>
               <button type="button" className="btn btn-small btn-outline" onClick={() => skip(-SKIP_S)} aria-label={t("后退 5 秒")}>
-                −5s
+                {t("−5 秒")}
               </button>
               <button type="button" className="btn btn-small btn-outline" onClick={() => skip(SKIP_S)} aria-label={t("前进 5 秒")}>
-                +5s
+                {t("+5 秒")}
               </button>
               <SpeedButton rate={speed.rate} onChange={speed.setRate} testId="mix-speed" hint={t("播放速度（点一下切换）")} />
               <span className="mono small muted" data-testid="mix-clock">

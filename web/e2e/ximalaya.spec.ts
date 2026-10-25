@@ -19,7 +19,7 @@ test("ximalaya layout: three styles, timestamps first on their lines, copy rich 
   await expect(gen.or(page.getByTestId("publish-title"))).toBeVisible({ timeout: 15_000 });
   if (await gen.isVisible()) {
     await page.goto(`/#/ep/${ep}/ximalaya`);
-    await expect(page.getByText("还没有发布资料。先去")).toBeVisible();
+    await expect(page.getByTestId("xmly-empty")).toBeVisible();
     await page.goto(`/#/ep/${ep}/publish`);
     await gen.click();
     await expect(page.getByTestId("publish-title")).toBeVisible({ timeout: 15_000 });

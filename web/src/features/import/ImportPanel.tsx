@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { EpisodeListItem, ImportJob } from "../../api";
 import { api, fmt } from "../../api";
 import { t } from "../../i18n";
@@ -349,12 +349,15 @@ export function ImportPanel({
   onOpen,
   albums = [],
   album = "",
+  actions,
 }: {
   /** the 剧集 list, for each finished import's review progress */
   episodes: EpisodeListItem[] | null;
   /** the project's albums: the form offers to put the new episode in one (`album`: picked at first) */
   albums?: { id: string; name: string }[];
   album?: string;
+  /** the home page's other buttons, in one row after 导入新一集 (batch 7, T3) */
+  actions?: ReactNode;
   onEpisodesChanged: () => void;
   onOpen: (id: string) => void;
 }) {
@@ -426,10 +429,15 @@ export function ImportPanel({
 
   return (
     <div className="imports">
-      {!d && (
-        <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
-          {t("导入新一集")}
-        </button>
+      {(!d || actions) && (
+        <div className="row gap8 wrap import-actions">
+          {!d && (
+            <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
+              {t("导入新一集")}
+            </button>
+          )}
+          {actions}
+        </div>
       )}
       {d && hosts.length > 0 && <NewImport d={d} albums={albums} onStarted={() => void refresh()} />}
       {!!shown.length && (

@@ -1,13 +1,14 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "先生成发布资料": "Generate the publish pack first",
+  "封面按「发布资料」里的标题和简介来画。": "Covers are drawn from the title and description in the publish pack.",
+  "还没有封面": "No covers yet",
   "封面": "Cover",
   "封面页打不开：": "Can't open the cover page: ",
   "LACUNA 按这一集的标题和简介画 {n} 版方形封面（{styles}）。挑一张，或者说一句话让它改。": "LACUNA draws {n} square covers from this episode's title and blurb ({styles}). Pick one, or describe a change in a sentence.",
   "再画 {n} 版": "Draw {n} more",
   "画 {n} 版封面": "Draw {n} covers",
-  "封面按「发布资料」里的标题和简介来画，请先去": "Covers are drawn from the title and blurb in the publish pack. First go to",
-  "生成一次。": "and generate it.",
   "还没接上 AI（没有 AI 密钥），画不了封面。": "AI isn't connected (no AI key), so covers can't be drawn.",
   "只发标题、简介和片名这些文字给 LACUNA，{n} 版同时画，大约 2–4 分钟。每集可以画 {m} 轮。": "Only text (title, blurb, film names) goes to LACUNA. {n} drawn at once, about 2–4 minutes. Each episode gets {m} rounds.",
   "本集封面次数用完": "No cover rounds left for this episode",

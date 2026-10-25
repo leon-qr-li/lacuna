@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "不用音乐": "None",
   "{email} 已经加进来了": "{email} has been added",
   "邀请已经发到 {email}": "Invite sent to {email}",
   "没能发邮件，把下面的链接发给 {email}": "Couldn't send the email; send {email} the link below",
@@ -30,10 +31,6 @@ export const en: Dict = {
   "现在用自己的片头片尾的专辑：{names}": "Albums with their own intro or outro: {names}",
   "素材库里还没有音乐。": "No music in the library yet.",
   "去素材库添加": "Add some in Library",
-  "没有登录账号时不需要邀请协作。": "Without accounts there is no one to invite.",
-  "邀请协作「{name}」": "Invite collaborators to “{name}”",
-  "只能邀请到节目这一层。对方剪的时候用对方自己的剪辑习惯。":
-    "Invites are to a whole show. Collaborators edit with their own editing habits.",
   "今天": "today",
   "正在打开节目…": "Opening shows…",
   "{n} 个专辑": { one: "{n} album", other: "{n} albums" },
@@ -79,7 +76,7 @@ export const en: Dict = {
   "节目的名字、图片、语言、介绍和专有名词。": "The show's name, picture, language, description and proper nouns.",
   "每位主持人一条分轨，最多 4 位。": "One track per host, up to 4.",
   "新剧集默认用的片头片尾。": "The intro and outro new episodes get by default.",
-  "show notes 和发布资料的默认做法。": "How show notes and the publishing pack are done by default.",
+  "show notes 和发布资料的默认做法。": "How show notes and the publish pack are done by default.",
   "谁能看、谁能剪这个节目。": "Who can view and who can edit this show.",
   "剪辑师": "Editor",
   "角色能做什么": "What each role can do",

@@ -27,6 +27,7 @@ import { Presence } from "./features/coedit/Presence";
 import { useCoedit } from "./features/coedit/useCoedit";
 import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
+import { MenuNav } from "./features/mobile/MenuNav";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -78,13 +79,13 @@ export default function App() {
 
 function Nav({ on }: { on: NavLink["on"][number] }) {
   return (
-    <>
+    <MenuNav>
       {navLinks
         .filter((l) => l.on.includes(on))
         .map((l) => (
           <Fragment key={l.path}>{l.render()}</Fragment>
         ))}
-    </>
+    </MenuNav>
   );
 }
 
@@ -119,8 +120,12 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const raw = usePlayer();
   const listen = useMusicListen(id, `${ep?.version ?? ""}|${mode}`, raw);
   const player = listen.player; // voice-cut time, also while listening with music
-  const [chatOpen, setChatOpen] = useState(() => readPref("lacuna.chat") !== "closed");
-  useEffect(() => writePref("lacuna.chat", chatOpen ? "open" : "closed"), [chatOpen]);
+  // narrower than 1280 the panel starts closed, so the editor has the room (batch 7, B26); only a click is remembered
+  const [chatOpen, setChatOpenRaw] = useState(() => window.innerWidth >= 1280 && readPref("lacuna.chat") !== "closed");
+  const setChatOpen = (v: boolean) => {
+    setChatOpenRaw(v);
+    writePref("lacuna.chat", v ? "open" : "closed");
+  };
   const [sideTab, setSideTab] = useState<SideTab>(readSideTab);
   useEffect(() => writeSideTab(sideTab), [sideTab]);
 

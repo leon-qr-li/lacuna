@@ -2,6 +2,12 @@ import type { Dict } from "./index";
 
 /** English for the shell (App.tsx, api.ts) and the shared components in src/components. */
 export const en: Dict = {
+  "菜单": "Menu",
+  "收起菜单": "Close menu",
+  "还没有发布资料": "No publish pack yet",
+  "去生成发布资料": "Generate the publish pack",
+  "−5 秒": "−5s",
+  "+5 秒": "+5s",
   // shell
   "发布": "Publish",
   "剧集": "Episodes",
@@ -221,6 +227,4 @@ export const en: Dict = {
     {"one": "1 edit hasn't been looked at; the export uses it as it is now.", "other": "{n} edits haven't been looked at; the export uses them as they are now."},
   "去审阅":
     "Review them",
-  "节目至少要留一个管理员":
-    "A show always keeps at least one admin",
 };

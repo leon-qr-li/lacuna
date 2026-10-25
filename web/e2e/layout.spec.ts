@@ -10,7 +10,7 @@ test("LACUNA: full-height column, multi-line box, grows (Shift+Enter = new line)
   expect(box!.width).toBeGreaterThanOrEqual(420);
   expect(box!.height).toBeGreaterThanOrEqual(600); // even with only the opening message
 
-  const say = page.getByLabel(/对 LACUNA说/);
+  const say = page.getByLabel(/对 LACUNA ?说/);
   const h0 = (await say.boundingBox())!.height;
   expect(h0).toBeGreaterThanOrEqual(60);
   await say.fill("第一行");

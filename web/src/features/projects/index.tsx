@@ -1,17 +1,17 @@
 import type { Feature } from "../registry";
-import { navCurrent } from "../registry";
 import { t } from "../../i18n";
 import { ProjectSettings, InvitePage } from "./ProjectSettings";
 import { ProjectsPage } from "./ProjectsPage";
 import { useProjects } from "./api";
 import "./projects.css";
 
-/** 邀请协作 in the top bar, for the project's managers. */
+/** 邀请协作 in the top bar, for the project's managers: opens 节目设置 → 协作者, the one place members are
+ *  managed (batch 7, T10). */
 function InviteLink() {
   const sp = useProjects();
   if (sp?.current?.role !== "admin" || sp.current.archived) return null;
   return (
-    <a className="btn btn-outline row" href="#/invite" aria-current={navCurrent("invite")} data-testid="invite-link">
+    <a className="btn btn-outline row" href="#/project/people" data-testid="invite-link">
       {t("邀请协作")}
     </a>
   );

@@ -269,7 +269,8 @@ function Pill({ ch, onExit }: { ch: number; onExit: () => void }) {
   const playing = usePlaying();
   return (
     <div className="tour-pill" data-testid="tour-pill">
-      <span>{t("示例教程 · 第 {n} 步，共 {total} 步", { n: ch, total: CHAPTERS })}</span>
+      {/* the step count is in the bubble only (batch 7, B19); the dots show where you are */}
+      <span>{t("示例教程")}</span>
       <span className="tour-dots" aria-hidden="true">
         {Array.from({ length: CHAPTERS }, (_, i) => (
           <i key={i} className={i + 1 < ch ? "is-done" : i + 1 === ch ? "is-now" : ""} />

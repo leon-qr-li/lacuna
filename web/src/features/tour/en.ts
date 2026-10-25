@@ -6,7 +6,7 @@ export const en: Dict = {
     "The sample episode goes back to just after LACUNA's first cut. Your changes in it are cleared and the tour starts again.",
   "重新开始": "Start again",
   "重新开始示例教程": "Restart the sample tour",
-  "示例教程 · 第 {n} 步，共 {total} 步": "Sample tour · step {n} of {total}",
+  "示例教程": "Sample tour",
   "第 {n} 步，共 {total} 步": "Step {n} of {total}",
   "继续示例教程": "Continue the sample tour",
   "暂停教程": "Pause the tour",

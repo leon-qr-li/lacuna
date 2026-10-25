@@ -38,8 +38,8 @@ export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft
         <p className="small warn">
           {d.error
             ? revised
-              ? t("这次没能改写（{message}），按你写的原样用作这条规则的说法。", { message: d.error })
-              : t("这次没能改写（{message}）。下面先放你的原话，可以点「改一下」写成你想要的说法，或者稍后再试。", { message: d.error })
+              ? t("这次没能改写：{message}。按你写的原样用作这条规则的说法。", { message: d.error })
+              : t("这次没能改写：{message}。下面先放你的原话，可以点「改一下」写成你想要的说法，或者稍后再试。", { message: d.error })
             : revised
               ? t("现在没接上 AI，按你写的原样用作这条规则的说法。")
               : t("现在没接上 AI，没法帮你改写。下面先放你的原话，可以点「改一下」写成你想要的说法。")}

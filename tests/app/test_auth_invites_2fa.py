@@ -438,8 +438,8 @@ def test_invite_email_walks_through_the_six_steps():
     with speaking("en"):
         m = invite_mail.render("leon@example.com", "https://x/invite/t", "PULSE", "editor")
         heads = [h for h, _ in invite_mail.steps()]
-    assert heads[0] == "Track import & transcription" and heads[-1] == "Export & publishing pack"
-    assert "6. Export & publishing pack: The finished audio" in m["text"] and "Track import &amp; transcription" in m["html"] and "Track import &amp; transcription" not in m["text"]
+    assert heads[0] == "Track import & transcription" and heads[-1] == "Export & publish pack"
+    assert "6. Export & publish pack: The finished audio" in m["text"] and "Track import &amp; transcription" in m["html"] and "Track import &amp; transcription" not in m["text"]
     assert m["text"].index("as Editor") < m["text"].index("1. Track import & transcription")
     assert "：" not in m["text"] and "（" not in m["text"]
 

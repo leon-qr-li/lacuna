@@ -134,7 +134,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "片头片尾、背景音乐，整集响度对齐平台标准": "Intro, outro and music beds; the whole episode levelled to platform standards",
     "Show notes 与封面生成": "Show notes & cover generation",
     "按本集内容写好节目介绍和时间轴，配好封面": "Notes and chapters written from the episode, with cover art to match",
-    "导出与发布资料": "Export & publishing pack",
+    "导出与发布资料": "Export & publish pack",
     "导出成品音频，配好标题、简介和封面，方便你上传到各个平台": "The finished audio with title, notes and cover, ready for you to upload",
     "节目": "Show",
     "你的角色": "Your role",
@@ -739,4 +739,10 @@ EN: dict[str, str | tuple[str, str]] = {
     # 用户条款和隐私政策 (lacuna_app/legal.py)
     "请先阅读并勾选同意用户条款和隐私政策": "Please read and agree to the Terms of Service and Privacy Policy first",
     "条款已经又更新了，请刷新页面再看一遍": "The terms were updated again; reload the page and have another look",
+    # 测速 (lacuna_app/speedtest.py, batch 7)
+    "服务器还没有云存储的密钥，测不了。": "The server has no cloud storage keys yet, so there is nothing to test.",
+    "服务器磁盘空间不够，先清一清再测。": "Not enough free disk on the server; free some space first.",
+    "已经在测了，等它测完。": "A test is already running; wait for it to finish.",
+    "测速没完成，请稍后再试。": "The speed test did not finish; try again later.",
+    "staging 站点不测速，请在正式站测。": "The staging site doesn't run speed tests; use the live site.",
 }

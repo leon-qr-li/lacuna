@@ -40,7 +40,7 @@ test.describe.serial("声音", () => {
     const before = await gains(page);
     await page.getByTestId("levels-auto").click();
     await expect(page.locator(".toast")).toContainText("主持人音量已统一");
-    await expect(page.getByTestId("levels")).toContainText("两人已经一样响");
+    await expect(page.getByTestId("levels")).toContainText("主持人已经一样响");
     for (const n of ["Leon", "Pei"]) await expect(page.getByTestId(`levels-track-${n}`)).toContainText("现在 -20.0 LUFS");
     await expect(page.getByTestId("levels-auto")).toHaveText("重新统一");
     // the toast's 撤销 takes both gains back in one step
@@ -71,7 +71,7 @@ test.describe.serial("声音", () => {
 
   test("「Pei 的声音太小了」 in the chat raises her without asking the AI", async ({ page }) => {
     await page.goto(`/#/ep/${EP}/listen`);
-    await page.getByLabel(/对 LACUNA说/).fill("Pei 的声音太小了");
+    await page.getByLabel(/对 LACUNA ?说/).fill("Pei 的声音太小了");
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("chat-log")).toContainText("Pei 的音量调高了 2 dB（现在 Pei +2.0 dB）");
     await expect(page.getByTestId("proposal")).toHaveCount(0); // applied at once, nothing to approve

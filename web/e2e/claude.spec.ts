@@ -8,10 +8,10 @@ test("chat with Claude: badge, cut the sentence at the playhead, no cost shown, 
   await page.goto("/");
   await expect(page.getByTestId("editor-badge")).toHaveText("LACUNA");
   await expect(page.getByTestId("chat-log")).not.toContainText("演示规则");
-  await expect(page.getByLabel(/对 LACUNA说/)).toHaveAttribute("placeholder", /跑题了删掉/);
+  await expect(page.getByLabel(/对 LACUNA ?说/)).toHaveAttribute("placeholder", /跑题了删掉/);
 
   await page.getByRole("slider", { name: "播放位置" }).fill("33");
-  await page.getByLabel(/对 LACUNA说/).fill("这句删掉");
+  await page.getByLabel(/对 LACUNA ?说/).fill("这句删掉");
   await page.keyboard.press("Enter");
   const proposal = page.getByTestId("proposal");
   await expect(proposal).toBeVisible();
@@ -28,7 +28,7 @@ test("chat with Claude: badge, cut the sentence at the playhead, no cost shown, 
   await expect(clock).not.toContainText(`/ ${total}`);
 
   // "恢复" brings the chat cut back as a proposal
-  await page.getByLabel(/对 LACUNA说/).fill("把刚才删的恢复");
+  await page.getByLabel(/对 LACUNA ?说/).fill("把刚才删的恢复");
   await page.keyboard.press("Enter");
   await expect(page.getByTestId("chat-log")).toContainText("恢复成原话");
   await page.getByTestId("proposal").getByRole("button", { name: "批准" }).click();

@@ -103,9 +103,13 @@
 .auth-input textarea, .auth-input textarea:focus { box-shadow: none; border-radius: 0; min-height: 60px; }
 .people-note { display: block; color: var(--ink-2); }
 /* batch 7: a good state reads green (T6); 你的名字 lines up label, field and button (B5) */
-.badge-good { background: var(--ok-soft); color: var(--ok); }
+.badge.badge-good { background: var(--ok-soft); color: var(--ok); }
 .account-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
 .account-row > label { display: grid; gap: 6px; min-width: min(260px, 100%); flex: 1 1 260px; }
 .account-row > label input { height: 38px; }
 .account-row > .btn { height: 38px; }
 .account-row > .ok, .account-row > .error { align-self: center; }
+
+/* the theme button shows the same sun / moon as the app (batch 7, T7) */
+.auth-theme { display: inline-grid; place-items: center; width: 34px; padding: 0; }
+.auth-theme svg { width: 16px; height: 16px; }

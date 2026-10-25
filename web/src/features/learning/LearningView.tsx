@@ -17,11 +17,14 @@ const KIND_LABEL: Record<string, string> = {
   ask: t("你说过的"),
 };
 
+/** Episode titles from the last GET /api/learning: a source is named by its title, its id only as a fallback. */
+let titles: Record<string, string> = {};
+
 /** A learning source as Leon reads it: a deleted episode's evidence is filed as "EP003@2026-10-21-a1b2". */
 export function sourceLabel(e: string): string {
   const ep = e.replace(/\.hand_edit$/, "");
   const gone = /@\d{4}-\d{2}-\d{2}-[0-9a-f]{4}$/;
-  const name = gone.test(ep) ? t("{ep}（已删）", { ep: ep.replace(gone, "") }) : ep;
+  const name = gone.test(ep) ? t("{ep}（已删）", { ep: ep.replace(gone, "") }) : (titles[ep] ?? ep);
   return e.endsWith(".hand_edit") ? t("{ep}（你手剪的成品）", { ep: name }) : name;
 }
 
@@ -71,7 +74,13 @@ export function LearningView() {
   const [done, setDone] = useState<{ text: string; group: Group | null } | null>(null);
 
   useEffect(() => {
-    learningApi.learning().then(setOv).catch((e) => setErr(String(e.message ?? e)));
+    learningApi
+      .learning()
+      .then((v) => {
+        titles = v.titles ?? {};
+        setOv(v);
+      })
+      .catch((e) => setErr(String(e.message ?? e)));
   }, []);
 
   const lists = useMemo(() => {
