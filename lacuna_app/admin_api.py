@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import ai_settings, cloud, notice_mail, plans, retention, system_terms
-from .admin_metrics import AdminData
+from .admin_metrics import AI_BUDGET, AdminData
 from .admin_store import AdminStore
 from .appinfo import current_version
 from .auth import RANK, Auth, AuthError, MailError, norm_email
@@ -943,7 +943,7 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
                 "turnstile": bool(os.environ.get("TURNSTILE_SITE_KEY")),
                 "access": cloud.access_required() if cloud.enabled() else None, "cloud": cloud.enabled(),
                 "digest": {"hour": 8, "tz": "America/Vancouver", "last": store.get("digest_last")},
-                "budget": float(store.get("ai_budget", 300.0))}
+                "budget": float(store.get("ai_budget", AI_BUDGET))}
 
     @app.get("/api/admin/settings")
     def settings(req: Request):

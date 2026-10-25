@@ -372,3 +372,10 @@ def test_admin_access_check_in_the_cloud(tmp_path):
     assert c.get("/", headers={"cf-access-jwt-assertion": "main-site-token"}).status_code == 403
     ok = c.get("/", headers={"cf-access-jwt-assertion": "admin-token"})
     assert ok.status_code == 200 and ok.headers["x-frame-options"] == "DENY"
+
+
+def test_the_ai_budget_warning_defaults_to_500_for_the_quality_first_models(tmp_path):
+    app, _, _ = setup(tmp_path)
+    c = sign_in(app)
+    assert c.get("/api/admin/ai").json()["budget"] == 500
+    assert c.get("/api/admin/system").json()["budget"] == 500
