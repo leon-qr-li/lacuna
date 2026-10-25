@@ -378,4 +378,4 @@ def test_the_ai_budget_warning_defaults_to_500_for_the_quality_first_models(tmp_
     app, _, _ = setup(tmp_path)
     c = sign_in(app)
     assert c.get("/api/admin/ai").json()["budget"] == 500
-    assert c.get("/api/admin/system").json()["budget"] == 500
+    assert c.get("/api/admin/settings").json()["budget"] == 500
