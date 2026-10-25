@@ -31,7 +31,7 @@ export const en: Dict = {
   "正在用这张": "In use",
   "用这张": "Use this",
   "改一改 {name}": "Revise {name}",
-  "一句话改，如：换成暖色": "Change in a sentence, e.g. warmer colours",
+  "一句话改，如：换成暖色": "One sentence, e.g. warmer colors",
   "改": "Revise",
-  "Enter 发送 · Shift+Enter 换行": "Enter to send · Shift+Enter for a new line",
+  "Enter 发送 · Shift+Enter 换行": "Enter sends · Shift+Enter: new line",
 };

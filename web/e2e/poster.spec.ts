@@ -88,7 +88,10 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   await expect(page.getByTestId("poster-card")).toHaveCount(5);
 
   // on the cloud server: no server folder or 打开文件夹, the cover downloads from the page instead (regression, batch 8)
+  // one status call fails on the way: that is not an answer, the page asks again (it showed the folder before)
+  let calls = 0;
   await page.route("**/api/auth/status", async (route) => {
+    if (++calls === 3) return route.fulfill({ status: 502, body: "bad gateway" });
     const res = await route.fetch();
     await route.fulfill({ response: res, json: { ...(await res.json()), cloud: true } });
   });

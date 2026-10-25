@@ -18,7 +18,7 @@ export function alertText(a: Alert): string {
         pct: fmtPct((a.spent ?? 0) / (a.budget || 1)),
       });
     case "backup":
-      return t("超过 26 小时没有新的备份（上次 {at}）。", { at: ago(a.at) });
+      return a.at ? t("超过 26 小时没有新的备份（上次 {at}）。", { at: ago(a.at) }) : t("还没有找到任何备份记录。");
     case "imports":
       return t("最近 {n} 次导入都失败了。", { n: a.n ?? 3 });
     case "errors":

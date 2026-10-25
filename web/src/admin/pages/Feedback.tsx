@@ -168,7 +168,7 @@ function Detail({ item, templates, knownTags, update, back }: { item: FbItem; te
       </button>
       <div className="a-row wrap">
         <Avatar name={item.name || item.email} />
-        <div className="a-grow">
+        <div className="a-grow a-fb-who">
           <b>{item.name || item.email}</b>
           <div className="a-muted small">
             {item.email} · {planName(item.plan)} · {t("加入于 {d}", { d: fmtDate(item.joined) })}
@@ -211,9 +211,9 @@ function Detail({ item, templates, knownTags, update, back }: { item: FbItem; te
         {item.platforms.length > 0 && <div className="a-muted small">{t("想发布到：{p}", { p: item.platforms.join(" · ") })}</div>}
       </div>
       <div className="a-ctx">
-        {ctx.page && <Pill>{t("页面")}：{ctx.page}</Pill>}
-        {item.show && <Pill>{t("节目")}：{item.show.name}</Pill>}
-        {ctx.episode && <Pill>{t("剧集")}：{ctx.episode}</Pill>}
+        {ctx.page && <Pill>{t("页面：{v}", { v: ctx.page })}</Pill>}
+        {item.show && <Pill>{t("节目：{v}", { v: item.show.name })}</Pill>}
+        {ctx.episode && <Pill>{t("剧集：{v}", { v: ctx.episode })}</Pill>}
         {ctx.browser && <Pill>{ctx.browser}</Pill>}
         {ctx.lang && <Pill>{ctx.lang === "en" ? t("界面英文") : t("界面中文")}</Pill>}
         {item.version && <Pill>v.{item.version.slice(0, 7)}</Pill>}

@@ -64,7 +64,7 @@ function Shows({ data }: { data: ShowsData }) {
                 <tr>
                   <th>{t("节目")}</th>
                   <th>{t("创建人")}</th>
-                  <th className="n">{t("成员")}</th>
+                  <th className="n">{t("成员数")}</th>
                   <th className="n">{t("剧集")}</th>
                   <th className="n">{t("占用空间")}</th>
                   <th>{t("创建")}</th>
@@ -84,7 +84,7 @@ function Shows({ data }: { data: ShowsData }) {
                     <td className="a-muted" data-label={t("创建人")}>
                       {s.creator || "—"}
                     </td>
-                    <td className="n" data-label={t("成员")}>
+                    <td className="n" data-label={t("成员数")}>
                       {s.members}
                     </td>
                     <td className="n" data-label={t("剧集")}>

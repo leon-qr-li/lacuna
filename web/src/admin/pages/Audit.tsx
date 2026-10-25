@@ -3,8 +3,8 @@ import { useState } from "react";
 import { get } from "../api";
 import type { PageProps } from "../Shell";
 import { t } from "../i18n";
-import { actionName } from "../labels";
-import type { AuditRow } from "../types";
+import { FB_STATUS, ROLE, actionName, planName, sourceName } from "../labels";
+import type { AuditRow, FbStatus } from "../types";
 import { Card, Empty, Loading, PageHead, Pill, Who, fmtTime, isDemo, useData } from "../ui";
 
 // actions that only go through after the code is entered again
@@ -25,12 +25,47 @@ const STEPUP = new Set([
   "feedback.prompt_reset",
 ]);
 
+// the logged fields in words (lacuna_app/admin_api.py store.audit calls); an unknown one shows as stored
+const KEY: Record<string, () => string> = {
+  role: () => t("角色"),
+  plan: () => t("套餐"),
+  source: () => t("来源"),
+  status: () => t("状态"),
+  adopted: () => t("已采纳"),
+  device: () => t("设备"),
+  country: () => t("地区"),
+  tags: () => t("标签"),
+  shows: () => t("节目"),
+  subject: () => t("主题"),
+  hours: () => t("小时"),
+  seats: () => t("名额"),
+  kind: () => t("类型"),
+  disabled: () => t("已停用"),
+  n: () => t("数量"),
+};
+
+function value(k: string, v: unknown): string {
+  const s = String(v);
+  if (k === "role") return ROLE[s]?.() ?? s;
+  if (k === "plan") return planName(s);
+  if (k === "source") return sourceName(s);
+  if (k === "status") return FB_STATUS[s as FbStatus]?.label() ?? s;
+  if (k === "kind") return s === "collab" ? t("协作者申请") : s === "trial" ? t("申请试用") : s;
+  if (k === "usd") return `$${s}`;
+  return s;
+}
+
 function detail(r: AuditRow): string {
   const d = r.data || {};
   const parts: string[] = [];
   for (const [k, v] of Object.entries(d)) {
+    if (k === "on" && typeof v === "boolean") {
+      parts.push(v ? t("开着") : t("关着"));
+      continue;
+    }
     if (v === null || v === undefined || v === false || v === "") continue;
-    parts.push(v === true ? k : `${k}: ${String(v)}`);
+    const name = KEY[k]?.() ?? k;
+    parts.push(v === true ? name : `${name}: ${value(k, v)}`);
   }
   return parts.join(" · ");
 }

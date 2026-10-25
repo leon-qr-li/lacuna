@@ -76,7 +76,8 @@
 .prj-matrix table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .prj-matrix th, .prj-matrix td { padding: 8px 10px; border-top: 1px solid var(--line); text-align: center; }
 .prj-matrix th:first-child, .prj-matrix td:first-child { text-align: left; }
-.prj-matrix th { font-weight: 600; color: var(--muted); border-top: 0; }
+.prj-matrix th { font-weight: 600; color: var(--muted); border-top: 0; white-space: nowrap; }
+@media (max-width: 480px) { .prj-matrix th, .prj-matrix td { padding: 8px 6px; } }
 .prj-matrix td { color: var(--muted); }
 .prj-matrix td.is-on { color: var(--accent); font-weight: 600; }
 .prj-support { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }

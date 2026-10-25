@@ -672,6 +672,7 @@ EN: dict[str, str | tuple[str, str]] = {
     "本月 AI 花费": "AI cost this month",
     "磁盘": "Disk",
     "超过 26 小时没有新的备份了。请看一下备份任务。": "No new backup for over 26 hours. Please check the backup job.",
+    "还没有找到任何备份记录。请看一下备份任务。": "No backup has been recorded yet. Please check the backup job.",
     "最近 {n} 次导入都失败了。": ("The last import failed.", "The last {n} imports all failed."),
     "先选一个分数": "Pick a score first",
     "上一个申请还在等 LACUNA 回复": "Your last request is still waiting for an answer from LACUNA",

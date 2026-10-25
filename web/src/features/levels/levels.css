@@ -30,8 +30,13 @@
 .levels-adjust { display: flex; flex-direction: column; gap: 6px; }
 .levels-ctl { display: flex; align-items: center; gap: 8px; }
 .levels-ctl .sq { min-width: 36px; }
+.levels-ctl > .small { flex: none; white-space: nowrap; }
 .levels-slider { flex: 1 1 auto; display: flex; min-width: 100px; }
 .levels-slider input { width: 100%; accent-color: var(--primary); }
+/* a phone: the row (音量, −1, slider, +1, value) fits the card; the ±1 buttons stay square */
+.levels-ctl .sq { flex: none; width: 36px; height: 36px; min-height: 36px; padding: 0; }
+.levels-val { flex: none; white-space: nowrap; }
+@media (max-width: 480px) { .levels-ctl { gap: 6px; } .levels-slider { min-width: 48px; } }
 .levels-val { min-width: 76px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .levels-extra { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 28px; }
 .levels-clip { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--line-2); }
@@ -48,3 +53,4 @@
 .levels-compare > div { align-self: stretch; }
 .levels-listen p { margin: 0 4px; }
 
+@media (max-width: 480px) { .levels-val { min-width: 0; } }

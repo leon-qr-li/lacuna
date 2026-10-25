@@ -23,6 +23,13 @@ export const ROLE: Record<string, () => string> = {
   member: () => t("成员"),
 };
 
+// a person's role inside one show (lacuna_app/spaces.py SPACE_RANK)
+export const SHOW_ROLE: Record<string, () => string> = {
+  admin: () => t("管理员"),
+  editor: () => t("剪辑师"),
+  viewer: () => t("只听"),
+};
+
 export const PLAN: Record<string, () => string> = {
   trial: () => t("免费体验"),
   basic: () => t("基础版"),

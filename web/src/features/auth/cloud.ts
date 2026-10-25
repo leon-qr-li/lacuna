@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import { authApi } from "./api";
 
 let asked: Promise<boolean> | null = null;
-const ask = () => (asked ??= authApi.status().then((s) => s.cloud, () => false));
+// a failed status call is not an answer: forget it and ask again (it once left the cloud showing server folders)
+const ask = (): Promise<boolean> =>
+  (asked ??= authApi.status().then(
+    (s) => s.cloud,
+    () => {
+      asked = null;
+      return new Promise<boolean>((done) => setTimeout(() => void ask().then(done), 2000));
+    },
+  ));
 
 /** null while unknown, then whether the app runs in the cloud. */
 export function useCloud(): boolean | null {

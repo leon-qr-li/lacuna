@@ -32,6 +32,11 @@ BETA_SEATS = 20           # beta 名额, counted by show (decision)
 AI_BUDGET = 500.0         # monthly warning in USD (decision 7; $500 for the quality-first models); the hard limit is in the Anthropic Console
 AI_HOUR_TARGET = 3.8      # USD per audio hour with the quality-first models (decision 2026-10-25-ai-cost-cut)
 DISK_WARN = 0.70
+def cloud_server() -> bool:
+    """The internet server (LACUNA_CLOUD, as routes/auth.py reads it); a checkout has no nightly backup."""
+    return os.environ.get("LACUNA_CLOUD", "").strip().lower() in ("1", "true", "yes")
+
+
 BACKUP_MARK = Path(os.environ.get("LACUNA_BACKUP_MARK", "/data/backup-canary.json"))
 SAMPLES = 144             # CPU / memory every 5 minutes: 12 hours
 # folders of a show, grouped for 磁盘用在哪
@@ -324,6 +329,9 @@ class AdminData:
         b = self.backup()
         if b["at"] is not None and self.now() - b["at"] > 26 * 3600:
             out.append({"level": "warn", "kind": "backup", "at": b["at"]})
+        elif b["at"] is None and cloud_server():
+            # the cloud server backs up every night: no record at all is not "fine" (a checkout has no backups)
+            out.append({"level": "warn", "kind": "backup", "at": None})
         fails = self.import_fail_streak()
         if fails >= 3:
             out.append({"level": "warn", "kind": "imports", "n": fails})

@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { api } from "../api";
 import type { PageProps } from "../Shell";
 import { t } from "../i18n";
-import { FB_STATUS, ROLE, eventName, planName, sourceName } from "../labels";
+import { FB_STATUS, ROLE, SHOW_ROLE, eventName, planName, sourceName } from "../labels";
 import type { Me, Note, PlanLimits, UserDetail, UserRow } from "../types";
 import { Avatar, Card, Chips, Drawer, Empty, Loading, PageHead, Pill, Who, act, ago, dialog, fmtBytes, fmtDate, fmtNum, fmtTime, fmtUsd, isDemo, toast, useData } from "../ui";
 
@@ -269,7 +269,7 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
                     {s.sample && <span className="a-muted small"> · {t("示例")}</span>}
                     {s.archived && <span className="a-muted small"> · {t("已归档")}</span>}
                   </td>
-                  <td className="a-muted">{s.role}</td>
+                  <td className="a-muted">{SHOW_ROLE[s.role]?.() ?? s.role}</td>
                   <td className="n">{t("{n} 集", { n: s.episodes ?? 0 })}</td>
                   <td>
                     <OpenShow sid={s.id} />

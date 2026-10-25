@@ -1,13 +1,16 @@
 // 系统健康: disk (and what uses it), the last backup, jobs running now (a deploy waits for them), CPU and memory
 // over the last hours, server errors in the last 24 hours, and which alerts go to the owner's email.
 import type { PageProps } from "../Shell";
-import { t } from "../i18n";
+import { locale, t } from "../i18n";
 import { PART } from "../labels";
 import type { SystemData } from "../types";
-import { Card, Empty, HBar, LineChart, Loading, PageHead, Pill, ago, duration, fmtBytes, fmtPct, fmtTime, useData } from "../ui";
+import { Card, Empty, HBar, LineChart, Loading, PageHead, Pill, ago, duration, fmtBytes, fmtPct, useData } from "../ui";
 import { Alerts } from "./Home";
 import { AiCostCard } from "./AiCost";
 import { StorageCard } from "./Storage";
+
+// a chart tick: the time of day only, 24-hour so it stays short in both languages ("18:20", not just "PM")
+const clock = (ts: number) => new Date(ts * 1000).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
 
 export function SystemPage({ go, me }: PageProps) {
   const { data: s, error } = useData<SystemData>("/api/admin/system");
@@ -20,7 +23,9 @@ export function SystemPage({ go, me }: PageProps) {
     );
   const backupAge = s.backup.at ? Date.now() / 1000 - s.backup.at : null;
   const samples = s.samples.slice(-48);
-  const labels = samples.map((x, i) => (i === samples.length - 1 ? t("现在") : fmtTime(x.ts).split(" ").pop() ?? ""));
+  // every other tick LineChart draws (it draws about ten): ten times run together on a 1024px window
+  const every = samples.length <= 12 ? 2 : 2 * Math.ceil(samples.length / 10);
+  const labels = samples.map((x, i) => (i % every ? "" : i === samples.length - 1 ? t("现在") : clock(x.ts)));
   const parts = Object.entries(s.parts).sort((a, b) => b[1] - a[1]);
   return (
     <>
@@ -163,11 +168,12 @@ export function SystemPage({ go, me }: PageProps) {
           )}
         </Card>
         <Card title={t("告警邮件")} sub={t("发到你的邮箱：每种告警一天最多一封；每天早上 8 点（温哥华）另发一封汇总")} pad={false}>
+          <div className="a-tw">
           <table className="a-t">
             <tbody>
               {[t("磁盘超过 70% 或 21 天内写满"), t("导入排队太久、本月音频接近服务器上限、内存吃紧、Access 名额快满"), t("超过 26 小时没备份"), t("导入连续失败 3 次"), t("AI 花费到预算的 80% 和 100%"), t("服务器报错"), t("维护模式开着")].map((x) => (
                 <tr key={x}>
-                  <td>{x}</td>
+                  <td className="wrap">{x}</td>
                   <td className="n">
                     <Pill tone="ok">{t("开着")}</Pill>
                   </td>
@@ -175,6 +181,7 @@ export function SystemPage({ go, me }: PageProps) {
               ))}
             </tbody>
           </table>
+          </div>
           <p className="a-muted small a-pad">{t("网站整个掉线时后台也打不开，这种情况由每小时的线上巡检发现。")}</p>
         </Card>
       </div>

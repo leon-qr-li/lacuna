@@ -183,7 +183,11 @@ function RuleCard({ r, busy, decide }: { r: LearnedRule; busy: boolean; decide: 
         </span>
       </div>
       <p className="prose">{r.detail}</p>
-      {effect(r) && <p className="small muted">{t("采用后：{effect}。", { effect: effect(r) })}</p>}
+      {effect(r) && (
+        <p className="small muted">
+          {r.state === "approved" && !r.updated ? t("生效中：{effect}。", { effect: effect(r) }) : t("采用后：{effect}。", { effect: effect(r) })}
+        </p>
+      )}
       {r.stale && <p className="small warn">{t("新的审阅记录里已经看不出这个规律了，但它仍按你当初采用的样子生效。")}</p>}
       {r.examples.length > 0 && (
         <details>
