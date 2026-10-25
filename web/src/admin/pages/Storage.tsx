@@ -5,6 +5,7 @@ import { api } from "../api";
 import { t } from "../i18n";
 import type { StorageData } from "../types";
 import { Card, Pill, Switch, act, fmtBytes } from "../ui";
+import { SpeedTest } from "./SpeedTest";
 
 export function StorageCard({ data, owner }: { data: StorageData; owner: boolean }) {
   const [s, setS] = useState(data);
@@ -34,6 +35,7 @@ export function StorageCard({ data, owner }: { data: StorageData; owner: boolean
           </div>
         ))}
       </div>
+      {owner && s.cold.on && <SpeedTest />}
     </Card>
   );
 }

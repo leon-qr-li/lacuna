@@ -77,7 +77,7 @@ export function ProjectCrumb() {
             <hr />
             <button type="button" role="menuitem" className="prj-menu-item" onClick={() => go("#/projects")} data-testid="project-all-link">
               <span className="prj-check" aria-hidden="true" />
-              {t("所有节目")}
+              {t("我的节目")}
             </button>
             <button type="button" role="menuitem" className="prj-menu-item" onClick={() => go("#/project")} data-testid="project-settings-link">
               <span className="prj-check" aria-hidden="true" />

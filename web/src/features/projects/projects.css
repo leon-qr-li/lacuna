@@ -34,8 +34,11 @@
 .prj-tab:hover { color: var(--ink); }
 .prj-tab[aria-selected="true"] { background: var(--solid); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
 
-.prj-invite { display: grid; grid-template-columns: minmax(0, 1fr) 8rem auto; gap: 8px; align-items: center; }
-@media (max-width: 560px) { .prj-invite { grid-template-columns: 1fr 1fr; } .prj-invite input { grid-column: 1 / -1; } }
+/* email, role, mail language and 邀请 on one line; the email field takes what's left (batch 7, B11) */
+.prj-invite { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.prj-invite input { flex: 1 1 220px; min-width: 0; }
+.prj-invite select { flex: 0 0 auto; width: auto; }
+.prj-invite .btn { flex: 0 0 auto; }
 .prj-hint { margin: 10px 0 0; }
 .prj-link { width: 100%; box-sizing: border-box; margin-top: 8px; font-family: var(--mono, monospace); font-size: 12px; }
 .prj-collab h3 { margin: 20px 0 8px; }

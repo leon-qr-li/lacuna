@@ -1,21 +1,22 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "这一集只有一位主持人，不用统一。可以在下面单独调音量。": "This episode has one host, so there's nothing to even out. You can set the volume below.",
   "声音": "Volume",
   "没调成：{message}": "Couldn't change it: {message}",
-  "两人音量已统一": "Both hosts evened out",
+  "主持人音量已统一": "Hosts evened out",
   "声音页打不开：": "Can't open the Volume page: ",
-  "正在测量两人的音量…": "Measuring both hosts' volume…",
-  "两人的音量": "The hosts' volume",
-  "两人已经一样响（都在 {target} LUFS 左右），审阅和导出听到的是同一个平衡。":
-    "Both hosts are equally loud (around {target} LUFS); review and export hear the same balance.",
-  "两人现在相差约 {d} dB。点「统一两人音量」，两人都拉到 {target} LUFS。":
-    "The hosts are about {d} dB apart. Click “Even out both hosts” to bring both to {target} LUFS.",
+  "正在测量主持人音量…": "Measuring the hosts' volume…",
+  "主持人音量": "Host volume",
+  "主持人已经一样响（都在 {target} LUFS 左右），审阅和导出听到的是同一个平衡。":
+    "The hosts are equally loud (around {target} LUFS); review and export hear the same balance.",
+  "主持人现在相差约 {d} dB。点「统一主持人音量」，大家都拉到 {target} LUFS。":
+    "The hosts are about {d} dB apart. Click “Even out the hosts” to bring everyone to {target} LUFS.",
   "重新统一": "Even out again",
-  "统一两人音量": "Even out both hosts",
+  "统一主持人音量": "Even out the hosts",
   "正在统一…": "Evening out…",
-  "也可以在「整集试听」里直接对 AI 制作人说「我的声音太低」「{name} 小一点 3 dB」「音量统一一下」。每次调整都能撤销。":
-    "You can also tell the AI producer in Full listen “my voice is too quiet”, “{name} 3 dB lower” or “even out the levels”. Every change can be undone.",
+  "也可以在「整集试听」里直接对 LACUNA 说「我的声音太低」「{name} 小一点 3 dB」「音量统一一下」。每次调整都能撤销。":
+    "You can also tell LACUNA in Full listen “my voice is too quiet”, “{name} 3 dB lower” or “even out the levels”. Every change can be undone.",
   "破音": "Clipping",
   "原始录音里声音过载被削平的地方（破音），LACUNA 会自动修好：审阅、试听和导出听到的都是修好的声音，原始录音不动。":
     "Where the raw recording overloaded and its peaks were flattened (clipping), LACUNA repairs it automatically: review, listening and export all hear the repaired sound, and the original recording is left untouched.",
@@ -29,7 +30,7 @@ export const en: Dict = {
   },
   "（只列出前 {n} 处）": "(first {n} listed)",
   "下次录音时把这条音轨的输入音量调低一点，就不会再破音。": "Next time, record this track with the input level a little lower and it won't clip.",
-  "导出时还会对整集做一次响度标准化（−16 LUFS）和轻压缩；这里调的是两人之间的平衡，以及审阅时听到的音量。":
+  "导出时还会对整集做一次响度标准化（−16 LUFS）和轻压缩；这里调的是主持人之间的平衡，以及审阅时听到的音量。":
     "Export still normalises the whole episode (−16 LUFS) with light compression; here you set the balance between the hosts and the volume you hear while reviewing.",
   "现在 {lufs} LUFS": "Now {lufs} LUFS",
   "听不到声音": "Silent",

@@ -492,7 +492,7 @@ def register(app, ctx) -> None:
         if sid not in spaces.spaces:
             raise HTTPException(404, tr("没有这个节目"))
         if not may_delete(email, sid):
-            raise HTTPException(403, tr("只有节目的创建者或站长能永久删除节目"))
+            raise HTTPException(403, tr("只有节目的创建者或 LACUNA 团队能永久删除节目"))
         if not spaces.archived(sid):
             raise HTTPException(409, tr("先把节目归档，才能永久删除"))
         if body.confirm.strip() != spaces.title(sid):

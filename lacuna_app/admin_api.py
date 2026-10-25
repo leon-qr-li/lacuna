@@ -37,6 +37,7 @@ from .editor import find_api_key
 from .feedback import KINDS, STATUSES, Feedback, FeedbackError, reply_mail
 from .i18n import set_request_lang, reset_request_lang, speaking, tr
 from .spaces import Spaces
+from .speedtest import SpeedTest
 from .trash import TrashError
 
 COOKIE = "lacuna_admin"
@@ -919,6 +920,31 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         retention.save_settings(auth.db, changes)
         store.audit(s["email"], "storage.retention", "", **changes)
         return storage_view()
+
+    def bucket():
+        cold = getattr(main_app.state, "cold", None)
+        return cold.bucket if cold is not None and cold.on else None
+
+    speed = SpeedTest(bucket, ctx.ws.root / ".speedtest")
+
+    @app.get("/api/admin/storage/speed")
+    def speed_view(req: Request):
+        """测速 (batch 7, S1): the last server ↔ cloud storage test, or the one running."""
+        need(req, owner=True)
+        return speed.view()
+
+    @app.post("/api/admin/storage/speed")
+    def speed_start(req: Request):
+        """Send a 200 MB test file to the cloud storage and back, then delete it. Owner only; not on staging."""
+        s = need(req, owner=True)
+        if cloud.staging():
+            raise HTTPException(409, tr("staging 站点不测速，请在正式站测。"))
+        try:
+            out = speed.start()
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+        store.audit(s["email"], "storage.speedtest", "")
+        return out
 
     @app.put("/api/admin/ai")
     def ai_switches(body: AiBody, req: Request):

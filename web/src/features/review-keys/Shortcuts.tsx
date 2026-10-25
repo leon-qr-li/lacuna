@@ -41,8 +41,8 @@ export function ShortcutsButton({ open, onToggle }: { open: boolean; onToggle: (
 /** "已过目 37 / 114" in the dock, so progress stays in sight while scrolling the words. */
 export function DockProgress({ done, total }: { done: number; total: number }) {
   return (
-    <span className="rk-progress small" data-testid="dock-progress" title={t("已过目 {done} / {n}", { done, n: total })}>
-      {t("已过目")} <strong>{done}</strong> / {total}
+    <span className="rk-progress small" data-testid="dock-progress" title={t("已审阅 {done} / {n}", { done, n: total })}>
+      {t("已审阅")} <strong>{done}</strong> / {total}
     </span>
   );
 }

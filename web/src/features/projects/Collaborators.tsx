@@ -60,7 +60,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
     <div className="prj-collab" data-testid="collaborators">
       {manage && noSeats && (
         <p className="card small" data-testid="invite-upgrade">
-          {t("免费体验不能邀请协作者。升级到基础版后可以邀请 2 位搭档一起剪。")}
+          {t("免费体验不能邀请协作者。升级到基础版后可以邀请 2 位协作者一起剪。")}
         </p>
       )}
       {manage && !noSeats && (

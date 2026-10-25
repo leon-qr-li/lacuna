@@ -100,7 +100,7 @@ def test_the_owner_replies_the_person_sees_a_red_dot_and_gets_a_mail_in_their_la
     assert [m["to"] for m in mail] == ["sam@example.com"]
     assert mail[0]["subject"] == "Your LACUNA feedback has a reply"
     assert "On our list for after beta." in mail[0]["text"] and "Planned" in mail[0]["text"]
-    assert "1 extra editing hour" in mail[0]["text"] and "#/feedback" in mail[0]["text"]
+    assert "1 more hour of audio" in mail[0]["text"] and "#/feedback" in mail[0]["text"]
     got = sam.get("/api/feedback/mine").json()
     assert got["unread"] == 1
     it = got["items"][0]

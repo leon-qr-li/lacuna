@@ -185,7 +185,7 @@ function Frame({ me, signOut }: { me: Me; signOut: () => void }) {
     <div className={`a-app${demo ? " is-demo" : ""}`}>
       <aside className={`a-side${menu ? " open" : ""}`}>
         <div className="a-brand">
-          <span className="mk">L</span>
+          <span className="mk" aria-hidden="true" />
           <div>
             <b>LACUNA Admin</b>
             <span>{location.host}</span>
@@ -297,7 +297,7 @@ function Login({ onIn }: { onIn: (m: Me) => void }) {
     <div className="a-login">
       <form className="a-lbox" onSubmit={submit}>
         <div className="a-row">
-          <span className="mk">L</span>
+          <span className="mk" aria-hidden="true" />
           <div>
             <b>LACUNA Admin</b>
             <div className="a-muted small">{location.host}</div>

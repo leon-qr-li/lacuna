@@ -39,7 +39,7 @@ const SECTIONS: { id: Section; group: "me" | "admin"; label: string; about: stri
   { id: "account", group: "me", label: t("账号与安全"), about: t("登录、密码、两步验证和登录过的设备。") },
   { id: "members", group: "admin", label: t("成员与邀请"), about: t("邀请新账号、管理成员角色。") },
   { id: "mail", group: "admin", label: t("邮件发件人"), about: t("邀请邮件和验证码从哪个地址发出。") },
-  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有节目的文字稿都按它校对的专有名词。") },
+  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有节目的逐字稿都按它校对的专有名词。") },
 ];
 const sectionFromHash = (): Section => {
   const m = /^#\/settings\/([\w-]+)/.exec(window.location.hash)?.[1];
@@ -158,8 +158,8 @@ export function SettingsView() {
               <section className="card" aria-label={t("版本")}>
                 <div className="card-head">
                   <h2>{t("版本")}</h2>
-                  <span className="badge" data-testid="app-version">
-                    {info.cloud ? info.version.slice(0, 7) : info.version === "dev" ? t("开发版") : info.version}
+                  <span className="badge" data-testid="app-version" title={info.version === "dev" ? undefined : info.version.slice(0, 7)}>
+                    {info.version === "dev" ? t("开发版") : info.release ?? info.version.slice(0, 7)}
                   </span>
                 </div>
                 {info.cloud && <p className="muted small" data-testid="cloud-auto-update">{t("新版本测试通过后会自动上线，不用手动更新。")}</p>}
@@ -202,7 +202,7 @@ export function SettingsView() {
                         ? t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上（钥匙串），不会显示出来。")
                         : t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上，不会显示出来。")}
                     </p>
-                    <div className="row gap">
+                    <div className="row gap8">
                       <input
                         className="grow"
                         type="password"

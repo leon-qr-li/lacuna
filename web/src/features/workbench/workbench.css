@@ -10,9 +10,9 @@
 .workspace.wb.chat-closed { grid-template-columns: minmax(0, 1fr); }
 .workspace.wb > .center { grid-column: 1; grid-row: 1; min-height: 0; display: grid; grid-template-rows: minmax(min-content, 1.15fr) minmax(180px, 1fr); gap: 14px; padding: 16px 16px 20px 28px; }
 .workspace.wb.chat-closed > .center { padding-right: 28px; }
-/* wide windows: the panel is the grid's right column (narrow ones slide it over the page, chat-dock.css) */
-@media (min-width: 1101px) {
-  .workspace.wb > .chat { grid-column: 2; grid-row: 1; margin: 16px 28px 20px 0; min-width: 0; height: auto; position: static; }
+/* the panel is the grid's right column and pushes the page over (phones get a drawer, chat-dock.css) */
+@media (min-width: 761px) {
+  .workspace.wb > .chat { grid-column: 2; grid-row: 1; margin: 16px 28px 20px 0; min-width: 0; height: auto; position: static; flex-basis: auto; }
 }
 
 /* the timeline card: minimap on top, the lanes share the height, the player at the bottom */
@@ -60,8 +60,12 @@
 .side-near .nearby li > .btn { grid-area: b; }
 
 @media (max-width: 1100px) {
-  .workspace.wb { grid-template-columns: minmax(0, 1fr); }
-  .workspace.wb > .center { padding-right: 28px; }
+  .workspace.wb { grid-template-columns: minmax(0, 1fr) 380px; }
+  .workspace.wb > .chat { margin-right: 16px; }
+}
+@media (max-width: 760px) {
+  .workspace.wb, .workspace.wb.chat-closed { grid-template-columns: minmax(0, 1fr); }
+  .workspace.wb > .center { padding-right: 16px; }
 }
 /* phones and short windows: a normal scrolling page again */
 @media (max-width: 760px), (max-height: 600px) {

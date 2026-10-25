@@ -4,6 +4,8 @@ import { req } from "../../api";
 export interface AppInfo {
   /** the image's git commit; "dev" in a development checkout */
   version: string;
+  /** the day this build was made, "2026.10.25": what people see as the version (batch 7, B17) */
+  release?: string | null;
   platform: string;
   workspace: string;
   ffmpeg: string | null;

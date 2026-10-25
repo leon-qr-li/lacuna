@@ -39,10 +39,11 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
   await expect(beta.getByTestId("show-setup")).toContainText("建你的第一个节目");
   await expect(beta.getByTestId("invite-link")).toBeVisible(); // they manage their own project
 
-  // Leon invites them from the top bar's 邀请协作, as a listener; they have an account, so they join at once
+  // Leon invites them from the top bar's 邀请协作 (opens 节目设置 → 协作者), as a listener; they have an account, so they join at once
   await lp.goto("/#/");
   await lp.getByTestId("invite-link").click();
-  await expect(lp.getByRole("heading", { name: /邀请协作「洛城二三事」/ })).toBeVisible();
+  await expect(lp).toHaveURL(/#\/project\/people$/);
+  await expect(lp.getByRole("heading", { name: "协作者", exact: true }).first()).toBeVisible();
   await lp.getByTestId("invite-email").fill("beta@example.com");
   await lp.getByTestId("invite-role").selectOption({ label: "只听" });
   await lp.getByTestId("invite-send").click();

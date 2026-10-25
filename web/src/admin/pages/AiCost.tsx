@@ -12,7 +12,7 @@ export function AiCostCard({ data, owner }: { data: AiSettings; owner: boolean }
     const out = await act(() => api<AiSettings>("PUT", "/api/admin/ai", { first_cut_batch: v }), t("AI 设置已保存"));
     if (out) setS(out);
   };
-  const label = t("AI 第一刀走省钱模式");
+  const label = t("初剪走省钱模式");
   return (
     <Card
       title={t("AI 省钱")}
@@ -22,7 +22,7 @@ export function AiCostCard({ data, owner }: { data: AiSettings; owner: boolean }
       <div className="a-row wrap">
         <Switch on={s.first_cut_batch} onChange={(v) => void change(v)} label={label} disabled={!owner} testid="ai-first-cut-batch" />
         <b>{label}</b>
-        <span className="a-muted small">{t("AI 第一刀的费用减半，但导入要多等，通常 10–30 分钟，高峰时可能几个小时。新用户的第一印象会打折，beta 期间建议关着。")}</span>
+        <span className="a-muted small">{t("初剪的费用减半，但导入要多等，通常 10–30 分钟，高峰时可能几个小时。新用户的第一印象会打折，beta 期间建议关着。")}</span>
       </div>
     </Card>
   );

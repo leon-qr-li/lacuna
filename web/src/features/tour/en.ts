@@ -2,11 +2,11 @@ import type { Dict } from "../../i18n";
 
 export const en: Dict = {
   // the engine
-  "示例集会回到 LACUNA 第一刀刚做完的样子，你在里面做的改动都会清掉，然后从头开始教程。":
+  "示例集会回到 LACUNA 初剪刚做完的样子，你在里面做的改动都会清掉，然后从头开始教程。":
     "The sample episode goes back to just after LACUNA's first cut. Your changes in it are cleared and the tour starts again.",
   "重新开始": "Start again",
   "重新开始示例教程": "Restart the sample tour",
-  "示例教程 · 第 {n} 步，共 {total} 步": "Sample tour · step {n} of {total}",
+  "示例教程": "Sample tour",
   "第 {n} 步，共 {total} 步": "Step {n} of {total}",
   "继续示例教程": "Continue the sample tour",
   "暂停教程": "Pause the tour",
@@ -93,10 +93,10 @@ export const en: Dict = {
     "That's this part",
   "LACUNA 拿不准的 3 处":
     "The 3 cuts LACUNA wasn't sure of",
-  "LACUNA 已经剪完了第一版。大部分改动它有把握，左边只列出它拿不准的 **3 处**，等你过目。停顿、口头禅这些小改动，整集试听时都能听到。":
+  "LACUNA 已经剪完了第一版。大部分改动它有把握，左边只列出它拿不准的 **3 处**，等你审阅。停顿、口头禅这些小改动，整集试听时都能听到。":
     "LACUNA has made the first cut. It's sure of most changes; the list on the left holds only the **3** it wasn't sure of, for you to check. The small ones (pauses, filler words) you'll hear when you play the episode.",
-  "{a}离麦克风近，比{b}响很多。尺子上白线是原始音量，彩色条是现在，绿线是目标。按 **知道了**，LACUNA 替你点 **统一两人音量**，两人都到绿线。":
-    "{a} sat close to the mic and is much louder than {b}. On the meter, the white line is the original level, the colored bar is now, the green line is the target. Press **OK** and LACUNA clicks **Match both voices**: both reach the green line.",
+  "{a}离麦克风近，比{b}响很多。尺子上白线是原始音量，彩色条是现在，绿线是目标。按 **知道了**，LACUNA 替你点 **统一主持人音量**，两人都到绿线。":
+    "{a} sat close to the mic and is much louder than {b}. On the meter, the white line is the original level, the colored bar is now, the green line is the target. Press **OK** and LACUNA clicks **Even out the hosts**: both reach the green line.",
   "写好了：标题、备选标题、简介和 show notes，点一下就能复制，和导出的音频一起贴到播客平台。剪辑再改，时间戳一键更新。":
     "Done: title, alternatives, blurb and show notes, each one click to copy. Paste them on your podcast platform next to the exported audio. If the edit changes, one click updates the times.",
   "删得对就点 **保留**（键盘 K），想留原话就点 **恢复原话**（R）。删除早已生效，你只是确认。这 3 处都删对了：按 **知道了**，LACUNA 一处处点 **保留**。":
@@ -109,7 +109,7 @@ export const en: Dict = {
     "The first: {a} restarts a sentence at the top. Press **OK** and LACUNA plays **A · Original** (before the cut), then **B · Edited** (after it).",
   "按 **知道了**，LACUNA 按标题和简介画几版方形封面。":
     "Press **OK** and LACUNA draws a few square covers from the title and blurb.",
-  "按 **知道了**，LACUNA 读剪好的文字稿，写这一集的标题、一句话简介和带时间戳的 show notes。":
+  "按 **知道了**，LACUNA 读剪好的逐字稿，写这一集的标题、一句话简介和带时间戳的 show notes。":
     "Press **OK** and LACUNA reads the edited transcript and writes the title, a one-line blurb and timestamped show notes.",
   "挑一张就能用；不满意，说一句话让它改。示例就到这里，最后听一下剪前剪后的对比。":
     "Pick one and it's ready; if not, say a sentence to change it. That's the sample; last, hear the before and after.",
@@ -139,13 +139,13 @@ export const en: Dict = {
     "Approved: the two lines are gone, and there's a new orange cut on the timeline.",
   "第二种：像改文档一样剪":
     "Way 2: edit it like a document",
-  "在文字稿里选中一段字、删掉，对应的声音就剪掉了；删过的字显示删除线，点一下就能恢复。{a}说的「等一下，我喝口水」这句不要。按 **知道了**，LACUNA 替你选中这句，点 **删掉这段**。":
+  "在逐字稿里选中一段字、删掉，对应的声音就剪掉了；删过的字显示删除线，点一下就能恢复。{a}说的「等一下，我喝口水」这句不要。按 **知道了**，LACUNA 替你选中这句，点 **删掉这段**。":
     "Select words in the transcript and delete them: the audio goes with them. Deleted words stay struck through; click them to bring them back. {a}'s \"Hold on, let me grab some water\" can go. Press **OK** and LACUNA selects it and clicks **Cut this**.",
   "删掉了：这句变成删除线，时间线上也多了一条剪切线。":
     "Cut: the line is struck through, and the timeline has a new cut.",
   "第三种：没字的地方，在时间线上剪":
     "Way 3: no words? Cut on the timeline",
-  "每人一条轨道，**橙色竖线** 是剪切点。喝完水还有一段冷场（虚线框），没有字，文字稿里删不了。平时在轨道上 **按住鼠标** 拖选它，再点 **删掉这段**；咳嗽这种只有一个人的声音，可以 **只静音** 那个人。按 **知道了**，LACUNA 替你剪掉这段冷场。":
+  "每人一条轨道，**橙色竖线** 是剪切点。喝完水还有一段冷场（虚线框），没有字，逐字稿里删不了。平时在轨道上 **按住鼠标** 拖选它，再点 **删掉这段**；咳嗽这种只有一个人的声音，可以 **只静音** 那个人。按 **知道了**，LACUNA 替你剪掉这段冷场。":
     "One track per host; the **orange lines** are cuts. After the water there's dead air (dashed box): no words, so the transcript can't cut it. Normally you **press and drag** across it on the tracks, then click **Cut this**; a sound from one person only, like a cough, you can **mute** for that person alone. Press **OK** and LACUNA cuts the dead air.",
   "正在剪…":
     "Cutting…",

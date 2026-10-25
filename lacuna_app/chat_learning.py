@@ -109,9 +109,9 @@ class ChatAsks:
             sources = {a.get("source") for a in group}
             how = (tr("你用「记住」说的") if "remember" in sources else
                    tr("你在「本集学到的规则」里确认的") if "lesson" in sources else tr("导出后从对话里总结出的"))
-            detail = (tr("你直接让 LACUNA 加的（{date}），没走确认流程。从下一期的 AI 初剪开始照做。",
+            detail = (tr("你直接让 LACUNA 加的（{date}），没走确认流程。从下一期的 LACUNA 初剪开始照做。",
                          date=last.get("at", "")[:10]) if "direct" in sources else
-                      tr("{how}，出自 {episodes} 的对话（{n} 句）。采用后从下一期的 AI 初剪开始照做。",
+                      tr("{how}，出自 {episodes} 的对话（{n} 句）。采用后从下一期的 LACUNA 初剪开始照做。",
                          how=how, episodes=join_list([episode_label(e) for e in eps]), n=n))
             out.append(Rule(
                 f"ask:{aid}", "ask", last["title"], detail,

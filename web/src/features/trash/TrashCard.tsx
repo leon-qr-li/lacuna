@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { t } from "../../i18n";
+import { fmtDate, t } from "../../i18n";
 import { confirmDialog } from "../dialog/Dialog";
 import { trashApi, type TrashItem, type TrashList } from "./api";
 import "./trash.css";
@@ -41,7 +41,7 @@ export function TrashCard() {
                   {" · "}
                   {x.kind === "show" ? t("节目") : t("账号")}
                   {" · "}
-                  {t("{date} 删除", { date: new Date(x.deleted_at * 1000).toLocaleDateString() })}
+                  {t("{date} 删除", { date: fmtDate(x.deleted_at * 1000) })}
                   {x.by && ` · ${x.by}`}
                   {" · "}
                   {t("还剩 {n} 天", { n: x.left_days })}

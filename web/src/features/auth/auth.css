@@ -23,6 +23,7 @@
 .auth-input { display: flex; align-items: center; height: 44px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--hover); padding: 0 6px 0 14px; transition: border-color 0.15s, box-shadow 0.15s; }
 .auth-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); background: var(--solid); }
 .auth-input input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); font: inherit; height: 100%; padding: 0; }
+.auth-input input:focus, .auth-input input:focus-visible { border: 0; outline: 0; box-shadow: none; }   /* the frame is the focus ring (batch 7, B4) */
 .auth-eye { border: 0; background: none; color: var(--ink-3); font: inherit; font-size: 12px; padding: 6px 8px; cursor: pointer; white-space: nowrap; }
 .auth-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 20px; font-size: 13px; }
 .auth-check { display: flex; align-items: center; gap: 8px; color: var(--ink-2); cursor: pointer; }
@@ -101,3 +102,14 @@
 .auth-turnstile { margin: 4px 0 12px; min-height: 65px; }
 .auth-input textarea, .auth-input textarea:focus { box-shadow: none; border-radius: 0; min-height: 60px; }
 .people-note { display: block; color: var(--ink-2); }
+/* batch 7: a good state reads green (T6); 你的名字 lines up label, field and button (B5) */
+.badge.badge-good { background: var(--ok-soft); color: var(--ok); }
+.account-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; }
+.account-row > label { display: grid; gap: 6px; min-width: min(260px, 100%); flex: 1 1 260px; }
+.account-row > label input { height: 38px; }
+.account-row > .btn { height: 38px; }
+.account-row > .ok, .account-row > .error { align-self: center; }
+
+/* the theme button shows the same sun / moon as the app (batch 7, T7) */
+.auth-theme { display: inline-grid; place-items: center; width: 34px; padding: 0; }
+.auth-theme svg { width: 16px; height: 16px; }

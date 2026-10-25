@@ -7,6 +7,7 @@ import { posterApi } from "./api";
 import { joinList, lang, t } from "../../i18n";
 import { BusyLabel, JobProgress, PageLoading } from "../loading/Loading";
 import { confirmDialog } from "../dialog/Dialog";
+import { EmptyState } from "../states/States";
 
 /** 海报: the AI (LACUNA to Leon) draws several square covers (SVG) from the publish pack, rendered on this machine;
  *  Leon picks one (rendered at 3000×3000 into the publish folder) or changes one with a sentence. */
@@ -64,8 +65,8 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
     }
   };
 
-  if (err) return <p className="error pad">{t("海报页打不开：")}{err}</p>;
-  if (!view) return <PageLoading label={t("正在打开海报…")} shape="cards" />;
+  if (err) return <p className="error pad">{t("封面页打不开：")}{err}</p>;
+  if (!view) return <PageLoading label={t("正在打开封面…")} shape="cards" />;
 
   const claude = view.available;
   const job = view.job;
@@ -83,9 +84,9 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
     <main className="publish poster">
       <div className="publish-head">
         <div>
-          <h1>{t("海报")}</h1>
+          <h1 className="step-title">{t("封面")}</h1>
           <p className="muted small">
-            {t("LACUNA 按这一集的标题和简介画 {n} 版方形封面（{styles}），在本机渲染。挑一张，或者说一句话让它改。", { n, styles: joinList(view.directions.map((d) => d.label)) })}
+            {t("LACUNA 按这一集的标题和简介画 {n} 版方形封面（{styles}）。挑一张，或者说一句话让它改。", { n, styles: joinList(view.directions.map((d) => d.label)) })}
           </p>
         </div>
         <span className="grow" />
@@ -97,22 +98,35 @@ export function PosterView({ id, flash, onPauseMain }: { id: string; flash: (m: 
           data-tour="poster-generate"
           data-testid="poster-generate"
         >
-          <BusyLabel busy={running} label={spent ? t("本集海报次数用完") : view.variants.length ? t("再画 {n} 版", { n }) : t("画 {n} 版海报", { n })} busyLabel={t("正在画…")} />
+          <BusyLabel busy={running} label={spent ? t("本集封面次数用完") : view.variants.length ? t("再画 {n} 版", { n }) : t("画 {n} 版封面", { n })} busyLabel={t("正在画…")} />
         </button>
       </div>
 
       {!view.has_pack && (
-        <p className="card" data-testid="poster-needs-pack">
-          {t("海报按「发布资料」里的标题和简介来画，请先去")} <a href={`#/ep/${encodeURIComponent(id)}/publish`}>{t("发布资料")}</a> {t("生成一次。")}
-        </p>
+        <EmptyState
+          icon="▣"
+          title={t("先生成发布资料")}
+          text={t("封面按「发布资料」里的标题和简介来画。")}
+          action={
+            <a className="btn btn-primary btn-small linkbtn" href={`#/ep/${encodeURIComponent(id)}/publish`}>
+              {t("去生成发布资料")}
+            </a>
+          }
+          testid="poster-needs-pack"
+        />
       )}
-      {view.has_pack && !claude && <p className="card">{t("还没接上 AI（没有 AI 密钥），画不了海报。")}</p>}
+      {view.has_pack && !claude && <p className="card">{t("还没接上 AI（没有 AI 密钥），画不了封面。")}</p>}
       {view.has_pack && claude && !view.variants.length && !running && (
-        <p className="card">{t("只发标题、简介和片名这些文字给 LACUNA，{n} 版同时画，大约 2–4 分钟。每集可以画 {m} 轮。", { n, m: view.max_rounds })}</p>
+        <EmptyState
+          icon="▣"
+          title={t("还没有封面")}
+          text={t("只发标题、简介和片名这些文字给 LACUNA，{n} 版同时画，大约 2–4 分钟。每集可以画 {m} 轮。", { n, m: view.max_rounds })}
+          testid="poster-empty"
+        />
       )}
       {running && (
         <JobProgress
-          title={job?.kind === "revise" ? t("正在按你的话改海报") : job?.kind === "choose" ? t("正在准备选定的封面") : t("正在画 {n} 版海报", { n })}
+          title={job?.kind === "revise" ? t("正在按你的话改封面") : job?.kind === "choose" ? t("正在准备选定的封面") : t("正在画 {n} 版封面", { n })}
           stage={job?.stage}
           started={job?.started}
           typical={job?.kind === "choose" ? 15 : job?.kind === "revise" ? 90 : 180}
@@ -184,7 +198,7 @@ function PosterCard(props: {
 }) {
   const { id, v, chosen, busy, health } = props;
   return (
-    <article className={`card poster-card${chosen ? " is-chosen" : ""}`} data-testid="poster-card" aria-label={t("海报 {name}", { name: v.name })}>
+    <article className={`card poster-card${chosen ? " is-chosen" : ""}`} data-testid="poster-card" aria-label={t("封面 {name}", { name: v.name })}>
       <button type="button" className="poster-img" onClick={props.onBig} title={t("看大图")}>
         <img src={posterApi.posterPreview(id, v.id)} alt={v.name} loading="lazy" />
       </button>

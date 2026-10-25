@@ -8,20 +8,23 @@ import { Pager, PAGE_SIZE } from "./Pager";
 
 const KIND_LABEL: Record<string, string> = {
   protect: t("少删"),
-  review: t("改为过目"),
-  trust: t("不用过目"),
+  review: t("改为审阅"),
+  trust: t("不用审阅"),
   timid: t("该直接删"),
   missed: t("漏删"),
-  taste: t("品味例子"),
+  taste: t("你的取舍例子"),
   threshold: t("把握度"),
   ask: t("你说过的"),
 };
+
+/** Episode titles from the last GET /api/learning: a source is named by its title, its id only as a fallback. */
+let titles: Record<string, string> = {};
 
 /** A learning source as Leon reads it: a deleted episode's evidence is filed as "EP003@2026-10-21-a1b2". */
 export function sourceLabel(e: string): string {
   const ep = e.replace(/\.hand_edit$/, "");
   const gone = /@\d{4}-\d{2}-\d{2}-[0-9a-f]{4}$/;
-  const name = gone.test(ep) ? t("{ep}（已删）", { ep: ep.replace(gone, "") }) : ep;
+  const name = gone.test(ep) ? t("{ep}（已删）", { ep: ep.replace(gone, "") }) : (titles[ep] ?? ep);
   return e.endsWith(".hand_edit") ? t("{ep}（你手剪的成品）", { ep: name }) : name;
 }
 
@@ -29,9 +32,9 @@ const STATE_LABEL: Record<string, string> = { candidate: t("待你确认"), appr
 
 function effect(r: LearnedRule): string {
   const parts: string[] = [];
-  if (r.prompt) parts.push(t("下一集 AI 第一刀会照这条剪"));
+  if (r.prompt) parts.push(t("下一集 LACUNA 初剪会照这条剪"));
   if (r.policy?.review === true) parts.push(t("这类改动以后进审阅列表"));
-  if (r.policy?.review === false) parts.push(t("这类改动以后直接应用、不用逐条过目"));
+  if (r.policy?.review === false) parts.push(t("这类改动以后直接应用、不用逐条审阅"));
   if (r.policy?.confidence) parts.push(t("把握度低于 {confidence} 的进审阅", { confidence: r.policy.confidence }));
   return parts.join(lang === "en" ? "; " : "；");
 }
@@ -45,7 +48,7 @@ const inGroup = (r: LearnedRule, g: Group) =>
   g === "pending" ? r.state === "candidate" || r.updated : r.state === g;
 
 const EMPTY: Record<Group, string> = {
-  pending: t("没有等你决定的规则。你审阅、导出一集或在 AI 制作人里点「记住」之后，新的候选规则会出现在这里。"),
+  pending: t("没有等你决定的规则。你审阅、导出一集或在 LACUNA 对话里点「记住」之后，新的候选规则会出现在这里。"),
   approved: t("还没有采用过规则。"),
   rejected: t("没有不采用的规则。"),
 };
@@ -71,7 +74,13 @@ export function LearningView() {
   const [done, setDone] = useState<{ text: string; group: Group | null } | null>(null);
 
   useEffect(() => {
-    learningApi.learning().then(setOv).catch((e) => setErr(String(e.message ?? e)));
+    learningApi
+      .learning()
+      .then((v) => {
+        titles = v.titles ?? {};
+        setOv(v);
+      })
+      .catch((e) => setErr(String(e.message ?? e)));
   }, []);
 
   const lists = useMemo(() => {
@@ -117,11 +126,11 @@ export function LearningView() {
         {t("来源：{sources}。", {
           sources: s.episodes.length ? joinList(s.episodes.map(sourceLabel)) : t("还没有"),
         })}{" "}
-        {t("审阅里逐条决定 {considered} 个；所有来源合计保留 {kept}、恢复或没删 {restored}、补删 {added}。", { considered: s.considered, kept: s.kept, restored: s.restored, added: s.added })}
+        {t("审阅里逐条决定 {considered} 个；所有来源合计保留 {kept}、恢复或没删 {restored}、你自己多删 {added}。", { considered: s.considered, kept: s.kept, restored: s.restored, added: s.added })}
       </p>
       <details className="small muted learning-how">
         <summary>{t("规则是怎么来的")}</summary>
-        <p>{t("规则是从你的决定和你在 AI 制作人里说的话推断的（每次导出后总结一次对话；在 AI 制作人里写好一句点「记住」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。")}</p>
+        <p>{t("规则是从你的决定和你对 LACUNA 说的话推断的（每次导出后总结一次对话；在 LACUNA 对话里写好一句点「记住」会马上记一条），只有你点「采用」之后才会影响下一集。随时可以撤回。")}</p>
       </details>
       {/* tabs stay up even when every rule is gone, so a just-shown notice still has a place */}
       <>
@@ -146,7 +155,7 @@ export function LearningView() {
           {list.length === 0 ? (
             <p className="card muted" data-testid="rules-empty">
               {ov.rules.length === 0
-                ? t("还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 AI 补删，这里就会出现。也可以在 AI 制作人里写一句长期要求，点「记住」直接记一条。")
+                ? t("还没有足够的证据形成规则。多逐条审几处（保留 / 恢复），或者在聊天里让 LACUNA 多删，这里就会出现。也可以在 LACUNA 对话里写一句长期要求，点「记住」直接记一条。")
                 : EMPTY[group]}
             </p>
           ) : (

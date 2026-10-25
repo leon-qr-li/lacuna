@@ -1,5 +1,5 @@
 /* 配乐 design B: library on the left, the episode's music on the right */
-.music-b { max-width: 1360px; }
+.music-b { max-width: var(--w-work); }
 .music-grid { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
 .music-grid.is-empty { grid-template-columns: minmax(0, 1fr); }
 .music-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }

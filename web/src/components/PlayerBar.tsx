@@ -7,7 +7,7 @@ export function PlayerBar({ player, duration }: { player: Player; duration: numb
   return (
     <section className="player" aria-label={t("播放器")}>
       <button type="button" className="btn btn-ondark sq" aria-label={t("后退 5 秒")} onClick={() => player.skip(-5)}>
-        −5s
+        {t("−5 秒")}
       </button>
       <button
         type="button"
@@ -19,7 +19,7 @@ export function PlayerBar({ player, duration }: { player: Player; duration: numb
         {playing ? "❚❚" : "▶"}
       </button>
       <button type="button" className="btn btn-ondark sq" aria-label={t("前进 5 秒")} onClick={() => player.skip(5)}>
-        +5s
+        {t("+5 秒")}
       </button>
       <span className="mono" data-testid="clock" aria-live="off">
         {fmt(time)} / {fmt(duration)}

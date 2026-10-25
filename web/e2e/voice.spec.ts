@@ -13,8 +13,8 @@ test("voice input: talk, stop, text lands in the box, send as usual", async ({ p
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const mic = page.getByTestId("mic");
   await expect(mic).toBeEnabled();
-  await expect(mic).toHaveAttribute("title", /本机识别/);
-  const box = page.getByLabel(/对 AI 制作人说/);
+  await expect(mic).toHaveAttribute("title", /LACUNA 服务器上识别/);
+  const box = page.getByLabel(/对 LACUNA ?说/);
   await box.fill("嗯");
 
   await mic.click();

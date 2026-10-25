@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "喜马拉雅版是从发布资料排出来的。": "The Ximalaya version is laid out from the publish pack.",
   "喜马拉雅版": "Ximalaya layout",
   "喜马拉雅版打不开：": "Can't open the Ximalaya layout: ",
   "正在排版…": "Laying out…",
@@ -17,9 +18,7 @@ export const en: Dict = {
   "本期提到的电影": "Films in this episode",
   "把 show notes 排成喜马拉雅简介编辑器能直接用的样子：不用表格，一段一行，时间戳都在行首，在喜马拉雅和小宇宙里都能点。选一版，复制，贴进简介框。":
     "The show notes laid out for the Ximalaya description editor: no tables, one paragraph per line, every timestamp at the start of its line so listeners can tap it on Ximalaya and Xiaoyuzhou. Pick a layout, copy it, paste it into the description box.",
-  "还没有发布资料。先去": "No publish pack yet. Go to",
   "发布资料": "Publish pack",
-  "生成。": "and generate one.",
   "剪辑后来又改过，时间戳可能不准。先去": "The cut changed since, so timestamps may be off. First go to",
   "点「更新时间戳」。": "and click “Update timestamps”.",
   "排版样式": "Layout",
@@ -29,7 +28,6 @@ export const en: Dict = {
   "编辑器贴不进图片：贴好文字后，在【插图】那一行用编辑器的图片按钮上传这张图，再删掉那一行。":
     "The editor can't take images from a paste: after pasting the text, upload each image with the editor's image button on its 【插图】 line, then delete that line.",
   "下载": "Download",
-  "也存在 {path}": "Also saved in {path}",
   "预览": "Preview",
   "大致是贴进喜马拉雅后的样子，以喜马拉雅里实际显示为准": "Roughly how it looks in Ximalaya; what Ximalaya shows is what counts.",
 };

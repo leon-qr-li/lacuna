@@ -27,7 +27,13 @@ export function ThemeSetting() {
       <div className="set-row">
         <div>
           <strong>{t("主题")}</strong>
-          <p className="muted small">{t("跟随系统：电脑切到深色时这里也变深色。")}</p>
+          <p className="muted small" data-testid="theme-hint">
+            {choice === "dark"
+              ? t("深色：一直用深色，不管电脑是什么模式。")
+              : choice === "light"
+                ? t("浅色：一直用浅色，不管电脑是什么模式。")
+                : t("跟随系统：电脑切到深色时这里也变深色。")}
+          </p>
         </div>
         <div className="seg" role="radiogroup" aria-label={t("主题")}>
           {opts.map(([v, label]) => (
@@ -47,7 +53,7 @@ export function ThemeSetting() {
       <div className="set-row">
         <div>
           <strong>{t("界面语言")}</strong>
-          <p className="muted small">{t("切换后页面会刷新。节目内容（转写、show notes）用节目自己的语言。")}</p>
+          <p className="muted small">{t("切换后页面会刷新。节目内容（逐字稿、show notes）用节目自己的语言。")}</p>
         </div>
         <div className="seg" role="radiogroup" aria-label={t("界面语言")}>
           {langs.map(([v, label]) => (

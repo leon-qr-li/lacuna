@@ -4,6 +4,7 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import type { XimalayaStyleId, XimalayaView as View } from "./api";
 import { ximalayaApi } from "./api";
+import { EmptyState } from "../states/States";
 
 // ".v2": a choice remembered while 杂志 was the default is dropped once, so everyone starts on 片场
 // (Leon, 2026-10-18); a style picked from now on is remembered again
@@ -98,16 +99,24 @@ export function XimalayaView({ id, version, flash }: { id: string; version: stri
   return (
     <main className="xmly">
       <div>
-        <h1>{t("喜马拉雅版")}</h1>
+        <h1 className="step-title">{t("喜马拉雅版")}</h1>
         <p className="muted small">
           {t("把 show notes 排成喜马拉雅简介编辑器能直接用的样子：不用表格，一段一行，时间戳都在行首，在喜马拉雅和小宇宙里都能点。选一版，复制，贴进简介框。")}
         </p>
       </div>
 
       {!view.styles ? (
-        <p className="card">
-          {t("还没有发布资料。先去")} <a href={`#/ep/${encodeURIComponent(id)}/publish`}>{t("发布资料")}</a> {t("生成。")}
-        </p>
+        <EmptyState
+          icon="✎"
+          title={t("还没有发布资料")}
+          text={t("喜马拉雅版是从发布资料排出来的。")}
+          action={
+            <a className="btn btn-primary btn-small linkbtn" href={`#/ep/${encodeURIComponent(id)}/publish`}>
+              {t("去生成发布资料")}
+            </a>
+          }
+          testid="xmly-empty"
+        />
       ) : (
         <>
           {view.stale && (
@@ -166,7 +175,6 @@ export function XimalayaView({ id, version, flash }: { id: string; version: stri
                   </figure>
                 ))}
               </div>
-              {view.dir && <p className="muted small">{t("也存在 {path}", { path: view.dir })}</p>}
             </section>
           )}
 

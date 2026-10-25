@@ -86,7 +86,7 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
         {/* G5: a quiet line, never a block */}
         {pending > 0 && (
           <p className="small warn-note" data-testid="export-pending">
-            {t("还有 {n} 处改动没过目，导出会按现在的样子。", { n: pending })}{" "}
+            {t("还有 {n} 处改动没审阅，导出会按现在的样子。", { n: pending })}{" "}
             <a href={`#/ep/${encodeURIComponent(id)}/review`}>{t("去审阅")}</a>
           </p>
         )}
@@ -143,7 +143,7 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
                 </button>
               )}
               <p className="small muted" data-tour="export-publish">
-                {t("下一步可以在「发布」里生成节目简介和封面，再发到各个平台。")}{" "}
+                {t("下一步可以在「发布」里生成节目简介和封面，方便你上传到各个平台。")}{" "}
                 <a href={`#/ep/${encodeURIComponent(id)}/publish`}>{t("去发布")}</a>
               </p>
             </div>
@@ -156,7 +156,7 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
         {summary}
         <div className="card xstd" data-testid="export-standard" data-tour="export-standard">
           <div className="xstd-head">
-            <b>{t("符合播客平台标准")}</b>
+            <b>{done ? t("符合播客平台标准") : t("播客平台标准")}</b>
             {done && okLufs && okPeak && <span className="ok">✓</span>}
           </div>
           {done ? (
@@ -197,7 +197,11 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
           ) : (
             <span className="small muted">{t("导出后在这里显示响度、真峰值和压缩量。")}</span>
           )}
-          <span className="small muted">{t("已按播客平台的响度标准处理，可以直接上传到 Apple Podcasts、Spotify、小宇宙等任何播客平台。")}</span>
+          <span className="small muted" data-testid="export-standard-note">
+            {done
+              ? t("已按播客平台的响度标准处理，可以直接上传到 Apple Podcasts、Spotify、小宇宙等任何播客平台。")
+              : t("导出时会处理到播客平台标准（−16 LUFS），导出后可以直接上传到 Apple Podcasts、Spotify、小宇宙等任何播客平台。")}
+          </span>
         </div>
       </aside>
     </div>

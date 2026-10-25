@@ -1,5 +1,5 @@
 /* 声音 step (backlog 7) */
-.levels-step { width: 100%; max-width: 900px; margin: 0 auto; padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 16px; }
+.levels-step { width: 100%; max-width: var(--w-read); margin: 0 auto; padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 16px; }
 .levels-card { padding: 20px 22px; border-radius: 20px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px; }
 .levels-card h2 { font-size: 20px; font-weight: 700; margin: 0; }
 .levels-head { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; justify-content: space-between; }
@@ -19,7 +19,9 @@
 .levels-meter-raw { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--ink); opacity: .85; border-radius: 1px; }
 .levels-meter-target { position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; background: var(--ok, #3fb37f); border-radius: 1px; }
 .levels-meter-scale { display: flex; justify-content: space-between; font-size: 11px; }
-.levels-key-target { color: var(--ok, #3fb37f); }
+.levels-meter-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11px; }
+.levels-key-raw { font-weight: 700; }
+.levels-key-target { color: var(--ok, #3fb37f); font-weight: 700; }
 .levels-waves { display: grid; grid-template-columns: 1fr; gap: 3px; }
 .levels-wave { display: flex; align-items: center; gap: 1px; height: 26px; }
 .levels-wave i { flex: 1 1 0; min-width: 1px; border-radius: 1px; background: var(--leon); }

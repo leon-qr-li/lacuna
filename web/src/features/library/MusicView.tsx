@@ -354,7 +354,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     <main className="home music music-b">
       <header className="music-hero">
         <div className="grow">
-          <h1>{t("配乐")}</h1>
+          <h1 className="step-title">{t("配乐")}</h1>
           <p className="muted small">
             <span className="mono">
               {t("人声剪辑 {voice} → 成品 {final}", { voice: fmt(m.voice_duration), final: fmt(m.duration) })}
@@ -477,9 +477,9 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
                 seekMix(at, true);
               }}
             />
+            {/* no browser controls: the row below is the player (batch 7, B8) */}
             <audio
               ref={mixRef}
-              controls
               preload="none"
               src={m.mix_url}
               data-testid="mix-audio"
@@ -499,6 +499,18 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
               onSeeked={(e) => setNow(e.currentTarget.currentTime)}
             />
             <div className="row gap8 wrap mix-controls">
+              <button
+                type="button"
+                className="btn btn-small btn-primary mix-play"
+                onClick={() => {
+                  const a = mixRef.current;
+                  if (a) void (a.paused ? a.play().catch(() => undefined) : a.pause());
+                }}
+                aria-label={playing ? t("暂停") : t("播放")}
+                data-testid="mix-play"
+              >
+                {playing ? "❚❚" : "▶"}
+              </button>
               <button type="button" className="btn btn-small btn-outline" onClick={() => skip(-SKIP_S)} aria-label={t("后退 5 秒")}>
                 {t("−5 秒")}
               </button>

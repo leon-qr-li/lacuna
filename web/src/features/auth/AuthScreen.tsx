@@ -6,6 +6,7 @@ import { BusyLabel } from "../loading/Loading";
 import { currentTheme, setTheme } from "../theme/theme";
 import { lang, langChosen, setLang, t } from "../../i18n";
 import { AgreeBox, withLegalLinks } from "../legal/Legal";
+import { ThemeGlyph } from "../theme/Glyph";
 
 type View =
   | { v: "login" }
@@ -114,7 +115,7 @@ function Corner() {
       </button>
       <button
         type="button"
-        className="btn btn-outline btn-small"
+        className="btn btn-outline btn-small auth-theme"
         aria-label={theme === "dark" ? t("浅色") : t("深色")}
         onClick={() => {
           const next = theme === "dark" ? "light" : "dark";
@@ -122,7 +123,7 @@ function Corner() {
           setT(next);
         }}
       >
-        {theme === "dark" ? "☀" : "☾"}
+        <ThemeGlyph theme={theme} />
       </button>
     </div>
   );
@@ -275,7 +276,7 @@ function Login({ status, email, setEmail, go, next }: FormProps) {
   return (
     <form onSubmit={submit}>
       <h1>{t("欢迎回来")}</h1>
-      <p className="auth-sub">{t("登录 LACUNA Studio，继续剪你的节目。")}</p>
+      <p className="auth-sub">{t("登录 LACUNA，继续剪你的节目。")}</p>
       <EmailField email={email} setEmail={setEmail} autoFocus />
       <Password value={pw} onChange={setPw} label={t("密码")} autoComplete="current-password" testid="auth-password" />
       <div className="auth-row">
@@ -327,7 +328,7 @@ function checkNew(pw: string, pw2: string): string | null {
 /** 你的名字 (new-user batch Q12): what collaborators and invite emails show instead of the email. */
 function NameField({ name, setName, autoFocus }: { name: string; setName: (v: string) => void; autoFocus?: boolean }) {
   return (
-    <Field label={t("你的名字")} hint={t("搭档和邀请邮件里会显示这个名字")}>
+    <Field label={t("你的名字")} hint={t("协作者和邀请邮件里会显示这个名字")}>
       <span className="auth-input">
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoComplete="name" autoFocus={autoFocus} data-testid="auth-name" required />
       </span>

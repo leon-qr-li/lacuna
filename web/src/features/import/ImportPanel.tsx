@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { EpisodeListItem, ImportJob } from "../../api";
 import { api, fmt } from "../../api";
 import { t } from "../../i18n";
@@ -33,7 +33,7 @@ function steps(j: ImportJob): [string, number, string][] {
     ["models", 0.04, t("准备识别模型")],
     ...hosts.map(([tag, name]): [string, number, string] => [`asr_${tag}`, 0.68 / hosts.length, t("识别 {name} 的分轨", { name })]),
     ["features", 0.04, t("分析停顿、语速和重叠")],
-    ["first_cut", 0.2, t("AI 第一刀")],
+    ["first_cut", 0.2, t("LACUNA 初剪")],
     ["episode", 0.04, t("生成审阅")],
   ];
 }
@@ -254,7 +254,7 @@ function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; n
       </div>
       <TrackNote />
       <p className="muted small">
-        {t("原始录音只读，只在 LACUNA 的服务器上处理，不交给第三方；AI 只看文字稿和停顿等数字，拿不到录音。关掉页面不影响进度。")}
+        {t("原始录音只读，只在 LACUNA 的服务器上处理，不交给第三方；AI 只看逐字稿和停顿等数字，拿不到录音。关掉页面不影响进度。")}
       </p>
       {d.note && <p className="error small">{d.note}</p>}
       {err && <p className="error small">{err}</p>}
@@ -302,8 +302,8 @@ function JobRow({ j, toReview, onChange }: { j: ImportJobView; toReview: number;
       {j.state === "done" && j.result && (
         <p className="small">
           {j.result.engine === "rules"
-            ? t("AI 第一刀（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: toReview })
-            : t("AI 第一刀：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: toReview })}
+            ? t("LACUNA 初剪（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你审阅。", { edits: j.result.edits, review: toReview })
+            : t("LACUNA 初剪：{edits} 处改动，{review} 处需要你审阅。", { edits: j.result.edits, review: toReview })}
         </p>
       )}
       {j.error && j.state !== "done" && (
@@ -349,12 +349,15 @@ export function ImportPanel({
   onOpen,
   albums = [],
   album = "",
+  actions,
 }: {
   /** the 剧集 list, for each finished import's review progress */
   episodes: EpisodeListItem[] | null;
   /** the project's albums: the form offers to put the new episode in one (`album`: picked at first) */
   albums?: { id: string; name: string }[];
   album?: string;
+  /** the home page's other buttons, in one row after 导入新一集 (batch 7, T3) */
+  actions?: ReactNode;
   onEpisodesChanged: () => void;
   onOpen: (id: string) => void;
 }) {
@@ -426,10 +429,15 @@ export function ImportPanel({
 
   return (
     <div className="imports">
-      {!d && (
-        <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
-          {t("导入新一集")}
-        </button>
+      {(!d || actions) && (
+        <div className="row gap8 wrap import-actions">
+          {!d && (
+            <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
+              {t("导入新一集")}
+            </button>
+          )}
+          {actions}
+        </div>
       )}
       {d && hosts.length > 0 && <NewImport d={d} albums={albums} onStarted={() => void refresh()} />}
       {!!shown.length && (

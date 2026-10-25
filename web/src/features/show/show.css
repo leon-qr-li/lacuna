@@ -56,6 +56,9 @@
 .show-setup { border: 1px solid var(--line-2); }
 
 /* 自动发布 (即将推出): a short note + the platforms a show would like, nothing that publishes yet */
-.show-auto-publish { display: flex; flex-direction: column; gap: 8px; }
+.show-auto-publish { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--hover); min-width: 0; }
+.show-auto-publish > legend { padding: 0 6px; margin-left: -6px; font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.show-auto-publish .check { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--solid); cursor: pointer; font-size: 13.5px; }
+.show-auto-publish .check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
 .show-auto-publish .auto-publish-head { align-items: center; }
 .show-auto-publish .soon-badge { font-size: 12px; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }

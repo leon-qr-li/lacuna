@@ -1,6 +1,5 @@
 /* ---- 喜马拉雅版 (backlog item 26) */
-.xmly { flex: 1; width: 100%; max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding: 24px; }
-.xmly h1 { margin: 0 0 6px; font-size: 28px; }
+.xmly { flex: 1; width: 100%; max-width: var(--w-read); margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding: 24px; }
 .xmly-styles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .xmly-style { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; text-align: left; cursor: pointer; font: inherit; }
 .xmly-style:hover { border-color: var(--accent); }

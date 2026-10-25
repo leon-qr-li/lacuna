@@ -20,7 +20,7 @@ export const ROLE_HELP: Record<Role, string> = {
   intro: t("整首从头放：先只有音乐，然后压低当背景，人声进来，歌在背景里放完"),
   interlude: t("对话停下，音乐升起来全音量放几秒，再压低当背景，对话接着来，歌放完为止"),
   outro: t("先压低垫在最后的对话下，说完拜拜升起来，放到结尾淡出"),
-  bed: t("整段固定压低当背景。位置空着就由 App 放进没有其他配乐的空档；写了位置就从那里放"),
+  bed: t("整段固定压低当背景。位置空着就由 LACUNA 放进没有其他配乐的空档；写了位置就从那里放"),
   clip: t("插入一段台词，前后各留一点空"),
 };
 const BG_DEFAULT = 22; // dB, new placements (lacuna_app/music.py BG_DB)
@@ -86,7 +86,7 @@ export function describe(p: Placement): string {
       });
     case "bed":
       return (
-        (p.auto ? t("{len}：App 放在没有其他配乐的空档，整段压低 {bg} dB 当背景", { len, bg }) : t("{len}：整段压低 {bg} dB 当背景", { len, bg })) +
+        (p.auto ? t("{len}：LACUNA 放在没有其他配乐的空档，整段压低 {bg} dB 当背景", { len, bg }) : t("{len}：整段压低 {bg} dB 当背景", { len, bg })) +
         (p.loop ? t("，循环填满这一段") : "")
       );
     default:

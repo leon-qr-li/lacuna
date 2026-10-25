@@ -39,7 +39,7 @@ export const en: Dict = {
   邮件发件人: "Mail sender",
   "邀请邮件和验证码从哪个地址发出。": "The address invites and verification codes are sent from.",
   "AI 与专有名词": "AI and terms",
-  "AI 密钥，以及所有节目的文字稿都按它校对的专有名词。": "The AI key, and the names every show's transcript is proofread against.",
+  "AI 密钥，以及所有节目的逐字稿都按它校对的专有名词。": "The AI key, and the names every show's transcript is proofread against.",
   个人: "Personal",
   仅管理员: "Admins only",
   打开后台: "Open the admin",

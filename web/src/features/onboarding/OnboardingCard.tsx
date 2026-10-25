@@ -30,7 +30,7 @@ export function OnboardingCard() {
           </button>
         )}
       </div>
-      <p className="muted small">{t("示例节目是一集剪好第一刀的示例，给你练手，不占用额度和节目数。")}</p>
+      <p className="muted small">{t("示例节目是一集做好初剪的示例，给你练手，不占用额度和节目数。")}</p>
       {err && <p className="error">{err}</p>}
     </section>
   );

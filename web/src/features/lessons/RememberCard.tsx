@@ -38,8 +38,8 @@ export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft
         <p className="small warn">
           {d.error
             ? revised
-              ? t("这次没能改写（{message}），按你写的原样用作这条规则的说法。", { message: d.error })
-              : t("这次没能改写（{message}）。下面先放你的原话，可以点「改一下」写成你想要的说法，或者稍后再试。", { message: d.error })
+              ? t("这次没能改写：{message}。按你写的原样用作这条规则的说法。", { message: d.error })
+              : t("这次没能改写：{message}。下面先放你的原话，可以点「改一下」写成你想要的说法，或者稍后再试。", { message: d.error })
             : revised
               ? t("现在没接上 AI，按你写的原样用作这条规则的说法。")
               : t("现在没接上 AI，没法帮你改写。下面先放你的原话，可以点「改一下」写成你想要的说法。")}
@@ -56,7 +56,7 @@ export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft
         <>
           {!talk && (
             <>
-              <p className="remember-ask">{t("是否记住这条？记住后从下一期的 AI 初剪开始照做。")}</p>
+              <p className="remember-ask">{t("是否记住这条？记住后从下一期的 LACUNA 初剪开始照做。")}</p>
               <div className="row gap8 wrap">
                 <button type="button" className="btn btn-primary" disabled={!!busy} onClick={() => decide("confirm")}>
                   <BusyLabel busy={busy === "confirm"} label={t("记住这条")} />
@@ -87,7 +87,7 @@ export function RememberCard({ epId, draft, onPauseMain }: { epId: string; draft
       )}
       {d.state === "confirmed" && (
         <p className="pstate ok" role="status">
-          {t("✓ 记住了，已生效：从下一期的 AI 初剪开始照做。")}{" "}
+          {t("✓ 记住了，已生效：从下一期的 LACUNA 初剪开始照做。")}{" "}
           <a href="#/learning">{t("想撤回去「学到的规则」")}</a>
         </p>
       )}

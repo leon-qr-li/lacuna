@@ -130,7 +130,7 @@ def request_received(email: str, show: str, when: str) -> dict:
              (tr("审核通过后发送邀请"), tr("邀请邮件会发到这个邮箱，链接 7 天内有效")),
              (tr("设置密码，开始使用"), tr("按邀请邮件的步骤设置密码和两步验证"))]
     return render(tr("我们收到了你的 LACUNA 试用申请"),
-                  tr("感谢你关注 LACUNA Studio。你的申请已经登记，我们会尽快完成审核。接下来会这样进行："),
+                  tr("感谢你关注 LACUNA。你的申请已经登记，我们会尽快完成审核。接下来会这样进行："),
                   rows, None, None, tr("如果这不是你本人提交的申请，忽略这封邮件即可，不会创建任何账号。"),
                   tr("申请已收到 · RECEIVED"), steps, done=1)
 
@@ -138,18 +138,18 @@ def request_received(email: str, show: str, when: str) -> dict:
 def collab_request(email: str, show: str, by: str, link: str) -> dict:
     """To the site owner: a show admin wants to bring in someone without an account (新成员需站长批准)."""
     rows = [(tr("邮箱"), email), (tr("节目"), show or "—"), (tr("谁邀请的"), by)]
-    return render(tr("新的搭档申请：{email}", email=email),
+    return render(tr("新的协作者申请：{email}", email=email),
                   tr("{by} 想邀请 {email} 一起做「{show}」。对方还没有 LACUNA 账号，需要你批准。", by=by, email=email, show=show),
                   rows, tr("去处理"), link,
-                  tr("在 设置 → 成员与邀请 → 试用申请 里批准（自动发邀请）或忽略。"), tr("搭档申请 · REQUEST"))
+                  tr("在 设置 → 成员与邀请 → 试用申请 里批准（自动发邀请）或忽略。"), tr("协作者申请 · REQUEST"))
 
 
 def collab_declined(email: str, show: str) -> dict:
     """To the show admin whose 搭档申请 the owner dismissed."""
-    return render(tr("搭档申请没有通过：{email}", email=email),
+    return render(tr("协作者申请没有通过：{email}", email=email),
                   tr("你邀请 {email} 加入「{show}」的申请这次没有通过，没有发出邀请。", email=email, show=show),
                   [(tr("邮箱"), email), (tr("节目"), show or "—")], None, None,
-                  tr("对方以后也可以自己在 LACUNA 登录页申请试用。"), tr("搭档申请 · REQUEST"))
+                  tr("对方以后也可以自己在 LACUNA 登录页申请试用。"), tr("协作者申请 · REQUEST"))
 
 
 def raw_tracks_reminder(show: str, episodes: list[dict], origin: str | None) -> dict:

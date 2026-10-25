@@ -204,7 +204,7 @@ function AssetRow({ a, kinds, eps, albums, onChange, onRemoved, claude }: { a: A
           onClick={async () => {
             const ok = await confirmDialog({
               title: t("移出素材库"),
-              message: t("把「{name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。", { name: a.name }),
+              message: t("把「{name}」移出素材库？移出后素材库里就看不到它了。", { name: a.name }),
               confirmLabel: t("移出"),
               danger: true,
             });
@@ -355,7 +355,7 @@ export function LibraryView() {
           {t("文件会复制到素材库文件夹")} <span className="mono">{lib.folder}</span>{t("，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 LACUNA。")}
         </p>
       )}
-      {cloud && <p className="muted small">{t("音乐保存在 LACUNA 的服务器上，原文件不动。查曲名时只把文件名、标签和你的备注发给 LACUNA 的 AI。")}</p>}
+      {cloud && <p className="muted small">{t("音乐保存在 LACUNA 的服务器上，原文件不动。查曲名时只把文件名、标签和你的备注发给 LACUNA。")}</p>}
       {note && <p className="small">{note}</p>}
       {lib.assets.length === 0 && <p className="muted">{t("素材库还是空的。把片头、配乐或台词片段拖进来就行。")}</p>}
       {lib.assets.length > 0 && <ScopeFilter eps={lib.episodes} albums={lib.albums} value={filter} onChange={setFilter} />}

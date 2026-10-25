@@ -475,7 +475,7 @@ class SampleDesigner:
 
         k = direction if direction in _ART else "free"
         bg, fg = _COLORS[k]
-        return Design(name=f"Sample {k.title()}", concept=tr("示例海报，节目录好后换成正式版本。"),
+        return Design(name=f"Sample {k.title()}", concept=tr("示例封面，节目录好后换成正式版本。"),
                       svg=_COVER.format(bg=bg, fg=fg, art=_ART[k]))
 
     def revise(self, context: str, svg: str, instruction: str):

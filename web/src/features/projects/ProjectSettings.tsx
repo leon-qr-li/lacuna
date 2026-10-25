@@ -65,7 +65,7 @@ export function ProjectSettings() {
     <main className="home settings prj-settings">
       <div className="home-hero">
         <h1>{t("节目设置")}</h1>
-        <p className="muted">{t("这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和海报都按这里来。")}</p>
+        <p className="muted">{t("这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和封面都按这里来。")}</p>
       </div>
       <div className="set-layout">
         <nav className="set-nav" aria-label={t("节目设置")}>
@@ -263,7 +263,7 @@ function ProjectMusic() {
         <label className="show-field" key={role}>
           <span>{role === "intro" ? t("默认片头") : t("默认片尾")}</span>
           <select value={view.project[role]?.asset_id ?? ""} onChange={(e) => pick(role, e.target.value)} data-testid={`project-${role}`}>
-            <option value="">{t("不用")}</option>
+            <option value="">{t("不用音乐")}</option>
             {options(role).map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -287,27 +287,10 @@ function ProjectMusic() {
   );
 }
 
-/** #/invite (邀请协作, top bar): the same collaborators panel, on its own page. */
+/** #/invite (old links): members are managed in 节目设置 → 协作者 now (batch 7, T10). */
 export function InvitePage() {
-  const sp = useProjects();
-  const me = useMe();
-  if (sp === undefined) return <PageLoading label={t("正在打开…")} shape="list" />;
-  const cur = sp?.current;
-  if (!cur) return <main className="show-page"><p className="muted">{t("没有登录账号时不需要邀请协作。")}</p></main>;
-  return (
-    <main className="show-page prj-settings">
-      <div className="home-hero">
-        <h1>{t("邀请协作「{name}」", { name: cur.name })}</h1>
-        <p className="muted">{t("只能邀请到节目这一层。对方剪的时候用对方自己的剪辑习惯。")}</p>
-      </div>
-      <section className="card">
-        <Collaborators id={cur.id} me={me} manage={cur.role === "admin"} />
-      </section>
-      <p>
-        <a className="btn btn-outline" href="#/">
-          {t("完成")}
-        </a>
-      </p>
-    </main>
-  );
+  useEffect(() => {
+    window.location.replace("#/project/people");
+  }, []);
+  return <PageLoading label={t("正在打开…")} shape="list" />;
 }

@@ -4,7 +4,7 @@
 .rv-slim .review-main { grid-area: main; }
 .rv-top { grid-area: top; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .rv-top .meter { flex: 1 1 160px; max-width: 320px; }
-.rv-top [data-testid="review-keep-rest"] { margin-left: auto; }
+.rv-top .rk-wrap { margin-left: auto; }   /* "?" sits with the action at the right end, not mid-row (batch 7) */
 .rdot { flex: none; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--muted); align-self: center; }
 .ritem.is-done .rdot { background: var(--ok); border-color: var(--ok); }
 .ritem.is-restored .rdot { background: var(--warn); border-color: var(--warn); }

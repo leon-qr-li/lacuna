@@ -75,7 +75,7 @@ def test_sanitize_removes_anything_reaching_outside_the_file():
         assert bad not in svg, bad
     assert 'href="#ok"' in svg and 'fill="url(#g)"' in svg and ".a{fill:url(#g)}" in svg
     assert "EP 002" in svg and "TWO FILMS" in svg
-    assert notes == ["LACUNA 在海报上写了中文，已经去掉（只用英文）。"]
+    assert notes == ["LACUNA 在封面上写了中文，已经去掉（只用英文）。"]
     assert render_png(svg, 200)        # still a valid SVG
 
 
@@ -177,7 +177,7 @@ def test_three_rounds_per_episode_then_none_left(ws, packed, pub):
     for left in (2, 1, 0):
         p.generate(packed, wait=True)
         assert p.view(packed)["rounds_left"] == left
-    with pytest.raises(PosterError, match="本集海报次数用完"):
+    with pytest.raises(PosterError, match="本集封面次数用完"):
         p.generate(packed, wait=True)
     assert len(p.view(packed)["variants"]) == 3 * len(DIRECTIONS)
 
@@ -191,7 +191,7 @@ def test_a_round_that_draws_nothing_is_not_counted(ws, packed, pub):
 def test_all_failed_is_a_job_error(ws, packed, pub):
     p = posters_with(ws, pub, FakePosterAnthropic(fail=tuple(b.split(":")[0] for _, _, b in DIRECTIONS)))
     job = p.generate(packed, wait=True)
-    assert job["state"] == "error" and "调用 AI 服务失败" in job["error"]
+    assert job["state"] == "error" and "LACUNA 暂时用不了" in job["error"]
     assert p.view(packed)["variants"] == []
 
 
@@ -199,7 +199,7 @@ def test_chinese_text_from_claude_is_dropped_with_a_note(ws, packed, pub):
     p = posters_with(ws, pub, FakePosterAnthropic(extra='<text x="100" y="100">两部电影</text>'))
     p.generate(packed, ["emblem"], wait=True)
     v = p.view(packed)["variants"][0]
-    assert v["notes"] == ["LACUNA 在海报上写了中文，已经去掉（只用英文）。"]
+    assert v["notes"] == ["LACUNA 在封面上写了中文，已经去掉（只用英文）。"]
 
 
 def test_revise_adds_a_new_version_from_one_sentence(ws, packed, pub):

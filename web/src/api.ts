@@ -69,6 +69,8 @@ export interface EpisodeListItem {
   error?: string;
   /** the chosen cover's preview, null: none chosen (the tile shows its letter) */
   poster?: string | null;
+  /** exported at least once (the tile's status stripe) */
+  exported?: boolean;
 }
 
 export interface ABSide {
@@ -295,11 +297,11 @@ export function parseTime(s: string): number | null {
 }
 
 export function statusLabel(e: EditInfo): string {
-  if (e.status === "restored") return e.approved ? t("已恢复原样") : t("AI 未应用，等你决定");
+  if (e.status === "restored") return e.approved ? t("已恢复原样") : t("LACUNA 未应用，等你决定");
   if (e.source === "manual") return t("手动剪辑");
   if (e.source !== "first_cut") return t("聊天修改 · 已批准");
   if (e.approved) return t("已确认保留");
-  return e.consequential ? t("待你过目") : t("常规清理 · 已自动应用");
+  return e.consequential ? t("待你审阅") : t("常规清理 · 已自动应用");
 }
 
 export function confidenceLabel(c: number): string {

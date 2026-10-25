@@ -72,7 +72,7 @@ export function Home({ me, go }: PageProps) {
     ["inbox", "/feedback", t("新反馈"), t("还没处理的反馈"), td.fb],
     ["clock", "/hours", t("加时长申请"), t("等你批准"), td.hours],
     ["hand", "/access", t("试用申请"), t("登录页提交的"), td.trial],
-    ["users", "/access?tab=collab", t("搭档申请"), t("节目管理员想拉人进来"), td.collab],
+    ["users", "/access?tab=collab", t("协作者申请"), t("节目管理员想拉人进来"), td.collab],
   ];
   const k = o.kpi;
   const delta = (n: number, unit: string) => (n > 0 ? `+${n} ${unit}` : n < 0 ? `${n} ${unit}` : t("和上周一样"));

@@ -10,6 +10,7 @@ import { AlbumDialog } from "./AlbumDialog";
 import { AlbumCover } from "./Cover";
 import { MoveToAlbum } from "./MoveToAlbum";
 import { useAlbums, type Album, type AlbumsView, type DefaultTrack } from "./api";
+import { EmptyState } from "../states/States";
 
 const albumId = () => decodeURIComponent(/^#\/album\/([^/?]+)/.exec(window.location.hash)?.[1] ?? "");
 
@@ -64,7 +65,7 @@ export function AlbumPage() {
       <AlbumStrip album={album} view={view} onEdit={() => setDialog({ edit: true })} />
       <ImportPanel episodes={list} onEpisodesChanged={reload} onOpen={open} albums={view.albums} album={album.id} />
       <h2 className="sub">{t("这个专辑的剧集")}</h2>
-      {!eps.length && <p className="muted">{t("专辑里还没有剧集。导入新一集，或者在剧集卡片上点「移到专辑」。")}</p>}
+      {!eps.length && <EmptyState icon="♪" title={t("专辑里还没有剧集")} text={t("专辑里还没有剧集。导入新一集，或者在剧集卡片上点「移到专辑」。")} testid="album-empty" />}
       <ul className="ep-list">
         {eps.map((e) => (
           <EpisodeCard
