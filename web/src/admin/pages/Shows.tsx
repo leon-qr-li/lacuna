@@ -59,7 +59,7 @@ function Shows({ data }: { data: ShowsData }) {
       ) : (
         <Card pad={false}>
           <div className="a-tw">
-            <table className="a-t a-t-cards">
+            <table className="a-t a-t-cards md">
               <thead>
                 <tr>
                   <th>{t("节目")}</th>
@@ -123,7 +123,7 @@ function Stuck({ data }: { data: ShowsData }) {
   return (
     <Card pad={false}>
       <div className="a-tw">
-        <table className="a-t a-t-cards">
+        <table className="a-t a-t-cards md">
           <thead>
             <tr>
               <th>{t("节目")}</th>

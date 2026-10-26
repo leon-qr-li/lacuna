@@ -411,6 +411,8 @@ def register(app, ctx) -> None:
                 auth.users.clear()
                 auth.sessions.clear()
                 auth.codes.clear()
+                auth.code_sends.clear()
+                auth.code_burnt.clear()
                 auth.fails.clear()
                 auth.tickets.clear()
                 auth.invites.clear()
