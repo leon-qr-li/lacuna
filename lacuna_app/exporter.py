@@ -7,6 +7,7 @@ keeps working because the job uses its own file handles).
 """
 from __future__ import annotations
 
+import copy
 import os
 import subprocess
 import sys
@@ -66,7 +67,11 @@ class Exporter:
             enabled = ep.enabled
             ep.timeline_for(enabled)           # refuses an invalid state before anything starts
             version = ep.version_key(enabled)
-            music_version = EpisodeMusic(self.ws, ep).export_key()
+            # the music as it is now, held for the whole export: a change made while it runs goes into the
+            # next export (and marks this one out of date), never half into this one (batch 8, EG-12)
+            music = EpisodeMusic(self.ws, ep)
+            placements = copy.deepcopy(music.placements())
+            music_version = music.export_key(placements)
             title = ep.meta.get("title", ep.id)
             show = ep.meta.get("show") or show_profile.load(self.ws.root)["show_name"] or title
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -89,7 +94,7 @@ class Exporter:
             pool = None
             try:
                 progress(0.0, tr("配乐与 ducking"))
-                tl, media, lay = EpisodeMusic(self.ws, ep).mix(enabled, channels)
+                tl, media, lay = EpisodeMusic(self.ws, ep).mix(enabled, channels, placements)
                 pool = SourcePool(media)
                 res = export(timeline_source(pool, tl, channels), tl.sample_rate, channels, out_dir,
                              job["basename"], tuple(formats), MasterSettings(), tl.length,

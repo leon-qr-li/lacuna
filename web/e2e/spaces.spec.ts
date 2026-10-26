@@ -50,6 +50,10 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
   await expect(lp.getByText("beta@example.com 已经加进来了")).toBeVisible();
   const row = lp.getByTestId("collaborator").filter({ hasText: "beta@example.com" });
   await expect(row.getByRole("combobox")).toHaveValue("viewer");
+  // a person who gave a name is listed by it, the email beside it (batch 11, AU-28)
+  expect((await beta.request.post("/api/auth/name", { data: { name: "Beta Tester" } })).ok()).toBeTruthy();
+  await lp.reload();
+  await expect(lp.getByTestId("collaborator").filter({ hasText: "beta@example.com" })).toContainText("Beta Tester");
   // someone without an account: Leon (LACUNA's owner) sends a sign-up invite that waits as 待接受
   await lp.getByTestId("invite-email").fill("pei@example.com");
   await lp.getByTestId("invite-role").selectOption({ label: "剪辑师" });
