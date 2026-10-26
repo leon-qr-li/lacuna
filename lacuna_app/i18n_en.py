@@ -778,4 +778,5 @@ EN: dict[str, str | tuple[str, str]] = {
     "点「接受邀请」，设好密码": "Tap “Accept the invitation” and set a password",
     "用手机验证器 App 扫码，开好两步验证": "Scan the code with your authenticator app to turn on two-step sign-in",
     "邀请链接 7 天内有效，只能用一次。": "The invite link works for 7 days, once.",
+    "只有站长能恢复管理员的账号": "Only the owner can bring back an admin's account",
 }

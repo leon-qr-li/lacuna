@@ -440,31 +440,41 @@ class Auth:
         email = norm_email(email)
         if purpose != "reset":
             raise AuthError("bad purpose")
-        now = self.now()
-        if ip:      # counted for every email, known or not, so the limit says nothing about accounts
-            asked = self.code_sends[f"ip:{ip}"] = [t for t in self.code_sends.get(f"ip:{ip}", []) if now - t < 3600]
-            if len(asked) >= IP_CODES_PER_HOUR:
-                raise AuthError(tr("验证码要得太频繁，{n} 分钟后再试", n=max(1, math.ceil((3600 - (now - asked[0])) / 60))), 429)
-            asked.append(now)
-        if email not in self.users or self.users[email].get("disabled"):
-            return       # say nothing about which emails have accounts
-        if self.code_burnt.get(email, 0) > now:
-            raise AuthError(tr("验证码错了太多次，{n} 分钟后再试", n=max(1, math.ceil((self.code_burnt[email] - now) / 60))), 429)
-        sent = self.code_sends[email] = [t for t in self.code_sends.get(email, []) if now - t < 86400]
-        if len(sent) >= CODES_PER_DAY:
-            raise AuthError(tr("今天的验证码已经发够了，明天再试，或联系 LACUNA 团队"), 429)
-        old = self.codes.get((email, purpose))
-        if old and now - old["sent"] < CODE_COOLDOWN_S:
-            raise AuthError(tr("验证码刚发过，{n} 秒后再试", n=int(CODE_COOLDOWN_S - (now - old["sent"])) + 1), 429)
-        code = f"{secrets.randbelow(10 ** 6):06d}"
+        # the checks and the counting under one lock, before the mail goes out, so parallel requests can't all pass;
+        # every email is counted, known or not, so the answers say nothing about which emails have accounts
+        with self.lock:
+            now = self.now()
+            if ip:
+                asked = self.code_sends[f"ip:{ip}"] = [t for t in self.code_sends.get(f"ip:{ip}", []) if now - t < 3600]
+                if len(asked) >= IP_CODES_PER_HOUR:
+                    raise AuthError(tr("验证码要得太频繁，{n} 分钟后再试", n=max(1, math.ceil((3600 - (now - asked[0])) / 60))), 429)
+                asked.append(now)
+            if self.code_burnt.get(email, 0) > now:
+                raise AuthError(tr("验证码错了太多次，{n} 分钟后再试", n=max(1, math.ceil((self.code_burnt[email] - now) / 60))), 429)
+            sent = self.code_sends[email] = [t for t in self.code_sends.get(email, []) if now - t < 86400]
+            if len(sent) >= CODES_PER_DAY:
+                raise AuthError(tr("今天的验证码已经发够了，明天再试，或联系 LACUNA 团队"), 429)
+            if sent and now - sent[-1] < CODE_COOLDOWN_S:
+                raise AuthError(tr("验证码刚发过，{n} 秒后再试", n=int(CODE_COOLDOWN_S - (now - sent[-1])) + 1), 429)
+            sent.append(now)
+            if email not in self.users or self.users[email].get("disabled"):
+                return
+            code = f"{secrets.randbelow(10 ** 6):06d}"
+            old = self.codes.get((email, purpose))
+            self.codes[(email, purpose)] = {"hash": _sha(code), "exp": now + CODE_S, "tries": 0, "sent": now}
         try:
             self.mailer.send(self.config["sender"], email, tr("LACUNA 验证码：{code}", code=code),
                              tr("你的验证码是 {code}，10 分钟内有效，用于{what}。\n\n如果不是你本人操作，忽略这封邮件即可。",
                                 code=code, what=tr("重设 LACUNA 密码")))
         except MailError as e:
+            with self.lock:       # not sent: it doesn't count, and the code before it still works
+                if now in sent:
+                    sent.remove(now)
+                if old:
+                    self.codes[(email, purpose)] = old
+                else:
+                    self.codes.pop((email, purpose), None)
             raise AuthError(str(e), 502)
-        self.codes[(email, purpose)] = {"hash": _sha(code), "exp": now + CODE_S, "tries": 0, "sent": now}
-        sent.append(now)
 
     def _use_code(self, email: str, purpose: str, code: str) -> None:
         c = self.codes.get((email, purpose))

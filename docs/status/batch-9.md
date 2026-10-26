@@ -22,8 +22,8 @@ Thread 「第九批：全局再扫一遍」 (Leon 2026-10-26: 「你再扫一遍
 - Admin invite mail on a phone: both buttons the same width.
 - E2E hygiene: `/api/auth/_test/reset` also clears the new reset-code counters.
 
-## Waiting on Leon (security, his typed words): decisions page
-Found by the review; fixes are written and tested, held until he types OK:
+## Fix PR 2 (security; Leon typed 「按照你推荐的修」 2026-10-26, decision 2026-10-26-batch9-security-fixes)
+Found by the review:
 1. A non-owner admin could bring back an admin the owner deleted (both recycle bins): owner only.
 2. 「退出对方所有登录」 and 「重置两步验证」 left the person's admin-site sign-ins open: they end too.
 3. The screenshot check (S5) decoded any picture: a 0.5 MB PNG claiming 12000×12000 used ~630 MB; refused above 40 M
@@ -38,4 +38,4 @@ Review titles stay in the first cut's language; 用户 / 操作日志 tables scr
 (outside P2's list).
 
 ## Next action
-Merge PR 1 → deploy. Security PR after Leon's typed OK.
+PR 1 (#223) deployed 04:15Z. Merge PR 2 → deploy. Then Leon's week of testing.

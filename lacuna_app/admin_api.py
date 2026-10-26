@@ -568,10 +568,9 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         run(lambda: auth.update_user(s["email"], u["email"], body.role, body.disabled, body.reset_2fa, body.plan))
         if body.role == "admin" and was != "admin":
             made_admin(s, u, req)
-        if body.disabled:
-            store.end_for(u["email"])
-        if body.role == "member":
-            store.end_for(u["email"])
+        if body.disabled or body.reset_2fa or body.role == "member":
+            # a stopped account, a lost phone, no longer staff: their admin sign-ins end too (batch 9)
+            store.end_for(u["email"], keep=s["hash"])
         store.audit(s["email"], "user.update", u["email"], role=body.role, plan=body.plan, disabled=body.disabled,
                     reset_2fa=body.reset_2fa)
         return user(u["email"], req)
@@ -643,6 +642,7 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
             run(lambda: auth._manage(s["email"], u["email"]))
         with auth.lock:
             auth._end_all(u["email"])
+        store.end_for(u["email"], keep=s["hash"])      # and their admin sign-ins (yours stays open)
         store.audit(s["email"], "user.sessions.end", u["email"])
         return user(u["email"], req)
 
@@ -863,6 +863,8 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
                 rec = spaces.trash.user(tid)
             except TrashError:
                 raise HTTPException(404, tr("回收区里没有这个账号"))
+            if rec["user"].get("role") in ("owner", "admin") and s["role"] != "owner":
+                raise HTTPException(403, tr("只有站长能恢复管理员的账号"))     # appointing admins is the owner's
             run(lambda: auth.restore_user(rec["user"]))
             for sid, role in (rec.get("shows") or {}).items():
                 if sid in spaces.spaces and not spaces.sample(sid):
