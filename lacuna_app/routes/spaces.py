@@ -354,7 +354,7 @@ def register(app, ctx) -> None:
             raise HTTPException(404, tr("没有这个节目"))
         return {"id": sid, "name": spaces.title(sid), "support_until": spaces.support_until(sid),
                 "plan": plan_of(spaces.creator(sid)), "collaborators": spaces.collaborators(sid),
-                "members": [{"email": e, "role": r} for e, r in sorted(s["members"].items())],
+                "members": [{"email": e, "role": r, "name": auth.name(e)} for e, r in sorted(s["members"].items())],
                 "invites": [{"id": i["id"], "email": i["email"], "role": i.get("space_role") or "editor",
                              "exp": i["exp"]} for i in auth.list_invites() if i.get("space") == sid],
                 "can_invite_new": False}

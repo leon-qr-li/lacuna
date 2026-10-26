@@ -354,10 +354,10 @@ class EpisodeMusic:
         assets = {a["id"]: (a.get("lufs"), a["duration_s"]) for a in self.lib.assets()}
         return hashlib.sha1(json.dumps([ps, assets], sort_keys=True).encode()).hexdigest()[:12]
 
-    def export_key(self) -> str:
+    def export_key(self, placements: list[dict] | None = None) -> str:
         """Changes exactly when the music in an export would change (applied placements + their
-        assets' levels), so an older export can be flagged as stale."""
-        ps = [p for p in self.placements() if p.get("status", APPLIED) == APPLIED]
+        assets' levels), so an older export can be flagged as stale. `placements`: a copy taken earlier."""
+        ps = [p for p in (self.placements() if placements is None else placements) if p.get("status", APPLIED) == APPLIED]
         used = {p["asset_id"] for p in ps}
         assets = {a["id"]: (a.get("lufs"), a["duration_s"]) for a in self.lib.assets() if a["id"] in used}
         keep = ("asset_id", "role", "at_base", "until_base", *TUNING, *FLAGS)

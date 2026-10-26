@@ -48,6 +48,7 @@
 .prj-avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--leon) 16%, transparent); color: var(--ink); font-weight: 600; font-size: 13px; }
 .prj-pending .prj-avatar { background: var(--hover); color: var(--ink-3); }
 .prj-who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prj-mail { display: block; overflow: hidden; text-overflow: ellipsis; }
 .prj-role { color: var(--ink-2); font-size: 13px; }
 .prj-pending .prj-role { color: var(--ink-3); }
 
