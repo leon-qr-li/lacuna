@@ -53,6 +53,7 @@ EDITING = ("self", "hired", "none", "new")
 SAVED = ("none", "half", "1-2h", "2h+", "never")
 PMF = ("very", "somewhat", "not")
 IMPORTANCE = ("nice", "need", "fine")
+MAX_SHOT_PIXELS = 40_000_000     # a 6K screen is 20 M; a small file can claim far more and fill the memory when decoded
 SHOT_RX = re.compile(r"^data:image/(png|jpeg);base64,")
 
 
@@ -61,7 +62,7 @@ def real_image(raw: bytes, fmt: str) -> bool:
     from PIL import Image
     try:
         with Image.open(io.BytesIO(raw)) as im:
-            if im.format != fmt:
+            if im.format != fmt or im.size[0] * im.size[1] > MAX_SHOT_PIXELS:
                 return False
             im.load()
         return True

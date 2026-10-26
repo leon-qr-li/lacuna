@@ -42,6 +42,7 @@ SPACE_RANK = {"viewer": 1, "editor": 2, "admin": 3}
 # a project's colour while it has no picture: solid, readable under white text in both themes, far apart
 COLORS = ("#E2583E", "#3D7BF0", "#1F9D74", "#9A55E8", "#E0A21A", "#D93E7F", "#2AA5B8", "#6C7A3A", "#C9682D", "#5A5FD6")
 PICTURE_PX = 256
+MAX_PICTURE_PIXELS = 40_000_000
 SUPPORT_S = 7 * 86400
 KEEP_OLD_S = 30 * 86400
 
@@ -271,6 +272,8 @@ class Spaces:
         import io
         try:
             im = Image.open(io.BytesIO(data))
+            if im.size[0] * im.size[1] > MAX_PICTURE_PIXELS:   # decoding a huge one would fill the memory
+                raise ValueError("too many pixels")
             im = ImageOps.exif_transpose(im).convert("RGBA")
         except Exception as e:          # noqa: BLE001 - Pillow raises many kinds on a bad file
             raise AuthError(tr("这不是一张能打开的图片")) from e

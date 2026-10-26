@@ -67,11 +67,13 @@ def register(app, ctx) -> None:
 
     @app.post("/api/site/trash/user/{email}/restore")
     def restore_user(email: str, request: Request):
-        staff(request)
+        me = staff(request)
         try:
             rec = trash.user(email)
         except TrashError:
             raise HTTPException(404, tr("回收区里没有这个账号"))
+        if rec["user"].get("role") in ("owner", "admin") and auth.role(me) != "owner":
+            raise HTTPException(403, tr("只有站长能恢复管理员的账号"))     # appointing admins is the owner's
         try:
             auth.restore_user(rec["user"])
         except AuthError as e:
