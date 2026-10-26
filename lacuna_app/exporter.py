@@ -24,6 +24,7 @@ from lacuna_core.export import FORMATS, export, timeline_source
 from lacuna_core.master import MasterSettings
 
 from . import show as show_profile
+from .cloud import server_path
 from .episode import Episode
 from .music import EpisodeMusic, credits
 from .store import Workspace, atomic_write_json, check_id, inside
@@ -108,7 +109,7 @@ class Exporter:
                 with self._lock:
                     job.update(state="done", progress=1.0, stage=tr("完成"), finished=time.time(),
                                result={"files": files, "report": record["report"], "mp3": res.mp3,
-                                       "errors": res.errors, "folder": str(out_dir)})
+                                       "errors": res.errors, "folder": server_path(out_dir)})
                 for hook in self.on_done:
                     try:
                         hook(ep)

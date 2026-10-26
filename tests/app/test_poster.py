@@ -235,6 +235,16 @@ def test_choose_renders_the_cover_files(ws, packed, pub):
         p.choose(packed, "v7", wait=True)
 
 
+def test_on_the_shared_server_the_cover_view_names_no_server_folder(ws, packed, pub, monkeypatch):
+    p = posters_with(ws, pub, FakePosterAnthropic())
+    p.generate(packed, ["emblem"], wait=True)
+    p.choose(packed, "v1", wait=True)
+    monkeypatch.setenv("LACUNA_CLOUD", "1")
+    cover = p.view(packed)["cover"]
+    assert cover["folder"] == cover["jpg"] == cover["png"] == "" and cover["px"] == COVER_PX and cover["jpg_bytes"] > 0
+    assert p.load(packed)["cover"]["jpg"].endswith("cover.jpg")     # kept on disk for the server itself
+
+
 def test_preview_cache_is_rebuilt_from_the_svg(ws, packed, pub):
     p = posters_with(ws, pub, FakePosterAnthropic())
     p.generate(packed, ["emblem"], wait=True)

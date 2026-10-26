@@ -9,6 +9,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..audio import parse_range
+from ..cloud import server_path
 from ..dictation import Dictation
 from ..editor import editor_status
 from ..chat_learning import remember_text
@@ -53,7 +54,7 @@ def register(app, ctx) -> None:
 
     @app.get("/api/health")
     def health():
-        return {"ok": True, "workspace": str(ws.root)} | editor_status(adapter) | dictation.status()
+        return {"ok": True, "workspace": server_path(ws.root)} | editor_status(adapter) | dictation.status()
 
     def poster_url(eid: str) -> str | None:
         """The chosen cover's preview (routes/poster.py) for the episode's tile, or None (no cover chosen)."""
