@@ -13,7 +13,9 @@ Decisions: docs/decisions/2026-10-17-local-sign-in.md (the base), 2026-10-19-inv
   person sees their signed-in devices and can sign any of them out.
 - Wrong password or code 5 times in 15 minutes locks the account for 15 minutes (and, in the cloud,
   30 failures from one address lock that address).
-- Email codes (reset password): 6 digits, 10 minutes, 5 tries, one send per 60 s, in memory only.
+- Email codes (reset password): 6 digits, 10 minutes, 5 tries, one send per 60 s, in memory only. At most 5
+  codes a day per email, none for an hour after one is guessed wrong 5 times, and at most 20 code requests an
+  hour from one address (decision 2026-10-26-batch8-security-fixes).
   With two-step sign-in on, a reset also needs the authenticator (or a recovery code).
 - In the cloud the first account also needs the setup code written to <root>/auth/setup-code.txt (and the
   server log) on the first start, so nobody who reaches a fresh server first can make themselves owner.
@@ -52,6 +54,9 @@ SHORT_S = 12 * 3600
 CODE_S = 600
 CODE_TRIES = 5
 CODE_COOLDOWN_S = 60
+CODES_PER_DAY = 5
+CODE_BURNT_S = 3600      # after a code is guessed wrong CODE_TRIES times
+IP_CODES_PER_HOUR = 20
 LOGIN_TRIES = 5
 LOCK_S = 15 * 60
 IP_TRIES = 30
@@ -206,6 +211,8 @@ class Auth:
                                           for r in self.db.query("SELECT * FROM sessions WHERE exp > ?", (now,))}
         self._drop_old_files()
         self.codes: dict[tuple[str, str], dict] = {}
+        self.code_sends: dict[str, list[float]] = {}   # email or "ip:<addr>" -> when codes were asked for
+        self.code_burnt: dict[str, float] = {}         # email -> no new code before this time
         self.tickets: dict[str, dict] = {}        # password checked, waiting for the two-step code
         self.pending_totp: dict[str, dict] = {}   # signed in, setting up the authenticator
         self.fails: dict[str, list[float]] = {}
@@ -429,13 +436,23 @@ class Auth:
             return len(seen) > 1
 
     # -- codes
-    def send_code(self, email: str, purpose: str) -> None:
+    def send_code(self, email: str, purpose: str, ip: str | None = None) -> None:
         email = norm_email(email)
         if purpose != "reset":
             raise AuthError("bad purpose")
+        now = self.now()
+        if ip:      # counted for every email, known or not, so the limit says nothing about accounts
+            asked = self.code_sends[f"ip:{ip}"] = [t for t in self.code_sends.get(f"ip:{ip}", []) if now - t < 3600]
+            if len(asked) >= IP_CODES_PER_HOUR:
+                raise AuthError(tr("验证码要得太频繁，{n} 分钟后再试", n=max(1, math.ceil((3600 - (now - asked[0])) / 60))), 429)
+            asked.append(now)
         if email not in self.users or self.users[email].get("disabled"):
             return       # say nothing about which emails have accounts
-        now = self.now()
+        if self.code_burnt.get(email, 0) > now:
+            raise AuthError(tr("验证码错了太多次，{n} 分钟后再试", n=max(1, math.ceil((self.code_burnt[email] - now) / 60))), 429)
+        sent = self.code_sends[email] = [t for t in self.code_sends.get(email, []) if now - t < 86400]
+        if len(sent) >= CODES_PER_DAY:
+            raise AuthError(tr("今天的验证码已经发够了，明天再试，或联系 LACUNA 团队"), 429)
         old = self.codes.get((email, purpose))
         if old and now - old["sent"] < CODE_COOLDOWN_S:
             raise AuthError(tr("验证码刚发过，{n} 秒后再试", n=int(CODE_COOLDOWN_S - (now - old["sent"])) + 1), 429)
@@ -447,6 +464,7 @@ class Auth:
         except MailError as e:
             raise AuthError(str(e), 502)
         self.codes[(email, purpose)] = {"hash": _sha(code), "exp": now + CODE_S, "tries": 0, "sent": now}
+        sent.append(now)
 
     def _use_code(self, email: str, purpose: str, code: str) -> None:
         c = self.codes.get((email, purpose))
@@ -456,7 +474,8 @@ class Auth:
         if not hmac.compare_digest(c["hash"], _sha((code or "").strip())):
             if c["tries"] >= CODE_TRIES:
                 del self.codes[(email, purpose)]
-                raise AuthError(tr("验证码错了太多次，重新发一个"))
+                self.code_burnt[email] = self.now() + CODE_BURNT_S
+                raise AuthError(tr("验证码错了太多次，1 小时后再重新发一个"))
             raise AuthError(tr("验证码不对"))
         del self.codes[(email, purpose)]
 

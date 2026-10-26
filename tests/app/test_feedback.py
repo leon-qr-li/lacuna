@@ -3,6 +3,7 @@ the red dot, the owner's reply mail, the one-question prompts' rules and a show'
 from __future__ import annotations
 
 import base64
+import io
 
 from fastapi.testclient import TestClient
 
@@ -13,7 +14,15 @@ from tests.app.e2e.auth import FakeMailer
 from tests.app.synth import make_workspace
 
 PW = "correct horse battery"
-PNG = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"0" * 64).decode()
+def _png() -> bytes:
+    from PIL import Image
+    out = io.BytesIO()
+    Image.new("RGB", (8, 8), "white").save(out, "PNG")
+    return out.getvalue()
+
+
+PNG = "data:image/png;base64," + base64.b64encode(_png()).decode()
+FAKE_PNG = "data:image/png;base64," + base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"<script>alert(1)</script>").decode()
 
 
 class Clock:
@@ -76,6 +85,8 @@ def test_what_a_person_can_send(tmp_path):
     assert sam.post("/api/feedback", json={"kind": "bug", "text": "  "}).status_code == 422
     assert sam.post("/api/feedback", json={"kind": "spam", "text": "x"}).status_code == 422
     assert sam.post("/api/feedback", json={"kind": "bug", "text": "x", "shot": "data:text/html;base64,PGI+"}).status_code == 422
+    # a PNG header in front of something else is not a screenshot (batch 8, S5)
+    assert sam.post("/api/feedback", json={"kind": "bug", "text": "x", "shot": FAKE_PNG}).status_code == 422
     r = sam.post("/api/feedback", json={"kind": "idea", "text": "直接发到 Buzzsprout", "importance": "need",
                                         "source": "publish", "platforms": ["Apple Podcasts", "Spotify"]})
     assert r.status_code == 200

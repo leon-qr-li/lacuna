@@ -28,7 +28,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import ai_settings, cloud, notice_mail, plans, retention, system_terms
+from . import admin_invite_mail, ai_settings, cloud, notice_mail, plans, retention, system_terms
 from .admin_metrics import AI_BUDGET, AdminData
 from .admin_store import AdminStore
 from .appinfo import current_version
@@ -294,6 +294,12 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         else:
             threading.Thread(target=go, name=f"admin-{what}-mail", daemon=True).start()
 
+    def made_admin(s: dict, u: dict, req: Request) -> None:
+        """The 管理员邀请 mail, design C (Leon 2026-10-26): what the role allows, the admin's and the site's links."""
+        with speaking(u.get("lang") or "zh"):
+            m = admin_invite_mail.render(s["email"], admin_origin(req), main_origin(req), auth.name(s["email"]))
+        mail(u["email"], m, "admin invite")
+
     def owner_email() -> str | None:
         return next((e for e, u in auth.users.items() if u["role"] == "owner"), None)
 
@@ -558,7 +564,10 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
     def update_user(email: str, body: UserBody, req: Request):
         u = user_or_404(email)
         s = need(req, owner=body.role is not None, stepup=True)
+        was = u["role"]
         run(lambda: auth.update_user(s["email"], u["email"], body.role, body.disabled, body.reset_2fa, body.plan))
+        if body.role == "admin" and was != "admin":
+            made_admin(s, u, req)
         if body.disabled:
             store.end_for(u["email"])
         if body.role == "member":
@@ -630,6 +639,8 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
     def end_user_sessions(email: str, req: Request):
         u = user_or_404(email)
         s = need(req, stepup=True)
+        if u["email"] != s["email"]:      # like every other change to an account: only people ranked below you
+            run(lambda: auth._manage(s["email"], u["email"]))
         with auth.lock:
             auth._end_all(u["email"])
         store.audit(s["email"], "user.sessions.end", u["email"])
@@ -1008,9 +1019,12 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
     def staff_role(email: str, body: RoleBody, req: Request):
         u = user_or_404(email)
         s = need(req, owner=True, stepup=True)
+        was = u["role"]
         run(lambda: auth.update_user(s["email"], u["email"], role=body.role))
         if body.role == "member":
             store.end_for(u["email"])
+        if body.role == "admin" and was != "admin":
+            made_admin(s, u, req)
         store.audit(s["email"], "staff.role", u["email"], role=body.role)
         return settings_view(s)
 

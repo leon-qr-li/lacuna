@@ -10,6 +10,7 @@ import { ShortcutsButton } from "../features/review-keys/Shortcuts";
 import { SpeedButton } from "../features/review-speed/SpeedButton";
 import { useReviewRate } from "../features/review-speed/speed";
 import { needsSpace } from "../words";
+import { useListenOnly } from "../features/listen-only/state";
 import "./ReviewView.css";
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
 const pending = (e: EditInfo) => !e.approved;
 
 export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onPauseMain }: Props) {
+  const ro = useListenOnly();
   // order comes from the server: timeline order, from the first second
   const all = useMemo(() => {
     const byId = new Map(ep.edits.map((e) => [e.id, e]));
@@ -70,7 +72,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
 
   // decide on the current edit, then move on to the next one still waiting (wrapping round to earlier skips)
   const decide = async (action: "keep" | "restore" | "apply") => {
-    if (!cur) return;
+    if (!cur || ro) return;
     const ok = await onReview(cur, action);
     if (!ok) return;
     if (action === "apply") return;
@@ -122,6 +124,7 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
             type="button"
             className="btn btn-outline"
             onClick={() => void onApproveAll()}
+            disabled={ro}
             title={t("按 LACUNA 现在的处理全部确认：删了的保持删，没删的保持原样。一步撤销即可退回。")}
             data-testid="review-keep-rest"
           >
@@ -207,20 +210,20 @@ export function ReviewView({ ep, selected, onSelect, onReview, onApproveAll, onP
               <span className="grow" />
               {cur.status === "applied" ? (
                 <>
-                  <button type="button" className="btn btn-outline" onClick={() => void decide("restore")}>
+                  <button type="button" className="btn btn-outline" disabled={ro} onClick={() => void decide("restore")}>
                     {t("恢复原话")} <kbd aria-hidden="true">R</kbd>
                   </button>
-                  <button type="button" className="btn btn-primary" onClick={() => void decide("keep")}>
+                  <button type="button" className="btn btn-primary" disabled={ro} onClick={() => void decide("keep")}>
                     <Icon name="check" /> {cur.approved ? t("已保留") : t("保留")} <kbd aria-hidden="true">K</kbd>
                   </button>
                 </>
               ) : (
                 <>
-                  <button type="button" className={`btn ${cur.approved ? "btn-primary" : "btn-outline"}`} onClick={() => void decide("apply")}>
+                  <button type="button" className={`btn ${cur.approved ? "btn-primary" : "btn-outline"}`} disabled={ro} onClick={() => void decide("apply")}>
                     {t("重新应用这个删除")} <kbd aria-hidden="true">K</kbd>
                   </button>
                   {!cur.approved && (
-                    <button type="button" className="btn btn-primary" onClick={() => void decide("restore")}>
+                    <button type="button" className="btn btn-primary" disabled={ro} onClick={() => void decide("restore")}>
                       <Icon name="check" /> {t("不删，保持原话")} <kbd aria-hidden="true">R</kbd>
                     </button>
                   )}

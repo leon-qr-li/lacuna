@@ -1,6 +1,6 @@
 """Cloud mode: LACUNA on the DigitalOcean server behind Cloudflare Tunnel + Access (decision cloud-deploy).
 
-Off unless ``LACUNA_CLOUD=1``; a local development checkout never sees any of this. When on:
+Off unless ``LACUNA_CLOUD=1`` (or true / yes, ``enabled()``); a local development checkout never sees any of this. When on:
 
 * Every request must carry a valid Cloudflare Access token (``Cf-Access-Jwt-Assertion``, RS256, signed
   by the team's keys, our application's audience). Cloudflare Access is the first door (invite list +
@@ -54,7 +54,9 @@ class CloudConfigError(RuntimeError):
 
 
 def enabled() -> bool:
-    return os.environ.get("LACUNA_CLOUD") == "1"
+    """The one test for cloud mode, used everywhere (sign-in, admin alerts, this middleware): LACUNA_CLOUD set
+    to 1 / true / yes. Anything that turns cloud mode on fails closed (Access settings required)."""
+    return os.environ.get("LACUNA_CLOUD", "").strip().lower() in ("1", "true", "yes")
 
 
 def access_required() -> bool:

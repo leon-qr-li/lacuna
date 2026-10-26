@@ -50,6 +50,11 @@ export function ProjectCrumb() {
               {t("已归档 · 只读")}
             </span>
           )}
+          {!cur.archived && cur.role === "viewer" && (
+            <span className="prj-tag" data-testid="listen-only" title={t("你在这个节目里是「只听」成员：可以试听和查看，不能修改。需要修改的话，请节目管理员把你改成剪辑师。")}>
+              {t("只听成员")}
+            </span>
+          )}
           <span aria-hidden="true" className="prj-caret">
             ▾
           </span>

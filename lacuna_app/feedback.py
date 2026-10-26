@@ -16,6 +16,7 @@ until it is answered.
 from __future__ import annotations
 
 import base64
+import io
 import re
 import secrets
 import time
@@ -53,6 +54,19 @@ SAVED = ("none", "half", "1-2h", "2h+", "never")
 PMF = ("very", "somewhat", "not")
 IMPORTANCE = ("nice", "need", "fine")
 SHOT_RX = re.compile(r"^data:image/(png|jpeg);base64,")
+
+
+def real_image(raw: bytes, fmt: str) -> bool:
+    """The bytes decode as a picture of that format (not just a header in front of anything)."""
+    from PIL import Image
+    try:
+        with Image.open(io.BytesIO(raw)) as im:
+            if im.format != fmt:
+                return False
+            im.load()
+        return True
+    except Exception:      # noqa: BLE001 - whatever Pillow can't read is not a screenshot
+        return False
 
 
 class FeedbackError(ValueError):
@@ -127,6 +141,8 @@ class Feedback:
             raise FeedbackError(tr("截图格式不对")) from None
         if len(raw) > MAX_SHOT:
             raise FeedbackError(tr("截图太大了"))
+        if not real_image(raw, "JPEG" if m.group(1) == "jpeg" else "PNG"):    # batch 8, S5
+            raise FeedbackError(tr("截图格式不对"))
         self.dir.mkdir(parents=True, exist_ok=True)
         (self.dir / f"{fid}.{'jpg' if m.group(1) == 'jpeg' else 'png'}").write_bytes(raw)
         return True

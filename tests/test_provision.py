@@ -511,6 +511,28 @@ def test_ci_wait_live_reads_health_through_access_with_the_deploy_token(monkeypa
     ci.wait_live("abc")
 
 
+def test_ci_uptime_fails_only_when_the_site_stays_down(monkeypatch):
+    """batch 8, P3: the hourly outside check; GitHub mails the owner when the run fails"""
+    ci = _ci()
+    monkeypatch.setenv("CF_DEPLOY_CLIENT_ID", "cid.access")
+    monkeypatch.setenv("CF_DEPLOY_CLIENT_SECRET", "sec")
+    waits = []
+    monkeypatch.setattr(ci.time, "sleep", waits.append)
+    seen = []
+    answers = iter([(502, {}), (200, {"ok": True, "version": "abc"})])
+    monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append((url, h)), next(answers))[1])
+    assert ci.main(["uptime"]) == 0
+    assert seen[-1] == (f"https://{provision.DOMAIN}/api/health",
+                        {"CF-Access-Client-Id": "cid.access", "CF-Access-Client-Secret": "sec"})
+    assert waits == [ci.UPTIME_WAIT]
+    monkeypatch.setattr(ci, "_get", lambda url, h: (0, {}))
+    with pytest.raises(provision.ProvisionError, match="is down"):
+        ci.uptime()
+    assert ci.main(["uptime"]) == 1
+    monkeypatch.delenv("CF_DEPLOY_CLIENT_SECRET")      # not provisioned yet: nothing to check, no failure
+    assert ci.main(["uptime"]) == 0
+
+
 def test_ci_wait_live_without_the_secret_uses_a_token_for_this_run(monkeypatch):
     ci = _ci()
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")

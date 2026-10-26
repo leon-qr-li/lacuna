@@ -142,6 +142,8 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
       </Drawer>
     );
   const u = d.user;
+  // what the server lets you change: only accounts ranked below you (the owner: everyone else; an admin: members)
+  const below = !self && (owner ? u.role !== "owner" : u.role === "member");
   const mail = async () => {
     const subject = await dialog({ title: t("发邮件给 {who}", { who: u.name || u.email }), ok: t("下一步"), input: { label: t("主题"), value: t("关于你的 LACUNA 账号") } });
     if (!subject) return;
@@ -359,22 +361,22 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
               {t("加时长")}
             </button>
           )}
-          {!self && u.twofa && (
+          {below && u.twofa && (
             <button type="button" className="a-btn" onClick={() => update({ reset_2fa: true }, t("两步验证已重置"))}>
               {t("重置两步验证")}
             </button>
           )}
-          {!self && (
+          {below && (
             <button type="button" className="a-btn" onClick={endSessions}>
               {t("退出对方所有登录")}
             </button>
           )}
-          {!self && u.role !== "owner" && (
+          {below && (
             <button type="button" className="a-btn" onClick={() => update({ disabled: !u.disabled }, u.disabled ? t("已恢复使用") : t("已停用"))} data-testid="user-disable">
               {u.disabled ? t("恢复使用") : t("停用")}
             </button>
           )}
-          {!self && u.role !== "owner" && (
+          {below && (
             <button type="button" className="a-btn danger" onClick={remove} data-testid="user-delete">
               {t("删除账号")}
             </button>

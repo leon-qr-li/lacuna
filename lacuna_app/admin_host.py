@@ -40,6 +40,14 @@ HEADERS = [
     (b"x-robots-tag", b"noindex, nofollow"),
 ]
 
+# the main site (batch 8, S4): no sniffing, never inside another site's frame, no full URLs to other sites
+MAIN_HEADERS = [
+    (b"x-content-type-options", b"nosniff"),
+    (b"x-frame-options", b"DENY"),
+    (b"content-security-policy", b"frame-ancestors 'none'"),
+    (b"referrer-policy", b"strict-origin-when-cross-origin"),
+]
+
 
 def admin_host() -> str | None:
     v = os.environ.get(ENV, "").strip().lower()
@@ -86,15 +94,19 @@ class AdminHost:
             await send({"type": "http.response.start", "status": 404,
                         "headers": [(b"content-type", b"application/json")]})
             return await send({"type": "http.response.body", "body": b'{"detail":"Not Found"}'})
-        if scope["type"] != "http" or self.on_error is None:
+        if scope["type"] != "http":
             return await self.app(scope, receive, send)
 
         async def watch(msg):
-            if msg["type"] == "http.response.start" and msg["status"] >= 500:
-                try:
-                    self.on_error(scope["method"], scope["path"], msg["status"])
-                except Exception:       # noqa: BLE001 - counting must never break a request
-                    pass
+            if msg["type"] == "http.response.start":
+                if msg["status"] >= 500 and self.on_error is not None:
+                    try:
+                        self.on_error(scope["method"], scope["path"], msg["status"])
+                    except Exception:       # noqa: BLE001 - counting must never break a request
+                        pass
+                names = {k.lower() for k, _ in msg.get("headers") or []}
+                msg = dict(msg)
+                msg["headers"] = [*(msg.get("headers") or []), *[h for h in MAIN_HEADERS if h[0] not in names]]
             await send(msg)
         return await self.app(scope, receive, watch)
 

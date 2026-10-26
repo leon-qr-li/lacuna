@@ -89,7 +89,11 @@ def test_before_sign_in_app_info_is_version_only(client, keys):
     code = totp.code_at(r.json()["secret"], int(time.time() // totp.STEP))
     assert client.post("/api/auth/2fa/enroll", json={"ticket": r.json()["ticket"], "code": code}, headers=h).status_code == 200
     signed_in = client.get("/api/app", headers=h).json()
-    assert "workspace" in signed_in and "busy" in signed_in and signed_in["cloud"] is True
+    assert signed_in["cloud"] is True
+    # other shows' running work and the server's folder are for the host's updater only (batch 8, S2)
+    assert signed_in["workspace"] == "" and signed_in["busy"] == []
+    host = TestClient(client.app, base_url="https://testserver", client=("127.0.0.1", 50000))
+    assert host.get("/api/app").json()["workspace"] == str(client.app.state.workspace.root)
     stranger = TestClient(client.app, base_url="https://testserver")
     for path in ("/api/app", "/api/health"):
         info = stranger.get(path, headers=h).json()
@@ -214,3 +218,12 @@ def test_owner_signs_up_first_without_setup_code(client, keys, monkeypatch):
     assert r.status_code == 200 and r.json()["step"] == "enroll"           # two-step sign-in still required
     assert client.get("/api/auth/status", headers=leon).json()["email"] is None
     assert not (client.app.state.workspace.root / "auth" / "setup-code.txt").exists()
+
+
+def test_one_test_for_cloud_mode(monkeypatch):
+    """batch 8, S6: sign-in, the admin alerts and the Access check all read LACUNA_CLOUD the same way"""
+    from lacuna_app import admin_metrics
+    from lacuna_app.routes import auth as auth_routes
+    for value, on in (("1", True), ("true", True), ("YES", True), ("0", False), ("", False)):
+        monkeypatch.setenv("LACUNA_CLOUD", value)
+        assert cloud.enabled() is on and auth_routes.cloud_mode() is on and admin_metrics.cloud_server() is on, value

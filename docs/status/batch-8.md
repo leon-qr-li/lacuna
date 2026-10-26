@@ -41,6 +41,27 @@ A cloud-mode server walked in zh/en × dark/light × 1440/1024/390 (about 1,600 
 Left as noted (not bugs or not for the freeze): review titles stay in the language of the first cut; legal TBD
 placeholders wait for the lawyer; the 401 of `/api/site/notice` before sign-in in the browser console.
 
+## Fix PR 3 (Leon's picks on the decisions page, 2026-10-26: all A; "都选完了，做")
+- S1 reset codes: 5 a day per email, none for an hour after one is burnt, 20 requests an hour per address
+  (decision 2026-10-26-batch8-security-fixes).
+- S2 `GET /api/app` from the browser on the shared server: no busy list, no server folder (the host's updater on
+  loopback still gets both).
+- S3 a site admin can't end the owner's (or another admin's) sessions; the admin's user drawer hides the buttons
+  the server would refuse.
+- S4 main site: nosniff, X-Frame-Options DENY + `frame-ancestors 'none'`, Referrer-Policy.
+- S5 feedback screenshots must decode as the PNG/JPEG they claim (Pillow).
+- S6 one cloud-mode test, `cloud.enabled()` (1 / true / yes), used by sign-in and admin alerts too.
+- S7 kept as is (disabled accounts get 「邮箱或密码不对」).
+- P1 already in place: 节目设置 → 主持人 says 「改名字不影响已经导入的剧集；新导入的剧集用新名字。」
+- P2 只听 members: 「只听成员」 tag next to the show name (like 已归档 · 只读); review, chat, nearby/timeline restore and
+  export buttons greyed out (feature folder `web/src/features/listen-only/`).
+- P3 `uptime.yml`: hourly `/api/health` through Access with the deploy token; 3 tries a minute apart; a failed run
+  mails the repo owner.
+- New (Leon 2026-10-26, design C 「权限对照卡」 picked from three on the canvas
+  https://claude.ai/artifact/SW5utkSCodq3QpnEESposu): making someone a site admin mails them what the role allows and
+  the admin's and the site's links (`lacuna_app/admin_invite_mail.py`). Leon keeps a single owner (asked about two;
+  decided against it).
+
 ## Waiting on Leon (security changes need his typed words)
 See the final report. Found by the security probe: password-reset code guessing has no cooldown after 5 wrong
 tries; `GET /api/app` lists other shows' running jobs and the server path; a non-owner site admin can end the
@@ -49,4 +70,4 @@ owner's sessions in the admin; the main site sends no nosniff / frame headers.
 Decisions page (S1–S7 security, needs his typed words; P1–P3 product): https://claude.ai/artifact/VUiqsSf8CHmd5fb9U12h4t
 
 ## Next action
-Merge PR 2 → deploy; final report; then the security fixes Leon picks on the decisions page.
+Merge PR 3 → deploy. Then Leon's week of testing from the case page.
