@@ -310,7 +310,11 @@ class Cloudflare:
         an 8-hour session, no service tokens, and never opened by the site door. Returns its audience tag
         (CF_ADMIN_ACCESS_AUD)."""
         a = self.account
-        owner_only = self.policy(ADMIN_POLICY, {"decision": "allow", "include": [{"email": {"email": owner}}],
+        # admins the owner added by hand in Cloudflare (the 加管理员 / invite-as-admin note) stay on the list
+        pols = self.r("GET", f"/accounts/{a}/access/policies") or []
+        old = next((x for x in pols if x.get("name") == ADMIN_POLICY), None) or {}
+        kept = [r for r in old.get("include") or [] if (r.get("email") or {}).get("email", "").lower() not in ("", owner.lower())]
+        owner_only = self.policy(ADMIN_POLICY, {"decision": "allow", "include": [{"email": {"email": owner}}, *kept],
                                                 "session_duration": "8h"}, apply)
         apps = self.r("GET", f"/accounts/{a}/access/apps") or []
         app = next((x for x in apps if x.get("domain") == self.admin), None)

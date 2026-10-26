@@ -24,3 +24,8 @@ Found in the batch 8 regression's security probe; Leon chose the recommended opt
 Also (Leon 2026-10-26): one site owner only (he asked about a second owner, then kept one). Making someone a site
 admin mails them design C 「权限对照卡」: what admins can and can't do, the first steps into the admin, and links to
 the admin and the main site.
+
+Later the same day (Leon typed 「做」 after asking about the risk): inviting someone as a site admin from the admin's
+发邀请 sends this same mail, with 接受邀请 (the sign-up link) as the main button and the first steps starting at
+sign-up; the dialog reminds the owner to add their email to the Cloudflare Access list of 「LACUNA admin」. Provision
+keeps emails added there by hand when it runs again (it used to reset the list to the owner only).

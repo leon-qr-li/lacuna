@@ -69,5 +69,9 @@ owner's sessions in the admin; the main site sends no nosniff / frame headers.
 
 Decisions page (S1–S7 security, needs his typed words; P1–P3 product): https://claude.ai/artifact/VUiqsSf8CHmd5fb9U12h4t
 
+## Fix PR 4 (invite as admin)
+Inviting as 管理员 in the admin sends the admin mail (design C) with the sign-up link; the dialog reminds the owner
+about Cloudflare; Provision keeps hand-added emails on the 「LACUNA admin owner」 Access policy.
+
 ## Next action
-Merge PR 3 → deploy. Then Leon's week of testing from the case page.
+Merge PR 4 → deploy. Then Leon's week of testing from the case page.

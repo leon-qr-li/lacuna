@@ -315,6 +315,24 @@ def test_invites_from_the_admin(tmp_path):
     assert any(i["email"] == "new@example.com" and i["source"] == "xiaoyuzhou" for i in r.json()["invites"])
 
 
+
+def test_inviting_an_admin_sends_the_admin_invite_with_the_sign_up_link(tmp_path):
+    """Leon 2026-10-26: invite as 管理员 → design C with 接受邀请 (the sign-up link) and the admin's address"""
+    app, main, mailer = setup(tmp_path)
+    c = sign_in(app)
+    r = c.post("/api/admin/invites", json={"email": "pei@example.com", "role": "admin", "source": "friend",
+                                           "plan": "basic", "lang": "zh"}, headers=WRITE)
+    assert r.status_code == 200, r.text
+    m = mailer.outbox[-1]
+    assert m["to"] == "pei@example.com" and "邀请你成为 LACUNA 管理员" in m["subject"]
+    assert r.json()["link"] in m["text"] and "http://admin.localhost" in m["text"] and "接受邀请" in m["html"]
+    assert "开始之前，三步" in m["text"] and "7 天内有效" in m["text"]
+    # a member invite keeps the usual invitation
+    c.post("/api/admin/invites", json={"email": "new@example.com", "role": "member", "source": "friend",
+                                       "plan": "basic", "lang": "zh"}, headers=WRITE)
+    assert "管理员" not in mailer.outbox[-1]["subject"]
+
+
 # ------------------------------------------------------------------ main-site pieces
 def test_more_hours_request_is_approved_in_the_admin_and_mailed(tmp_path):
     app, main, mailer = setup(tmp_path)

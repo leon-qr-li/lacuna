@@ -831,4 +831,9 @@ export const en: Dict = {
   "账号 {n} 个，Cloudflare Access 免费名额 {s} 个": "{n} accounts; Cloudflare Access has {s} free seats",
   "到 50 个以后每人每月 $7：在那之前把登录改成只用 LACUNA 自己的登录（关掉 Access），或者暂停发新邀请。":
     "Past 50, each person costs $7 a month: before then, switch sign-in to LACUNA's own (turn off Access), or pause new invites.",
+  "对方会收到「管理员邀请」邮件。还要在 Cloudflare 把对方的邮箱加进后台的门禁名单，否则打不开后台：Zero Trust → Access → Applications → LACUNA admin → Policy。":
+    "They'll get the admin invitation email. Also add their email to the admin's access list in Cloudflare, or they can't open the admin: Zero Trust → Access → Applications → LACUNA admin → Policy.",
+  "打开 Cloudflare": "Open Cloudflare",
+  "对方会收到注册链接，7 天内有效。注册后就是管理员，也会有一个自己的新节目。":
+    "They'll get a sign-up link that works for 7 days. Once signed up they're an admin, with a new show of their own.",
 };

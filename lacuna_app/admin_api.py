@@ -689,7 +689,7 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         extra = dict(where)
         if plan:
             extra["plan"] = plan
-        out = run(lambda: auth.invite(actor, email, role, main_origin(req), extra, lang))
+        out = run(lambda: auth.invite(actor, email, role, main_origin(req), extra, lang, admin_url=admin_origin(req)))
         grant = getattr(main_app.state, "grant_access", None)
         if grant:
             grant(out["email"], True)
