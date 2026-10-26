@@ -310,8 +310,12 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
               {d.sessions.map((s, i) => (
                 <tr key={i}>
                   <td>{s.device}</td>
-                  <td className="a-muted">{t("最近 {t}", { t: ago(s.seen) })}</td>
-                  <td className="a-muted">{t("登录于 {d}", { d: fmtDate(s.created) })}</td>
+                  {/* one cell, two lines: three columns ran off a phone in English (batch 9) */}
+                  <td className="a-muted">
+                    {t("最近 {t}", { t: ago(s.seen) })}
+                    <br />
+                    {t("登录于 {d}", { d: fmtDate(s.created) })}
+                  </td>
                 </tr>
               ))}
             </tbody>

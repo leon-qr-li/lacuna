@@ -65,6 +65,14 @@ test("a project gets a colour, a picture, is archived read-only, then deleted fo
 
   // restoring: archive Leon's main project from the API, restore it from 所有项目
   await page.request.post("/api/spaces/main/archive", { data: { archived: true } });
+  // an archived show's episode: what would change it is greyed out, as for a 只听 member (batch 9)
+  await page.goto(`/#/ep/${encodeURIComponent("EP_TEST_合成")}/review`);
+  await page.reload();
+  await expect(page.locator(".rv-act .btn").first()).toBeDisabled();
+  await expect(page.locator("#say")).toBeDisabled();
+  await expect(page.locator("#say")).toHaveAttribute("placeholder", "这个节目已归档，只能查看。恢复后才能修改。");
+  await expect(page.getByTestId("listen-only")).toHaveCount(0); // the 已归档 · 只读 tag says it already
+  await page.goto("/#/projects");
   await page.reload();
   await page.getByTestId("project-archive").getByTestId("project-restore").click();
   await expect(page.getByTestId("project-archive")).toHaveCount(0);

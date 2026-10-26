@@ -11,7 +11,7 @@ import { RememberButton, type Ask } from "../features/learning/RememberButton";
 import { RememberCard } from "../features/lessons/RememberCard";
 import type { RememberDraft, RememberReply } from "../features/lessons/api";
 import { ChatCollapse } from "../features/chat-dock/ChatDock";
-import { useListenOnly } from "../features/listen-only/state";
+import { useReadOnly } from "../features/listen-only/state";
 
 interface Msg {
   id: number;
@@ -40,7 +40,8 @@ interface Props {
 let nextId = 1;
 
 export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, alt }: Props) {
-  const ro = useListenOnly();
+  const why = useReadOnly();
+  const ro = why !== null;
   const [msgs, setMsgs] = useState<Msg[]>(() => [
     {
       id: nextId++,
@@ -201,7 +202,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, 
         <label htmlFor="say" className="sr-only">
           {t("对 LACUNA 说（从当前播放位置开始）")}
         </label>
-        <GrowText id="say" ref={input} value={text} placeholder={ro ? t("只听成员不能让 LACUNA 修改这一集") : hint} onChange={setText} autoComplete="off" disabled={ro} />
+        <GrowText id="say" ref={input} value={text} placeholder={why === "archived" ? t("这个节目已归档，只能查看。恢复后才能修改。") : why ? t("只听成员不能让 LACUNA 修改这一集") : hint} onChange={setText} autoComplete="off" disabled={ro} />
         <div className="chat-form-row">
           <span className="at-chip mono" title={t("指令锚定在当前播放位置")}>
             @ {fmt(time)}

@@ -164,7 +164,7 @@ function Trials({ rows, done, sources, waitlist }: { rows: AccessReq[]; done: (d
   return (
     <Card pad={false}>
       <div className="a-tw">
-        <table className="a-t a-t-cards">
+        <table className="a-t a-t-cards md">
           <thead>
             <tr>
               <th>{t("邮箱")}</th>
@@ -246,7 +246,7 @@ function Collabs({ rows, done }: { rows: AccessReq[]; done: (d: AccessData, what
   return (
     <Card pad={false}>
       <div className="a-tw">
-        <table className="a-t a-t-cards">
+        <table className="a-t a-t-cards md">
           <thead>
             <tr>
               <th>{t("谁申请")}</th>
@@ -308,7 +308,7 @@ function Pending({ data, done, me }: { data: AccessData; done: (d: AccessData, w
   return (
     <Card pad={false}>
       <div className="a-tw">
-        <table className="a-t a-t-cards">
+        <table className="a-t a-t-cards md">
           <thead>
             <tr>
               <th>{t("邮箱")}</th>
