@@ -30,3 +30,12 @@ Thread 「第十一批：再跑一遍完整回归」 (Leon 2026-10-26: 「再跑
 
 ## Next action
 Merge the fix PR → deploy. Then Leon's week of testing from the case page.
+
+## S1 server paths (Leon picked A, typed OK 2026-10-26 20:13Z)
+
+On the shared server, signed-in answers no longer name server folders: `/api/health` workspace,
+`/api/library` folder, the export result folder, publish `notes_path`, the poster cover's folder/jpg/png,
+the Ximalaya `dir`, and `/api/app` ffmpeg/ffprobe (now just the tool name when found). `cloud.server_path()`
+gives the path in a development checkout and "" in the cloud. `POST …/upload/save-cover` joins the cloud's
+blocked local-only actions (the page never called it in the cloud). Import's uploaded track `path` stays.
+Tests: `test_cloud.py::test_signed_in_answers_name_no_server_folder`, `test_poster.py::test_on_the_shared_server_…`.

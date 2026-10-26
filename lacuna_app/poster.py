@@ -35,6 +35,7 @@ from .episode import Episode
 from .publish import Publisher, episode_label
 from .store import POSTER_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
 from . import show
+from .cloud import server_path
 from .i18n import N_, tr
 
 POSTER_SCHEMA = 1
@@ -546,7 +547,10 @@ class Posters:
             available = bool(sample_designer(ep) or getattr(self.factory(), "available", True))
         except Exception:      # noqa: BLE001
             available = False
-        return {"variants": variants, "chosen": doc.get("chosen"), "cover": doc.get("cover"), "available": available,
+        cover = doc.get("cover")
+        if cover:   # where the files sit is the server's business on the shared server (batch 11, S1)
+            cover = cover | {k: server_path(cover[k]) for k in ("folder", "jpg", "png") if k in cover}
+        return {"variants": variants, "chosen": doc.get("chosen"), "cover": cover, "available": available,
                 "errors": doc.get("last_errors", []), "job": job, "has_pack": has_pack,
                 "rounds_left": self._rounds_left(ep, doc), "max_rounds": MAX_ROUNDS,
                 "directions": [{"key": k, "label": tr(label)} for k, label, _ in DIRECTIONS]}

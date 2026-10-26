@@ -41,6 +41,7 @@ from lacuna_core.media import resample_filter
 
 from .store import PathError, Workspace, atomic_write_json, inside, read_json, now_iso as _now
 from . import show
+from .cloud import server_path
 from .i18n import AI_NAME_RULE, N_, lang, tr
 
 SCHEMA = 1
@@ -590,7 +591,7 @@ class Library:
         albums = [{"id": a["id"], "name": a["name"]} for a in Albums(self.ws).albums()]
         return {"assets": sorted(assets, key=lambda a: a["added_at"], reverse=True), "series": self.series(),
                 "albums": albums, "album": album,
-                "folder": str(self.dir), "kinds": {k: tr(v) for k, v in KINDS.items()}, "kind_roles": ROLE_FOR_KIND}
+                "folder": server_path(self.dir), "kinds": {k: tr(v) for k, v in KINDS.items()}, "kind_roles": ROLE_FOR_KIND}
 
 
 # ===================================================================== credit lookup (Claude + web search)

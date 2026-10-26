@@ -128,8 +128,23 @@ def test_a_fresh_cloud_server_answers_only_the_sign_up_screen(client, keys):
 def test_desktop_only_actions_are_gone(client, keys, monkeypatch):
     h = owner_signed_in(client, keys, monkeypatch)
     for path in ("/api/app/update/check", "/api/app/update/prepare", "/api/app/update/apply", "/api/app/api-key",
-                 "/api/auth/resend-key", "/api/episodes/EP001/exports/open", "/api/library/open"):
+                 "/api/auth/resend-key", "/api/episodes/EP001/exports/open", "/api/library/open",
+                 "/api/episodes/EP001/upload/save-cover"):
         assert client.post(path, json={"key": "sk-x"}, headers=h).status_code == 404, path
+
+
+def test_signed_in_answers_name_no_server_folder(client, keys, monkeypatch):
+    """a signed-in browser learns nothing of the server's folders (batch 11, S1)"""
+    h = owner_signed_in(client, keys, monkeypatch)
+    root = str(client.app.state.workspace.root)
+    health = client.get("/api/health", headers=h).json()
+    assert health["workspace"] == ""
+    app_info = client.get("/api/app", headers=h).json()
+    assert app_info["ffmpeg"] in ("ffmpeg", None) and app_info["ffprobe"] in ("ffprobe", None)
+    assert client.get("/api/library", headers=h).json()["folder"] == ""
+    for path in ("/api/health", "/api/app", "/api/library"):
+        assert root not in client.get(path, headers=h).text, path
+    assert cloud.server_path(client.app.state.workspace.root) == ""
 
 
 def test_import_reads_only_uploaded_tracks(client, keys, tmp_path, monkeypatch):

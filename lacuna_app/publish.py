@@ -32,6 +32,7 @@ from typing import Any, Callable
 
 from .words import join_words
 from . import show
+from .cloud import server_path
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
 from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
@@ -796,7 +797,7 @@ class Publisher:
             with ep.lock:
                 pack = self.load(ep)
                 self.save(ep, pack)
-        out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
+        out: dict = {"pack": None, "job": job, "notes_path": server_path(self.notes_path(ep.id))}
         if pack is None:
             return out
         music = music_info(self.ws, ep)

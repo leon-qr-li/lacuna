@@ -64,7 +64,9 @@ def register(app, workspace: Path, busy: Callable[[], list[str]],
         return {"version": current_version(), "release": release_date(), "platform": platform_name(),
                 "workspace": str(workspace) if server_side else "",
                 "key": key_status(), "models": models_ready(), "busy": busy() if server_side else [],
-                "cloud": cloud_enabled(), "staging": staging()} | ffmpeg_status()
+                "cloud": cloud_enabled(), "staging": staging()} | {
+                    # found or not, without where (batch 11, S1)
+                    k: v if server_side else (k if v else None) for k, v in ffmpeg_status().items()}
 
     @app.get("/api/app")
     def app_info(request: Request):
