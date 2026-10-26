@@ -427,7 +427,7 @@ function InviteModal({ data, owner, close, done }: { data: AccessData; owner: bo
         <div className="a-grid g2">
           <label className="a-lbl">
             {t("角色")}
-            <select className="a-inp" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+            <select className="a-inp" value={role} onChange={(e) => setRole(e.target.value as Role)} data-testid="invite-role">
               <option value="member">{ROLE.member()}</option>
               {owner && <option value="admin">{ROLE.admin()}</option>}
             </select>
@@ -460,7 +460,18 @@ function InviteModal({ data, owner, close, done }: { data: AccessData; owner: bo
             </select>
           </label>
         </div>
-        <p className="a-muted small">{t("对方会收到注册链接，7 天内有效。注册后会有一个自己的新节目。")}</p>
+        {role === "admin" && (
+          <div className="a-alert warn small" data-testid="invite-admin-note">
+            <Icon name="shield" />
+            <span>
+              {t("对方会收到「管理员邀请」邮件。还要在 Cloudflare 把对方的邮箱加进后台的门禁名单，否则打不开后台：Zero Trust → Access → Applications → LACUNA admin → Policy。")}{" "}
+              <a href="https://one.dash.cloudflare.com/" target="_blank" rel="noreferrer">
+                {t("打开 Cloudflare")}
+              </a>
+            </span>
+          </div>
+        )}
+        <p className="a-muted small">{role === "admin" ? t("对方会收到注册链接，7 天内有效。注册后就是管理员，也会有一个自己的新节目。") : t("对方会收到注册链接，7 天内有效。注册后会有一个自己的新节目。")}</p>
         <div className="a-row end">
           <button type="button" className="a-btn" onClick={close}>
             {t("取消")}

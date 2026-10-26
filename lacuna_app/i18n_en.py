@@ -774,4 +774,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "正式站": "Site",
     "后台登录 8 小时后自动退出，每次登录站长都会收到提醒。": "Admin sign-ins end after 8 hours, and the owner is told about every sign-in.",
     "不是你本人？忽略这封邮件即可。": "Not you? Just ignore this email.",
+    "开始之前，三步": "Before you start, three steps",
+    "点「接受邀请」，设好密码": "Tap “Accept the invitation” and set a password",
+    "用手机验证器 App 扫码，开好两步验证": "Scan the code with your authenticator app to turn on two-step sign-in",
+    "邀请链接 7 天内有效，只能用一次。": "The invite link works for 7 days, once.",
 }

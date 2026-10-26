@@ -772,11 +772,12 @@ class Auth:
                       key=lambda r: -r["created"])
 
     def invite(self, actor: str, email: str, role: str, origin: str, extra: dict | None = None,
-               lang: str | None = None, by_member: bool = False) -> dict:
+               lang: str | None = None, by_member: bool = False, admin_url: str | None = None) -> dict:
         """A one-time sign-up link for `email`; emailed when Resend can, always returned for copying.
         `lang` (zh / en) is the email's language, picked by the inviter; default the inviter's interface.
         `by_member`: a show's admin inviting a collaborator into that show (routes/spaces.py checks the show
-        and the plan), so a plain account may give the plain "member" role."""
+        and the plan), so a plain account may give the plain "member" role. `admin_url`: the admin's address, for
+        the 管理员邀请 mail an invite as a site admin gets (lacuna_app/admin_invite_mail.py)."""
         email = norm_email(email)
         if not (by_member and role == "member" and actor in self.users):
             self._grantable(actor, role)
@@ -798,11 +799,15 @@ class Auth:
         link = f"{origin.rstrip('/')}/invite/{token}"
         mailed, why = False, None
         try:
-            from . import invite_mail       # design A 「夜航信笺」
+            from . import admin_invite_mail, invite_mail       # design A 「夜航信笺」; admins design C 「权限对照卡」
             with speaking(lang):
-                m = invite_mail.render(actor, link, project, extra.get("space_role"),
-                                       plan=extra.get("plan") or plans.DEFAULT, beta=self.beta(),
-                                       inviter_name=(self.users.get(actor) or {}).get("name"))
+                if role == "admin" and admin_url:
+                    m = admin_invite_mail.render(actor, admin_url, origin.rstrip("/"),
+                                                 (self.users.get(actor) or {}).get("name"), invite_link=link)
+                else:
+                    m = invite_mail.render(actor, link, project, extra.get("space_role"),
+                                           plan=extra.get("plan") or plans.DEFAULT, beta=self.beta(),
+                                           inviter_name=(self.users.get(actor) or {}).get("name"))
             try:
                 self.mailer.send(self.config["sender"], email, m["subject"], m["text"], html=m["html"],
                                  inline=m["inline"])

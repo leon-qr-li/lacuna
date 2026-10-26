@@ -286,6 +286,12 @@ def test_admin_site_lets_in_only_the_owner(api):
     env = dict(line.split("=", 1) for line in user_data(a)["/etc/lacuna/lacuna.env"].splitlines())
     assert env["LACUNA_ADMIN_HOST"] == provision.ADMIN_DOMAIN
     assert env["CF_ADMIN_ACCESS_AUD"] == app["aud"] != env["CF_ACCESS_AUD"]
+    # an admin the owner added by hand in Cloudflare stays on the list when Provision runs again (batch 8)
+    pol = next(p for p in a.policies if p["name"] == provision.ADMIN_POLICY)
+    pol["include"].append({"email": {"email": "pei@example.com"}})
+    run("apply")
+    pol = next(p for p in a.policies if p["name"] == provision.ADMIN_POLICY)
+    assert pol["include"] == [{"email": {"email": "leon@example.com"}}, {"email": {"email": "pei@example.com"}}]
 
 
 def test_registry_gc_keeps_the_site_and_staging_images(monkeypatch):
