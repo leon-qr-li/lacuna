@@ -46,7 +46,7 @@ from lacuna_core import (Clip, InsertGap, MediaRef, Previewer, Renderer, RenderS
 from lacuna_core.master import LoudnessMeter
 
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
-from .episode import ConflictError, Episode, to_base, to_tl
+from .episode import PREVIEW_BUDGET, ConflictError, Episode, to_base, to_tl
 from .library import Library, credit_line
 from .store import Workspace, atomic_write_json, read_json, now_iso as _now
 from .i18n import N_, tr
@@ -752,7 +752,7 @@ class EpisodeMusic:
                 pool.close()
             self._players.clear()
             pool = SourcePool(media)
-            pv = Previewer(Renderer(pool, RenderSettings(channels=1)), SegmentCache(96 << 20), block_s=2.0)
+            pv = Previewer(Renderer(pool, RenderSettings(channels=1)), SegmentCache(96 << 20, PREVIEW_BUDGET), block_s=2.0)
             hit = self._players[k] = (tl, pv, pool)
         return hit[0], hit[1]
 

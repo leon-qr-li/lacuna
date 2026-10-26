@@ -35,6 +35,7 @@ from lacuna_core import (EDLError, MediaRef, Previewer, Project, Renderer, Rende
                          apply_batch, validate)
 from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
+from lacuna_core.preview import SharedBudget
 from lacuna_core.refine import snap_cut
 
 from .words import join_words
@@ -47,6 +48,10 @@ from .events import track
 from .i18n import N_, tr
 
 STATE_SCHEMA = 1
+# All episodes' listening caches together (every show on the server, one process): each episode may keep up
+# to 192 MB of rendered audio, and every show keeps its 3 last episodes open, so without a shared cap memory
+# grew ~200 MB per show listened through until the next restart, past the 7 GB container (batch 10 load test).
+PREVIEW_BUDGET = SharedBudget(1 << 30)
 APPLIED, RESTORED, PROPOSED, DISCARDED = "applied", "restored", "proposed", "discarded"
 
 CATEGORY_LABELS = {
@@ -298,7 +303,7 @@ class Episode:
                 raise MissingSources(tr("这一集的原始音轨不在服务器上，现在放不了声音。请在这一集页面顶上重新上传原始音轨。"))
             self._pool = SourcePool(self.media)
             self._previewer = Previewer(Renderer(self._pool, RenderSettings(channels=1)),
-                                        SegmentCache(192 << 20), block_s=2.0)
+                                        SegmentCache(192 << 20, PREVIEW_BUDGET), block_s=2.0)
         return self._previewer
 
     def missing_sources(self) -> list[dict]:
