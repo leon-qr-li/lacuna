@@ -11,13 +11,18 @@ HOST = "127.0.0.1"   # loopback only, never exposed on the network (a developmen
 # On shutdown, connections still open (a paused <audio> keeps its WAV stream open) get this long to
 # finish before they are dropped.
 GRACEFUL_SHUTDOWN = 3
+# An idle keep-alive connection stays open this long. Longer than the proxy in front keeps its idle
+# connections (cloudflared: 90 s), so the proxy never sends a request on a connection we are closing
+# at that moment: with uvicorn's 5 s, the page's 5-second presence beat (and any POST after a 5 s
+# pause) now and then met a reset, which the proxy answers with 502 (batch 10 load test).
+KEEP_ALIVE = 120
 
 
 def make_server(app, port: int, host: str = HOST):
     import uvicorn
 
     return uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="warning",
-                                         timeout_graceful_shutdown=GRACEFUL_SHUTDOWN))
+                                         timeout_keep_alive=KEEP_ALIVE, timeout_graceful_shutdown=GRACEFUL_SHUTDOWN))
 
 
 def main(argv: list[str] | None = None) -> None:
