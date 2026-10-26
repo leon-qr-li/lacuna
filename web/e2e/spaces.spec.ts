@@ -72,6 +72,26 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
   await expect(fresh.getByTestId("invite-link")).toHaveCount(0); // not a manager here
   const r = await fresh.request.post("/api/episodes/EP_TEST_合成/undo");
   expect(r.status()).toBe(403);
+  // the screens say so and grey out what would change the episode (batch 8, P2)
+  await expect(fresh.getByTestId("listen-only")).toBeVisible();
+  await fresh.goto(`/#/ep/${encodeURIComponent("EP_TEST_合成")}/review`);
+  await expect(fresh.locator(".rv-act .btn").first()).toBeDisabled();
+  await expect(fresh.locator("#say")).toBeDisabled();
+  await expect(fresh.getByTestId("listen-only")).toHaveText("只听成员");
+  await expect(fresh.locator("#say")).toHaveAttribute("placeholder", "只听成员不能让 LACUNA 修改这一集");
+  if (SHOTS) {
+    // the mark in the top bar, Chinese and English, light and dark, desktop and phone (copy changes are re-checked)
+    for (const [lng, theme, w] of [["zh", "light", 1280], ["en", "dark", 1280], ["en", "light", 390], ["zh", "dark", 390]] as const) {
+      await fresh.evaluate(([l, th]) => { localStorage.setItem("lacuna.lang", l); localStorage.setItem("lacuna.theme", th); }, [lng, theme]);
+      await fresh.setViewportSize({ width: w, height: 800 });
+      await fresh.reload();
+      await expect(fresh.getByTestId("listen-only")).toBeVisible();
+      await fresh.screenshot({ path: `${SHOTS}/listen-only-${lng}-${theme}-${w}.png` });
+    }
+    await fresh.evaluate(() => { localStorage.removeItem("lacuna.lang"); localStorage.removeItem("lacuna.theme"); });
+    await fresh.setViewportSize({ width: 1280, height: 720 });
+    await fresh.reload();
+  }
 
   // the project menu switches back, and starts a new project
   await fresh.getByTestId("project-menu").click();
@@ -87,5 +107,6 @@ test("beta user sees only their own project until invited to Leon's", async ({ b
   await fresh.getByTestId("project-create").click();
   await expect(fresh.getByTestId("project-menu")).toHaveText(/片场夜谈/);
   await expect(fresh.getByTestId("show-setup")).toContainText("介绍一下「片场夜谈」");
+  await expect(fresh.getByTestId("listen-only")).toHaveCount(0); // their own show: they change things here
   await leon.close();
 });

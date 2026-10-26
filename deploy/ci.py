@@ -7,6 +7,7 @@
     python deploy/ci.py registry-collect       # garbage-collect the registry (daily; pushes wait for it)
     python deploy/ci.py r2-env                 # S3 credentials for the backup bucket, as GITHUB_ENV lines
     python deploy/ci.py snapshot               # weekly snapshot of the data volume, keep the newest 4
+    python deploy/ci.py uptime                 # hourly: the site answers /api/health (through Access)
 
 Nothing secret or identifying is printed (the repo and its logs are public).
 """
@@ -125,6 +126,33 @@ def wait_live(version: str, timeout: float = 30 * 60, poll: float = 20, domain: 
             log(f"could not delete old check tokens (tried again next deploy): {e}")
 
 
+UPTIME_TRIES = 3
+UPTIME_WAIT = 60
+
+
+def uptime(domain: str = DOMAIN) -> None:
+    """The hourly outside check (workflow uptime.yml, batch 8 P3): <domain>/api/health through Access with the
+    long-lived deploy token. Down on all of UPTIME_TRIES tries a minute apart fails the run, and GitHub emails
+    the repo owner: the server's own alert mails can't go out when the whole server is down."""
+    cid, secret = os.environ.get("CF_DEPLOY_CLIENT_ID", "").strip(), os.environ.get("CF_DEPLOY_CLIENT_SECRET", "").strip()
+    if not (cid and secret):
+        log("no deploy token in GitHub secrets (run Provision deploy-token): nothing checked")
+        return
+    mask(cid)
+    mask(secret)
+    headers = {"CF-Access-Client-Id": cid, "CF-Access-Client-Secret": secret}
+    answers = []
+    for i in range(UPTIME_TRIES):
+        status, body = _get(f"https://{domain}{HEALTH_PATH}", headers)
+        if status == 200 and body.get("ok"):
+            log(f"up: version {body.get('version') or '-'}")
+            return
+        answers.append(str(status))
+        if i < UPTIME_TRIES - 1:
+            time.sleep(UPTIME_WAIT)
+    raise ProvisionError(f"{domain} is down: /api/health answered {', '.join(answers)} ({UPTIME_TRIES} tries, a minute apart)")
+
+
 def _sweep_check_tokens(c) -> None:
     """Delete the per-run check tokens (lacuna-deploy-check-*; never the long-lived lacuna-deploy): runs cancelled
     or answered 504 leave some behind, and the account caps how many it keeps."""
@@ -199,7 +227,8 @@ def snapshot() -> None:
 
 
 def main(argv: list[str]) -> int:
-    cmds = {"registry": registry, "registry-gc": registry_gc, "registry-collect": registry_collect, "r2-env": r2_env, "snapshot": snapshot}
+    cmds = {"registry": registry, "registry-gc": registry_gc, "registry-collect": registry_collect, "r2-env": r2_env, "snapshot": snapshot,
+            "uptime": uptime}
     try:
         if argv[:1] == ["wait-live"] and len(argv) == 2:
             wait_live(argv[1])

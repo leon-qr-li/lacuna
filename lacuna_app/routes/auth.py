@@ -29,7 +29,7 @@ OWNER_ONLY = {("POST", "/api/app/api-key")}
 
 def cloud_mode() -> bool:
     """`LACUNA_CLOUD=1`: the server runs on the internet (docs/decisions/2026-10-19-invites-roles-2fa.md)."""
-    return os.environ.get("LACUNA_CLOUD", "").strip().lower() in ("1", "true", "yes")
+    return cloudflare.enabled()
 
 
 def _cookie(raw: str) -> str | None:
@@ -290,8 +290,8 @@ def register(app, ctx) -> None:
         return {"name": auth.name(email)}
 
     @app.post("/api/auth/code")
-    def code(body: CodeBody):
-        run(lambda: auth.send_code(body.email, body.purpose))
+    def code(body: CodeBody, request: Request):
+        run(lambda: auth.send_code(body.email, body.purpose, ip(request)))
         return {"sent": True}
 
     @app.post("/api/auth/reset")

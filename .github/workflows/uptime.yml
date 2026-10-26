@@ -1,0 +1,29 @@
+name: Uptime check
+
+# Every hour, from outside: https://lacunastudio.app answers /api/health (through Cloudflare Access with the
+# deploy check's service token). The server's own alert mails can't go out when the whole server is down, so
+# this is the check that still works then (batch 8, P3). Down on 3 tries a minute apart fails the run, and a
+# failed scheduled run emails the repo owner.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CF_DEPLOY_CLIENT_ID: ${{ secrets.CF_DEPLOY_CLIENT_ID }}
+      CF_DEPLOY_CLIENT_SECRET: ${{ secrets.CF_DEPLOY_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Site answers
+        run: python3 deploy/ci.py uptime

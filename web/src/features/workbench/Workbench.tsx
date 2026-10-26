@@ -3,6 +3,7 @@ import type { EditInfo } from "../../api";
 import { fmt, statusLabel } from "../../api";
 import { Icon } from "../../components/Icon";
 import { t } from "../../i18n";
+import { useListenOnly } from "../listen-only/state";
 import "./workbench.css";
 
 /** 整集试听 as one screen (Leon 2026-10-20, version B): the editing timeline on top with the player inside it
@@ -44,6 +45,7 @@ export function SideTabs({ tab, onTab, near, badge }: { tab: SideTab; onTab: (v:
 
 /** The card for an edit under the pointer on the timeline: what it is, hear around it, restore / re-apply. */
 export function CutPop({ e, onListen, onReview }: { e: EditInfo; onListen: () => void; onReview: (e: EditInfo, action: "restore" | "apply") => void }) {
+  const ro = useListenOnly();
   return (
     <>
       <div className="wb-pop-title">{e.title}</div>
@@ -55,11 +57,11 @@ export function CutPop({ e, onListen, onReview }: { e: EditInfo; onListen: () =>
           ▶ {t("听前后")}
         </button>
         {e.status === "applied" ? (
-          <button type="button" className="btn btn-small" onClick={() => onReview(e, "restore")}>
+          <button type="button" className="btn btn-small" disabled={ro} onClick={() => onReview(e, "restore")}>
             {t("恢复")}
           </button>
         ) : (
-          <button type="button" className="btn btn-small" onClick={() => onReview(e, "apply")}>
+          <button type="button" className="btn btn-small" disabled={ro} onClick={() => onReview(e, "apply")}>
             {t("重新应用")}
           </button>
         )}

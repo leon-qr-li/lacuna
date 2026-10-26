@@ -33,8 +33,9 @@ AI_BUDGET = 500.0         # monthly warning in USD (decision 7; $500 for the qua
 AI_HOUR_TARGET = 3.8      # USD per audio hour with the quality-first models (decision 2026-10-25-ai-cost-cut)
 DISK_WARN = 0.70
 def cloud_server() -> bool:
-    """The internet server (LACUNA_CLOUD, as routes/auth.py reads it); a checkout has no nightly backup."""
-    return os.environ.get("LACUNA_CLOUD", "").strip().lower() in ("1", "true", "yes")
+    """The internet server (lacuna_app/cloud.py enabled()); a checkout has no nightly backup."""
+    from .cloud import enabled
+    return enabled()
 
 
 BACKUP_MARK = Path(os.environ.get("LACUNA_BACKUP_MARK", "/data/backup-canary.json"))

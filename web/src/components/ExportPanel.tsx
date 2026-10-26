@@ -7,12 +7,14 @@ import { BusyLabel, JobProgress } from "../features/loading/Loading";
 import { useCloud } from "../features/auth/cloud";
 import { askAfterExport } from "../features/feedback/Prompts";
 import { TellUs } from "../features/feedback/parts";
+import { useListenOnly } from "../features/listen-only/state";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
 /** The 导出 step: formats, start, download on the left; this episode and the platform standard on the right. */
 export function ExportPanel({ id, version, pending = 0, summary }: { id: string; version: string; pending?: number; summary?: ReactNode }) {
   const cloud = useCloud();
+  const ro = useListenOnly();
   const [job, setJob] = useState<ExportJob | null>(null);
   const [mp3, setMp3] = useState(true);
   const [wav, setWav] = useState(true);
@@ -90,7 +92,7 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
             <a href={`#/ep/${encodeURIComponent(id)}/review`}>{t("去审阅")}</a>
           </p>
         )}
-        <button type="button" className="btn btn-primary xstart" onClick={start} disabled={running || (!mp3 && !wav)} data-testid="export-start" data-tour="export-start">
+        <button type="button" className="btn btn-primary xstart" onClick={start} disabled={ro || running || (!mp3 && !wav)} data-testid="export-start" data-tour="export-start">
           <BusyLabel
             busy={running}
             label={job ? t("重新导出") : t("开始导出")}
