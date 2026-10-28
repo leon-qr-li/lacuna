@@ -22,6 +22,8 @@ import { PageLoading } from "./features/loading/Loading";
 import { ErrorState } from "./features/states/States";
 import { openEpisode, type Restoring } from "./features/cold/restore";
 import { Home } from "./features/episodes/Home";
+import { FirstShow } from "./features/first-show/FirstShow";
+import { useProjects } from "./features/projects/api";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
 import { Presence } from "./features/coedit/Presence";
 import { useCoedit } from "./features/coedit/useCoedit";
@@ -73,6 +75,9 @@ const writePref = (k: string, v: string) => {
 
 export default function App() {
   const { id, mode, page } = useRoute();
+  // in no show at all: every show page would be refused, so make the first one (settings still opens)
+  const sp = useProjects();
+  if (sp && !sp.current && page !== "settings") return <FirstShow />;
   if (page) return <PageScreen path={page} />;
   return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home nav={<Nav on="home" />} />;
 }
