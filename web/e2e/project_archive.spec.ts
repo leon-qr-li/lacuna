@@ -72,6 +72,16 @@ test("a project gets a colour, a picture, is archived read-only, then deleted fo
   await expect(page.locator("#say")).toBeDisabled();
   await expect(page.locator("#say")).toHaveAttribute("placeholder", "这个节目已归档，只能查看。恢复后才能修改。");
   await expect(page.getByTestId("listen-only")).toHaveCount(0); // the 已归档 · 只读 tag says it already
+  // its home: the episodes, and none of what the server would refuse (import, 归档, 新专辑); no error card
+  // (a refused 归档 once read 「连不上 LACUNA」)
+  await page.goto("/#/");
+  await expect(page.locator(".ep-list li").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "导入新一集" })).toHaveCount(0);
+  await expect(page.locator(".ep-archive")).toHaveCount(0);
+  await expect(page.getByTestId("album-new")).toHaveCount(0);
+  await expect(page.getByTestId("error-state")).toHaveCount(0);
+  await page.goto("/#/archive");
+  await expect(page.locator(".ep-tile-actions")).toHaveCount(0);
   await page.goto("/#/projects");
   await page.reload();
   await page.getByTestId("project-archive").getByTestId("project-restore").click();

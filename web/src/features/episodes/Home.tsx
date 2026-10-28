@@ -19,6 +19,7 @@ import { albumHref, useAlbums, type Album } from "../albums/api";
 import { EpisodeCard } from "./EpisodeCard";
 import { EmptyState, ErrorState } from "../states/States";
 import { episodesApi } from "./api";
+import { useReadOnly } from "../listen-only/state";
 
 const go = (id: string, mode = "listen") => {
   window.location.hash = `#/ep/${encodeURIComponent(id)}/${mode}`;
@@ -35,6 +36,8 @@ export function Home({ nav }: { nav: ReactNode }) {
   const names = hostList(show);
   const proj = useProjects()?.current;
   const albums = useAlbums();
+  // a 只听 member or an archived show: the server refuses every change, so the page offers none (listen-only/state.ts)
+  const ro = useReadOnly() !== null;
   // 新建专辑 (preset: the episode whose card asked) or 专辑设置 of the one album shown inline
   const [dialog, setDialog] = useState<{ album?: Album; preset?: string } | null>(null);
   const load = useCallback((first = false) => {
@@ -83,7 +86,7 @@ export function Home({ nav }: { nav: ReactNode }) {
         setUndo(e);
         load();
       })
-      .catch((x) => setErr((x as Error).message));
+      .catch((x) => setErr(x));
   // the one album that holds every episode: new imports go there too unless Leon picks otherwise
   const v0 = albums.view;
   const onlyAlbum = v0?.albums.length === 1 && list?.length && list.every((e) => v0.episodes[e.id]) ? v0.albums[0].id : "";
@@ -97,6 +100,7 @@ export function Home({ nav }: { nav: ReactNode }) {
           e={e}
           href={`#/ep/${encodeURIComponent(e.id)}/listen`}
           actions={
+            !ro && (
             <>
               {albums.view && !!albums.view.albums.length && (
                 <MoveToAlbum
@@ -117,6 +121,7 @@ export function Home({ nav }: { nav: ReactNode }) {
                 {t("归档")}
               </button>
             </>
+            )
           }
         />
       ))}
@@ -159,9 +164,10 @@ export function Home({ nav }: { nav: ReactNode }) {
             onOpen={open}
             albums={albums.view?.albums}
             album={onlyAlbum}
+            readOnly={ro}
             actions={
               <>
-                {albums.view && !!list?.length && !albumRow && (
+                {!ro && albums.view && !!list?.length && !albumRow && (
                   <button type="button" className="btn btn-outline" onClick={() => setDialog({})} data-testid="album-new">
                     {t("＋ 新专辑")}
                   </button>
@@ -195,7 +201,7 @@ export function Home({ nav }: { nav: ReactNode }) {
                 <div className="home-sec">
                   <h2 className="sub">{t("专辑")}</h2>
                 </div>
-                <AlbumStrip album={only} view={v} onEdit={() => setDialog({ album: only })} />
+                <AlbumStrip album={only} view={v} onEdit={ro ? undefined : () => setDialog({ album: only })} />
                 <p className="row gap8 home-new-album">
                   <a className="btn btn-ghost btn-small" href={albumHref(only.id)}>
                     {t("打开专辑页")}
@@ -214,7 +220,7 @@ export function Home({ nav }: { nav: ReactNode }) {
               <div className="home-sec">
                 <h2 className="sub">{t("专辑")}</h2>
               </div>
-              <AlbumRow view={v} onNew={() => setDialog({})} />
+              <AlbumRow view={v} onNew={ro ? undefined : () => setDialog({})} />
               {!!loose.length && (
                 <>
                   <div className="home-sec">
