@@ -350,6 +350,7 @@ export function ImportPanel({
   albums = [],
   album = "",
   actions,
+  readOnly = false,
 }: {
   /** the 剧集 list, for each finished import's review progress */
   episodes: EpisodeListItem[] | null;
@@ -358,6 +359,8 @@ export function ImportPanel({
   album?: string;
   /** the home page's other buttons, in one row after 导入新一集 (batch 7, T3) */
   actions?: ReactNode;
+  /** a 只听 member or an archived show: no 导入新一集 (the server would refuse it) */
+  readOnly?: boolean;
   onEpisodesChanged: () => void;
   onOpen: (id: string) => void;
 }) {
@@ -413,6 +416,7 @@ export function ImportPanel({
     const drop = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
+      if (readOnly) return;
       const files = Array.from(e.dataTransfer?.files ?? []);
       if (!files.length || !hosts.length) return;
       openForm();
@@ -429,9 +433,9 @@ export function ImportPanel({
 
   return (
     <div className="imports">
-      {(!d || actions) && (
+      {((!d && !readOnly) || actions) && (
         <div className="row gap8 wrap import-actions">
-          {!d && (
+          {!d && !readOnly && (
             <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
               {t("导入新一集")}
             </button>
@@ -439,7 +443,7 @@ export function ImportPanel({
           {actions}
         </div>
       )}
-      {d && hosts.length > 0 && <NewImport d={d} albums={albums} onStarted={() => void refresh()} />}
+      {d && !readOnly && hosts.length > 0 && <NewImport d={d} albums={albums} onStarted={() => void refresh()} />}
       {!!shown.length && (
         <section aria-label={t("导入任务")}>
           <h2 className="sub">{t("导入任务")}</h2>

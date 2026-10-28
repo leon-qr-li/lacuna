@@ -5,6 +5,7 @@ import { confirmDialog } from "../dialog/Dialog";
 import { EpisodeCard } from "./EpisodeCard";
 import { episodesApi, type ArchivedItem } from "./api";
 import { EmptyState } from "../states/States";
+import { useReadOnly } from "../listen-only/state";
 
 const mb = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${Math.max(Math.round(b / 1e6), 0)} MB`);
 
@@ -14,6 +15,7 @@ export function ArchiveView() {
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const ro = useReadOnly() !== null; // 只听 or an archived show: no 恢复 / 永久删除 (the server refuses them)
   const load = useCallback(() => {
     episodesApi
       .archived()
@@ -89,6 +91,7 @@ export function ArchiveView() {
             extra={
               <>
                 <span className="muted small">{t("归档于 {at}", { at: fmtDateTime(e.archived_at) })}</span>
+                {!ro && (
                 <span className="ep-tile-actions">
                   <button type="button" className="btn btn-outline btn-small" onClick={() => void restore(e)}>
                     {t("恢复")}
@@ -97,6 +100,7 @@ export function ArchiveView() {
                     {t("永久删除")}
                   </button>
                 </span>
+                )}
               </>
             }
           />
