@@ -167,20 +167,14 @@ export function TranscriptGap({ here, gaps, at }: { here: Gap[]; gaps: Gaps; at:
 /** 配乐 page: how many gaps the episode has, and 「给间隙自动配乐」 for the ones without music. */
 export function GapBanner({ list, onFill }: { list: Gap[] | undefined; onFill: () => void }) {
   const ro = useListenOnly();
-  if (!list?.length) return null;
-  const empty = list.filter((g) => !g.filled_by).length;
+  const empty = list?.filter((g) => !g.filled_by).length ?? 0;
+  if (!empty) return null; // every gap has its music: nothing to ask
   return (
     <div className="card banner-card gap-banner" data-testid="gap-banner">
-      <span className="grow">
-        {empty
-          ? t("这一集有 {n} 个间隙，{m} 个还没配乐。", { n: list.length, m: empty })
-          : t("这一集有 {n} 个间隙，都已经配好音乐。", { n: list.length })}
-      </span>
-      {empty > 0 && (
-        <button type="button" className="btn btn-primary btn-small" disabled={ro} onClick={onFill} data-testid="gap-fill" title={t("从素材库里用途是「休息间隙」的音乐挑，每个间隙一首。先给建议，试听后再采用。")}>
-          {t("给间隙自动配乐")}
-        </button>
-      )}
+      <span className="grow">{t("这一集有 {n} 个间隙，{m} 个还没配乐。", { n: list!.length, m: empty })}</span>
+      <button type="button" className="btn btn-primary btn-small" disabled={ro} onClick={onFill} data-testid="gap-fill" title={t("先用你放进来的间奏，再从素材库里用途是「休息间隙」的音乐挑，按从左到右填进空着的间隙。先给建议，试听后再采用。")}>
+        {t("给间隙自动配乐")}
+      </button>
     </div>
   );
 }

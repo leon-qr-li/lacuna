@@ -530,6 +530,33 @@ class EpisodeMusic:
             self.save(doc)
             return p
 
+    def put_in_gap(self, asset_id: str | None = None, pid: str | None = None) -> dict:
+        """「放到 → 间隙」: a song (or a placed piece of music) into the first gap without music, left to right;
+        it plays inside the gap (an interlude with ``gap_id``). Applied at once: Leon picked it."""
+        with self.lock:
+            lay = self.layout()
+            empty = [x for x in lay.gaps if not x["filled_by"]]
+            if not empty:
+                raise ConflictError(tr("没有空着的间隙：每个间隙都已经有音乐了。") if lay.gaps else tr("这一集还没有间隙。"))
+            g = empty[0]["gap"]
+            doc = self.load()
+            if pid is not None:
+                p = next((x for x in doc["placements"] if x["id"] == pid), None)
+                if p is None:
+                    raise KeyError(pid)
+                if p["role"] != "interlude":
+                    for k in ROLE_TUNING:
+                        p[k] = None
+                p.update(role="interlude", at_base=g["at_base"], gap_id=g["id"], auto=False, status=APPLIED)
+            else:
+                p = {"id": "mu_" + uuid.uuid4().hex[:8], "asset_id": asset_id, "role": "interlude", "at_base": g["at_base"],
+                     "until_base": None, **{k: None for k in TUNING}, "auto": False, "loop": False, "gap_id": g["id"],
+                     "status": APPLIED, "source": "manual", "created_at": _now()}
+                doc["placements"].append(p)
+            self._clean(p, self.lib.asset(p["asset_id"]))
+            self.save(doc)
+            return p
+
     def drop_gap_music(self, gap_id: str) -> list[dict]:
         """A gap was removed: the music in it goes too (and out of a suggestion). Returns the removed placements."""
         with self.lock:

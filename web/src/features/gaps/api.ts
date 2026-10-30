@@ -28,4 +28,6 @@ export const gapsApi = {
   remove: (id: string, gid: string) => req<GapsView>("DELETE", `${ep(id)}/gaps/${gid}`),
   /** 「给间隙自动配乐」: a suggestion on the 配乐 page */
   fill: (id: string) => req<MusicView>("POST", `${ep(id)}/music/gaps/auto`),
+  /** 「放到 → 间隙」: a song, or a placed piece (pid), into the first gap without music, left to right */
+  place: (id: string, what: { asset_id: string } | { pid: string }) => req<MusicView>("POST", `${ep(id)}/music/gaps/place`, what),
 };

@@ -75,3 +75,4 @@
 .mcurve-dot.lab-left .mcurve-dot-label { left: -6px; transform: none; }
 .mcurve-dot.lab-below .mcurve-dot-label { bottom: auto; top: calc(100% + 6px); }
 .mcard-actions .chip-select { height: 32px; padding: 0 10px; }
+.mlib-put.is-used { border-color: var(--accent); color: var(--accent); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

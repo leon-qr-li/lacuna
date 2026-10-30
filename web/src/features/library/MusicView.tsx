@@ -348,6 +348,12 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     />
   );
   const taken = m.placements.map((x) => x.role);
+  const usedRoles: Record<string, string[]> = {};
+  for (const p of m.placements) {
+    const r = p.in_gap ? t("在间隙里") : p.role_label;
+    if (!usedRoles[p.asset_id]?.includes(r)) (usedRoles[p.asset_id] ??= []).push(r);
+  }
+  const firstEmptyGap = (m.gaps ?? []).findIndex((g) => !g.filled_by) + 1;
   const ends = m.placements.some((p) => p.role === "intro" || p.role === "outro");
   const saveDefaults = () => {
     if (scope === "album" && albumName)
@@ -379,6 +385,9 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
           <MusicLibrary
             assets={assets}
             taken={taken}
+            used={usedRoles}
+            gapNo={firstEmptyGap}
+            onGap={(asset_id) => void run(gapsApi.place(id, { asset_id }), t("已放进间隙，可以点「试听这一处」"))}
             now={now}
             upload={upload}
             onPauseOthers={() => {
@@ -540,6 +549,8 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
                 onOpen={() => setSel(sel === p.id ? null : p.id)}
                 onMore={setMore}
                 taken={m.placements.filter((x) => x.id !== p.id).map((x) => x.role)}
+                gapOpen={firstEmptyGap > 0}
+                onGap={() => run(gapsApi.place(id, { pid: p.id }), t("已放进间隙，可以点「试听这一处」"))}
                 previewing={playing && preview === p.id}
                 onPreview={() => listen(p)}
                 onSave={(patch, done) => run(libraryApi.updatePlacement(id, p.id, patch), done ?? t("已保存"))}

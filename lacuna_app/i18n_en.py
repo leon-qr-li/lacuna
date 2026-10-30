@@ -793,4 +793,11 @@ EN: dict[str, str | tuple[str, str]] = {
         "Filled {k} free stretches with {n} songs in random order. Listen first, then click “Accept”; or shuffle again.",
     "先勾几首要铺的歌。": "Tick a few songs to use first.",
     "没有空档可铺：说话的地方都已经有配乐了。": "Nothing to fill: all the talk already has music.",
+    "铺好了 {n} 首，随机放在 {k} 段空着的说话里。": "Added {n} songs at random places in {k} free stretches of talk.",
+    "还有 {n} 首放不下：空档不够长。": " {n} more didn't fit: not enough free talk.",
+    "没有空着的间隙：每个间隙都已经有音乐了。": "No empty gap: every gap already has music.",
+    "这一集还没有间隙。": "This episode has no gaps yet.",
+    "还没有可以放进间隙的音乐：在左边的素材上点「放到 → 间隙」，或在素材库给音乐标上「休息间隙」。":
+        "No music for the gaps yet: on a song on the left, choose “Place → Gap”, or mark music as “Break” in the library.",
+    "取消了 {n} 段铺底。": "Removed {n} background pieces.",
 }

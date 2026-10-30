@@ -8,8 +8,13 @@ import { t } from "../../i18n";
 
 const MENU: Role[] = ["intro", "outro", "interlude", "bed"];
 
-export function MusicLibrary({ assets, taken, now, upload, children, onPlace, onPauseOthers }: {
+export function MusicLibrary({ assets, taken, used, gapNo, now, upload, children, onPlace, onGap, onPauseOthers }: {
   assets: Asset[];
+  /** what each song already is in this episode (片头, 间奏 …): shown on its 放到 button */
+  used: Record<string, string[]>;
+  /** the number (from 1, left to right) of the first gap without music, or 0 */
+  gapNo: number;
+  onGap: (asset_id: string) => void;
   /** uses already on the episode (片头 / 片尾 are replaced) */
   taken: Role[];
   /** where the final-mix player is: an interlude goes there */
@@ -72,8 +77,14 @@ export function MusicLibrary({ assets, taken, now, upload, children, onPlace, on
               </span>
             </span>
             <span className="mlib-put-wrap">
-              <button type="button" className="btn btn-small btn-outline mlib-put" aria-expanded={menu === a.id} onClick={() => setMenu(menu === a.id ? null : a.id)}>
-                {t("放到 ▾")}
+              <button
+                type="button"
+                className={`btn btn-small btn-outline mlib-put${used[a.id]?.length ? " is-used" : ""}`}
+                aria-expanded={menu === a.id}
+                title={used[a.id]?.length ? t("已放到：{roles}", { roles: used[a.id].join("、") }) : undefined}
+                onClick={() => setMenu(menu === a.id ? null : a.id)}
+              >
+                {used[a.id]?.length ? `${used[a.id].join("、")} ▾` : t("放到 ▾")}
               </button>
               {menu === a.id && (
                 <span className="mlib-menu" role="menu">
@@ -90,6 +101,19 @@ export function MusicLibrary({ assets, taken, now, upload, children, onPlace, on
                       {label(r)}
                     </button>
                   ))}
+                  {gapNo > 0 && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      data-testid="mlib-gap"
+                      onClick={() => {
+                        setMenu(null);
+                        onGap(a.id);
+                      }}
+                    >
+                      {t("间隙（放进第 {n} 个间隙）", { n: gapNo })}
+                    </button>
+                  )}
                 </span>
               )}
             </span>

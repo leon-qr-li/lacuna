@@ -16,7 +16,7 @@ test.afterEach(async ({ request }) => {
   for (const id of added.splice(0)) await request.delete(`/api/library/assets/${id}`);
 });
 
-test("autobed: tick songs, fill at random, accept", async ({ page }) => {
+test("autobed: tick songs, each goes in once, straight onto the episode; remove all", async ({ page }) => {
   const r = await page.request.post(`/api/library/upload?${new URLSearchParams({ name: "odyssey_theme.mp3", kind: "bed", note: "" })}`, {
     headers: { "Content-Type": "application/octet-stream" },
     data: readFileSync(join(INBOX, "odyssey_theme.mp3")),
@@ -31,13 +31,19 @@ test("autobed: tick songs, fill at random, accept", async ({ page }) => {
   await expect(card.getByTestId("autobed-meter")).toContainText("还空着");
   const row = card.locator("li", { hasText: "odyssey_theme" });
   await expect(row.getByTestId("autobed-song")).toBeChecked(); // 聊天背景音 is ticked by default
+  await expect(card.getByTestId("autobed-fill")).toContainText("铺上勾的");
   await card.getByTestId("autobed-fill").click();
-  const draft = page.getByTestId("music-draft");
-  await expect(draft).toBeVisible();
-  await expect(draft.getByTestId("draft-change").first()).toContainText("铺底：");
-  await draft.getByRole("button", { name: "采用" }).click();
-  await expect(draft).toHaveCount(0);
-  await expect(card.getByTestId("autobed-fill")).toHaveText("再随机一次");
-  const m = await (await page.request.get(`/api/episodes/${EP}/music`)).json();
-  expect(m.placements.some((p: { source?: string; role: string }) => p.source === "autobed" && p.role === "bed")).toBeTruthy();
+  // straight onto the episode: no suggestion to accept; each ticked song once
+  await expect(page.getByTestId("music-msg")).toContainText("铺好了");
+  await expect(page.getByTestId("music-draft")).toHaveCount(0);
+  let m = await (await page.request.get(`/api/episodes/${EP}/music`)).json();
+  const beds = m.placements.filter((p: { source?: string; role: string }) => p.source === "autobed" && p.role === "bed");
+  expect(beds.length).toBe(1);
+  await expect(card.getByTestId("autobed-fill")).toHaveText("换个随机位置");
+  // 取消所有铺底
+  await card.getByTestId("autobed-clear").click();
+  await page.getByTestId("dialog").getByRole("button", { name: "取消所有铺底" }).click();
+  await expect(page.getByTestId("music-msg")).toContainText("取消了");
+  m = await (await page.request.get(`/api/episodes/${EP}/music`)).json();
+  expect(m.placements.some((p: { role: string }) => p.role === "bed")).toBeFalsy();
 });
