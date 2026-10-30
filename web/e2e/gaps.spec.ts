@@ -78,6 +78,8 @@ test("gaps: G adds one at the playhead; an export with empty gaps asks first", a
   await page.getByTestId("edit-lanes").getByRole("heading", { name: "剪辑时间线" }).click();
   await page.keyboard.press("g");
   await expect.poll(async () => (await gapsOf(page.request)).length).toBe(1);
+  const job = async () => (await (await page.request.get(`/api/episodes/${EP}/export`)).json()).job?.id ?? null;
+  const before = await job();
   await page.goto(`/#/ep/${EP}/export`);
   await page.getByTestId("export-start").click();
   const dlg = page.getByTestId("dialog");
@@ -85,7 +87,7 @@ test("gaps: G adds one at the playhead; an export with empty gaps asks first", a
   await expect(dlg).toContainText("1 个间隙还没配乐");
   await dlg.getByRole("button", { name: "先不导出" }).click();
   await expect(dlg).toHaveCount(0);
-  await expect(page.getByTestId("export-result")).toHaveCount(0);
+  expect(await job()).toBe(before); // no export started
 });
 
 test("gaps: 配乐 fills the empty ones with a 休息间隙 piece, heard before it is accepted", async ({ page }) => {
