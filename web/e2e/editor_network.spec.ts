@@ -63,7 +63,7 @@ test.describe.serial("editing over a bad connection", () => {
     expect(tries.get("0")).toBeGreaterThanOrEqual(2);
   });
 
-  test("整集试听 keeps its own place: not 审阅's, and not lost on a refresh", async ({ page }) => {
+  test("整集试听 remembers the editing place; from 审阅 it starts from the beginning", async ({ page }) => {
     await page.goto("/");
     await page.evaluate((ep) => localStorage.removeItem(`lacuna.pos.${ep}`), EP);
     await open(page);
@@ -75,16 +75,25 @@ test.describe.serial("editing over a bad connection", () => {
     await page.reload();
     await expect(page.getByTestId("edit-lanes")).toBeVisible();
     await expect.poll(() => clock(page)).toBe(here);
-    // 审阅 somewhere else (its own place), then back to 整集试听: where Leon was editing, not 审阅's place
+    // leaving the episode and coming back: still there
+    await page.goto("/#/");
+    await open(page);
+    await expect.poll(() => clock(page)).toBe(here);
+    // another tab (配乐) and back: still there
+    await page.goto(`/#/ep/${encodeURIComponent(EP)}/music`);
+    await page.goto(listen);
+    await expect(page.getByTestId("edit-lanes")).toBeVisible();
+    await expect.poll(() => clock(page)).toBe(here);
+    // 审阅 at 0:50, then 整集试听: from the beginning, not 审阅's place
     await page.goto(`/#/ep/${encodeURIComponent(EP)}/review`);
     await page.getByTestId("main-audio").evaluate((a: HTMLAudioElement) => (a.currentTime = 50));
     await expect.poll(() => clock(page)).toBe("0:50");
     await page.goto(listen);
     await expect(page.getByTestId("edit-lanes")).toBeVisible();
-    await expect.poll(() => clock(page)).toBe(here);
-    // leaving the episode and coming back: still there
-    await page.goto("/#/");
-    await open(page);
-    await expect.poll(() => clock(page)).toBe(here);
+    await expect.poll(() => clock(page)).toBe("0:00");
+    // and a refresh there keeps that
+    await page.reload();
+    await expect(page.getByTestId("edit-lanes")).toBeVisible();
+    await expect.poll(() => clock(page)).toBe("0:00");
   });
 });

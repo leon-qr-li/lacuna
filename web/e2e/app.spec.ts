@@ -71,13 +71,13 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.getByRole("button", { name: "重新应用这个删除" })).toBeVisible();
     await undoKey(page);
     await expect(page.getByRole("button", { name: /^保留/ })).toBeVisible();
-    // 整集试听 comes back where it was, not at 审阅's place (Leon 2026-10-30: it opened at 49:00)
+    // from 审阅, 整集试听 starts from the beginning, not at 审阅's place (Leon 2026-10-30: it opened at 49:00)
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect(page.getByTestId("play")).toBeVisible();
-    await expect.poll(() => audioTime(page)).toBeCloseTo(12, 0);
+    await expect.poll(() => audioTime(page)).toBeCloseTo(0, 0);
   });
 
-  test("slow audio stream: Full Listen's place survives restore → undo in review", async ({ page }) => {
+  test("slow audio stream: from review, Full Listen starts at 0 after restore → undo", async ({ page }) => {
     // regression (macOS CI): a seek set while the new version's stream is not yet seekable was dropped to 0.
     // Delaying the audio responses reproduces that race on any OS.
     let n = 0;
@@ -95,8 +95,8 @@ test.describe.serial("LACUNA Studio", () => {
     await undoKey(page);
     await expect(page.getByRole("button", { name: /^保留/ })).toBeVisible();
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
-    await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(15.5, 0);
-    await expect(page.getByTestId("clock")).toContainText("0:15");
+    await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(0, 0);
+    await expect(page.getByTestId("clock")).toContainText("0:00 /");
   });
 
   test("chat command → preview → approve → edit appears; undo removes it", async ({ page }) => {

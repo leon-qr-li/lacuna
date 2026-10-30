@@ -10,7 +10,7 @@ Leon's seven reports of 2026-10-30, and where each went:
    HTTP/3 off via Provision `http3-off` (`deploy/provision.py`).
 3. Waveform empty past a point: `features/manual/chunks.ts` asks again for chunks that failed (4 tries); after a
    cut the old tiles show until the new ones arrive (`keepOld`), so the lanes do not blink empty.
-6./7. 整集试听 keeps its own place (审阅 still jumps to its edit), per episode in localStorage `lacuna.pos.<id>`
+6./7. 整集试听: from 审阅 always starts at 0; refresh / leave+return / other tabs return to the last place (审阅 still jumps to its edit), per episode in localStorage `lacuna.pos.<id>`
    (`features/positions/usePositions.ts`); restored on refresh and on coming back to the episode.
 
 Tests: `web/e2e/network_retry.spec.ts`, `web/e2e/editor_network.spec.ts`, `tests/test_provision.py`.

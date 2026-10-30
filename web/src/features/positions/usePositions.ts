@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { Player } from "../../usePlayer";
 
-// Where Leon was editing (Leon 2026-10-30): 整集试听 keeps its own place on the timeline, so coming from 审阅 at
-// 49:00 does not drop it at 49:00 (it is where he last was there, from the start the first time), and a refresh,
-// leaving the episode and coming back all return to that place. 审阅改动 moves the player to the edit it shows,
-// as before. Kept in this browser per episode, in voice-cut seconds of the version on screen.
+// Where Leon was editing (Leon 2026-10-30): coming from 审阅改动, 整集试听 always starts from the beginning (it
+// used to stay at 审阅's place, e.g. 49:00); a refresh, leaving the episode and coming back, or another tab
+// (配乐, 导出…) return to where he last was on the timeline. 审阅改动 moves the player to the edit it shows, as
+// before. Kept in this browser per episode, in voice-cut seconds of the version on screen.
 const PAGES = ["listen"];
 const key = (id: string) => `lacuna.pos.${id}`;
 
@@ -38,6 +38,7 @@ export function usePositions(id: string, mode: string, player: Player) {
     if (was === mode) return;
     shown.current = mode;
     if (PAGES.includes(was)) saved.current![was] = player.time;
+    if (mode === "listen" && was === "review") saved.current![mode] = 0;
     if (PAGES.includes(mode)) player.seek(saved.current![mode] ?? 0);
     write(id, saved.current!);
     // eslint-disable-next-line react-hooks/exhaustive-deps
