@@ -187,24 +187,60 @@ export interface ImportJob {
   result: { episode: string; edits: number; to_review: number; raw_duration: number; engine: string } | null;
 }
 
-export async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
-  // anything the person started (not a GET) moves the thin line under the top bar
-  return method === "GET" ? send<T>(method, url, body) : track(send<T>(method, url, body));
+/** `timeout` (ms): give up on a request that has had no answer by then (`lost` on the error), so a button
+ *  never stays greyed out on a connection that went quiet. Only for requests the server answers at once. */
+export interface ReqOptions {
+  timeout?: number;
 }
 
-async function send<T>(method: string, url: string, body?: unknown): Promise<T> {
-  const res = await fetch(url, {
+export async function req<T>(method: string, url: string, body?: unknown, opts: ReqOptions = {}): Promise<T> {
+  // anything the person started (not a GET) moves the thin line under the top bar
+  return method === "GET" ? send<T>(method, url, body, opts) : track(send<T>(method, url, body, opts));
+}
+
+async function send<T>(method: string, url: string, body?: unknown, opts: ReqOptions = {}): Promise<T> {
+  const init: RequestInit = {
     method,
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  if (!res.ok) throw await failure(res, url);
-  return res.json() as Promise<T>;
+  };
+  try {
+    return await attempt<T>(url, init, opts.timeout);
+  } catch (e) {
+    // "Failed to fetch": no answer at all. On the cloud site that is mostly a connection the browser kept
+    // open while the person filled in a form and that Cloudflare had already dropped (net::ERR_QUIC_PROTOCOL_ERROR,
+    // Leon 2026-10-30: 新建节目 failed on the first 确认 and worked on the second). The browser then opens a
+    // fresh one, so one more try is what the second click did by hand. A request that timed out is not sent
+    // again: the server may well have done it (a cut that was made, the answer lost on the way back).
+    if (!(e instanceof TypeError)) throw e;
+    await new Promise((r) => setTimeout(r, RETRY_MS));
+    return attempt<T>(url, init, opts.timeout);
+  }
+}
+
+/** wait before the one retry of a request that got no answer */
+const RETRY_MS = 300;
+
+async function attempt<T>(url: string, init: RequestInit, timeout?: number): Promise<T> {
+  const stop = timeout ? new AbortController() : null;
+  const timer = stop ? window.setTimeout(() => stop.abort(), timeout) : 0;
+  try {
+    const res = await fetch(url, stop ? { ...init, signal: stop.signal } : init);
+    if (!res.ok) throw await failure(res, url);
+    return (await res.json()) as T;
+  } catch (e) {
+    if (!stop?.signal.aborted) throw e;
+    const err: RequestError = new Error(t("网络断了一下，没有收到回应"));
+    err.lost = true;
+    throw err;
+  } finally {
+    if (stop) window.clearTimeout(timer);
+  }
 }
 
 /** A failed request: `status`, and `stale` when the change was refused because someone else changed
  *  the same thing first (co-editing, features/coedit): the page should load the latest. */
-export type RequestError = Error & { status?: number; stale?: boolean; restoring?: { progress: number; failed: boolean } };
+export type RequestError = Error & { status?: number; stale?: boolean; lost?: boolean; restoring?: { progress: number; failed: boolean } };
 
 /** The error for a failed request (the server's `detail`); a 401 also brings the sign-in screen
  *  back (features/auth/AuthGate). Every raw fetch of the app goes through this. */

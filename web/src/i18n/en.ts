@@ -227,4 +227,5 @@ export const en: Dict = {
     {"one": "1 edit hasn't been looked at; the export uses it as it is now.", "other": "{n} edits haven't been looked at; the export uses them as they are now."},
   "去审阅":
     "Review them",
+  "网络断了一下，没有收到回应": "The connection dropped; no answer came back",
 };

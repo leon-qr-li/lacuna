@@ -289,6 +289,7 @@ export function EditLanes({
 
   const tiles = useChunks<WaveTile>(ep.version, range(Math.floor(t0 / TILE_S), Math.floor(Math.min(t1, d) / TILE_S)), (k) =>
     manualApi.wave(ep.id, ep.version, k),
+    true,
   );
 
   const x = (s: number) => `${(100 * (s - t0)) / span}%`;
