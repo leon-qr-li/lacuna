@@ -3,12 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { Asset, PlacementPatch, Role } from "./api";
 import { fmt } from "../../api";
+import { authorLine } from "../credit-fix/CreditFix";
 import { ROLE_NAME } from "./MusicCard";
 import { t } from "../../i18n";
 
 const MENU: Role[] = ["intro", "outro", "interlude", "bed"];
 
-export function MusicLibrary({ assets, taken, used, gapNo, now, upload, children, onPlace, onGap, onPauseOthers }: {
+export function MusicLibrary({ assets, taken, used, gapNo, now, upload, fix, children, onPlace, onGap, onPauseOthers }: {
   assets: Asset[];
   /** what each song already is in this episode (片头, 间奏 …): shown on its 放到 button */
   used: Record<string, string[]>;
@@ -20,6 +21,8 @@ export function MusicLibrary({ assets, taken, used, gapNo, now, upload, children
   /** where the final-mix player is: an interlude goes there */
   now: number;
   upload: ReactNode;
+  /** 一键修复曲名 (features/credit-fix) */
+  fix?: ReactNode;
   /** the form for a placement at a written time (below the list) */
   children?: ReactNode;
   onPlace: (body: PlacementPatch & { asset_id: string; role: Role }) => void;
@@ -60,6 +63,7 @@ export function MusicLibrary({ assets, taken, used, gapNo, now, upload, children
       <div className="mlib-head">
         <h2>{t("素材库")}</h2>
         <span className="mlib-upload" data-tour="music-upload">{upload}</span>
+        {fix}
       </div>
       {assets.length > 3 && (
         <input className="mlib-search" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("搜索素材")} aria-label={t("搜索素材")} />
@@ -72,6 +76,9 @@ export function MusicLibrary({ assets, taken, used, gapNo, now, upload, children
             </button>
             <span className="mlib-name">
               <strong title={a.name}>{a.credit.title || a.name.replace(/\.[^.]+$/, "")}</strong>
+              <span className={`small mlib-who${authorLine(a.credit) ? "" : " muted"}`} title={authorLine(a.credit) || undefined}>
+                {authorLine(a.credit) || t("还不知道作者")}
+              </span>
               <span className="small muted">
                 {fmt(a.duration_s)} · {a.kind_label}
               </span>
