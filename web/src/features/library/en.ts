@@ -227,4 +227,6 @@ export const en: Dict = {
   "现在选的是「只这一集」：不改以后的剧集": "“This episode only” is selected: later episodes are not changed",
   "设为默认片头片尾": "Make default intro & outro",
   "这一集还没有配乐。左边点「放到」，或者「按用途自动放好」。": "No music in this episode yet. Use “Place as” on the left, or “Place by use”.",
+  "已放到：{roles}": "Placed as: {roles}",
+  "已放进间隙，可以点「试听这一处」": "In the gap now. Click “Listen here” to hear it.",
 };

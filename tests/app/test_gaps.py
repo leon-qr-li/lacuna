@@ -149,3 +149,34 @@ def test_layout_without_gaps_is_unchanged():
     # a gap at the same point as an interlude: both open time, the interlude first
     three = layout([p], {"a1": a}, 100, 5000, lambda b: b, [{"id": "g", "at_base": 1000, "len_s": 3.0}])
     assert three.inserts == [(1000, 0, 200), (1000, 1, 300)] and three.gaps[0]["start"] == 1200
+
+
+def test_place_into_gaps_left_to_right_and_move_a_placed_interlude(client, tmp_path):
+    a = upload(client, write_music(tmp_path / "in" / "a.wav", 20.0), "other")
+    b = upload(client, write_music(tmp_path / "in" / "b.wav", 21.0), "other")
+    assert client.post(f"{EP}/music/gaps/place", json={"asset_id": a}).status_code == 409    # no gap yet
+    client.post(f"{EP}/gaps", json={"voice_s": 40.0, "snap": False, "len_s": 8})
+    client.post(f"{EP}/gaps", json={"voice_s": 16.0, "snap": False, "len_s": 8})
+    # 「放到 → 间隙」: the first gap without music, left to right, applied at once
+    m = client.post(f"{EP}/music/gaps/place", json={"asset_id": a}).json()
+    g = m["gaps"]
+    assert g[0]["voice_s"] == pytest.approx(16.0, abs=0.01) and g[0]["filled_by"] == m["placed"] and g[1]["filled_by"] is None
+    # an interlude Leon put in as 间奏 goes into the next gap with 「给间隙自动配乐」 (not "no music")
+    client.post(f"{EP}/music", json={"asset_id": b, "role": "interlude", "at_s": 5.0})
+    r = client.post(f"{EP}/music/gaps/auto").json()
+    d = r["draft"]
+    assert d and len(d["changes"]) == 1 and d["changes"][0]["kind"] == "move"
+    m = client.post(f"{EP}/music/draft/{d['id']}/accept").json()
+    pb = next(p for p in m["placements"] if p["asset_id"] == b)
+    assert pb["in_gap"] and m["gaps"][1]["filled_by"] == pb["id"]
+    assert pb["start_s"] == pytest.approx(m["gaps"][1]["final_s"], abs=0.01)
+    assert client.post(f"{EP}/music/gaps/place", json={"asset_id": a}).status_code == 409    # all full
+    # a placed piece moved into a gap by its id
+    client.delete(f"{EP}/gaps/{m['gaps'][1]['id']}")
+    client.post(f"{EP}/gaps", json={"voice_s": 30.0, "snap": False, "len_s": 8})
+    pa = next(p for p in client.get(f"{EP}/music").json()["placements"] if p["asset_id"] == a)
+    client.post(f"{EP}/music", json={"asset_id": b, "role": "bed", "at_s": 1.0})
+    pid = next(p["id"] for p in client.get(f"{EP}/music").json()["placements"] if p["role"] == "bed")
+    m = client.post(f"{EP}/music/gaps/place", json={"pid": pid}).json()
+    p = next(x for x in m["placements"] if x["id"] == pid)
+    assert p["role"] == "interlude" and p["in_gap"] and pa["in_gap"]

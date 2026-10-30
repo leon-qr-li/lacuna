@@ -22,3 +22,6 @@ details in decision `2026-10-30-edit-gaps` at 21:15Z. He needs it on an episode 
   are evened out, sudden loud passages turned down (`levels.music_even`).
 - 自动铺底 (Leon picked direction A at 21:48Z, same PR): decision `2026-10-30-auto-bed`; `lacuna_app/autobed.py`,
   `web/src/features/autobed/`, tests `tests/app/test_autobed.py`, `web/e2e/autobed.spec.ts`.
+- 2026-10-30 22:13Z #233 deployed. 22:25Z Leon found: 放到 didn't show the use, gap fill ignored the interlude he
+  placed, the first 自动铺底 looped songs everywhere. Fixed in a follow-up PR (decisions updated, one-off cleanup of
+  his episode to 片头 / 片尾 only).

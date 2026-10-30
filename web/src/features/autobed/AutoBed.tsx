@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { fmt } from "../../api";
 import { t } from "../../i18n";
 import { useListenOnly } from "../listen-only/state";
+import { confirmDialog } from "../dialog/Dialog";
 import type { MusicView } from "../library/api";
 import { autobedApi, type AutoBedView } from "./api";
 import "./autobed.css";
@@ -21,7 +22,7 @@ export function AutoBed({ id, version, onRun }: { id: string; version: string; o
       setV(x);
       // default: what is marked 聊天背景音 and not used yet, or what the current 自动铺底 uses
       setPicked((p) => p ?? new Set(x.songs.filter((s) => s.in_bed || (s.kind === "bed" && !s.used_as)).map((s) => s.id)));
-    }, () => live && setV({ songs: [], free_s: 0, stretches: 0 }));
+    }, () => live && setV({ songs: [], free_s: 0, stretches: 0, beds: 0 }));
     return () => {
       live = false;
     };
@@ -37,13 +38,18 @@ export function AutoBed({ id, version, onRun }: { id: string; version: string; o
   const chosen = v?.songs.filter((s) => picked?.has(s.id)) ?? [];
   const total = chosen.reduce((a, s) => a + s.duration_s, 0);
   const done = v?.songs.some((s) => s.in_bed);
+  const clear = async () => {
+    if (!(await confirmDialog({ message: t("这一集的 {n} 段铺底都会去掉，片头、片尾、间奏和间隙不受影响。", { n: v?.beds ?? 0 }), danger: true, confirmLabel: t("取消所有铺底") })))
+      return;
+    onRun(autobedApi.clear(id));
+  };
 
   if (!open)
     return (
       <div className="card banner-card autobed-banner">
         <span className="grow small">{t("给片头、片尾、间隙之外说话的地方随机铺上背景音乐。")}</span>
         <button type="button" className="btn btn-outline btn-small" data-testid="autobed-open" disabled={ro} onClick={() => setOpen(true)}
-          title={t("勾几首歌，随机铺进片头、片尾、间隙和间奏之外说话的地方。先给建议，试听后再采用。")}>
+          title={t("勾几首歌，每首只铺一次，随机放进片头、片尾、间隙和间奏之外说话的地方。")}>
           {t("自动铺底")}
         </button>
       </div>
@@ -64,7 +70,7 @@ export function AutoBed({ id, version, onRun }: { id: string; version: string; o
             {v.stretches
               ? t("还空着 {k} 段说话，共 {free}；勾了 {n} 首，共 {total}。", { k: v.stretches, free: fmt(v.free_s), n: chosen.length, total: fmt(total) })
               : t("说话的地方都已经有配乐了（短于 20 秒的空档不铺）。")}
-            {v.stretches > 0 && chosen.length > 0 && total < v.free_s && " " + t("歌不够长时会换个顺序再放一轮。")}
+            {v.stretches > 0 && chosen.length > 0 && total > v.free_s && " " + t("放不下的歌这次不铺。")}
           </p>
           {v.songs.length === 0 ? (
             <p className="small muted">{t("素材库里还没有这一集能用的音乐。")}</p>
@@ -83,10 +89,15 @@ export function AutoBed({ id, version, onRun }: { id: string; version: string; o
             </ul>
           )}
           <div className="row gap8 wrap">
-            <span className="small muted grow">{t("两首之间交叉淡化 2 秒；空档结束前 3 秒淡出。")}</span>
+            <span className="small muted grow">{t("每首只铺一次，随机放在空着的说话里，从句间停顿开始；连着的两首交叉淡化 2 秒。")}</span>
+            {v.beds > 0 && (
+              <button type="button" className="btn btn-outline btn-small" data-testid="autobed-clear" disabled={ro} onClick={() => void clear()}>
+                {t("取消所有铺底")}
+              </button>
+            )}
             <button type="button" className="btn btn-primary btn-small" data-testid="autobed-fill" disabled={ro || !chosen.length || !v.stretches}
               onClick={() => onRun(autobedApi.fill(id, chosen.map((s) => s.id)))}>
-              {done ? t("再随机一次") : t("随机铺满空档")}
+              {done ? t("换个随机位置") : t("铺上勾的 {n} 首", { n: chosen.length })}
             </button>
           </div>
         </>

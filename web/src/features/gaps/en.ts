@@ -19,10 +19,12 @@ export const en: Dict = {
   "间隙没改成": "The gap wasn't changed",
   "间隙里的音乐「{name}」也会一起拿掉。": "The music in this gap (“{name}”) goes too.",
   "这一集有 {n} 个间隙，{m} 个还没配乐。": "This episode has {n} gaps; {m} have no music yet.",
-  "这一集有 {n} 个间隙，都已经配好音乐。": "This episode has {n} gaps, all with music.",
   "给间隙自动配乐": "Fill gaps with music",
-  "从素材库里用途是「休息间隙」的音乐挑，每个间隙一首。先给建议，试听后再采用。":
-    "Picks music marked “Break” in the library, one piece per gap. You get a suggestion to listen to before it's applied.",
+  "先用你放进来的间奏，再从素材库里用途是「休息间隙」的音乐挑，按从左到右填进空着的间隙。先给建议，试听后再采用。":
+    "Uses the interludes you placed first, then music marked “Break” in the library, filling the empty gaps left to right. You get a suggestion to listen to before it's applied.",
+  "间隙（放进第 {n} 个间隙）": "Gap (into gap {n})",
+  "放进间隙": "Into a gap",
+  "在间隙里": "In a gap",
   "还有间隙没配乐": "Some gaps have no music",
   "这一集有 {n} 个间隙还没配乐，导出时会是静音。可以先到「配乐」点「给间隙自动配乐」。":
     "{n} gaps in this episode have no music and will be exported as silence. You can fill them first on Music with “Fill gaps with music”.",

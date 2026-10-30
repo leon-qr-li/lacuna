@@ -359,11 +359,13 @@ function Slide({ label, aria, value, raw, min, max, step, unit, neg, onDraft, on
   );
 }
 
-export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore, onSave, onRemove, onPreview }: {
+export function PlacementCard({ p, open, more, taken, gapOpen, previewing, onOpen, onMore, onSave, onRemove, onPreview, onGap }: {
   p: Placement;
   open: boolean;
   more: boolean; // 更多设置 shown (kept for the page)
   taken: Role[]; // uses of the other placements (one intro, one outro)
+  gapOpen: boolean; // a gap without music: 「放进间隙」 is offered
+  onGap: () => Promise<boolean>;
   previewing: boolean;
   onOpen: () => void;
   onMore: (v: boolean) => void;
@@ -429,10 +431,11 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
       {!p.missing && (
         <select
           className={`chip-select role-select role-${p.role}`}
-          value={p.role}
+          value={p.in_gap ? "gap" : p.role}
           aria-label={t("改类型")}
           title={t("改类型：歌、裁剪和音量都保留")}
           onChange={(e) => {
+            if (e.target.value === "gap") return void onGap();
             const role = e.target.value as Role;
             void onSave({ role }, t("已改成{role}", { role: ROLE_NAME[role] }));
           }}
@@ -442,6 +445,11 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
               {r !== p.role && (r === "intro" || r === "outro") && taken.includes(r) ? t("{role}（替换现在的）", { role: ROLE_NAME[r] }) : ROLE_NAME[r]}
             </option>
           ))}
+          {(p.in_gap || gapOpen) && (
+            <option value="gap" disabled={!!p.in_gap}>
+              {p.in_gap ? t("在间隙里") : t("放进间隙")}
+            </option>
+          )}
         </select>
       )}
       <button type="button" className="btn btn-small btn-outline" onClick={onRemove}>

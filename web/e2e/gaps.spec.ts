@@ -109,10 +109,33 @@ test("gaps: 配乐 fills the empty ones with a 休息间隙 piece, heard before 
   await expect(draft).toBeVisible();
   await expect(draft.getByTestId("draft-change")).toContainText("的间隙（8 秒）");
   await draft.getByRole("button", { name: "采用" }).click();
-  await expect(banner).toContainText("都已经配好音乐");
+  await expect(banner).toHaveCount(0); // every gap has music: no banner
   await expect(page.getByTestId("gap-fill")).toHaveCount(0);
   await expect(page.getByTestId("mstrip-gap")).toHaveCount(0);
   const g = (await gapsOf(page.request))[0];
   expect(g.filled_by).toBeTruthy();
   await expect(page.getByTestId("placement-plan").first()).toContainText("间隙里");
+});
+
+test("gaps: 放到 → 间隙 puts a song into the first empty gap, and the button shows its use", async ({ page }) => {
+  const r = await page.request.post(`/api/library/upload?${new URLSearchParams({ name: "odyssey_theme.mp3", kind: "other", note: "" })}`, {
+    headers: { "Content-Type": "application/octet-stream" },
+    data: readFileSync(join(INBOX, "odyssey_theme.mp3")),
+  });
+  const j = await r.json();
+  if (!j.duplicate) added.push(j.asset.id);
+  await page.request.post(`/api/episodes/${EP}/gaps`, { data: { voice_s: 30, len_s: 8, snap: false } });
+  await page.request.post(`/api/episodes/${EP}/gaps`, { data: { voice_s: 10, len_s: 8, snap: false } });
+  await page.goto(`/#/ep/${EP}/music`);
+  const row = page.getByTestId("music-asset").filter({ hasText: "Odyssey" }).first();
+  await row.locator(".mlib-put").click();
+  await row.getByTestId("mlib-gap").click();
+  await expect(row.locator(".mlib-put")).toContainText("在间隙里");
+  const gaps = await gapsOf(page.request);
+  expect(gaps[0].voice_s).toBeCloseTo(10, 1); // left to right: the first gap
+  expect(gaps[0].filled_by).toBeTruthy();
+  expect(gaps[1].filled_by).toBeNull();
+  await expect(page.getByTestId("gap-banner")).toContainText("1 个还没配乐");
+  const m = await (await page.request.get(`/api/episodes/${EP}/music`)).json();
+  for (const p of m.placements) if (p.asset_id === j.asset.id) await page.request.delete(`/api/episodes/${EP}/music/${p.id}`);
 });
