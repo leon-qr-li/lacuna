@@ -773,3 +773,14 @@ def test_http3_off_turns_only_that_switch_off(capsys):
     assert cf.http3(True) == "off"                                # already off: no PATCH
     assert ("PATCH", "/zones/z1/settings/http3") not in calls
     assert "HTTP/3" in capsys.readouterr().out
+
+
+def test_ci_perf_prints_slow_routes_and_lock_holders():
+    ci = _ci()
+    text = ci.perf_text({"up_s": 600, "load1": 1.2, "threads_busy": 3, "in_flight": {},
+                         "slow": [{"at": 0, "route": "POST /api/episodes/{ep}/manual/cut", "status": 200, "ttfb": 12.3,
+                                   "lock_wait": 11.9, "holders": ["GET /api/episodes/{ep}/audio/{v}.wav"],
+                                   "threads_busy_at_start": 40, "load1": 3.9, "in_flight": {}}],
+                         "holds": [{"at": 0, "s": 2.1, "by": "GET /api/episodes/{ep}/audio/{v}.wav"}], "lags": []})
+    assert "12.30   11.90  POST /api/episodes/{ep}/manual/cut" in text
+    assert "held by ['GET /api/episodes/{ep}/audio/{v}.wav']" in text

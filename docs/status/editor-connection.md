@@ -16,3 +16,13 @@ Leon's seven reports of 2026-10-30, and where each went:
 Tests: `web/e2e/network_retry.spec.ts`, `web/e2e/editor_network.spec.ts`, `tests/test_provision.py`.
 Next: after merge run Provision `http3-off` (needs the Cloudflare token to have Zone Settings edit; if refused,
 Leon turns it off in the dashboard: Speed → Optimization → Protocol Optimization → HTTP/3).
+
+## Round 2 (Leon 2026-10-30 20:38Z): still waits 10+ s sometimes after HTTP/3 was turned off
+- Leon turned HTTP/3 off himself. The page now recovers by itself and refreshes are fast, but 删除这段 still
+  sometimes waits 10+ s, and waveform tiles come late while playing.
+- Same request on a 51-min test episode: 0.05 s, also with a full audio stream and tile requests running alongside
+  (scratch load test). So something on the real server holds it up. Measuring it there: `lacuna_app/perf.py`
+  (slow requests with masked routes, waits for an episode's lock and who held it, busy worker threads, event-loop
+  stalls; in memory only), `GET /api/health/perf`, workflow **Perf** (`deploy/ci.py perf`) prints it.
+- Waveform: the next page of tiles is fetched ahead, so playback turning the page finds them there.
+- Next: Leon reproduces a few times, run **Perf**, fix the cause it shows.

@@ -1,0 +1,22 @@
+name: Perf
+
+# Run by hand: what was slow on https://lacunastudio.app lately (lacuna_app/perf.py, kept in the server's memory
+# since its last start): slow requests by route, waits for an episode's lock and who held it, event-loop
+# stalls. Routes are masked (no episode names or ids); the log is public like every workflow log here.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CF_DEPLOY_CLIENT_ID: ${{ secrets.CF_DEPLOY_CLIENT_ID }}
+      CF_DEPLOY_CLIENT_SECRET: ${{ secrets.CF_DEPLOY_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: What was slow
+        run: python3 deploy/ci.py perf

@@ -39,7 +39,7 @@ from lacuna_core.preview import SharedBudget
 from lacuna_core.refine import snap_cut
 
 from .words import join_words
-from . import analysis, cold, declip, room_tone, show
+from . import analysis, cold, declip, perf, room_tone, show
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
@@ -196,7 +196,7 @@ class Episode:
     def __init__(self, ws: Workspace, episode_id: str):
         self.id = episode_id
         self.dir = ws.episode_dir(episode_id)
-        self.lock = threading.RLock()
+        self.lock = perf.TimedRLock()       # an RLock that notes long waits and holds (perf.py)
         self.meta = read_json(self.dir / META_FILE)
         st = read_json(self.dir / STATE_FILE)
         if st.get("schema") != STATE_SCHEMA:
