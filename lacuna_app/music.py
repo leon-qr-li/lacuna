@@ -771,6 +771,8 @@ class EpisodeMusic:
             fi = it.ramp or int(0.5 * sr)
         elif it.bg and it.bg[0][0] == it.start:              # starts under the talk
             fi = int(1.5 * sr)
+        elif p.get("source") == "autobed":                   # 自动铺底: songs crossfade into each other (autobed.py)
+            fi = int(2.0 * sr)
         else:
             fi = int(0.5 * sr) if p["src_in_s"] > 0.05 else 0
         if fi + fo > n:

@@ -18,5 +18,7 @@ details in decision `2026-10-30-edit-gaps` at 21:15Z. He needs it on an episode 
 ## Same PR: 铺底 a little lower (Leon 2026-10-30 21:36Z)
 - A new bed's background default is 25 dB under full level (`music.BED_BG_DB`), was 22 dB (`BG_DB`, still used by
   intro / interlude / outro background). Placed beds keep their stored `bg_db`.
-- Next (asked 21:39Z, own PR): level the music under the talk so a sudden loud passage of a bed is turned down too.
-- Next (design asked 21:35Z): 自动铺底 from songs Leon picks, into the stretches not taken by 片头 / 片尾 / 间隙.
+- 均衡铺底 (asked 21:39Z, same PR): decision `2026-10-30-even-background`; beds and other background stretches
+  are evened out, sudden loud passages turned down (`levels.music_even`).
+- 自动铺底 (Leon picked direction A at 21:48Z, same PR): decision `2026-10-30-auto-bed`; `lacuna_app/autobed.py`,
+  `web/src/features/autobed/`, tests `tests/app/test_autobed.py`, `web/e2e/autobed.spec.ts`.

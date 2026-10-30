@@ -788,4 +788,9 @@ EN: dict[str, str | tuple[str, str]] = {
         "No music in the library is marked as a break yet. Upload some, or mark a piece with that use in the library.",
     "{at} 的间隙（{s} 秒）：{credit}": "Gap at {at} ({s} s): {credit}",
     "给 {n} 个间隙配好了音乐，先试听，满意再点「采用」。": "Music picked for {n} gaps. Listen first, then click “Accept” if you like it.",
+    "{a}–{b} 铺底：{songs}": "{a}–{b} background: {songs}",
+    "用 {n} 首歌随机铺满了 {k} 个空档，先试听，满意再点「采用」；不满意可以再随机一次。":
+        "Filled {k} free stretches with {n} songs in random order. Listen first, then click “Accept”; or shuffle again.",
+    "先勾几首要铺的歌。": "Tick a few songs to use first.",
+    "没有空档可铺：说话的地方都已经有配乐了。": "Nothing to fill: all the talk already has music.",
 }

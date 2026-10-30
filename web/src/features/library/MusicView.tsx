@@ -14,6 +14,7 @@ import { SpeedButton } from "../review-speed/SpeedButton";
 import { useRate } from "../review-speed/speed";
 import { GapBanner, StripGaps } from "../gaps/Gaps";
 import { gapsApi } from "../gaps/api";
+import { AutoBed } from "../autobed/AutoBed";
 
 const SKIP_S = 5;
 const shortLabel = (t: string, max = 44) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
@@ -430,6 +431,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             </div>
           )}
           <GapBanner list={m.gaps} onFill={() => void run(gapsApi.fill(id))} />
+          <AutoBed id={id} version={`${m.mix_version}:${m.draft?.id ?? ""}:${m.placements.length}`} onRun={(p) => void run(p)} />
           {msg && <p className="small note-line" data-testid="music-msg">{msg}</p>}
           {m.draft && (
             <DraftCard
