@@ -749,3 +749,27 @@ def test_open_door_without_the_turnstile_permission_stops_before_the_server(api)
         run("recreate", door="open")
     assert a.droplets[0]["id"] == first
     assert [p["decision"] for p in _main_policies(a)] == ["allow", "non_identity"]
+
+
+def test_http3_off_turns_only_that_switch_off(capsys):
+    calls = []
+    state = {"value": "on"}
+
+    def cfh(method, path, body):
+        calls.append((method, path.split("?")[0]))
+        if path.startswith("/zones?name="):
+            return 200, {"success": True, "result": [{"id": "z1", "account": {"id": "a1"}}]}
+        if path == "/zones/z1/settings/http3":
+            if method == "PATCH":
+                assert body == {"value": "off"}
+                state["value"] = "off"
+            return 200, {"success": True, "result": {"id": "http3", "value": state["value"]}}
+        raise AssertionError(f"{method} {path}")
+
+    cf = provision.Cloudflare(FakeHttp(cfh))
+    assert cf.http3(False) == "on" and state["value"] == "on"     # check: changes nothing
+    assert cf.http3(True) == "off"
+    calls.clear()
+    assert cf.http3(True) == "off"                                # already off: no PATCH
+    assert ("PATCH", "/zones/z1/settings/http3") not in calls
+    assert "HTTP/3" in capsys.readouterr().out

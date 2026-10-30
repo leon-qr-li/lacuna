@@ -10,6 +10,7 @@ import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
 import { EditLanes } from "./features/manual/EditLanes";
 import { TranscriptEdit } from "./features/manual/TranscriptEdit";
+import { usePositions } from "./features/positions/usePositions";
 import { useManual } from "./features/manual/useManual";
 import { navLinks, pages, tabs as allTabs } from "./features/registry";
 import { useShow } from "./features/show/api";
@@ -148,9 +149,10 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
     };
   }, [id, attempt]);
 
+  const positions = usePositions(id, mode, player); // each page's own place, kept across refreshes (features/positions)
   // new edit version -> swap the stream, keeping the (server-mapped) position
   useEffect(() => {
-    if (ep) player.load(ep.audio_url, ep.playhead ?? player.time);
+    if (ep) player.load(ep.audio_url, ep.playhead ?? positions.resume() ?? player.time);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ep?.audio_url, ep?.playhead]);
 
@@ -175,6 +177,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           return false;
         }
         flash(t("操作失败：{message}", { message: (e as Error).message }));
+        // the answer may be what was lost, not the change (Leon 2026-10-30: 删除这段 hung, and after a refresh
+        // the word was gone): show what the server has now
+        api.episode(id).then(setEp, () => undefined);
         return false;
       }
     },

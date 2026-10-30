@@ -4,6 +4,8 @@ import { ep, req } from "../../api";
 
 export const TILE_S = 10; // seconds per waveform tile (manual.TILE_S)
 export const TEXT_S = 30; // seconds per transcript request
+/** the server answers these at once; past this the connection went quiet (the lanes ask again, a cut reloads the episode) */
+export const WAIT_MS = 20_000;
 
 export interface WaveTile {
   tile: number;
@@ -23,10 +25,12 @@ export interface Line {
 
 export const manualApi = {
   wave: (id: string, version: string, tile: number) =>
-    req<WaveTile>("GET", `${ep(id)}/manual/wave?tile=${tile}&v=${encodeURIComponent(version)}`),
+    req<WaveTile>("GET", `${ep(id)}/manual/wave?tile=${tile}&v=${encodeURIComponent(version)}`, undefined, { timeout: WAIT_MS }),
   transcript: (id: string, version: string, t0: number, t1: number) =>
-    req<{ lines: Line[] }>("GET", `${ep(id)}/manual/transcript?t0=${t0}&t1=${t1}&v=${encodeURIComponent(version)}`),
+    req<{ lines: Line[] }>("GET", `${ep(id)}/manual/transcript?t0=${t0}&t1=${t1}&v=${encodeURIComponent(version)}`, undefined, {
+      timeout: WAIT_MS,
+    }),
   /** track = null: remove from every track (the timeline closes up); a name: silence only that host */
   cut: (id: string, start: number, end: number, track: string | null, playhead: number) =>
-    req<Episode & { edit_id: string }>("POST", `${ep(id)}/manual/cut`, { start, end, track, playhead }),
+    req<Episode & { edit_id: string }>("POST", `${ep(id)}/manual/cut`, { start, end, track, playhead }, { timeout: WAIT_MS }),
 };

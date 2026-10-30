@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: plan | apply | recreate | close-version-door (only remove the old public /api/version address) | deploy-token (the deploy check's Access token, sealed for GitHub secrets) | mail-plan / mail-domain (email sending domain in Resend)
+        description: plan | apply | recreate | close-version-door (only remove the old public /api/version address) | deploy-token (the deploy check's Access token, sealed for GitHub secrets) | mail-plan / mail-domain (email sending domain in Resend) | http3-check / http3-off (the site's HTTP/3 switch)
         required: true
         default: plan
         type: choice
-        options: [plan, apply, recreate, close-version-door, deploy-token, mail-plan, mail-domain]
+        options: [plan, apply, recreate, close-version-door, deploy-token, mail-plan, mail-domain, http3-check, http3-off]
       secrets_key:
         description: deploy-token only - the repo's Actions public key (gh api repos/OWNER/REPO/actions/secrets/public-key → key)
         required: false
