@@ -393,3 +393,91 @@ def music_level_db(lib, asset: dict, p: dict, voice_lufs: float, level_lu: float
     if lufs is None:
         return 0.0
     return round(min(max(voice_lufs + level_lu - lufs, -40.0), 30.0), 2)
+
+
+# ---------------------------------------------------------------------------- music evened out under the talk
+# Leon 2026-10-30: a background song that suddenly gets loud (or drops away) should be evened out too, so the
+# talk always sits on the same carpet. Only the background stretches are touched (docs/decisions/2026-10-30-even-background.md).
+EVEN_HOP_S = 0.25        # analysis step
+EVEN_DEAD_DB = 2.0       # deviations up to this from the song's own level are left as they are
+EVEN_MAX_CUT_DB = 12.0   # a loud passage comes down by at most this much ...
+EVEN_MAX_BOOST_DB = 4.0  # ... a quiet one goes up by at most this much (silence never: see EVEN_FLOOR_DB)
+EVEN_FLOOR_DB = 20.0     # stretches this far under the song's level are pauses in the music, not quiet passages
+EVEN_STEP_DB = 1.0       # gains are rounded to this, so a song gives a few hundred changes, not thousands
+_even_cache: OrderedDict[tuple, list] = OrderedDict()
+
+
+def _hop_energy(x: np.ndarray, hop: int) -> np.ndarray:
+    n = len(x) // hop
+    return np.mean(np.square(x[: n * hop].reshape(n, hop).astype(np.float64)), axis=1)
+
+
+def even_gains(x: np.ndarray, sr: int) -> list[tuple[float, float, float]]:
+    """(start_s, end_s, gain_db) stretches of mono audio `x` whose level should change so it stays near its own
+    overall level: loud bits (1 s level, looking 0.5 s ahead) come down, long quiet bits (3 s) come up a little."""
+    return even_from_energy(_hop_energy(x, int(EVEN_HOP_S * sr)))
+
+
+def even_from_energy(e: np.ndarray) -> list[tuple[float, float, float]]:
+    """`even_gains` from the mean square of each EVEN_HOP_S step."""
+    n = len(e)
+    if n < 8:
+        return []
+    e = e + 1e-12
+    def level(win: int) -> np.ndarray:      # mean level over `win` steps around each step (edges held)
+        p = np.pad(e, (win // 2, win - 1 - win // 2), mode="edge")
+        return 10 * np.log10(np.convolve(p, np.ones(win) / win, mode="valid"))
+    l1, l3 = level(4), level(12)
+    # the song's own level: the median 3 s level of where it plays (a loud burst or a pause doesn't move it)
+    top = np.max(l3)
+    ref = float(np.median(l3[l3 > top - 2 * EVEN_FLOOR_DB]))
+    g = np.zeros(n)
+    over = l1 - ref
+    cut = over > EVEN_DEAD_DB
+    g[cut] = -np.minimum(over[cut] - EVEN_DEAD_DB, EVEN_MAX_CUT_DB)
+    under = ref - l3
+    boost = (~cut) & (under > EVEN_DEAD_DB) & (l3 > ref - EVEN_FLOOR_DB)
+    g[boost] = np.minimum(under[boost] - EVEN_DEAD_DB, EVEN_MAX_BOOST_DB)
+    # a cut starts half a second early and ends half a second late, so the loud bit never gets through first
+    pad = np.pad(g, 2, mode="edge")
+    g = np.where(g <= 0, np.min(np.lib.stride_tricks.sliding_window_view(pad, 5), axis=1), g)
+    q = np.round(g / EVEN_STEP_DB) * EVEN_STEP_DB
+    out: list[tuple[float, float, float]] = []
+    i = 0
+    while i < n:
+        j = i
+        while j + 1 < n and q[j + 1] == q[i]:
+            j += 1
+        if q[i] != 0:
+            out.append((round(i * EVEN_HOP_S, 3), round((j + 1) * EVEN_HOP_S, 3), float(q[i])))
+        i = j + 1
+    return out
+
+
+def music_even(lib, asset: dict, src_in_s: float, src_out_s: float) -> list[tuple[float, float, float]]:
+    """`even_gains` of the part of a song that plays, in seconds of the file (cached like `music_lufs`)."""
+    from .library import ANALYSIS_SR
+    a_s, b_s = max(0.0, float(src_in_s)), float(src_out_s)
+    key = (asset.get("id"), asset.get("sha256"), round(a_s, 2), round(b_s, 2))
+    with _lock:
+        if key in _even_cache:
+            _even_cache.move_to_end(key)
+            return _even_cache[key]
+    try:
+        m = lib.media(asset, ANALYSIS_SR, "m")
+        a, b = int(a_s * m.sample_rate), min(int(b_s * m.sample_rate), m.frames)
+        hop = int(EVEN_HOP_S * m.sample_rate)
+        step = hop * 40                                    # 10 s at a time: an hour-long song stays small
+        parts = []
+        with SourcePool({m.media_id: m}) as pool:
+            for s0 in range(a, b - hop + 1, step):
+                parts.append(_hop_energy(pool.read(m.media_id, s0, min(s0 + step, b)), hop))
+        e = np.concatenate(parts) if parts else np.zeros(0)
+        out = [(s + a_s, t + a_s, g) for s, t, g in even_from_energy(e)]
+    except Exception:      # noqa: BLE001 - a song we cannot read simply plays as it is
+        out = []
+    with _lock:
+        _even_cache[key] = out
+        while len(_even_cache) > 64:
+            _even_cache.popitem(last=False)
+    return out

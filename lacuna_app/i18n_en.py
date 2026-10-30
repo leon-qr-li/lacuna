@@ -779,4 +779,18 @@ EN: dict[str, str | tuple[str, str]] = {
     "用手机验证器 App 扫码，开好两步验证": "Scan the code with your authenticator app to turn on two-step sign-in",
     "邀请链接 7 天内有效，只能用一次。": "The invite link works for 7 days, once.",
     "只有站长能恢复管理员的账号": "Only the owner can bring back an admin's account",
+    # 间隙 (gaps.py, routes/gaps.py, music_assist.fill_gaps)
+    "这里已经有一个间隙了": "There's already a gap here",
+    "这一集还没有间隙。在整集试听的时间线上右键，或在逐字稿两句之间点「＋」加一个。":
+        "This episode has no gaps yet. Right-click the timeline in Full listen, or click “＋” between two sentences of the transcript.",
+    "每个间隙都已经有音乐了。": "Every gap already has music.",
+    "素材库里还没有标成「休息间隙」的音乐。先在素材库上传或给音乐标上这个用途。":
+        "No music in the library is marked as a break yet. Upload some, or mark a piece with that use in the library.",
+    "{at} 的间隙（{s} 秒）：{credit}": "Gap at {at} ({s} s): {credit}",
+    "给 {n} 个间隙配好了音乐，先试听，满意再点「采用」。": "Music picked for {n} gaps. Listen first, then click “Accept” if you like it.",
+    "{a}–{b} 铺底：{songs}": "{a}–{b} background: {songs}",
+    "用 {n} 首歌随机铺满了 {k} 个空档，先试听，满意再点「采用」；不满意可以再随机一次。":
+        "Filled {k} free stretches with {n} songs in random order. Listen first, then click “Accept”; or shuffle again.",
+    "先勾几首要铺的歌。": "Tick a few songs to use first.",
+    "没有空档可铺：说话的地方都已经有配乐了。": "Nothing to fill: all the talk already has music.",
 }

@@ -8,6 +8,7 @@ import { useCloud } from "../features/auth/cloud";
 import { askAfterExport } from "../features/feedback/Prompts";
 import { TellUs } from "../features/feedback/parts";
 import { useListenOnly } from "../features/listen-only/state";
+import { confirmEmptyGaps } from "../features/gaps/useGaps";
 
 const num = (v: number | null | undefined, unit: string) => (v == null ? "—" : `${v.toFixed(1)} ${unit}`);
 
@@ -45,6 +46,7 @@ export function ExportPanel({ id, version, pending = 0, summary }: { id: string;
   const start = async () => {
     setErr(null);
     const formats = [...(mp3 ? ["mp3"] : []), ...(wav ? ["wav"] : [])];
+    if (!(await confirmEmptyGaps(id))) return;
     try {
       const r = await api.startExport(id, formats);
       setJob(r.job);

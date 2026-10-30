@@ -117,7 +117,12 @@ def _ramp(t: np.ndarray, r: tuple[int, int, str], rising: bool) -> np.ndarray:
 
 def _duck_db(track: Track, t: np.ndarray) -> np.ndarray:
     db = np.full(len(t), track.gain_db, dtype=np.float64)
+    if not len(t):
+        return db
+    lo, hi = t[0], t[-1]
     for d in track.ducks:
+        if d.end + d.ramp <= lo or d.start - d.ramp > hi:   # not in this block (evened-out music has hundreds)
+            continue
         if d.ramp:
             w = np.clip(np.minimum(t - (d.start - d.ramp), (d.end + d.ramp) - t) / d.ramp, 0, 1)
         else:

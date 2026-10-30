@@ -1,4 +1,5 @@
 // API of this feature (moved out of src/api.ts so features don't all edit one file)
+import type { Gap } from "../gaps/api";
 import type { Usage } from "../../api";
 import { ep, failure, req } from "../../api";
 import { PIECES_ABOVE, sendPieces } from "../upload-parts/pieces";
@@ -87,6 +88,8 @@ export interface Placement {
   bg_db?: number | null; // background = this much under full level
   pre_s?: number | null; // interlude: plays under the talk before the gap
   bye_s?: number | null; // outro: second of the song where the voice ends
+  in_gap?: boolean; // an interlude filling a gap (features/gaps): plays inside it
+  gap_id?: string;
   fade_out_s?: number | null; // null = automatic
   lead_s?: number | null;
   auto?: boolean | null; // bed: the App puts it into the free stretches
@@ -136,6 +139,8 @@ export interface MusicView {
   roles: Record<Role, string>;
   draft: MusicDraft | null;
   inserts: [number, number][]; // time added to the conversation: (voice seconds, seconds)
+  /** 间隙 opened while editing (features/gaps) */
+  gaps?: Gap[];
   export_key: string;
   message?: string; // reply to "按用途自动放好" / the chat
 }

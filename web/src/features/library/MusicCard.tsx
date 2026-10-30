@@ -24,6 +24,8 @@ export const ROLE_HELP: Record<Role, string> = {
   clip: t("插入一段台词，前后各留一点空"),
 };
 const BG_DEFAULT = 22; // dB, new placements (lacuna_app/music.py BG_DB)
+const BED_BG_DEFAULT = 25; // dB, a new bed (music.py BED_BG_DB)
+const bgDefault = (r: Role) => (r === "bed" ? BED_BG_DEFAULT : BG_DEFAULT);
 const RAMP_DEFAULT = 2; // s (music.py RAMP_S)
 
 type Tune = "src_in_s" | "src_out_s" | "gain_db" | "solo_s" | "ramp_s" | "ramp_out_s" | "bg_db" | "pre_s" | "bye_s" | "fade_out_s";
@@ -70,7 +72,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), h
 export function describe(p: Placement): string {
   const whole = p.asset_duration_s != null && p.src_out_s >= p.asset_duration_s - 0.05 && p.src_in_s < 0.05;
   const len = whole ? t("整首 {p0}", { p0: fmt(p.src_out_s - p.src_in_s) }) : t("歌的 {p0}–{p1}", { p0: fmt(p.src_in_s), p1: fmt(p.src_out_s) });
-  const bg = p.bg_db ?? BG_DEFAULT;
+  const bg = p.bg_db ?? bgDefault(p.role);
   switch (p.role) {
     case "intro":
       return t("{len}：前 {solo} 秒只有音乐，再用 {ramp} 秒压低 {bg} dB，人声进来，歌在背景里放完", {
@@ -121,7 +123,7 @@ export function shape(p: Placement): Shape | null {
   const piece = p.end_s != null && p.start_s != null ? p.end_s - p.start_s : p.src_out_s - p.src_in_s;
   const span = Math.max(piece, 1);
   const hi = p.gain_db ?? 0;
-  const bg = p.bg_db ?? BG_DEFAULT;
+  const bg = p.bg_db ?? bgDefault(p.role);
   const lo = hi - bg;
   const ramp = p.ramp_s ?? RAMP_DEFAULT;
   const fo = fadeOut(p);
@@ -411,8 +413,9 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
   };
   const setOne = (k: Tune) => (v: number) => void onSave({ [k]: v } as PlacementPatch);
   const draft = (k: Tune) => (v: string) => setD((x) => ({ ...x, [k]: v }));
-  const soloField = FIELDS[p.role].find((f) => f.k === "solo_s");
-  const hasBg = FIELDS[p.role].some((f) => f.k === "bg_db");
+  // in a gap (features/gaps) the music plays inside the gap's length: no full-level time or background to set
+  const soloField = p.in_gap ? undefined : FIELDS[p.role].find((f) => f.k === "solo_s");
+  const hasBg = !p.in_gap && FIELDS[p.role].some((f) => f.k === "bg_db");
   const rest = fields.filter((f) => !SLID.includes(f.k));
   const anchored = ANCHORED.includes(p.role) && (p.at_s != null || p.role === "bed") && !p.missing;
 
@@ -468,7 +471,7 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
       </div>
       {!p.missing && p.start_s != null && (
         <p className="small muted music-plan" data-testid="placement-plan">
-          {describe(p)}
+          {p.in_gap ? t("放在 {s} 秒的间隙里：在间隙里淡入淡出，间隙长度不变。", { s: p.inserted_s ?? 0 }) : describe(p)}
         </p>
       )}
       {p.no_room && (
@@ -478,7 +481,7 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
       )}
       {open && !p.missing && (
         <>
-          {p.role === "clip" ? (
+          {p.in_gap ? null : p.role === "clip" ? (
             <p className="small muted">{t("台词插入对话里，前后各留 {n} 秒空。", { n: p.lead_s ?? 0.5 })}</p>
           ) : (
             <Curve p={p} onCommit={(patch) => void onSave(patch, t("已保存"))} />
@@ -501,7 +504,7 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
               <Slide
                 label={t("说话时压低")}
                 aria={t("背景压低（dB）")}
-                value={num("bg_db", BG_DEFAULT)}
+                value={num("bg_db", bgDefault(p.role))}
                 raw={d.bg_db}
                 min={0}
                 max={40}

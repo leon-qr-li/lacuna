@@ -1,0 +1,34 @@
+import type { Dict } from "../../i18n";
+
+export const en: Dict = {
+  "间隙 {s} 秒": "{s} s gap",
+  "待配乐": "No music yet",
+  "间隙长度": "Gap length",
+  "{s} 秒": "{s} s",
+  "其他": "Other",
+  "其他长度（秒）": "Other length (seconds)",
+  "音乐在间隙里淡入淡出，间隙长度不变。": "The music fades in and out inside the gap; the gap keeps its length.",
+  "整集试听勾「带配乐听」能听到间隙；到「配乐」可以给间隙自动配乐。": "Tick “Listen with music” to hear the gap; on Music you can fill gaps automatically.",
+  "删掉间隙": "Remove gap",
+  "在此处加入间隙": "Add a gap here",
+  "会放到最近的两句话之间": "It goes between the nearest two sentences",
+  "收起": "Close",
+  "改长度 / 删掉": "Length / remove",
+  "在这两句之间加入 {s} 秒间隙": "Add a {s} s gap between these sentences",
+  "在这里加入间隙": "Add a gap here",
+  "间隙没改成": "The gap wasn't changed",
+  "间隙里的音乐「{name}」也会一起拿掉。": "The music in this gap (“{name}”) goes too.",
+  "这一集有 {n} 个间隙，{m} 个还没配乐。": "This episode has {n} gaps; {m} have no music yet.",
+  "这一集有 {n} 个间隙，都已经配好音乐。": "This episode has {n} gaps, all with music.",
+  "给间隙自动配乐": "Fill gaps with music",
+  "从素材库里用途是「休息间隙」的音乐挑，每个间隙一首。先给建议，试听后再采用。":
+    "Picks music marked “Break” in the library, one piece per gap. You get a suggestion to listen to before it's applied.",
+  "还有间隙没配乐": "Some gaps have no music",
+  "这一集有 {n} 个间隙还没配乐，导出时会是静音。可以先到「配乐」点「给间隙自动配乐」。":
+    "{n} gaps in this episode have no music and will be exported as silence. You can fill them first on Music with “Fill gaps with music”.",
+  "按静音导出": "Export with silence",
+  "先不导出": "Not now",
+  "右键空白处，或按 G": "Right-click outside a selection, or press G",
+  "加入间隙（右键：在点的位置；G：在播放头）": "Add a gap (right-click: at that point; G: at the playhead)",
+  "放在 {s} 秒的间隙里：在间隙里淡入淡出，间隙长度不变。": "In a {s} s gap: fades in and out inside it; the gap keeps its length.",
+};
