@@ -352,6 +352,13 @@ EN: dict[str, str | tuple[str, str]] = {
     "还没接上 AI（没有 AI 密钥），没法查曲名。": "AI isn't connected (no AI key), so titles can't be looked up.",
     "LACUNA 没有给出曲名。": "LACUNA gave no title.",
     "，曲名没有变。": "; the title is unchanged.",
+    # 一键修复曲名 (credit_fix.py)
+    "查到一半被打断了（服务器重启过），再点一次就好。": "The lookup was interrupted (the server restarted). Click again to rerun it.",
+    "没有要修的曲名：这里的歌都已经确认过了。": "Nothing to fix: every track here is already confirmed.",
+    "LACUNA 正在查这一批，查完再点。": "LACUNA is still looking these up. Try again when it's done.",
+    "查好了 {n} 首，{hits} 首有结果。": "Looked up {n} tracks; found {hits}.",
+    "LACUNA 没有回答这一首。": "LACUNA gave no answer for this track.",
+    "LACUNA 还在查，查完再采用。": "LACUNA is still looking. Apply the results when it's done.",
     "文件是空的": "The file is empty",
     "文件太大": "The file is too large",
 

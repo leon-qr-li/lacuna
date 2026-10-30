@@ -9,6 +9,7 @@ import { BusyLabel, PageLoading } from "../loading/Loading";
 import { confirmDialog } from "../dialog/Dialog";
 import { inScope, ScopeActions, ScopeBadge, ScopeFilter, ScopeTarget } from "./Scope";
 import { useCloud } from "../auth/cloud";
+import { CreditFix } from "../credit-fix/CreditFix";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: t("已确认"),
@@ -328,6 +329,7 @@ export function LibraryView() {
     >
       <div className="row gap8 wrap">
         <h1 className="grow">{t("素材库")}</h1>
+        <CreditFix onApplied={(n) => (load(), setNote(n ? t("已更新 {n} 首的曲名和作者", { n }) : t("没有改动曲名")))} />
         {cloud === false && (
           <>
             <button

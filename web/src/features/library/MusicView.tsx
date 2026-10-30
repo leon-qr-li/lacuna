@@ -15,6 +15,7 @@ import { useRate } from "../review-speed/speed";
 import { GapBanner, StripGaps } from "../gaps/Gaps";
 import { gapsApi } from "../gaps/api";
 import { AutoBed } from "../autobed/AutoBed";
+import { CreditFix } from "../credit-fix/CreditFix";
 
 const SKIP_S = 5;
 const shortLabel = (t: string, max = 44) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
@@ -247,6 +248,11 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     if (albumName) setScope("album");
   }, [albumName]);
 
+  // 一键修复曲名: the list and the BGM credits show the new names
+  const fixed = (n: number) => {
+    load();
+    setMsg(n ? t("已更新 {n} 首的曲名和作者", { n }) : t("没有改动曲名"));
+  };
   const run = async (p: Promise<Music>, done?: string): Promise<boolean> => {
     try {
       const before = new Set(m?.placements.map((x) => x.id));
@@ -390,6 +396,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             onGap={(asset_id) => void run(gapsApi.place(id, { asset_id }), t("已放进间隙，可以点「试听这一处」"))}
             now={now}
             upload={upload}
+            fix={<CreditFix episode={id} small onApplied={fixed} testId="credit-fix-list" />}
             onPauseOthers={() => {
               onPauseMain();
               mixRef.current?.pause();
@@ -567,7 +574,10 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             </>
           )}
           <div className="card" data-tour="music-credits">
-            <h2>{t("BGM 署名（show notes 会用）")}</h2>
+            <div className="row gap8 wrap music-credits-head">
+              <h2 className="grow">{t("BGM 署名（show notes 会用）")}</h2>
+              <CreditFix episode={id} small onApplied={fixed} />
+            </div>
             {m.credits.length === 0 ? (
               <p className="muted small">{t("BGM：未设置")}</p>
             ) : (
