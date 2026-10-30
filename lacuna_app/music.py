@@ -65,6 +65,7 @@ ANCHORED = ("interlude", "clip", "bed")      # roles placed at a point of the co
 SOLO_S = {"intro": 10.0, "interlude": 15.0}  # intro: music alone before the voice; interlude: full level in the gap
 RAMP_S = 2.0                                 # rise / fall between full level and background
 BG_DB = 22.0                                 # background = this much under full level (new placements)
+BED_BG_DB = 25.0                             # a bed's default (Leon 2026-10-30: "铺底再低一点", was BG_DB)
 BG_DB_V1 = 20.0                              # what a schema-1 placement was heard with
 OUTRO_TAIL_S = 30.0                          # default: the voice ends this long before the outro ends
 FADE_OUT_S = {"outro": 10.0}                 # fade at a trimmed end (others: 3 s)
@@ -436,7 +437,7 @@ class EpisodeMusic:
         if r in ("intro", "interlude", "outro"):
             p["ramp_s"] = clamp("ramp_s", RAMP_S, 0.0, 10.0)
         if r != "clip":
-            p["bg_db"] = clamp("bg_db", BG_DB, 0.0, 40.0)
+            p["bg_db"] = clamp("bg_db", BED_BG_DB if r == "bed" else BG_DB, 0.0, 40.0)
             v = p.get("fade_out_s")
             p["fade_out_s"] = None if v in (None, "") else clamp("fade_out_s", 0.0, 0.0, 30.0)   # None: automatic
         if r in SOLO_S:
@@ -776,7 +777,7 @@ class EpisodeMusic:
         gain = self.level_db(p, a, voice_lufs) + p["gain_db"]
         ducks = []
         if r == "bed":                       # the whole bed is background: simply lower
-            gain -= _f(p, "bg_db", BG_DB)
+            gain -= _f(p, "bg_db", BED_BG_DB)
         elif r == "clip":                    # a film line never plays under speech, but just in case
             lo, hi = it.start, min(it.end, voice_tl.length)
             if hi > lo:
