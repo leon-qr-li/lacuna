@@ -411,8 +411,9 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
   };
   const setOne = (k: Tune) => (v: number) => void onSave({ [k]: v } as PlacementPatch);
   const draft = (k: Tune) => (v: string) => setD((x) => ({ ...x, [k]: v }));
-  const soloField = FIELDS[p.role].find((f) => f.k === "solo_s");
-  const hasBg = FIELDS[p.role].some((f) => f.k === "bg_db");
+  // in a gap (features/gaps) the music plays inside the gap's length: no full-level time or background to set
+  const soloField = p.in_gap ? undefined : FIELDS[p.role].find((f) => f.k === "solo_s");
+  const hasBg = !p.in_gap && FIELDS[p.role].some((f) => f.k === "bg_db");
   const rest = fields.filter((f) => !SLID.includes(f.k));
   const anchored = ANCHORED.includes(p.role) && (p.at_s != null || p.role === "bed") && !p.missing;
 
@@ -468,7 +469,7 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
       </div>
       {!p.missing && p.start_s != null && (
         <p className="small muted music-plan" data-testid="placement-plan">
-          {describe(p)}
+          {p.in_gap ? t("放在 {s} 秒的间隙里：在间隙里淡入淡出，间隙长度不变。", { s: p.inserted_s ?? 0 }) : describe(p)}
         </p>
       )}
       {p.no_room && (
@@ -478,7 +479,7 @@ export function PlacementCard({ p, open, more, taken, previewing, onOpen, onMore
       )}
       {open && !p.missing && (
         <>
-          {p.role === "clip" ? (
+          {p.in_gap ? null : p.role === "clip" ? (
             <p className="small muted">{t("台词插入对话里，前后各留 {n} 秒空。", { n: p.lead_s ?? 0.5 })}</p>
           ) : (
             <Curve p={p} onCommit={(patch) => void onSave(patch, t("已保存"))} />

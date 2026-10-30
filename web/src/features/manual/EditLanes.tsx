@@ -9,6 +9,9 @@ import { range, useChunks } from "./chunks";
 import { LaneMenu } from "./LaneMenu";
 import { MIN_SEL } from "./useManual";
 import type { Manual } from "./useManual";
+import { GapAddMenu, GapCard, GapMark } from "../gaps/Gaps";
+import { useGaps } from "../gaps/useGaps";
+import { useListenOnly } from "../listen-only/state";
 import "./manual.css";
 
 const ZOOM_KEY = "lacuna.manual.span";
@@ -104,6 +107,7 @@ function Help() {
     [t("Ctrl + 滚轮"), t("放大 / 缩小")],
     [t("拖刻度条，或按住空格拖"), t("左右移动时间线")],
     ["Ctrl + Z", t("撤销")],
+    [t("右键空白处，或按 G"), t("加入间隙（右键：在点的位置；G：在播放头）")],
   ];
   return (
     <span className="ml-help">
@@ -150,6 +154,12 @@ export function EditLanes({
 }) {
   const { sel, setSel } = m;
   const d = ep.duration;
+  const gaps = useGaps(ep.id, ep.version);
+  // 间隙 (docs/decisions/2026-10-30-edit-gaps.md): right-click away from the selection opens 「在此处加入间隙」;
+  // a gap's mark opens its card (length, 删掉)
+  const [gapMenu, setGapMenu] = useState<{ at: number; left: number; top: number } | null>(null);
+  const [gapPop, setGapPop] = useState<{ id: string; left: number; top: number } | null>(null);
+  const gapBox = useRef<HTMLDivElement | null>(null);
   // The window stays where it is: a click only moves the playhead (Leon 2026-10-20, "我不要居中"). It moves when
   // the user pans (drag the ruler, Space + drag or middle-drag on a lane, the wheel), zooms (Ctrl + wheel, around
   // the pointer), when playback runs off the right edge (it turns a page), or when a jump lands outside it.
@@ -371,13 +381,53 @@ export function EditLanes({
       setMenuOpen(true);
     }
   };
-  /** right-click on the tracks: the selection's menu when the pointer is on the selection */
+  /** right-click on the tracks: the selection's menu when the pointer is on the selection, else 「在此处加入间隙」 */
   const context = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     const r = e.currentTarget.getBoundingClientRect();
     const s = at(e.clientX, r);
-    if (sel?.from === "lanes" && s >= sel.a - 0.05 && s <= sel.b + 0.05) setMenuOpen(true);
+    if (sel?.from === "lanes" && s >= sel.a - 0.05 && s <= sel.b + 0.05) return setMenuOpen(true);
+    if (!card.current) return;
+    const c = card.current.getBoundingClientRect();
+    setGapPop(null);
+    setGapMenu({ at: s, left: Math.max(8, Math.min(c.width - 256, e.clientX - c.left)), top: e.clientY - c.top + 4 });
   };
+  const openGap = (g: { id: string }, el: HTMLElement) => {
+    if (!card.current) return;
+    const c = card.current.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    setGapMenu(null);
+    setGapPop((p) => (p?.id === g.id ? null : { id: g.id, left: Math.max(8, Math.min(c.width - 272, r.left - c.left - 132)), top: r.bottom - c.top + 6 }));
+  };
+  // a click elsewhere or Esc closes the gap menu / card; G adds a gap at the playhead
+  useEffect(() => {
+    if (!gapMenu && !gapPop) return;
+    const away = (e: PointerEvent) => !gapBox.current?.contains(e.target as Node) && (setGapMenu(null), setGapPop(null));
+    const key = (e: KeyboardEvent) => e.key === "Escape" && (setGapMenu(null), setGapPop(null));
+    window.addEventListener("pointerdown", away);
+    window.addEventListener("keydown", key);
+    return () => {
+      window.removeEventListener("pointerdown", away);
+      window.removeEventListener("keydown", key);
+    };
+  }, [gapMenu, gapPop]);
+  const timeRef = useRef(time);
+  timeRef.current = time;
+  const addGap = useRef(gaps.add);
+  addGap.current = gaps.add;
+  const ro = useRef(false);
+  ro.current = useListenOnly();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag) || (e.target as HTMLElement).isContentEditable) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || e.key.toLowerCase() !== "g" || e.repeat || ro.current) return;
+      e.preventDefault();
+      void addGap.current(timeRef.current);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const lanesSel = sel?.from === "lanes" ? sel : null;
   useEffect(() => {
@@ -494,10 +544,25 @@ export function EditLanes({
                 data-b={sel.b.toFixed(2)}
               />
             )}
+            {gaps.gaps
+              .filter((g) => g.voice_s >= t0 && g.voice_s <= t1)
+              .map((g) => (
+                <GapMark key={g.id} g={g} left={x(g.voice_s)} label={i === 0} onOpen={openGap} />
+              ))}
             {time >= t0 && time <= t1 && <div className="ml-head-line" style={{ left: x(time) }} />}
           </div>
         </div>
       ))}
+      {gapMenu && <GapAddMenu ref={gapBox} left={gapMenu.left} top={gapMenu.top} gaps={gaps} at={gapMenu.at} onClose={() => setGapMenu(null)} />}
+      {gapPop &&
+        (() => {
+          const g = gaps.gaps.find((x) => x.id === gapPop.id);
+          return g ? (
+            <div ref={gapBox} className="gap-pop" style={{ left: gapPop.left, top: gapPop.top }} onPointerDown={(e) => e.stopPropagation()}>
+              <GapCard g={g} gaps={gaps} onDone={() => setGapPop(null)} />
+            </div>
+          ) : null;
+        })()}
       {menuOpen && lanesSel && <LaneMenu ref={menu} ep={ep} m={m} left={menuAt?.left ?? 0} top={menuAt?.top ?? 0} hidden={!menuAt} />}
       {bottom}
       {pop && popover && (() => {

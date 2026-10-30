@@ -12,6 +12,8 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { SpeedButton } from "../review-speed/SpeedButton";
 import { useRate } from "../review-speed/speed";
+import { GapBanner, StripGaps } from "../gaps/Gaps";
+import { gapsApi } from "../gaps/api";
 
 const SKIP_S = 5;
 const shortLabel = (t: string, max = 44) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
@@ -165,6 +167,7 @@ function MusicStrip({ m, now, previewing, onListen, onSeek }: {
       }}
     >
       <div className="mstrip-voice" />
+      <StripGaps list={m.gaps} total={total} />
       {placed.map((p) => {
         const left = (100 * p.start_s!) / total;
         const width = Math.max(1.2, (100 * ((p.end_s ?? p.start_s!) - p.start_s!)) / total);
@@ -426,6 +429,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
               )}
             </div>
           )}
+          <GapBanner list={m.gaps} onFill={() => void run(gapsApi.fill(id))} />
           {msg && <p className="small note-line" data-testid="music-msg">{msg}</p>}
           {m.draft && (
             <DraftCard

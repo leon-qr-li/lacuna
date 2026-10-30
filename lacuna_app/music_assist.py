@@ -166,6 +166,39 @@ def auto_place(m: EpisodeMusic) -> dict:
     return {"draft": m.draft_view(), "message": msg}
 
 
+def fill_gaps(m: EpisodeMusic) -> dict:
+    """「给间隙自动配乐」: one interlude from the library (use 休息间隙) into each gap without music, the
+    ones this episode doesn't use yet first. A suggestion like `auto_place`: heard first, applied when
+    accepted. Returns {"draft": draft or None, "message"}."""
+    current = [p for p in m.placements() if p.get("status", APPLIED) == APPLIED]
+    lay = m.layout()
+    empty = [x for x in lay.gaps if not x["filled_by"]]
+    if not lay.gaps:
+        return {"draft": None, "message": tr("这一集还没有间隙。在整集试听的时间线上右键，或在逐字稿两句之间点「＋」加一个。")}
+    if not empty:
+        return {"draft": None, "message": tr("每个间隙都已经有音乐了。")}
+    assets = sorted((a for a in m.lib.for_episode(m.ep.id) if a.get("kind") == "interlude"),
+                    key=lambda a: a.get("added_at") or "", reverse=True)
+    if not assets:
+        return {"draft": None, "message": tr("素材库里还没有标成「休息间隙」的音乐。先在素材库上传或给音乐标上这个用途。")}
+    used = {p["asset_id"] for p in current}
+    order = [a for a in assets if a["id"] not in used] + [a for a in assets if a["id"] in used]
+    ps = copy.deepcopy(current)
+    changes = []
+    sr = m.ep.sr
+    for k, x in enumerate(empty):
+        a = order[k % len(order)]
+        p = _new(a["id"], "interlude", "auto")
+        p.update(at_base=x["gap"]["at_base"], gap_id=x["gap"]["id"])
+        ps.append(p)
+        changes.append({"pid": p["id"], "kind": "add", "voice_s": round(x["at"] / sr, 3),
+                        "text": tr("{at} 的间隙（{s} 秒）：{credit}", at=_mmss(x["start"] / sr), s=f"{x['gap']['len_s']:g}",
+                                   credit=credit_line(a))})
+    msg = tr("给 {n} 个间隙配好了音乐，先试听，满意再点「采用」。", n=len(empty))
+    m.set_draft(ps, changes, msg, "auto")
+    return {"draft": m.draft_view(), "message": msg}
+
+
 # ===================================================================== talking about the music
 
 SYSTEM = """\
