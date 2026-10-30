@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import type { Player } from "../../usePlayer";
 
-// Where each page of an episode was (Leon 2026-10-30): 整集试听 keeps its own place on the timeline and 审阅改动
-// its own, so coming from 审阅 at 49:00 does not drop 整集试听 at 49:00 (it is where Leon last was there, from
-// the start the first time), and a refresh, leaving the episode and coming back all return to that place.
-// Kept in this browser per episode, in voice-cut seconds of the version on screen.
-const PAGES = ["listen", "review"];
+// Where Leon was editing (Leon 2026-10-30): 整集试听 keeps its own place on the timeline, so coming from 审阅 at
+// 49:00 does not drop it at 49:00 (it is where he last was there, from the start the first time), and a refresh,
+// leaving the episode and coming back all return to that place. 审阅改动 moves the player to the edit it shows,
+// as before. Kept in this browser per episode, in voice-cut seconds of the version on screen.
+const PAGES = ["listen"];
 const key = (id: string) => `lacuna.pos.${id}`;
 
 function read(id: string): Record<string, number> {

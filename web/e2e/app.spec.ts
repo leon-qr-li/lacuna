@@ -54,8 +54,9 @@ test.describe.serial("LACUNA Studio", () => {
     await page.getByTestId("play").click();
   });
 
-  test("switch modes shares the playhead; review keyboard works", async ({ page }) => {
+  test("each page keeps its own place; review keyboard works", async ({ page }) => {
     await openEpisode(page);
+    await page.getByRole("slider", { name: "播放位置" }).fill("12");
     await page.getByRole("link", { name: /审阅改动/ }).click();
     await expect(page).toHaveURL(/\/review$/);
     await expect(page.getByTestId("review-title")).toHaveText("删除 4.4 秒 · 题外话");
@@ -70,12 +71,13 @@ test.describe.serial("LACUNA Studio", () => {
     await expect(page.getByRole("button", { name: "重新应用这个删除" })).toBeVisible();
     await undoKey(page);
     await expect(page.getByRole("button", { name: /^保留/ })).toBeVisible();
+    // 整集试听 comes back where it was, not at 审阅's place (Leon 2026-10-30: it opened at 49:00)
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
     await expect(page.getByTestId("play")).toBeVisible();
-    await expect.poll(() => audioTime(page)).toBeCloseTo(25.2, 0);
+    await expect.poll(() => audioTime(page)).toBeCloseTo(12, 0);
   });
 
-  test("slow audio stream: the playhead survives restore → undo → back to Full Listen", async ({ page }) => {
+  test("slow audio stream: Full Listen's place survives restore → undo in review", async ({ page }) => {
     // regression (macOS CI): a seek set while the new version's stream is not yet seekable was dropped to 0.
     // Delaying the audio responses reproduces that race on any OS.
     let n = 0;
@@ -84,6 +86,7 @@ test.describe.serial("LACUNA Studio", () => {
       await route.continue();
     });
     await openEpisode(page);
+    await page.getByRole("slider", { name: "播放位置" }).fill("15.5");
     await page.getByRole("link", { name: /审阅改动/ }).click();
     await expect(page.getByTestId("review-title")).toHaveText("删除 4.4 秒 · 题外话");
     await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
@@ -92,8 +95,8 @@ test.describe.serial("LACUNA Studio", () => {
     await undoKey(page);
     await expect(page.getByRole("button", { name: /^保留/ })).toBeVisible();
     await page.getByRole("link", { name: "整集试听", exact: true }).click();
-    await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(25.2, 0);
-    await expect(page.getByTestId("clock")).toContainText("0:25");
+    await expect.poll(() => audioTime(page), { timeout: 10_000 }).toBeCloseTo(15.5, 0);
+    await expect(page.getByTestId("clock")).toContainText("0:15");
   });
 
   test("chat command → preview → approve → edit appears; undo removes it", async ({ page }) => {
