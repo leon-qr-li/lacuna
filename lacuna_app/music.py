@@ -76,6 +76,7 @@ LOOP_XFADE_S = 2.0                           # crossfade where a looping bed sta
 LEVEL_LU = -1.0                              # full level vs voice loudness
 CLIP_DUCK_DB = 12.0
 DUCK_RAMP_S = 0.25
+EVEN_RAMP_S = 0.1                            # crossfade between two steps of evening out background music
 STEREO_HALF_DB = -3.01                       # each hard-panned half of a stereo file vs a centred mono track
 TUNING = ("src_in_s", "src_out_s", "gain_db", "solo_s", "ramp_s", "ramp_out_s", "bg_db", "pre_s", "bye_s", "fade_out_s",
           "lead_s")
@@ -797,13 +798,42 @@ class EpisodeMusic:
             passes = loop_passes(it.start, n, src_in, min(it.period, m.frames - src_in) if it.period else 0,
                                  fi, fo, int(LOOP_XFADE_S * sr), m.frames)
             for k in (0, 1):      # a looping bed alternates two tracks so the passes can overlap
+                mine = [x for j, x in enumerate(passes) if j % 2 == k]
                 clips = tuple(Clip(f"{p['id']}_{lay_}" + (f"_{j}" if j else ""), m.media_id, a_, b_, st,
                                    round(gain + extra, 3), f_in, f_out)
                               for j, (a_, b_, st, f_in, f_out) in enumerate(passes) if j % 2 == k)
                 if clips:
                     name = f"♪{p['id']}{'' if lay_ == 'm' else ' ' + lay_}{'' if k == 0 else ' ~'}"
-                    out.append(Track(name, clips, pan=pan, ducks=tuple(ducks)))
+                    out.append(Track(name, clips, pan=pan, ducks=tuple(ducks) + self._even(it, mine)))
         return out
+
+    def _even(self, it: Placed, passes: list[tuple]) -> tuple:
+        """Gain changes that even out the song where it plays as background (all of a bed; the background
+        stretches of an intro / interlude / outro): loud bits down, long quiet bits a little up (levels.music_even).
+        Each change is a Duck shortened by half a ramp at both ends, so neighbours crossfade into each other."""
+        from lacuna_core.edl import Duck
+        from .levels import music_even
+        r = it.p["role"]
+        if r == "clip" or it.in_gap:
+            return ()
+        under = [(it.start, it.end)] if r == "bed" else [(s, e) for s, e in it.bg if e > s]
+        if not under:
+            return ()
+        sr = self.ep.sr
+        segs = music_even(self.lib, it.asset, it.p["src_in_s"], it.p["src_out_s"])
+        h = int(EVEN_RAMP_S * sr) // 2
+        out = []
+        for a_, b_, st, _, _ in passes:
+            for fs, fe, g in segs:
+                x0, x1 = max(int(fs * sr), a_), min(int(fe * sr), b_)
+                if x1 <= x0:
+                    continue
+                t0, t1 = st + x0 - a_, st + x1 - a_
+                for u0, u1 in under:
+                    s0, s1 = max(t0, u0), min(t1, u1)
+                    if s1 - s0 > 2 * h:
+                        out.append(Duck(s0 + h, s1 - h, round(-g, 2), 2 * h))
+        return tuple(out)
 
     # ------------------------------------------------------------------ listening
     def gaps_json(self, lay: Layout) -> list[dict]:
