@@ -18,7 +18,7 @@ from ..auth import COOKIE, RANK, Auth, AuthError
 from ..i18n import speaking, tr
 
 # reachable without signing in: the sign-in screens, the host's health / version checks
-OPEN = {("GET", "/api/health"), ("GET", "/api/app"), ("GET", "/api/auth/status"), ("POST", "/api/auth/login"),
+OPEN = {("GET", "/api/health"), ("GET", "/api/health/perf"), ("GET", "/api/app"), ("GET", "/api/auth/status"), ("POST", "/api/auth/login"),
         ("POST", "/api/auth/register"), ("POST", "/api/auth/code"), ("POST", "/api/auth/reset"),
         ("POST", "/api/auth/2fa"), ("POST", "/api/auth/2fa/enroll"), ("POST", "/api/auth/invite"),
         ("POST", "/api/auth/logout"), ("POST", "/api/auth/_test/reset"), ("GET", "/api/auth/_test/outbox"),

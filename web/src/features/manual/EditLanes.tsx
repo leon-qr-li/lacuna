@@ -297,8 +297,11 @@ export function EditLanes({
     }
   }, [span]);
 
-  const tiles = useChunks<WaveTile>(ep.version, range(Math.floor(t0 / TILE_S), Math.floor(Math.min(t1, d) / TILE_S)), (k) =>
+  // the next page too: playback turns the page at the right edge, and its waveform is then already here
+  // (Leon 2026-10-30: past 40:20 the lanes stayed empty for a while)
+  const tiles = useChunks<WaveTile>(ep.version, range(Math.floor(t0 / TILE_S), Math.floor(Math.min(t1 + span, d) / TILE_S)), (k) =>
     manualApi.wave(ep.id, ep.version, k),
+    true,
   );
 
   const x = (s: number) => `${(100 * (s - t0)) / span}%`;

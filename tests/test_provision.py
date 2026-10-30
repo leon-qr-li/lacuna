@@ -749,3 +749,38 @@ def test_open_door_without_the_turnstile_permission_stops_before_the_server(api)
         run("recreate", door="open")
     assert a.droplets[0]["id"] == first
     assert [p["decision"] for p in _main_policies(a)] == ["allow", "non_identity"]
+
+
+def test_http3_off_turns_only_that_switch_off(capsys):
+    calls = []
+    state = {"value": "on"}
+
+    def cfh(method, path, body):
+        calls.append((method, path.split("?")[0]))
+        if path.startswith("/zones?name="):
+            return 200, {"success": True, "result": [{"id": "z1", "account": {"id": "a1"}}]}
+        if path == "/zones/z1/settings/http3":
+            if method == "PATCH":
+                assert body == {"value": "off"}
+                state["value"] = "off"
+            return 200, {"success": True, "result": {"id": "http3", "value": state["value"]}}
+        raise AssertionError(f"{method} {path}")
+
+    cf = provision.Cloudflare(FakeHttp(cfh))
+    assert cf.http3(False) == "on" and state["value"] == "on"     # check: changes nothing
+    assert cf.http3(True) == "off"
+    calls.clear()
+    assert cf.http3(True) == "off"                                # already off: no PATCH
+    assert ("PATCH", "/zones/z1/settings/http3") not in calls
+    assert "HTTP/3" in capsys.readouterr().out
+
+
+def test_ci_perf_prints_slow_routes_and_lock_holders():
+    ci = _ci()
+    text = ci.perf_text({"up_s": 600, "load1": 1.2, "threads_busy": 3, "in_flight": {},
+                         "slow": [{"at": 0, "route": "POST /api/episodes/{ep}/manual/cut", "status": 200, "ttfb": 12.3,
+                                   "lock_wait": 11.9, "holders": ["GET /api/episodes/{ep}/audio/{v}.wav"],
+                                   "threads_busy_at_start": 40, "load1": 3.9, "in_flight": {}}],
+                         "holds": [{"at": 0, "s": 2.1, "by": "GET /api/episodes/{ep}/audio/{v}.wav"}], "lags": []})
+    assert "12.30   11.90  POST /api/episodes/{ep}/manual/cut" in text
+    assert "held by ['GET /api/episodes/{ep}/audio/{v}.wav']" in text

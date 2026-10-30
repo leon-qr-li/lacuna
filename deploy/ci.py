@@ -8,6 +8,7 @@
     python deploy/ci.py r2-env                 # S3 credentials for the backup bucket, as GITHUB_ENV lines
     python deploy/ci.py snapshot               # weekly snapshot of the data volume, keep the newest 4
     python deploy/ci.py uptime                 # hourly: the site answers /api/health (through Access)
+    python deploy/ci.py perf                   # what was slow on the server lately (lacuna_app/perf.py)
 
 Nothing secret or identifying is printed (the repo and its logs are public).
 """
@@ -153,6 +154,42 @@ def uptime(domain: str = DOMAIN) -> None:
     raise ProvisionError(f"{domain} is down: /api/health answered {', '.join(answers)} ({UPTIME_TRIES} tries, a minute apart)")
 
 
+PERF_PATH = "/api/health/perf"     # lacuna_app/perf.py: masked routes and timings, no names or ids
+
+
+def perf(domain: str = DOMAIN) -> None:
+    """What was slow on the server lately (workflow perf.yml; Leon 2026-10-30: 删除这段 sometimes waits 10+ s)."""
+    cid, secret = os.environ.get("CF_DEPLOY_CLIENT_ID", "").strip(), os.environ.get("CF_DEPLOY_CLIENT_SECRET", "").strip()
+    if not (cid and secret):
+        raise ProvisionError("no deploy token in GitHub secrets (run Provision deploy-token)")
+    mask(cid)
+    mask(secret)
+    status, r = _get(f"https://{domain}{PERF_PATH}", {"CF-Access-Client-Id": cid, "CF-Access-Client-Secret": secret})
+    if status != 200:
+        raise ProvisionError(f"{PERF_PATH} answered {status}")
+    print(perf_text(r), flush=True)
+
+
+def perf_text(r: dict) -> str:
+    t = lambda at: time.strftime("%H:%M:%S", time.gmtime(at))     # noqa: E731
+    out = [f"server up {r.get('up_s', 0) // 60} min, load {r.get('load1')}, worker threads busy {r.get('threads_busy')},"
+           f" in flight {r.get('in_flight')}", "", "slow requests by route (count, worst first byte s, worst lock wait s):"]
+    by: dict[str, list] = {}
+    for s in r.get("slow", []):
+        by.setdefault(s["route"], []).append(s)
+    for route, ss in sorted(by.items(), key=lambda kv: -max(x["ttfb"] for x in kv[1])):
+        out.append(f"  {len(ss):4} {max(x['ttfb'] for x in ss):7.2f} {max(x['lock_wait'] for x in ss):7.2f}  {route}")
+    out += ["", "last slow requests (UTC, first byte s, lock wait s, lock held by, threads busy, load, in flight):"]
+    for s in r.get("slow", [])[-60:]:
+        out.append(f"  {t(s['at'])} {s['ttfb']:7.2f} {s['lock_wait']:7.2f} {s['route']}  held by {s['holders'] or '-'}"
+                   f"  threads {s['threads_busy_at_start']}  load {s['load1']}  {s['in_flight']}")
+    out += ["", "long holds of an episode's lock (UTC, s, by):"]
+    out += [f"  {t(h['at'])} {h['s']:7.2f} {h['by']}" for h in r.get("holds", [])[-40:]]
+    out += ["", "event loop stalls (UTC, s, in flight):"]
+    out += [f"  {t(g['at'])} {g['s']:7.2f} {g['in_flight']}" for g in r.get("lags", [])[-40:]]
+    return "\n".join(out)
+
+
 def _sweep_check_tokens(c) -> None:
     """Delete the per-run check tokens (lacuna-deploy-check-*; never the long-lived lacuna-deploy): runs cancelled
     or answered 504 leave some behind, and the account caps how many it keeps."""
@@ -228,7 +265,7 @@ def snapshot() -> None:
 
 def main(argv: list[str]) -> int:
     cmds = {"registry": registry, "registry-gc": registry_gc, "registry-collect": registry_collect, "r2-env": r2_env, "snapshot": snapshot,
-            "uptime": uptime}
+            "uptime": uptime, "perf": perf}
     try:
         if argv[:1] == ["wait-live"] and len(argv) == 2:
             wait_live(argv[1])

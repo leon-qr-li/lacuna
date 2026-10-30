@@ -1,0 +1,10 @@
+.first-show { display: flex; justify-content: center; padding-top: 72px; }
+.first-show-card { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 16px; padding: 32px; box-sizing: border-box; }
+.first-show-card h1 { margin: 0; font-size: 28px; letter-spacing: -0.01em; }
+.first-show-card p { margin: 0; }
+.first-show-card .btn-primary { align-self: flex-start; }
+.first-show-note { padding-top: 12px; border-top: 1px solid var(--line); }
+@media (max-width: 600px) {
+  .first-show { padding-top: 24px; }
+  .first-show-card { padding: 24px 20px; }
+}

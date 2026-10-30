@@ -8,6 +8,9 @@ import { t } from "../../i18n";
  * (translated) reason; a 5xx or a dropped connection gets a plain sentence.
  */
 export function friendlyError(e: unknown): string {
+  // a caller that kept only the server's message (a string): that is the reason, not a lost connection
+  if (typeof e === "string")
+    return /fetch|network|load failed/i.test(e) || !e ? friendlyError(undefined) : friendlyError(Object.assign(new Error(e), { status: 400 }));
   const err = e as RequestError | undefined;
   const status = err?.status;
   const msg = String(err?.message ?? "");
