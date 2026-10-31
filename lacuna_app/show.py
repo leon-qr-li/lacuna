@@ -160,6 +160,9 @@ def normalise(data: dict, strict: bool, before: dict | None = None) -> dict:
             seen.add(t.lower())
             terms.append(t)
     out["terms"] = terms[:MAX_TERMS]
+    # 导入时核对专有名词 (name_check.py): on unless turned off; a form that doesn't send it keeps the stored one
+    nc = data.get("name_check") if "name_check" in data else (before or {}).get("name_check", True)
+    out["name_check"] = nc is not False
 
     old_tags = {h["tag"]: h for h in (before or {}).get("hosts", [])}
     hosts, used_tags, used_names = [], set(), set()

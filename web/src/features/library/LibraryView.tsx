@@ -10,6 +10,7 @@ import { confirmDialog } from "../dialog/Dialog";
 import { inScope, ScopeActions, ScopeBadge, ScopeFilter, ScopeTarget } from "./Scope";
 import { useCloud } from "../auth/cloud";
 import { CreditFix } from "../credit-fix/CreditFix";
+import { UploadMeter, useUploadRows, type UploadRow } from "../upload-progress/UploadProgress";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: t("已确认"),
@@ -26,7 +27,7 @@ const FIELDS: { key: keyof Credit; label: string }[] = [
   { key: "year", label: t("年份") },
 ];
 
-type Upload = { name: string; state: "busy" | "done" | "dup" | "error"; msg?: string };
+type Upload = UploadRow;
 
 const ACCEPT = ".mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff,.wma,audio/*";
 
@@ -267,7 +268,8 @@ export function LibraryView() {
   const cloud = useCloud();
   const [lib, setLib] = useState<Lib | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [uploads, setUploads] = useState<Upload[]>([]);
+  const up = useUploadRows();
+  const uploads: Upload[] = up.rows;
   const [dragging, setDragging] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
@@ -284,18 +286,14 @@ export function LibraryView() {
     const album = target.startsWith("al:") ? target.slice(3) : "";
     const episode = album ? "" : target;
     setNote(null);
-    setUploads(files.map((f) => ({ name: f.name, state: "busy" })));
+    up.start(files);
     for (const [i, f] of files.entries()) {
-      let u: Upload;
       try {
-        const r = await libraryApi.uploadAsset(f, kind, "", episode, album);
-        u = r.duplicate
-          ? { name: f.name, state: "dup", msg: t("素材库里已经有这首（{name}）", { name: r.asset.name }) }
-          : { name: f.name, state: "done" };
+        const r = await libraryApi.uploadAsset(f, kind, "", episode, album, up.track(i));
+        up.patch(i, r.duplicate ? { state: "dup", msg: t("素材库里已经有这首（{name}）", { name: r.asset.name }) } : { state: "done", f: 1 });
       } catch (e) {
-        u = { name: f.name, state: "error", msg: (e as Error).message };
+        up.patch(i, { state: "error", msg: (e as Error).message });
       }
-      setUploads((us) => us.map((x, j) => (j === i ? u : x)));
     }
     load();
   };
@@ -355,8 +353,13 @@ export function LibraryView() {
         <ul className="lib-uploads small" data-testid="uploads">
           {uploads.map((u, i) => (
             <li key={i} className={u.state === "error" ? "error" : ""}>
-              {u.state === "busy"
-                ? <BusyLabel busy label={t("正在加入：{name}", u)} />
+              {u.state === "wait" || u.state === "send" || u.state === "work"
+                ? (
+                  <span className="lib-upload-row">
+                    <span className="lib-upload-name">{t("正在加入：{name}", u)}</span>
+                    <UploadMeter r={u} />
+                  </span>
+                )
                 : u.state === "error"
                   ? t("没加进去：{name}", u)
                   : u.state === "dup"

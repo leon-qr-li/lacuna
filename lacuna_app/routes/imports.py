@@ -139,8 +139,14 @@ def register(app, ctx) -> None:
         albums = Albums(ws)
         if body.album and not any(a["id"] == body.album for a in albums.albums()):
             raise HTTPException(422, tr("没有这个专辑"))
+        title = body.title
+        if body.album:           # the album's episode naming (naming.py): the title typed is the 名称
+            from .. import naming
+            fmt = next((a.get("naming") for a in albums.albums() if a["id"] == body.album), None)
+            if fmt:
+                title = naming.title(fmt, body.id.strip(), naming.bare(body.id.strip(), body.title, fmt))
         try:
-            job = importer.start(body.id.strip(), body.title, body.tracks, language=body.language)
+            job = importer.start(body.id.strip(), title, body.tracks, language=body.language)
             try:
                 albums.assign(body.id.strip(), body.album or None)
             except (AlbumError, PathError, OSError):

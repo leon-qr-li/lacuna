@@ -64,6 +64,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
   const [wish, setWish] = useState<AutoPublish[]>(show.publish.auto_wish ?? []);
   // 专有名词: one per line (or comma separated); hints for the transcript's proofreading, the audio wins
   const [terms, setTerms] = useState((show.terms ?? []).join("\n"));
+  const [nameCheck, setNameCheck] = useState(show.name_check !== false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -80,6 +81,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
     setAlbum(s.publish.album);
     setWish(s.publish.auto_wish ?? []);
     setTerms((s.terms ?? []).join("\n"));
+    setNameCheck(s.name_check !== false);
     setRev(s.rev);
   };
 
@@ -99,7 +101,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
         hosts,
         // where the show is published stays as stored (no picker since 自动发布 即将推出, 2026-10-23)
         publish: { ximalaya: show.publish.ximalaya, album, auto_wish: compact ? (show.publish.auto_wish ?? []) : wish },
-        ...(compact ? {} : { terms: splitTerms(terms) }),
+        ...(compact ? {} : { terms: splitTerms(terms), name_check: nameCheck }),
         rev,
       });
       setShow(s);
@@ -173,6 +175,15 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
             data-testid="show-terms"
           />
           <small className="muted">{t("节目里常说的人名、片名、栏目名。逐字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。")}</small>
+        </label>
+      )}
+      {!compact && has("basic") && (
+        <label className="show-check" data-testid="show-name-check">
+          <input type="checkbox" checked={nameCheck} onChange={(e) => (setSaved(false), setNameCheck(e.target.checked))} />
+          <span>
+            {t("导入时自动核对片名、人名等专有名词")}
+            <small className="muted">{t("LACUNA 按聊的内容找出逐字稿里听错的名字（比如「落兰」→「诺兰」）并改好，审阅和整集试听里看到的就是对的。只改文字，不动音频和剪辑；每一处都能在逐字稿卡片上改回原样。")}</small>
+          </span>
         </label>
       )}
       {has("hosts") && (

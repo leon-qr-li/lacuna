@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { failure, req } from "../../api";
+import type { Naming } from "../album-naming/api";
 
 /** An opener / ending default: the asset and its file name (null name: the file left the library). */
 export interface DefaultTrack {
@@ -16,6 +17,8 @@ export interface Album {
   episodes: string[];
   intro: DefaultTrack | null;
   outro: DefaultTrack | null;
+  /** how its episodes are named (features/album-naming); null: as typed */
+  naming?: Naming | null;
 }
 
 export interface AlbumsView {

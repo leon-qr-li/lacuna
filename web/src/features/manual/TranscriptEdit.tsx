@@ -10,6 +10,7 @@ import { range, useChunks } from "./chunks";
 import { fmtTenths, SelBar } from "./SelBar";
 import { FillerButton } from "../fillers/FillerButton";
 import { TermFixButton } from "../transcript-fix/TermFixButton";
+import { NameCheck } from "../name-check/NameCheck";
 import { transcriptRev } from "../transcript-fix/api";
 import type { Manual } from "./useManual";
 import { TranscriptGap } from "../gaps/Gaps";
@@ -172,6 +173,7 @@ export function TranscriptEdit({
       <div className="card-head">
         <h2>{t("逐字稿剪辑")}</h2>
         <span className="muted small">{t("选中文字 → 删掉；删过的显示删除线，点一下可恢复")}</span>
+        <NameCheck ep={ep} time={time} player={player} run={run} />
         <TermFixButton ep={ep} time={time} run={run} />
         <FillerButton ep={ep} time={time} player={player} run={run} />
       </div>

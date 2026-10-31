@@ -1,3 +1,4 @@
+import { bare, formatTitle, type Naming } from "../album-naming/api";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { EpisodeListItem, ImportJob } from "../../api";
 import { api, fmt } from "../../api";
@@ -62,13 +63,14 @@ const hasFiles = (e: DragEvent | React.DragEvent) => Array.from(e.dataTransfer?.
 const tooMany = (n: number) => t("这个节目有 {n} 位主持人，只用了前 {n} 条分轨（每个节目最多 4 位主持人，每人一条）。", { n });
 
 /** The import form. What is in it (and the uploads) lives in draft.ts, so it survives a visit to another page. */
-function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; name: string }[]; onStarted: () => void }) {
+function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; name: string; naming?: Naming | null }[]; onStarted: () => void }) {
   const { hosts, slots, id, title, language, album } = d;
   const [over, setOver] = useState<Who | "all" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const many = hosts.length > 1;
+  const naming = albums.find((a) => a.id === album)?.naming ?? null; // the album's episode naming (features/album-naming)
   const names = hostList({ hosts } as Show);
   useEffect(() => {
     formOnScreen(true);
@@ -177,6 +179,11 @@ function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; n
               ))}
             </select>
           </label>
+        )}
+        {naming && (
+          <p className="small muted import-naming" data-testid="import-naming">
+            {t("这一集会叫：{title}", { title: formatTitle(naming, id.trim(), bare(id.trim(), title, naming)) })}
+          </p>
         )}
       </div>
       <div className={`lib-drop import-drop${over === "all" ? " lib-drop-active" : ""}`} data-testid="import-drop">
@@ -355,7 +362,7 @@ export function ImportPanel({
   /** the 剧集 list, for each finished import's review progress */
   episodes: EpisodeListItem[] | null;
   /** the project's albums: the form offers to put the new episode in one (`album`: picked at first) */
-  albums?: { id: string; name: string }[];
+  albums?: { id: string; name: string; naming?: Naming | null }[];
   album?: string;
   /** the home page's other buttons, in one row after 导入新一集 (batch 7, T3) */
   actions?: ReactNode;

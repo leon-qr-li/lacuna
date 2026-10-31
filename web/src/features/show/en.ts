@@ -76,4 +76,7 @@ export const en: Dict = {
     "Don't see the platform you want?",
   "告诉我们":
     "Tell us",
+  "导入时自动核对片名、人名等专有名词": "Check film titles, names and other proper nouns at import",
+  "LACUNA 按聊的内容找出逐字稿里听错的名字（比如「落兰」→「诺兰」）并改好，审阅和整集试听里看到的就是对的。只改文字，不动音频和剪辑；每一处都能在逐字稿卡片上改回原样。":
+    "LACUNA finds names the transcript mis-heard (going by what the hosts talk about) and fixes them, so Review and Full listen show them right. Only the text changes, never the audio or the edits; each fix can be put back on the transcript card.",
 };
