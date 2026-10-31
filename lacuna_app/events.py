@@ -8,7 +8,7 @@ Deleting an account deletes the only link from its uid to the person, so its pas
 
 Who is acting comes from ``ACTOR``, set per request by ``routes/events.py`` (contextvars, so it follows the
 request into thread pools and import jobs that copy the context). ``track()`` anywhere in the app logs
-for the current actor and never raises.
+for the current actor and never raises; ``note()`` adds numbers to the row the request itself logs.
 """
 from __future__ import annotations
 
@@ -35,6 +35,8 @@ class Actor:
 
 
 ACTOR: contextvars.ContextVar[Actor | None] = contextvars.ContextVar("lacuna_event_actor", default=None)
+# details for the row the request's own event gets (routes/events.py sets a fresh dict per request; `note` fills it)
+NOTE: contextvars.ContextVar[dict | None] = contextvars.ContextVar("lacuna_event_note", default=None)
 
 
 def clean_props(props: dict[str, Any]) -> dict[str, Any]:
@@ -96,3 +98,11 @@ def track(ev: str, ep: str | None = None, **props) -> None:
         a.log.add(ev, a.uid, a.sid, ep, **props)
     except Exception:          # noqa: BLE001 - an event must never break the work it describes
         pass
+
+
+def note(**props) -> None:
+    """Numbers for the event this request logs when it ends (e.g. how many seconds a cut took out): they go in
+    the same row, so a detail never costs a write of its own. Does nothing outside a request."""
+    n = NOTE.get()
+    if n is not None:
+        n.update(props)

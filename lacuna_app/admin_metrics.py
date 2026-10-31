@@ -399,14 +399,6 @@ class AdminData:
         except OSError:
             return 0
 
-    def user_activity(self, email: str, limit: int = 40) -> list[dict]:
-        uid = self.auth.user_id(email)
-        if not uid:
-            return []
-        rows = self.db.query("SELECT ts, sid, ep, ev, props FROM events WHERE uid = ? ORDER BY ts DESC LIMIT ?", (uid, limit))
-        return [{"ts": r["ts"], "ev": r["ev"], "ep": r["ep"], "props": sitedb.loads(r["props"]),
-                 "show": self._title(r["sid"]) if r["sid"] in self.spaces.spaces else None} for r in rows]
-
     # ---------------------------------------------------------------- shows
     def shows(self) -> dict:
         sizes = self.sizes()

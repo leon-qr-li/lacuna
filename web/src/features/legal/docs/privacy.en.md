@@ -21,7 +21,7 @@ LACUNA is operated by [TBD: operating entity name], a company registered in Brit
 - **Your content**: the recordings you upload (one track per person), music and images; the transcripts, edit history, learned editing habits, show notes, posters and exports made from them; show details (show name, hosts' names and so on).
 - **Collaboration information**: whom you invited, who invited you, and your role in each show.
 - **Sign-in and security information**: sign-in times, IP address, browser and system type (to spot unusual sign-ins and warn you when a new device signs in), and the devices you are signed in on.
-- **Usage records**: what you do in the app (for example importing, exporting, accepting or restoring an edit), recorded only as numbers and categories, with no transcript text, file names or emails, linked to an internal ID. We use them to improve the product, count quota and find problems.
+- **Usage records**: what you do in the app (for example importing, exporting, accepting or restoring an edit), recorded only as numbers and categories, with no transcript text, file names or emails, linked to an internal ID. We use them to improve the product, count quota and find problems. For support and account security, the site owner can view an account's usage records in the admin (again without any content), and every such look is itself recorded.
 - **What you send us**: feedback (including screenshots you choose to attach), access requests, extra-hours requests and emails.
 - **Cookies and browser storage**: see section 9.
 

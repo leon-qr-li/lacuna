@@ -174,7 +174,7 @@ export interface HourReq {
 export interface UserDetail {
   user: UserRow;
   shows: { id: string; name: string; role: string; episodes?: number; people?: number; updated?: number; archived?: boolean; sample?: boolean }[];
-  activity: { ts: number; ev: string; ep: string | null; show: string | null; props: Record<string, unknown> }[];
+  activity: { ts: number; ev: string; sid?: string | null; ep: string | null; title?: string | null; show: string | null; props: Record<string, unknown> }[];
   sessions: { created: number; seen: number; device: string }[];
   devices: number;
   notes: Note[];

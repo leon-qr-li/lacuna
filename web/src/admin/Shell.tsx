@@ -20,6 +20,7 @@ import { GrowthPage } from "./pages/Growth";
 import { SystemPage } from "./pages/System";
 import { SettingsPage } from "./pages/Settings";
 import { AuditPage } from "./pages/Audit";
+import { ActivityPage } from "./activity/Activity";
 
 export interface PageProps {
   me: Me;
@@ -67,6 +68,10 @@ const SECTIONS: { title: () => string; routes: Route[] }[] = [
       { path: "/audit", label: () => t("操作日志"), icon: "log", render: (p) => <AuditPage {...p} /> },
     ],
   },
+];
+// pages reached from another page, not from the sidebar (用户动态: from a user's drawer); the sidebar marks 用户
+const HIDDEN: (Route & { under: string })[] = [
+  { path: "/activity", label: () => t("用户动态"), icon: "users", under: "/users", render: () => <ActivityPage /> },
 ];
 const ROUTES = SECTIONS.flatMap((s) => s.routes);
 const PHONE_TABS = ["/", "/feedback", "/access", "/hours"];
@@ -138,7 +143,9 @@ function Frame({ me, signOut }: { me: Me; signOut: () => void }) {
     const id = window.setInterval(load, 60_000);
     return () => window.clearInterval(id);
   }, [demo, path]);
-  const route = ROUTES.find((r) => r.path === path) ?? ROUTES[0];
+  const hidden = HIDDEN.find((r) => r.path === path);
+  const route = hidden ?? ROUTES.find((r) => r.path === path) ?? ROUTES[0];
+  const marked = hidden ? ROUTES.find((r) => r.path === hidden.under) : route;
   useEffect(() => {
     document.title = `${route.label()} · LACUNA Admin`;
     setMenu(false);
@@ -164,7 +171,7 @@ function Frame({ me, signOut }: { me: Me; signOut: () => void }) {
               <a
                 key={r.path}
                 href={r.path}
-                aria-current={r === route ? "page" : undefined}
+                aria-current={r === marked ? "page" : undefined}
                 onClick={(e) => {
                   e.preventDefault();
                   go(r.path);
@@ -256,7 +263,7 @@ function Frame({ me, signOut }: { me: Me; signOut: () => void }) {
             const r = ROUTES.find((x) => x.path === p)!;
             const n = r.count?.(todo) ?? 0;
             return (
-              <button key={p} type="button" aria-current={r === route ? "page" : undefined} onClick={() => go(p)}>
+              <button key={p} type="button" aria-current={r === marked ? "page" : undefined} onClick={() => go(p)}>
                 <Icon name={r.icon} size={20} />
                 <span>{p === "/" ? t("待处理") : p === "/access" ? t("申请") : p === "/hours" ? t("时长") : r.label()}</span>
                 {n > 0 && <i>{n}</i>}

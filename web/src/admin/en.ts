@@ -97,7 +97,6 @@ export const en: Dict = {
   "导入失败": "Import failed",
   "导入中断": "import interrupted",
   "取消了导入": "cancelled an import",
-  "导出了": "exported",
   "建了节目": "created a show",
   "邀请了协作者": "invited a collaborator",
   "发了邀请": "sent an invite",

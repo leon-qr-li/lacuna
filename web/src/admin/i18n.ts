@@ -5,6 +5,7 @@
  */
 import type { Dict, Lang } from "../i18n/index";
 import { en as EN } from "./en";
+import { en as ACTIVITY_EN } from "./activity/en";
 
 const KEY = "lacuna.admin.lang";
 type Params = Record<string, string | number | null | undefined>;
@@ -20,7 +21,7 @@ function saved(): Lang {
 
 export const lang: Lang = saved();
 export const locale = lang === "en" ? "en-US" : "zh-CN";
-const dict: Dict = EN;
+const dict: Dict = { ...EN, ...ACTIVITY_EN };
 const fill = (s: string, p?: Params) => (p ? s.replace(/\{(\w+)\}/g, (m, k) => (k in p ? String(p[k] ?? "") : m)) : s);
 
 export function t(zh: string, params?: Params): string {
