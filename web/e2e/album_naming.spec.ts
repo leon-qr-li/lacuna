@@ -27,11 +27,11 @@ for (const theme of ["light", "dark"] as const) {
     await expect(field.getByTestId("naming-none")).toBeChecked();
     await expect(field).toContainText("编号 + 空格 + 名称");
     await field.getByTestId("naming-dot").check();
-    await expect(field.locator(".nm-opt.is-on")).toContainText(`${ep.id} · 奥本海默`);
+    await expect(field.locator(".nm-opt.is-on")).toContainText("EP012 · 奥本海默");
     await field.getByTestId("naming-custom").check();
     await field.getByTestId("naming-before").fill("【");
     await field.getByTestId("naming-between").fill("】");
-    await expect(field.getByTestId("naming-preview")).toHaveText(`会叫：【${ep.id}】奥本海默`);
+    await expect(field.getByTestId("naming-preview")).toHaveText("会叫：【EP012】奥本海默");
     expect((await scan(page)).bad).toEqual([]);
     await field.getByTestId("naming-space").check();
 
