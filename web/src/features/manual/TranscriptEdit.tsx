@@ -16,6 +16,8 @@ import type { Manual } from "./useManual";
 import { TranscriptGap } from "../gaps/Gaps";
 import { useGaps } from "../gaps/useGaps";
 import type { Gap } from "../gaps/api";
+import { TranscriptSearch } from "../transcript-search/TranscriptSearch";
+import { hitOf, useFound } from "../transcript-search/api";
 
 const TEXT_SELECT_EVENT = "lacuna:text-select";
 /** Select the words between a and b (timeline seconds) as if dragged across: the sample tour does this. */
@@ -89,6 +91,13 @@ export function TranscriptEdit({
     return out;
   }, [chunks]);
   const audible = useMemo(() => lines.flatMap((ln) => ln.words.filter((w) => !w.gone).map((w) => ({ ...w, speaker: ln.speaker }))), [lines]);
+  // 逐字稿搜索: the words of each place found, the one jumped to stronger
+  const found = useFound();
+  const hitClass = (speaker: string, ws: W[]) => {
+    if (!found.hits.length) return "";
+    const is = ws.map((w) => hitOf(found.hits, speaker, w.a, w.b));
+    return is.includes(found.cur) && found.cur >= 0 ? "ts-cur" : is.some((i) => i >= 0) ? "ts-hit" : "";
+  };
   const picked = (w: W) => !!sel && !w.gone && (w.a + w.b) / 2 >= sel.a && (w.a + w.b) / 2 < sel.b;
 
   const select = (a: W, b: W) => {
@@ -173,6 +182,7 @@ export function TranscriptEdit({
       <div className="card-head">
         <h2>{t("逐字稿剪辑")}</h2>
         <span className="muted small">{t("选中文字 → 删掉；删过的显示删除线，点一下可恢复")}</span>
+        <TranscriptSearch ep={ep} time={time} player={player} />
         <NameCheck ep={ep} time={time} player={player} run={run} />
         <TermFixButton ep={ep} time={time} run={run} />
         <FillerButton ep={ep} time={time} player={player} run={run} />
@@ -196,7 +206,7 @@ export function TranscriptEdit({
                     <Fragment key={p.words[0].key}>
                     {gap(ln.words, p.words[0])}
                     <s
-                      className="ml-gone"
+                      className={`ml-gone ${hitClass(ln.speaker, p.words)}`}
                       role="button"
                       tabIndex={0}
                       title={t("{title} · 点一下恢复", { title: titleOf(p.gone) })}
@@ -212,7 +222,7 @@ export function TranscriptEdit({
                       <Fragment key={w.key}>
                       {gap(ln.words, w)}
                       <span
-                        className={`ml-w ${picked(w) ? "is-sel" : ""} ${time >= w.a && time < w.b ? "is-now" : ""}`}
+                        className={`ml-w ${picked(w) ? "is-sel" : ""} ${time >= w.a && time < w.b ? "is-now" : ""} ${hitClass(ln.speaker, [w])}`}
                         onPointerDown={wordDown(w)}
                         onPointerEnter={wordEnter(w)}
                       >

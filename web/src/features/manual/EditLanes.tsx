@@ -12,6 +12,7 @@ import type { Manual } from "./useManual";
 import { GapAddMenu, GapCard, GapMark } from "../gaps/Gaps";
 import { useGaps } from "../gaps/useGaps";
 import { useListenOnly } from "../listen-only/state";
+import { SearchTicks } from "../transcript-search/TranscriptSearch";
 import "./manual.css";
 
 const ZOOM_KEY = "lacuna.manual.span";
@@ -500,6 +501,7 @@ export function EditLanes({
               {tick(s, step)}
             </span>
           ))}
+          <SearchTicks t0={t0} span={span} player={player} />
         </div>
       </div>
       {ep.tracks.map((tr, i) => (
