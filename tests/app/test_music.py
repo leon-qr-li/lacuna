@@ -291,7 +291,7 @@ def test_bed_and_clip(ws, lib, ep, tmp_path):
     louder = m.update(b["id"], bg_db=10.0)
     assert louder["bg_db"] == 10.0
     tl2, _, _ = m.mix()
-    assert next(t for t in tl2.tracks if b["id"] in t.name).clips[0].gain_db == pytest.approx(bed_track.clips[0].gain_db + 15, abs=0.01)   # 25 dB (bed default) -> 10
+    assert next(t for t in tl2.tracks if b["id"] in t.name).clips[0].gain_db == pytest.approx(bed_track.clips[0].gain_db + 12, abs=0.01)   # 22 dB (bed default) -> 10
     with pytest.raises(ValueError):
         m.add(bed["id"], "interlude")        # an interlude needs a position (a bed without one is automatic)
 

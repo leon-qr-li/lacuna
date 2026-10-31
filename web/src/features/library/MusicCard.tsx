@@ -24,7 +24,7 @@ export const ROLE_HELP: Record<Role, string> = {
   clip: t("插入一段台词，前后各留一点空"),
 };
 const BG_DEFAULT = 22; // dB, new placements (lacuna_app/music.py BG_DB)
-const BED_BG_DEFAULT = 25; // dB, a new bed (music.py BED_BG_DB)
+const BED_BG_DEFAULT = 22; // dB, a new bed (music.py BED_BG_DB)
 const bgDefault = (r: Role) => (r === "bed" ? BED_BG_DEFAULT : BG_DEFAULT);
 const RAMP_DEFAULT = 2; // s (music.py RAMP_S)
 

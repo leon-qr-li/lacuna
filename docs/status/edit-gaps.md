@@ -25,3 +25,4 @@ details in decision `2026-10-30-edit-gaps` at 21:15Z. He needs it on an episode 
 - 2026-10-30 22:13Z #233 deployed. 22:25Z Leon found: 放到 didn't show the use, gap fill ignored the interlude he
   placed, the first 自动铺底 looped songs everywhere. Fixed in a follow-up PR (decisions updated, one-off cleanup of
   his episode to 片头 / 片尾 only).
+- 2026-10-31: bed default back to 22 dB (Leon), stored 25 dB beds put back once at startup (`routes/bed_level_back_once.py`).

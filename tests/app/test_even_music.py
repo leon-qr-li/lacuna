@@ -50,7 +50,7 @@ def test_a_bed_with_a_loud_bit_is_evened_in_the_mix(tmp_path):
                     headers={"Content-Type": "application/octet-stream"})
     aid = r.json()["asset"]["id"]
     m = client.post(f"{EP}/music", json={"asset_id": aid, "role": "bed", "at_s": 0.0}).json()
-    assert m["placements"][0]["bg_db"] == 25.0
+    assert m["placements"][0]["bg_db"] == 22.0
     # hear the music alone: mute the voice by comparing with and without the bed
     x, sr = sf.read(io.BytesIO(client.get(m["mix_url"]).content))
     client.delete(f"{EP}/music/{m['placements'][0]['id']}")
