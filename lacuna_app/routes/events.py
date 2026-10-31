@@ -4,17 +4,24 @@
 calls it), so it sees every workspace's requests once. Reads (GET) are not events. A request that changed
 something (2xx) and matches ``RULES`` logs that event; signing in is noticed by the session cookie the
 response sets, a new account by ``Auth.on_joined``. Events with details the URL can't tell (AI edits kept or restored, an import's length and
-result) are logged where they happen with ``events.track``.
+result) are logged where they happen with ``events.track``; numbers for the request's own row with ``events.note``.
+
+A change that failed (5xx, or a 4xx other than 401 / 403 / 404: a bad value, a conflict, over quota) is logged as
+``<event>.failed`` with its status, so the admin's 用户动态 shows it in red (decision 2026-10-31-admin-user-activity).
+The row is written in a worker thread after the response went out: the user never waits for it and the event
+loop never waits for the disk.
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from http.cookies import SimpleCookie
 
 from ..auth import COOKIE, Auth
-from ..events import ACTOR, Actor, EventLog
+from ..events import ACTOR, NOTE, Actor, EventLog
 
 SPACE_COOKIE = "lacuna_space"      # routes/spaces.py
+QUIET = (401, 403, 404)            # not signed in, not allowed, gone: refusals, not failures of the person's work
 EP = r"/api/episodes/(?P<ep>[^/]+)"
 
 # (method, path, event): the first match wins
@@ -106,6 +113,8 @@ class EventsMiddleware:
         if email and self.spaces is not None:
             sid = self.spaces.current(email, c[SPACE_COOKIE].value if SPACE_COOKIE in c else None)
         token = ACTOR.set(Actor(self.log, self.log.uid(email), sid))
+        extra: dict = {}
+        ntoken = NOTE.set(extra)
         seen: dict = {}
 
         async def watch(msg):
@@ -118,24 +127,28 @@ class EventsMiddleware:
             await self.app(scope, receive, watch)
         finally:
             ACTOR.reset(token)
-            try:
-                self._after(scope, email, sid, seen)
-            except Exception:          # noqa: BLE001 - logging must never break a request
-                pass
+            NOTE.reset(ntoken)
+            if seen.get("session") or (email and match(scope["method"], scope["path"])):
+                try:
+                    await asyncio.to_thread(self._after, scope, email, sid, seen, extra)
+                except Exception:          # noqa: BLE001 - logging must never break a request
+                    pass
 
-    def _after(self, scope, email, sid, seen) -> None:
+    def _after(self, scope, email, sid, seen, extra=None) -> None:
         status = seen.get("status", 500)
-        if not 200 <= status < 300:
-            return
         method, path = scope["method"], scope["path"]
         hit = match(method, path)
-        if seen.get("session"):
+        if 200 <= status < 300 and seen.get("session"):
             who = self.auth.who(seen["session"])
             if who:
                 self.log.add("user.login", self.log.uid(who), None)
             return
-        if hit and email:
-            self.log.add(hit[0], self.log.uid(email), sid, hit[1])
+        if not (hit and email):
+            return
+        if 200 <= status < 300:
+            self.log.add(hit[0], self.log.uid(email), sid, hit[1], **(extra or {}))
+        elif status >= 500 or (400 <= status < 500 and status not in QUIET):
+            self.log.add(hit[0] + ".failed", self.log.uid(email), sid, hit[1], status=status)
 
 
 def install(app, ctx, auth: Auth, spaces) -> EventLog:

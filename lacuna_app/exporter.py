@@ -7,6 +7,7 @@ keeps working because the job uses its own file handles).
 """
 from __future__ import annotations
 
+import contextvars
 import copy
 import os
 import subprocess
@@ -26,6 +27,7 @@ from lacuna_core.master import MasterSettings
 from . import show as show_profile
 from .cloud import server_path
 from .episode import Episode
+from .events import track
 from .music import EpisodeMusic, credits
 from .store import Workspace, atomic_write_json, check_id, inside
 from .i18n import tr
@@ -111,6 +113,8 @@ class Exporter:
                     job.update(state="done", progress=1.0, stage=tr("完成"), finished=time.time(),
                                result={"files": files, "report": record["report"], "mp3": res.mp3,
                                        "errors": res.errors, "folder": server_path(out_dir)})
+                track("export.done", ep.id, seconds=round(time.time() - job["started"], 1),
+                      length_s=round(tl.length / tl.sample_rate, 1), formats=len(formats))
                 for hook in self.on_done:
                     try:
                         hook(ep)
@@ -120,6 +124,7 @@ class Exporter:
                 traceback.print_exc()
                 with self._lock:
                     job.update(state="error", finished=time.time(), error=str(e) or type(e).__name__)
+                track("export.error", ep.id, seconds=round(time.time() - job["started"], 1))
             finally:
                 if pool:
                     pool.close()
@@ -129,7 +134,8 @@ class Exporter:
         if wait:
             run()
         else:
-            threading.Thread(target=run, name=f"export-{ep.id}", daemon=True).start()
+            # the context goes along so the export's end is logged for whoever started it (events.track)
+            threading.Thread(target=contextvars.copy_context().run, args=(run,), name=f"export-{ep.id}", daemon=True).start()
         return dict(job)
 
     def open_folder(self, episode_id: str) -> str:

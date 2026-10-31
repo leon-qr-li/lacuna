@@ -29,6 +29,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import admin_invite_mail, ai_settings, cloud, notice_mail, plans, retention, system_terms
+from .admin_activity import Activity
 from .admin_metrics import AI_BUDGET, AdminData
 from .admin_store import AdminStore
 from .appinfo import current_version
@@ -215,6 +216,7 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         m = getattr(main_app.state, "meter", None)
         return m if m is not None and m.on else None
     data: AdminData = ctx.provide("admin_data", lambda: AdminData(auth, spaces, fb, store, ctx.ws.root, main_app.state))
+    activity = Activity(data, store)
     secure = bool(auth.cloud)
     cookie = _cookie_name(secure)
     app = FastAPI(title="LACUNA admin", docs_url=None, redoc_url=None, openapi_url=None)
@@ -546,19 +548,29 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
 
     @app.get("/api/admin/users/{email}")
     def user(email: str, req: Request):
-        who(req)
+        s = who(req)
         u = user_or_404(email)
         e = u["email"]
+        activity.looked(s["email"], e)
         row = next((r for r in data.users() if r["email"] == e), {})
         sessions = sorted(({"created": v["created"], "seen": v.get("seen", v["created"]),
                             "device": notice_mail.device_label(v.get("agent", ""))}
                            for v in auth.sessions.values() if v["email"] == e and v["exp"] > auth.now()),
                           key=lambda x: -x["seen"])
-        return {"user": row, "shows": spaces.mine(e, detail=True), "activity": data.user_activity(e),
+        return {"user": row, "shows": spaces.mine(e, detail=True), "activity": activity.latest(e, 200),
                 "sessions": sessions, "devices": len(u.get("devices") or []), "notes": store.notes(f"user:{e}"),
                 "hours": store.hour_requests(email=e), "feedback": [f for f in fb.all() if f["email"] == e][:20],
                 "bonus_hours": sum(float(x.get("granted") or 0) for x in store.hour_requests(email=e) if x["status"] == "approved"),
                 "admin_sessions": [x | {"agent": notice_mail.device_label(x.get("agent", ""))} for x in store.sessions(e)]}
+
+    @app.get("/api/admin/users/{email}/activity")
+    def user_activity(email: str, req: Request, before: float | None = None, days: int = 7):
+        """用户动态: one window of the account's events, newest first (lacuna_app/admin_activity.py)."""
+        s = who(req)
+        u = user_or_404(email)
+        activity.looked(s["email"], u["email"])
+        head = {"email": u["email"], "name": u.get("name"), "role": u["role"], "plan": u.get("plan") or plans.DEFAULT}
+        return {"user": head} | activity.window(u["email"], before, days)
 
     @app.post("/api/admin/users/{email}")
     def update_user(email: str, body: UserBody, req: Request):

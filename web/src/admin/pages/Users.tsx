@@ -5,7 +5,8 @@ import { useCallback, useMemo, useState } from "react";
 import { api } from "../api";
 import type { PageProps } from "../Shell";
 import { t } from "../i18n";
-import { FB_STATUS, ROLE, SHOW_ROLE, eventName, planName, sourceName } from "../labels";
+import { DrawerActivity } from "../activity/Activity";
+import { FB_STATUS, ROLE, SHOW_ROLE, planName, sourceName } from "../labels";
 import type { Me, Note, PlanLimits, UserDetail, UserRow } from "../types";
 import { Avatar, Card, Chips, Drawer, Empty, Loading, PageHead, Pill, Who, act, ago, dialog, fmtBytes, fmtDate, fmtNum, fmtTime, fmtUsd, isDemo, toast, useData } from "../ui";
 
@@ -284,24 +285,8 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
           <p className="a-muted small">{t("没有节目")}</p>
         )}
       </section>
+      <DrawerActivity email={u.email} rows={d.activity} />
       <UserNotes email={u.email} notes={d.notes} />
-      <section>
-        <h4>{t("活动记录")}</h4>
-        {d.activity.length ? (
-          <div className="a-tl">
-            {d.activity.slice(0, 30).map((a, i) => (
-              <div key={i}>
-                <time>{fmtTime(a.ts)}</time>
-                {eventName(a.ev)}
-                {a.show ? ` · ${a.show}` : ""}
-                {a.ep ? ` · ${a.ep}` : ""}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="a-muted small">{t("还没有活动")}</p>
-        )}
-      </section>
       <section>
         <h4>{t("在哪些设备登录着")}</h4>
         {d.sessions.length ? (

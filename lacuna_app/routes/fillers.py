@@ -4,6 +4,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from .. import fillers
+from ..events import note
 from .episodes import PlayheadBody
 
 
@@ -23,4 +24,8 @@ def register(app, ctx) -> None:
     @app.post("/api/episodes/{episode_id}/fillers/cut")
     def cut(episode_id: str, body: CutBody):
         ep = get(episode_id)
-        return mutate(ep, body.playhead, lambda: {"cut": len(fillers.cut(ep, body.tracks))})
+        def go():
+            n = len(fillers.cut(ep, body.tracks))
+            note(n=n)
+            return {"cut": n}
+        return mutate(ep, body.playhead, go)

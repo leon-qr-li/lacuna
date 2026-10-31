@@ -1,6 +1,7 @@
 // 演示数据 (decision 2026-10-24-admin-site): made-up people and numbers that show what every page looks like with a
 // few hundred users. Nothing here is real and nothing is ever saved (ui.tsx act() only shows a toast). The
 // mock content is data, not interface text, so its Chinese lines carry `i18n-ignore`.
+import { demoActivity } from "./activity/demo";
 import { t } from "./i18n";
 import type {
   AccessData,
@@ -256,13 +257,7 @@ function userDetail(email: string): UserDetail {
   return {
     user: u,
     shows: [{ id: "s0", name: SHOWS[0], role: "admin", episodes: u.episodes, people: 2, updated: t0 - D }],
-    activity: [
-      { ts: t0 - 2 * H, ev: "export.start", ep: "EP12", show: SHOWS[0], props: {} },
-      { ts: t0 - 3 * H, ev: "review.batch", ep: "EP12", show: SHOWS[0], props: {} },
-      { ts: t0 - D, ev: "feedback", ep: null, show: null, props: {} },
-      { ts: t0 - 4 * D, ev: "import.done", ep: "EP12", show: SHOWS[0], props: {} },
-      { ts: u.created, ev: "user.signup", ep: null, show: null, props: {} },
-    ],
+    activity: demoActivity(u.email, null).rows,
     sessions: [
       { created: t0 - 3 * D, seen: t0 - 2 * H, device: "Chrome · macOS" },
       { created: t0 - 9 * D, seen: t0 - D, device: "Safari · iPhone" },
@@ -529,6 +524,7 @@ export function demoData(url: string): unknown {
   if (p === "/feedback/prompts") return prompts();
   if (p === "/notes") return notes(u.searchParams.get("target") || "");
   if (p === "/users") return { users: demoUsers(), plans: hours().plans };
+  if (/^\/users\/[^/]+\/activity$/.test(p)) return demoActivity(decodeURIComponent(p.split("/")[2]), Number(u.searchParams.get("before")) || null);
   if (p.startsWith("/users/")) return userDetail(decodeURIComponent(p.slice(7)));
   if (p === "/access") return access();
   if (p === "/hours") return hours();
