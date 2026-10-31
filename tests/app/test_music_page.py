@@ -107,7 +107,7 @@ def test_automatic_looping_bed_mix(setup):
     ws, lib, ep, bed, intro = setup
     m = EpisodeMusic(ws, ep, lib)
     p = m.add(bed["id"], "bed", loop=True)
-    assert p["auto"] is True and p["loop"] is True and p["at_base"] is None and p["bg_db"] == BED_BG_DB == 25.0   # 铺底 default, 3 dB under the others (Leon 2026-10-30)
+    assert p["auto"] is True and p["loop"] is True and p["at_base"] is None and p["bg_db"] == BED_BG_DB == 22.0   # 铺底 default (Leon 2026-10-31: back from 25)
     tl, media, lay = m.mix()
     it = next(x for x in lay.items if x.p["id"] == p["id"])
     assert it.start == 0 and it.length == lay.final(lay.voice_len)   # the whole talk is free: fills it

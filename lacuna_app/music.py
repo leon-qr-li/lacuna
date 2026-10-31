@@ -65,7 +65,7 @@ ANCHORED = ("interlude", "clip", "bed")      # roles placed at a point of the co
 SOLO_S = {"intro": 10.0, "interlude": 15.0}  # intro: music alone before the voice; interlude: full level in the gap
 RAMP_S = 2.0                                 # rise / fall between full level and background
 BG_DB = 22.0                                 # background = this much under full level (new placements)
-BED_BG_DB = 25.0                             # a bed's default (Leon 2026-10-30: "铺底再低一点", was BG_DB)
+BED_BG_DB = 22.0                             # a bed's default (Leon 2026-10-31: back from 25 dB, "声儿有点太小了")
 BG_DB_V1 = 20.0                              # what a schema-1 placement was heard with
 OUTRO_TAIL_S = 30.0                          # default: the voice ends this long before the outro ends
 FADE_OUT_S = {"outro": 10.0}                 # fade at a trimmed end (others: 3 s)

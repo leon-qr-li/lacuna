@@ -86,3 +86,17 @@ def test_cleanup_once_keeps_intro_and_outro(client, tmp_path, monkeypatch):
     assert [p["role"] for p in m["placements"]] == ["intro"] and m["gaps"] == []
     assert (root / "episodes" / EPISODE / "music.json.before-cleanup-20261030").exists()
     assert c.run(root) == []                                                            # nothing left to clean
+
+
+def test_beds_placed_at_25_db_go_back_to_22(client, tmp_path):
+    from lacuna_app.routes import bed_level_back_once as c
+    a = upload(client, write_music(tmp_path / "in" / "bed_a.wav", 8.0), "bed")
+    b = upload(client, write_music(tmp_path / "in" / "bed_b.wav", 9.0), "bed")
+    client.post(f"{EP}/music", json={"asset_id": a, "role": "bed", "bg_db": 25})
+    client.post(f"{EP}/music", json={"asset_id": b, "role": "bed", "bg_db": 18})
+    root = Path(client.app.state.ctx.ws.root)
+    assert c.run(root) == {EPISODE: 1}
+    levels = {p["asset_id"]: p["bg_db"] for p in client.get(f"{EP}/music").json()["placements"]}
+    assert levels == {a: 22.0, b: 18.0}                                                  # a hand-set level stays
+    client.post(f"{EP}/music", json={"asset_id": a, "role": "bed"})
+    assert all(p["bg_db"] in (22.0, 18.0) for p in client.get(f"{EP}/music").json()["placements"])

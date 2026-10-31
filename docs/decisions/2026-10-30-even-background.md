@@ -12,3 +12,4 @@ down as background, a sudden loud bit must come down too, automatically, for all
   in the music, never raised). Steps of 1 dB every 0.25 s at most, crossfaded over 0.1 s, as gain automation (Ducks)
   on the music track; the source file is untouched.
 * Same batch: a new bed's default background level is 25 dB under full level (was 22; `music.BED_BG_DB`).
+* 2026-10-31: back to 22 dB (Leon: "声儿有点太小了"); beds stored at 25 dB put back once at startup (`routes/bed_level_back_once.py`).
