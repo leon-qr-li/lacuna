@@ -1,7 +1,8 @@
 // API of this feature (moved out of src/api.ts so features don't all edit one file)
 import type { Gap } from "../gaps/api";
 import type { Usage } from "../../api";
-import { ep, failure, req } from "../../api";
+import { ep, req } from "../../api";
+import { postWithProgress, type OnProgress } from "../upload-progress/send";
 import { PIECES_ABOVE, sendPieces } from "../upload-parts/pieces";
 
 export type CreditStatus = "confirmed" | "suggested" | "unknown";
@@ -177,23 +178,26 @@ export type PlacementPatch = Partial<{
   loop: boolean;
 }>;
 
-/** `episode`: the upload belongs to that episode (本集); without it, it is shared (公共). */
-/** `episode`: only that episode may use it; else `album`: that album's episodes; else the whole project. */
-async function uploadAsset(file: File, kind: string, note = "", episode = "", album = ""): Promise<{ asset: Asset; duplicate: boolean }> {
+/** `episode`: only that episode may use it; else `album`: that album's episodes; else the whole project.
+ *  `onProgress`: how much of the file has gone (features/upload-progress), then "work" while the server reads it. */
+async function uploadAsset(
+  file: File,
+  kind: string,
+  note = "",
+  episode = "",
+  album = "",
+  onProgress?: OnProgress,
+): Promise<{ asset: Asset; duplicate: boolean }> {
   const q = new URLSearchParams({ name: file.name, kind, note });
   if (episode) q.set("episode", episode);
   else if (album) q.set("album", album);
   // a big file goes in pieces first (upload-parts); this request then names them instead of a body
-  const part = file.size > PIECES_ABOVE ? await sendPieces(file, () => undefined).done : "";
-  if (part) q.set("part", part);
-  const url = `/api/library/upload?${q}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/octet-stream" },
-    body: part ? null : file,
-  });
-  if (!res.ok) throw await failure(res, url);
-  return res.json() as Promise<{ asset: Asset; duplicate: boolean }>;
+  const part = file.size > PIECES_ABOVE ? await sendPieces(file, (f) => onProgress?.(f, "send")).done : "";
+  if (part) {
+    q.set("part", part);
+    onProgress?.(1, "work");
+  }
+  return postWithProgress<{ asset: Asset; duplicate: boolean }>(`/api/library/upload?${q}`, part ? null : file, part ? undefined : onProgress);
 }
 
 export const libraryApi = {

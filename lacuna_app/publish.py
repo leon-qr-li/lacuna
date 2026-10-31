@@ -656,6 +656,9 @@ class Publisher:
         if out.usage:
             self.on_usage(ep.id, out.usage)
         draft, notes = clean(out.data, segs)
+        from . import name_check   # names put back as heard after the import's check stay as heard
+        keep = name_check.kept(self.ws.root)
+        draft["names"] = [n for n in draft["names"] if not name_check.is_kept(keep, n["heard"], n["suggested"])]
         if not draft["sections"]:
             raise PublishError(tr("时间轴是空的（引用的段落都对不上），请再生成一次"))
         old = self.load(ep)

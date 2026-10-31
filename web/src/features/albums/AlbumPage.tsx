@@ -9,6 +9,7 @@ import { BusyLabel, EpisodeListSkeleton } from "../loading/Loading";
 import { AlbumDialog } from "./AlbumDialog";
 import { AlbumCover } from "./Cover";
 import { MoveToAlbum } from "./MoveToAlbum";
+import { UploadRows, useUploadRows } from "../upload-progress/UploadProgress";
 import { useAlbums, type Album, type AlbumsView, type DefaultTrack } from "./api";
 import { EmptyState } from "../states/States";
 import { useReadOnly } from "../listen-only/state";
@@ -88,6 +89,7 @@ export function AlbumPage() {
           onSaved={(v, r) => {
             setDialog(null);
             albums.set(v);
+            loadEpisodes(); // album naming may have renamed its episodes
             if (r.deleted) window.location.hash = "#/";
           }}
         />
@@ -147,18 +149,22 @@ function AlbumShelf({ album }: { album: Album }) {
   }, []);
   useEffect(load, [load]);
   const mine: Asset[] = lib?.assets.filter((a) => a.albums?.includes(album.id)) ?? [];
+  const up = useUploadRows();
   const add = async (files: File[]) => {
     setBusy(true);
+    up.start(files);
     const done: string[] = [];
-    for (const f of files) {
+    for (const [i, f] of files.entries()) {
       try {
-        const r = await libraryApi.uploadAsset(f, kind, "", "", album.id);
+        const r = await libraryApi.uploadAsset(f, kind, "", "", album.id, up.track(i));
+        up.patch(i, { state: "done" });
         done.push(
           r.duplicate && r.asset.shared
             ? t("素材库里已经有这首（整个节目都能用）：{name}", { name: r.asset.name })
             : t("已加到这个专辑：{name}", { name: r.asset.name }),
         );
       } catch (e) {
+        up.patch(i, { state: "error" });
         done.push(t("没加进去：{name}", { name: f.name }) + `（${(e as Error).message}）`);
       }
     }
@@ -212,6 +218,7 @@ function AlbumShelf({ album }: { album: Album }) {
           }}
         />
       </div>
+      <UploadRows rows={up.rows} />
       {msg && (
         <p className="small muted" role="status">
           {msg}

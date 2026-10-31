@@ -6,6 +6,9 @@ import { libraryApi, type Asset } from "../library/api";
 import { BusyLabel } from "../loading/Loading";
 import { AlbumCover } from "./Cover";
 import { albumsApi, type Album, type AlbumsView } from "./api";
+import { NamingField } from "../album-naming/NamingField";
+import { RenameExisting } from "../album-naming/RenameExisting";
+import { namingApi, type Naming } from "../album-naming/api";
 
 /** 新建专辑 / 专辑设置 (one form): name, cover, about, default opener and ending (empty: the project's)
  *  and, when creating, episodes to put in. Esc or the backdrop cancels. */
@@ -26,6 +29,8 @@ export function AlbumDialog({ album, view, loose, preset, onClose, onSaved }: {
   const [intro, setIntro] = useState(album?.intro?.asset_id ?? "");
   const [outro, setOutro] = useState(album?.outro?.asset_id ?? "");
   const [picked, setPicked] = useState<string[]>(preset ?? []);
+  // a new album starts with Leon's own format (编号 + 空格 + 名称); an existing one keeps what it has
+  const [naming, setNaming] = useState<Naming | null>(album ? (album.naming ?? null) : { preset: "space" });
   const [cover, setCover] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(album?.cover_url ?? null);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -76,6 +81,10 @@ export function AlbumDialog({ album, view, loose, preset, onClose, onSaved }: {
       }
       const id = album?.id ?? created!;
       if (cover) v = await albumsApi.cover(id, cover);
+      if (JSON.stringify(naming) !== JSON.stringify(album?.naming ?? null)) {
+        await namingApi.set(id, naming);
+        v = await albumsApi.list();
+      }
       onSaved(v, { created });
     } catch (e) {
       setErr((e as Error).message);
@@ -104,6 +113,7 @@ export function AlbumDialog({ album, view, loose, preset, onClose, onSaved }: {
   };
 
   const shown = { id: album?.id ?? "new", name: name || "?", cover_url: preview };
+  const sampleId = [...(album?.episodes ?? [])].reverse().find((e) => /\d/.test(e)) ?? "EP012";
   return (
     <div className="dlg-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form
@@ -171,6 +181,16 @@ export function AlbumDialog({ album, view, loose, preset, onClose, onSaved }: {
           ))}
         </div>
         <p className="small muted alb-hint">{t("专辑设了片头片尾，就用专辑的，不用节目的；以后放进这个专辑的新剧集会自动带上。")}</p>
+        <NamingField value={naming} onChange={setNaming} sampleId={sampleId} />
+        {album && (
+          <RenameExisting
+            album={album.id}
+            naming={naming}
+            count={album.episodes.length}
+            asking={(on) => (asking.current = on)}
+            onDone={() => void albumsApi.list().then((v) => onSaved(v, {}))}
+          />
+        )}
         {!album && !!loose?.length && (
           <fieldset className="alb-field alb-pick">
             <legend className="alb-label">{t("把这些剧集放进来（可不选）")}</legend>

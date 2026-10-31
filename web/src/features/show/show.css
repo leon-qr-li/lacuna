@@ -62,3 +62,7 @@
 .show-auto-publish .check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
 .show-auto-publish .auto-publish-head { align-items: center; }
 .show-auto-publish .soon-badge { font-size: 12px; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+/* 导入时核对专有名词 (lacuna_app/name_check.py) */
+.show-check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.show-check input { margin-top: 4px; accent-color: var(--accent); flex: none; }
+.show-check > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }

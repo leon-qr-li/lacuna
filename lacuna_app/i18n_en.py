@@ -807,4 +807,8 @@ EN: dict[str, str | tuple[str, str]] = {
     "还没有可以放进间隙的音乐：在左边的素材上点「放到 → 间隙」，或在素材库给音乐标上「休息间隙」。":
         "No music for the gaps yet: on a song on the left, choose “Place → Gap”, or mark music as “Break” in the library.",
     "取消了 {n} 段铺底。": "Removed {n} background pieces.",
+    "命名格式里不能换行": "The naming format can't contain line breaks",
+    "没有这种命名格式": "Unknown naming format",
+    "这个专辑还没有设命名格式": "This album has no naming format yet",
+    "核对片名、人名等专有名词": "Checking film titles, names and other proper nouns",
 }

@@ -77,7 +77,7 @@ def register(app, ctx) -> None:
             eps = sorted(e for e, x in doc["episodes"].items() if x == a["id"] and e in live)
             rows.append({"id": a["id"], "name": a["name"], "about": a.get("about") or "", "created": a["created"],
                          "cover_url": f"/api/albums/{a['id']}/cover?v={a['cover']}" if a.get("cover") else None,
-                         "episodes": eps, **music(a)})
+                         "episodes": eps, "naming": a.get("naming"), **music(a)})
         return {"albums": rows, "episodes": {e: x for e, x in doc["episodes"].items() if e in live},
                 "project": music(doc["project"])}
 

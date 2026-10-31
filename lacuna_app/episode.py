@@ -336,6 +336,13 @@ class Episode:
                 atomic_write_json(self.dir / META_FILE, self.meta,
                                   protected=tuple(Path(m.path) for m in self.media.values()))
 
+    def set_title(self, title: str) -> None:
+        """Rename the episode (album naming, naming.py): only its title in episode.json changes."""
+        with self.lock:
+            self.meta["title"] = title
+            atomic_write_json(self.dir / META_FILE, self.meta,
+                              protected=tuple(Path(m.path) for m in self.media.values()))
+
     def render(self, enabled: frozenset[str], a: int, b: int) -> np.ndarray:
         with self.lock:
             return self.previewer.render(self.timeline_for(enabled), a, b).audio
