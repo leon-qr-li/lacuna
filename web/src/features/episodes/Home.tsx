@@ -20,6 +20,7 @@ import { EpisodeCard } from "./EpisodeCard";
 import { EmptyState, ErrorState } from "../states/States";
 import { episodesApi } from "./api";
 import { useReadOnly } from "../listen-only/state";
+import { RenameButton } from "../episode-name/RenameButton";
 
 const go = (id: string, mode = "listen") => {
   window.location.hash = `#/ep/${encodeURIComponent(id)}/${mode}`;
@@ -111,6 +112,7 @@ export function Home({ nav }: { nav: ReactNode }) {
                   onNew={() => setDialog({ preset: e.id })}
                 />
               )}
+              <RenameButton id={e.id} title={e.title} onRenamed={() => reload()} />
               <button
                 type="button"
                 className="btn btn-ghost btn-small ep-archive"

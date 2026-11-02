@@ -4,6 +4,7 @@ from __future__ import annotations
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
+from .. import episode_name
 from ..editor import editor_status
 from ..episode import Episode
 from ..publish import PublishBusy, Publisher
@@ -68,7 +69,10 @@ def register(app, ctx) -> None:
     @app.put("/api/episodes/{episode_id}/publish")
     def publish_edit(episode_id: str, body: PublishEditBody):
         ep = get(episode_id)
-        return publish_change(ep, lambda: publisher.edit(ep, body.markdown, body.title, body.rev))
+        out = publish_change(ep, lambda: publisher.edit(ep, body.markdown, body.title, body.rev))
+        if body.title and body.title.strip():      # one name everywhere (episode_name.py)
+            episode_name.rename(ctx.ws, ep, body.title)
+        return out
 
     @app.put("/api/episodes/{episode_id}/publish/level")
     def publish_level(episode_id: str, body: LevelBody):

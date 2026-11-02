@@ -28,6 +28,9 @@ import { useProjects } from "./features/projects/api";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
 import { Presence } from "./features/coedit/Presence";
 import { useCoedit } from "./features/coedit/useCoedit";
+import { EpisodeTitle } from "./features/episode-name/EpisodeTitle";
+import { onRenamed } from "./features/episode-name/api";
+import { useReadOnly } from "./features/listen-only/state";
 import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
 import { MenuNav } from "./features/mobile/MenuNav";
@@ -120,6 +123,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [ep, setEp] = useState<Episode | null>(null);
   const [err, setErr] = useState<unknown>(null);
   const [attempt, setAttempt] = useState(0);
+  const readOnly = useReadOnly() !== null; // 只听 members and archived shows can't rename
+  const setTitle = useCallback((v: { id: string; title: string }) => v.id === id && setEp((e) => (e ? { ...e, title: v.title } : e)), [id]);
+  useEffect(() => onRenamed(setTitle), [setTitle]); // a rename on 发布资料 shows in the top bar too
   // a toast; `undo` puts a small 撤销 button in it (after a bulk action: 全部通过 / 去掉 um/uh / 统一音量)
   const [toast, setToast] = useState<{ msg: string; undo?: boolean } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -279,7 +285,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         <span className="crumb-sep" aria-hidden="true">
           /
         </span>
-        <span className="ep-title">{ep?.title ?? "…"}</span>
+        <EpisodeTitle id={id} title={ep?.title} readOnly={readOnly} onRenamed={setTitle} />
         <span className="grow" />
         <Nav on="episode" />
       </header>

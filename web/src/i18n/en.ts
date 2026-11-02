@@ -89,7 +89,6 @@ export const en: Dict = {
   "已取消": "Cancelled",
   "导入新一集": "Import an episode",
   "剧集编号": "Episode ID",
-  "标题（可不填）": "Title (optional)",
   "还没选": "Not chosen",
   "开始导入": "Start import",
   "取消": "Cancel",

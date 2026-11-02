@@ -154,8 +154,8 @@ function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; n
           <input value={id} onChange={(e) => patch({ id: e.target.value })} data-testid="import-id" />
         </label>
         <label>
-          {t("标题（可不填）")}
-          <input value={title} onChange={(e) => patch({ title: e.target.value })} placeholder={`${id} · …`} data-testid="import-title" />
+          {t("这一集叫什么")}
+          <input value={title} onChange={(e) => patch({ title: e.target.value })} placeholder={t("想好了就填，没想好可以空着")} data-testid="import-title" />
         </label>
         <label>
           {t("这一集说的语言")}
@@ -183,6 +183,11 @@ function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; n
         {naming && (
           <p className="small muted import-naming" data-testid="import-naming">
             {t("这一集会叫：{title}", { title: formatTitle(naming, id.trim(), bare(id.trim(), title, naming)) })}
+          </p>
+        )}
+        {!title.trim() && (
+          <p className="small muted import-naming" data-testid="import-name-later">
+            {t("不填也行：剪完到「发布」那一步，LACUNA 会给你几个名字挑，随时也能改。")}
           </p>
         )}
       </div>

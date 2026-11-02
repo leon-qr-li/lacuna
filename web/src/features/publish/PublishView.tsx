@@ -8,6 +8,7 @@ import { confirmDialog, noticeDialog } from "../dialog/Dialog";
 import type { RequestError } from "../../api";
 import { useShow } from "../show/api";
 import { EmptyState } from "../states/States";
+import { PublishTitle } from "../episode-name/PublishTitle";
 
 /** 发布资料: title, one-line blurb, show notes (Markdown, approved D40 format), chapters and the
  *  names to check, all for the version of the cut that will be published. */
@@ -175,27 +176,18 @@ export function PublishView({ id, version, flash }: { id: string; version: strin
             </p>
           ))}
 
-          <section className="card" aria-label={t("标题")} data-tour="publish-title-card">
-            <div className="card-head">
-              <strong>{t("标题")}</strong>
+          <PublishTitle
+            id={id}
+            title={pack.title}
+            suggested={pack.suggested ?? [pack.title, ...pack.alt_titles]}
+            busy={busy}
+            onRenamed={() => void load()}
+            copyButton={
               <button type="button" className="btn btn-outline btn-small" onClick={() => copy("text", pack.title, t("标题已复制"))}>
                 {t("复制标题")}
               </button>
-            </div>
-            <p className="publish-title" data-testid="publish-title">
-              {pack.title}
-            </p>
-            {pack.alt_titles.length > 0 && (
-              <div className="row wrap gap8">
-                <span className="muted small">{t("换一个：")}</span>
-                {pack.alt_titles.map((alt) => (
-                  <button key={alt} type="button" className="btn btn-outline btn-small" disabled={busy} onClick={() => act(publishApi.editPublish(id, { title: alt, rev: pack.rev }), t("标题已换"))}>
-                    {alt}
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
+            }
+          />
 
           {pack.blurb && (
             <section className="card" aria-label={t("一句话简介")}>

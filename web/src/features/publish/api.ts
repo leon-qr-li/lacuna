@@ -18,6 +18,8 @@ export interface PublishName {
 export interface PublishPack {
   title: string;
   alt_titles: string[];
+  /** LACUNA's titles as written, its own first (the pick list; older packs: none) */
+  suggested?: string[];
   blurb: string;
   markdown: string;
   edited: boolean;

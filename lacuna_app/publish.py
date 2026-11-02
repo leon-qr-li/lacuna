@@ -661,6 +661,14 @@ class Publisher:
         draft["names"] = [n for n in draft["names"] if not name_check.is_kept(keep, n["heard"], n["suggested"])]
         if not draft["sections"]:
             raise PublishError(tr("时间轴是空的（引用的段落都对不上），请再生成一次"))
+        # LACUNA's titles stay listed as they came (the publish page's pick list); an episode the user already
+        # named keeps that name as the title (episode_name.py)
+        draft["suggested"] = list(dict.fromkeys(t for t in [draft["title"], *draft["alt_titles"]] if t))
+        from . import episode_name
+        own = episode_name.view(self.ws, ep)["short"] if out.adapter != "sample" else ""   # the tour's sample keeps its own
+        if own:
+            draft["title"] = own
+            draft["alt_titles"] = [t for t in draft["suggested"] if t != own]
         old = self.load(ep)
         pack = {"schema": PUBLISH_SCHEMA, "episode": ep.id,
                 "generated_at": now_iso(), "level": (old or {}).get("level") or DEFAULT_LEVEL,
@@ -745,6 +753,8 @@ class Publisher:
                 for k in ("title", "blurb", "intro"):
                     d[k] = apply_names(d[k], fix)
                 d["alt_titles"] = [apply_names(t, fix) for t in d["alt_titles"]]
+                if "suggested" in d:
+                    d["suggested"] = [apply_names(t, fix) for t in d["suggested"]]
                 for sec in d["sections"]:
                     sec["heading"] = apply_names(sec["heading"], fix)
                     for e in sec["entries"]:
@@ -759,6 +769,10 @@ class Publisher:
                 self._layout(ep, pack, music_info(self.ws, ep), keep_text=True)
                 add_name(self.ws, n["heard"], n["suggested"])
                 n["state"] = "applied"
+                from . import episode_name    # the episode's own name gets the same fix
+                own = episode_name.view(self.ws, ep)["name"]
+                if own and apply_names(own, fix) != own:
+                    episode_name.rename(self.ws, ep, apply_names(own, fix))
             else:
                 n["state"] = "ignored"
             self.save(ep, pack)
@@ -807,6 +821,7 @@ class Publisher:
         d = pack["draft"]
         out["pack"] = {
             "title": d["title"], "alt_titles": d["alt_titles"], "blurb": d["blurb"],
+            "suggested": d.get("suggested") or list(dict.fromkeys(t for t in [d["title"], *d["alt_titles"]] if t)),
             "markdown": pack["markdown"], "edited": pack["edited"], "chapters": pack["chapters"],
             "names": [{k: n[k] for k in ("heard", "suggested", "why", "state")} for n in d["names"]],
             "stale": pack["version"] != ep.version_key() or music.credits != pack.get("music")
