@@ -5,6 +5,7 @@ import { DEFAULT_LEN, LENGTHS } from "./api";
 import type { Gap } from "./api";
 import type { Gaps } from "./useGaps";
 import "./gaps.css";
+import { keyText } from "../shortcuts/keys";
 
 const PAUSE = (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -100,7 +101,7 @@ export const GapAddMenu = forwardRef<HTMLDivElement, { left: number; top: number
         <button type="button" role="menuitem" className="ml-menu-item" disabled={gaps.busy || ro} onClick={() => void add(DEFAULT_LEN)} data-testid="gap-add">
           {PAUSE}
           <span>{t("在此处加入间隙")}</span>
-          <kbd>Shift+G</kbd>
+          {keyText("gap") && <kbd>{keyText("gap")}</kbd>}
         </button>
         <Lengths value={DEFAULT_LEN} disabled={gaps.busy || ro} onPick={(s) => void add(s)} testid="gap-add" />
         <p className="small muted gap-menu-note">{t("会放到最近的两句话之间")}</p>

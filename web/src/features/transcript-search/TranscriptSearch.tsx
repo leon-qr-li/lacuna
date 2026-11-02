@@ -6,6 +6,7 @@ import { showOnTimeline } from "../manual/EditLanes";
 import { transcriptRev } from "../transcript-fix/api";
 import { clearFound, searchApi, setFound, useFound } from "./api";
 import "./transcript-search.css";
+import { matches } from "../shortcuts/keys";
 
 const WAIT_MS = 250; // after the last key before asking
 
@@ -55,7 +56,7 @@ export function TranscriptSearch({ ep, time, player }: { ep: Episode; time: numb
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       const el = input.current;
-      if (!el || !el.offsetParent || !(e.ctrlKey || e.metaKey) || e.altKey || e.key.toLowerCase() !== "f") return;
+      if (!el || !el.offsetParent || !matches(e, "find")) return; // 设置 → 快捷键, default Ctrl+F / ⌘F
       e.preventDefault();
       el.focus();
       el.select();

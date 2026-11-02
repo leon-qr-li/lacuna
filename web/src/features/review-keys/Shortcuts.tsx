@@ -1,9 +1,12 @@
 import { t } from "../../i18n";
 import { help } from "./keys";
+import { useShortcuts } from "../shortcuts/keys";
+import { CustomizeLink } from "../shortcuts/Link";
 import "./review-keys.css";
 
 /** The "?" button in the review dock and the shortcut card it opens. */
 export function ShortcutsButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  useShortcuts(); // the person's own keys (设置 → 快捷键)
   return (
     <span className="rk-wrap">
       <button
@@ -23,8 +26,8 @@ export function ShortcutsButton({ open, onToggle }: { open: boolean; onToggle: (
             {help().map((h) => (
               <li key={h.label}>
                 <span className="rk-keys">
-                  {h.keys.map((k) => (
-                    <kbd key={k}>{k}</kbd>
+                  {h.keys.map((k, i) => (
+                    <kbd key={i}>{k}</kbd>
                   ))}
                 </span>
                 <span>{h.label}</span>
@@ -32,6 +35,7 @@ export function ShortcutsButton({ open, onToggle }: { open: boolean; onToggle: (
             ))}
           </ul>
           <p className="muted small">{t("在输入框里打字时快捷键不生效。")}</p>
+          <CustomizeLink />
         </div>
       )}
     </span>

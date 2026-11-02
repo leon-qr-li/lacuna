@@ -811,4 +811,5 @@ EN: dict[str, str | tuple[str, str]] = {
     "没有这种命名格式": "Unknown naming format",
     "这个专辑还没有设命名格式": "This album has no naming format yet",
     "核对片名、人名等专有名词": "Checking film titles, names and other proper nouns",
+    "快捷键太多了": "Too many shortcuts",
 }

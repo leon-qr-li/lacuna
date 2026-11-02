@@ -13,6 +13,7 @@
 .ml-help:hover .ml-help-tip, .ml-help:focus-within .ml-help-tip { display: flex; }
 .ml-help-row { display: grid; grid-template-columns: 9.5em 1fr; gap: 12px; }
 .ml-help-k { color: var(--ink); font-weight: 600; }
+.ml-help-foot { padding-top: 6px; border-top: 1px solid var(--line); }
 /* the time ruler: drag it to pan; labels sit on the lanes' time scale */
 .ml-ruler { position: relative; flex: 1; height: 22px; border-radius: 8px; background: var(--hover); overflow: hidden; cursor: grab;
   touch-action: none; user-select: none; font-size: 11px; color: var(--ink-3); }
