@@ -665,7 +665,7 @@ class Publisher:
         # named keeps that name as the title (episode_name.py)
         draft["suggested"] = list(dict.fromkeys(t for t in [draft["title"], *draft["alt_titles"]] if t))
         from . import episode_name
-        own = episode_name.view(self.ws, ep)["short"]
+        own = episode_name.view(self.ws, ep)["short"] if out.adapter != "sample" else ""   # the tour's sample keeps its own
         if own:
             draft["title"] = own
             draft["alt_titles"] = [t for t in draft["suggested"] if t != own]
