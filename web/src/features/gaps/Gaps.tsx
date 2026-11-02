@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { t } from "../../i18n";
 import { useListenOnly } from "../listen-only/state";
 import { DEFAULT_LEN, LENGTHS } from "./api";
@@ -100,7 +100,7 @@ export const GapAddMenu = forwardRef<HTMLDivElement, { left: number; top: number
         <button type="button" role="menuitem" className="ml-menu-item" disabled={gaps.busy || ro} onClick={() => void add(DEFAULT_LEN)} data-testid="gap-add">
           {PAUSE}
           <span>{t("在此处加入间隙")}</span>
-          <kbd>G</kbd>
+          <kbd>Shift+G</kbd>
         </button>
         <Lengths value={DEFAULT_LEN} disabled={gaps.busy || ro} onPick={(s) => void add(s)} testid="gap-add" />
         <p className="small muted gap-menu-note">{t("会放到最近的两句话之间")}</p>
@@ -152,14 +152,52 @@ export function TranscriptGap({ here, gaps, at }: { here: Gap[]; gaps: Gaps; at:
       </>
     );
   if (ro) return null;
+  return <GapPlus gaps={gaps} at={at} />;
+}
+
+/** The 「＋」 between two lines (Leon 2026-11-02, users added gaps by mistake): only the small dot is a button, and it
+ *  opens a menu to pick the length; nothing is added until a length is picked. Esc or a click elsewhere closes it. */
+function GapPlus({ gaps, at }: { gaps: Gaps; at: number }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("pointerdown", away);
+    window.addEventListener("keydown", key);
+    return () => {
+      window.removeEventListener("pointerdown", away);
+      window.removeEventListener("keydown", key);
+    };
+  }, [open]);
+  const add = async (len: number) => {
+    setOpen(false);
+    await gaps.add(at, len);
+  };
   return (
-    <div className="gap-plus">
-      <button type="button" className="gap-plus-btn" disabled={gaps.busy} onClick={() => void gaps.add(at)} title={t("在这两句之间加入 {s} 秒间隙", { s: DEFAULT_LEN })} data-testid="gap-plus">
+    <div className={`gap-plus ${open ? "is-open" : ""}`} ref={box}>
+      <button
+        type="button"
+        className="gap-plus-btn"
+        disabled={gaps.busy}
+        aria-expanded={open}
+        aria-label={t("在这里加入间隙")}
+        title={t("在这里加入间隙")}
+        onClick={() => setOpen((o) => !o)}
+        data-testid="gap-plus"
+      >
         <span className="gap-plus-dot" aria-hidden>
           ＋
         </span>
-        <span className="gap-plus-text">{t("在这里加入间隙")}</span>
       </button>
+      <span className="gap-plus-line" aria-hidden />
+      {open && (
+        <div className="gap-plus-menu" role="dialog" aria-label={t("在这两句之间加入间隙")} data-testid="gap-plus-menu">
+          <b className="small">{t("在这两句之间加入间隙")}</b>
+          <Lengths value={DEFAULT_LEN} disabled={gaps.busy} onPick={(s) => void add(s)} testid="gap-plus-add" />
+        </div>
+      )}
     </div>
   );
 }

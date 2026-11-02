@@ -108,7 +108,7 @@ function Help() {
     [t("Ctrl + 滚轮"), t("放大 / 缩小")],
     [t("拖刻度条，或按住空格拖"), t("左右移动时间线")],
     ["Ctrl + Z", t("撤销")],
-    [t("右键空白处，或按 G"), t("加入间隙（右键：在点的位置；G：在播放头）")],
+    [t("右键空白处，或按 Shift+G"), t("加入间隙（右键：在点的位置；Shift+G：在播放头）")],
   ];
   return (
     <span className="ml-help">
@@ -403,7 +403,7 @@ export function EditLanes({
     setGapMenu(null);
     setGapPop((p) => (p?.id === g.id ? null : { id: g.id, left: Math.max(8, Math.min(c.width - 272, r.left - c.left - 132)), top: r.bottom - c.top + 6 }));
   };
-  // a click elsewhere or Esc closes the gap menu / card; G adds a gap at the playhead
+  // a click elsewhere or Esc closes the gap menu / card; Shift+G adds a gap at the playhead
   useEffect(() => {
     if (!gapMenu && !gapPop) return;
     const away = (e: PointerEvent) => !gapBox.current?.contains(e.target as Node) && (setGapMenu(null), setGapPop(null));
@@ -425,7 +425,8 @@ export function EditLanes({
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       if (["INPUT", "TEXTAREA", "SELECT"].includes(tag) || (e.target as HTMLElement).isContentEditable) return;
-      if (e.ctrlKey || e.metaKey || e.altKey || e.key.toLowerCase() !== "g" || e.repeat || ro.current) return;
+      // Shift+G, not G alone (Leon 2026-11-02: a bare G added gaps by mistake)
+      if (e.ctrlKey || e.metaKey || e.altKey || !e.shiftKey || e.key.toLowerCase() !== "g" || e.repeat || ro.current) return;
       e.preventDefault();
       void addGap.current(timeRef.current);
     };
