@@ -35,8 +35,6 @@ export const en: Dict = {
   "标题": "Title",
   "标题已复制": "Title copied",
   "复制标题": "Copy title",
-  "换一个：": "Alternatives: ",
-  "标题已换": "Title changed",
   "一句话简介": "One-line blurb",
   "简介已复制": "Blurb copied",
   "复制": "Copy",

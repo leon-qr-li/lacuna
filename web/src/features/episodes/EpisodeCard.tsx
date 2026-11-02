@@ -3,6 +3,8 @@ import type { EpisodeListItem } from "../../api";
 import { fmt } from "../../api";
 import { t } from "../../i18n";
 import { useProjects } from "../projects/api";
+import { unnamed } from "../episode-name/api";
+import "../episode-name/episode-name.css";
 
 /** One episode tile (剧集 and 已归档 share it); `actions` sit in the tile's corner. The tile shows the chosen
  *  cover, else the show's colour, and a stripe on top for where the episode is (batch 7, T3). */
@@ -29,6 +31,7 @@ export function EpisodeCard({ e, href, actions, extra }: { e: EpisodeListItem; h
         ) : (
           <>
             <span className="muted small mono">
+              {unnamed(e) && <span className="ep-unnamed" data-testid="episode-unnamed">{t("还没起名")} · </span>}
               {fmt(e.raw_duration ?? 0)} → {fmt(e.duration ?? 0)}
               {e.demo && t(" · 演示数据")}
             </span>

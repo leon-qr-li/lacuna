@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { EpisodeListItem } from "../../api";
 import { t } from "../../i18n";
 import { EpisodeCard } from "../episodes/EpisodeCard";
+import { RenameButton } from "../episode-name/RenameButton";
 import { episodesApi } from "../episodes/api";
 import { ImportPanel } from "../import/ImportPanel";
 import { libraryApi, type Asset, type LibraryView } from "../library/api";
@@ -75,7 +76,14 @@ export function AlbumPage() {
             key={e.id}
             e={e}
             href={`#/ep/${encodeURIComponent(e.id)}/listen`}
-            actions={ro ? undefined : <MoveToAlbum episode={e.id} title={e.title} view={view} onMoved={albums.set} onNew={() => setDialog({ edit: false, preset: e.id })} />}
+            actions={
+              ro ? undefined : (
+                <>
+                  <MoveToAlbum episode={e.id} title={e.title} view={view} onMoved={albums.set} onNew={() => setDialog({ edit: false, preset: e.id })} />
+                  <RenameButton id={e.id} title={e.title} onRenamed={() => loadEpisodes()} />
+                </>
+              )
+            }
           />
         ))}
       </ul>

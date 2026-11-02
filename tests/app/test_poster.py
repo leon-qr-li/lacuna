@@ -24,7 +24,11 @@ EP = f"/api/episodes/{EPISODE}"
 
 @pytest.fixture
 def ws(tmp_path):
-    return Workspace(make_workspace(tmp_path / "ws"))
+    w = Workspace(make_workspace(tmp_path / "ws"))
+    e = Episode(w, EPISODE)
+    e.set_title(EPISODE)     # not named yet: the pack keeps LACUNA's own title (episode_name.py)
+    e.close()
+    return w
 
 
 @pytest.fixture

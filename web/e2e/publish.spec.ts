@@ -10,6 +10,11 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
+  // an episode nobody named yet (features/episode-name): LACUNA's titles are offered on the publish page
+  const nameUrl = `/api/episodes/${/#\/ep\/([^/]+)/.exec(page.url())![1]}/name`;
+  const original = (await (await page.request.get(nameUrl)).json()).name as string;
+  expect((await page.request.put(nameUrl, { data: { name: "" } })).ok()).toBe(true);
+  await page.reload();
   await page.getByRole("link", { name: "发布", exact: true }).click(); // 发布 step opens its first sub-tab
   await expect(page.getByRole("link", { name: "发布资料", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(page).toHaveURL(/\/publish$/);
@@ -17,7 +22,10 @@ test("publish pack: generate → show notes → copy → title / name / edit →
 
   await page.getByRole("button", { name: "生成发布资料" }).click();
   await expect(page.getByTestId("publish-running")).toBeVisible();
-  await expect(page.getByTestId("publish-title")).toHaveText("合成的一期：两部电影", { timeout: 15_000 });
+  await expect(page.getByTestId("publish-unnamed")).toBeVisible({ timeout: 15_000 });
+  const choices = page.getByTestId("publish-titles").getByRole("radio");
+  await expect(choices).toHaveText([/合成的一期：两部电影\s*LACUNA 推荐/, "两部电影一个结尾", "那个结尾到底好不好"]);
+  await expect(choices.first()).toHaveAttribute("aria-checked", "false");
   const notes = page.getByTestId("show-notes");
   await expect(notes.getByRole("heading", { name: "合成的一期：两部电影" })).toBeVisible();
   await expect(notes.getByRole("heading", { name: "⏱ 时间轴" })).toBeVisible();
@@ -42,10 +50,24 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   expect(clip.html).not.toContain("<table");
   expect(clip.text).not.toContain("|");
 
-  // switch to an alternative title
-  await page.getByRole("button", { name: "两部电影一个结尾" }).click();
+  // pick a title: the episode is called that everywhere (top bar, home), with an undo
+  await page.getByRole("radio", { name: "两部电影一个结尾" }).click();
   await expect(page.getByTestId("publish-title")).toHaveText("两部电影一个结尾");
+  await expect(page.getByTestId("publish-unnamed")).toBeHidden();
+  await expect(page.locator(".ep-title")).toHaveText("两部电影一个结尾");
   await expect(notes.getByRole("heading", { name: "两部电影一个结尾" })).toBeVisible();
+  const toast = page.getByTestId("publish-title-toast");
+  await expect(toast).toContainText("已改名为「两部电影一个结尾」");
+  await toast.getByRole("button", { name: "撤销" }).click();
+  await expect(page.getByTestId("publish-unnamed")).toBeVisible();
+  await expect(page.locator(".ep-title")).not.toHaveText("两部电影一个结尾");
+  // a title of one's own
+  await page.getByTestId("publish-title-own").fill("自己起的名字");
+  await page.getByRole("button", { name: "用这个" }).click();
+  await expect(page.getByTestId("publish-title")).toHaveText("自己起的名字");
+  await expect(page.getByRole("radio", { name: /自己起的名字\s*你起的/ })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("radio", { name: "两部电影一个结尾" }).click();
+  await expect(page.getByTestId("publish-title")).toHaveText("两部电影一个结尾");
 
   // a misheard name: fix everywhere
   const name = page.getByTestId("name-check");
@@ -53,6 +75,7 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await name.getByRole("button", { name: "改成「结局」" }).click();
   await expect(name).toContainText("已改");
   await expect(page.getByTestId("publish-title")).toHaveText("两部电影一个结局");
+  await expect(page.locator(".ep-title")).toHaveText("两部电影一个结局"); // the episode's name got the fix too
 
   // someone else saves while this page still shows the older version (co-editing, features/coedit):
   // the save is refused, the latest shows, and what was typed stays below it to copy from
@@ -116,4 +139,5 @@ test("publish pack: generate → show notes → copy → title / name / edit →
   await expect(page.getByRole("alertdialog")).toBeHidden();
   await page.reload();
   await expect(page.getByTestId("publish-level").getByRole("button", { name: "精简" })).toHaveAttribute("aria-pressed", "true");
+  expect((await page.request.put(nameUrl, { data: { name: original } })).ok()).toBe(true); // other specs see the usual name
 });
