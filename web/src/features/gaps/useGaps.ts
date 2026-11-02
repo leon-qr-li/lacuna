@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { confirmDialog, noticeDialog } from "../dialog/Dialog";
 import { t } from "../../i18n";
 import { gapsApi } from "./api";
+import { forgetAdded, noteAdded } from "./lastAdd";
 import type { Gap, GapsView } from "./api";
 
 /** Sent after every change of an episode's gaps (detail: episode id): the timeline, the transcript and the
@@ -49,12 +50,27 @@ export function useGaps(id: string, version: string) {
     },
     [id],
   );
-  const add = useCallback((at: number, len?: number) => run(gapsApi.add(id, at, len)), [run, id]);
-  const setLen = useCallback((g: Gap, len: number) => run(gapsApi.setLen(id, g.id, len)), [run, id]);
+  const add = useCallback(
+    async (at: number, len?: number) => {
+      const v = await run(gapsApi.add(id, at, len));
+      const g = v?.gap_id ? v.gaps.find((x) => x.id === v.gap_id) : undefined;
+      if (g) noteAdded(id, g.id, g.len_s); // Ctrl+Z / 撤销 can take it back (lastAdd.ts)
+      return v;
+    },
+    [run, id],
+  );
+  const setLen = useCallback(
+    (g: Gap, len: number) => {
+      forgetAdded(g.id);
+      return run(gapsApi.setLen(id, g.id, len));
+    },
+    [run, id],
+  );
   const remove = useCallback(
     async (g: Gap) => {
       if (g.filled_by && !(await confirmDialog({ message: t("间隙里的音乐「{name}」也会一起拿掉。", { name: g.music_name ?? "" }), danger: true, confirmLabel: t("删掉间隙") })))
         return null;
+      forgetAdded(g.id);
       return run(gapsApi.remove(id, g.id));
     },
     [run, id],

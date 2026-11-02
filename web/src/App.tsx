@@ -34,6 +34,7 @@ import { useReadOnly } from "./features/listen-only/state";
 import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
 import { MenuNav } from "./features/mobile/MenuNav";
+import { GAP_ADDED_EVENT, canUndoAdded, forgetAdded, undoAdded } from "./features/gaps/lastAdd";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -173,6 +174,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       try {
         const next = await p;
         setEp(next);
+        forgetAdded(); // a newer change: Ctrl+Z now undoes that one, not the gap added before it
         if (msg) flash(typeof msg === "function" ? msg(next) : msg, opts);
         return true;
       } catch (e) {
@@ -194,8 +196,21 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const { others } = useCoedit(id, ep, setEp, flash);
   const show = useShow();
 
-  const undo = () => {
+  // 「已加入 15 秒间隙」 with 撤销 (features/gaps/lastAdd.ts: gaps are outside the episode's undo history)
+  useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; len: number }>).detail;
+      if (d.id === id) flash(t("已加入 {s} 秒间隙", { s: d.len }), { undo: true });
+    };
+    window.addEventListener(GAP_ADDED_EVENT, on);
+    return () => window.removeEventListener(GAP_ADDED_EVENT, on);
+  });
+  const undo = async () => {
     setToast(null);
+    if (await undoAdded(id)) {
+      flash(t("已撤销：加入间隙"));
+      return true;
+    }
     return ep?.can_undo && run(api.undo(id, player.time), t("已撤销：{undo_label}", { undo_label: ep.undo_label }));
   };
   const redo = () => ep?.can_redo && run(api.redo(id, player.time), t("已重做：{redo_label}", { redo_label: ep.redo_label }));
@@ -334,7 +349,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       {toast && (
         <div className={`toast ${toast.undo ? "toast-undo" : ""}`} role="status">
           {toast.msg}
-          {toast.undo && ep?.can_undo && (
+          {toast.undo && (ep?.can_undo || canUndoAdded(id)) && (
             <button type="button" className="toast-undo-btn" onClick={() => void undo()} data-testid="toast-undo">
               {t("撤销")}
             </button>

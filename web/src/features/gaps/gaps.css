@@ -36,15 +36,18 @@
 .gap-row-main b { color: var(--ink); white-space: nowrap; }
 .gap-row .gap-card { position: absolute; top: calc(100% + 4px); left: 0; z-index: 5; }
 .gap-link { margin-left: auto; border: 0; background: none; padding: 0; color: var(--accent-ink); font: inherit; font-size: 12.5px; text-decoration: underline; cursor: pointer; }
+/* the 「＋」 between two lines: only the dot is a button (a full-width row was clicked by mistake); it shows on hover */
 .gap-plus { height: 8px; margin-left: 146px; position: relative; }
-.gap-plus-btn { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); display: flex; align-items: center; gap: 8px; height: 22px;
-  padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; opacity: 0; transition: opacity 0.12s; }
-.gap-plus-btn::after { content: ""; flex: 1; border-top: 1px dashed var(--line-2); }
-.gap-plus:hover .gap-plus-btn, .gap-plus-btn:focus-visible { opacity: 1; }
-.gap-plus-dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--accent); color: var(--accent); display: inline-flex;
+.gap-plus-btn { position: absolute; left: 0; top: 50%; z-index: 2; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; opacity: 0; transition: opacity 0.12s; }
+.gap-plus-line { position: absolute; left: 28px; right: 0; top: 50%; border-top: 1px dashed var(--line-2); opacity: 0; transition: opacity 0.12s; pointer-events: none; }
+.gap-plus:hover .gap-plus-btn, .gap-plus:hover .gap-plus-line, .gap-plus-btn:focus-visible, .gap-plus.is-open .gap-plus-btn, .gap-plus.is-open .gap-plus-line { opacity: 1; }
+.gap-plus-dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--accent); color: var(--accent); background: var(--solid); display: inline-flex;
   align-items: center; justify-content: center; font-weight: 700; font-size: 12px; line-height: 1; flex: none; }
-.gap-plus-text { white-space: nowrap; }
-@media (prefers-reduced-motion: reduce) { .gap-plus-btn { transition: none; } }
+.gap-plus-btn:hover .gap-plus-dot, .gap-plus.is-open .gap-plus-dot { background: var(--accent); color: #fff; }
+.gap-plus-menu { position: absolute; top: 14px; left: 0; z-index: 6; display: flex; flex-direction: column; gap: 8px; width: 264px; max-width: calc(100vw - 32px);
+  padding: 10px 12px; border-radius: 12px; background: var(--solid); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); }
+@media (prefers-reduced-motion: reduce) { .gap-plus-btn, .gap-plus-line { transition: none; } }
 @media (max-width: 640px) { .gap-row, .gap-plus { margin-left: 0; } }
 
 .gap-banner { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }

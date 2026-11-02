@@ -36,7 +36,7 @@ test("gaps: add on the timeline and the transcript, change, remove; the voice cu
   await page.mouse.click(lane.x + lane.width * 0.5, lane.y + lane.height / 2, { button: "right" });
   const menu = page.getByTestId("gap-menu");
   await expect(menu).toBeVisible();
-  await expect(menu.getByRole("menuitem")).toHaveText("在此处加入间隙G");
+  await expect(menu.getByRole("menuitem")).toHaveText("在此处加入间隙Shift+G");
   await expect(page.getByTestId("ml-menu")).toHaveCount(0);
   await menu.getByTestId("gap-add-5").click();
   await expect(menu).toHaveCount(0);
@@ -56,8 +56,16 @@ test("gaps: add on the timeline and the transcript, change, remove; the voice cu
   // the transcript shows it between two lines
   await expect(page.getByTestId("gap-row")).toHaveCount(1);
   await expect(page.getByTestId("gap-row")).toContainText("间隙 15 秒");
-  // 「＋」 between two other lines adds one with the default 15 s
+  // 「＋」 between two other lines: only the dot is a button, and it asks for the length first
   await page.getByTestId("gap-plus").first().click();
+  const plusMenu = page.getByTestId("gap-plus-menu");
+  await expect(plusMenu).toBeVisible();
+  expect((await gapsOf(page.request)).length).toBe(1); // nothing added yet
+  await page.keyboard.press("Escape");
+  await expect(plusMenu).toHaveCount(0);
+  await page.getByTestId("gap-plus").first().click();
+  await plusMenu.getByTestId("gap-plus-add-15").click();
+  await expect(plusMenu).toHaveCount(0);
   await expect.poll(async () => (await gapsOf(page.request)).length).toBe(2);
   await expect(page.getByTestId("gap-row")).toHaveCount(2);
   // the voice cut is as it was; the final mix is 30 s longer
@@ -73,10 +81,29 @@ test("gaps: add on the timeline and the transcript, change, remove; the voice cu
   await expect(marks).toHaveCount((await gapsOf(page.request)).some((g) => g.voice_s <= 30) ? 2 : 0);
 });
 
-test("gaps: G adds one at the playhead; an export with empty gaps asks first", async ({ page }) => {
+test("gaps: Shift+G adds one at the playhead (G alone doesn't), Ctrl+Z and 撤销 take it back", async ({ page }) => {
   await open(page);
   await page.getByTestId("edit-lanes").getByRole("heading", { name: "剪辑时间线" }).click();
-  await page.keyboard.press("g");
+  await page.keyboard.press("g"); // a bare G no longer adds one (users hit it by mistake)
+  await page.waitForTimeout(300);
+  expect((await gapsOf(page.request)).length).toBe(0);
+  await page.keyboard.press("Shift+G");
+  await expect.poll(async () => (await gapsOf(page.request)).length).toBe(1);
+  await expect(page.locator(".toast")).toContainText("已加入 15 秒间隙");
+  await page.getByTestId("toast-undo").click();
+  await expect.poll(async () => (await gapsOf(page.request)).length).toBe(0);
+  await expect(page.locator(".toast")).toContainText("已撤销：加入间隙");
+  // Ctrl+Z takes it back too, and only once: the next Ctrl+Z is the episode's own undo again
+  await page.keyboard.press("Shift+G");
+  await expect(page.locator(".toast")).toContainText("已加入 15 秒间隙"); // the page knows about it now
+  await page.keyboard.press("Control+z");
+  await expect.poll(async () => (await gapsOf(page.request)).length).toBe(0);
+});
+
+test("gaps: an export with empty gaps asks first", async ({ page }) => {
+  await open(page);
+  await page.getByTestId("edit-lanes").getByRole("heading", { name: "剪辑时间线" }).click();
+  await page.keyboard.press("Shift+G");
   await expect.poll(async () => (await gapsOf(page.request)).length).toBe(1);
   const job = async () => (await (await page.request.get(`/api/episodes/${EP}/export`)).json()).job?.id ?? null;
   const before = await job();
