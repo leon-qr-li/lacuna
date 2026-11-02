@@ -206,7 +206,9 @@ test.describe.serial("manual editing", () => {
     await page.getByTestId("ml-help").hover();
     await expect(tip).toBeVisible();
     await expect(tip).toContainText("按住空格拖");
-    await expect(tip).toContainText("Ctrl + X");
+    await expect(tip).toContainText("Ctrl+X / Delete");
+    await expect(tip).toContainText("右键空白处，或按 Shift+G");
+    await expect(tip.getByTestId("customize-shortcuts")).toHaveAttribute("href", "#/settings/keys");
   });
 
   test("cut from both tracks, shows as 手动剪辑, undo brings it back", async ({ page }) => {

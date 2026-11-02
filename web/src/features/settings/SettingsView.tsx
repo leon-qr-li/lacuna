@@ -12,6 +12,7 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { OnboardingCard } from "../onboarding/OnboardingCard";
 import { TrashCard } from "../trash/TrashCard";
+import { ShortcutsCard } from "../shortcuts/ShortcutsCard";
 
 const KEY_SOURCE: Record<string, string> = {
   env: t("环境变量"),
@@ -30,10 +31,11 @@ export function SettingsLink() {
   );
 }
 
-type Section = "general" | "edit" | "projects" | "plan" | "account" | "members" | "mail" | "ai";
+type Section = "general" | "edit" | "keys" | "projects" | "plan" | "account" | "members" | "mail" | "ai";
 const SECTIONS: { id: Section; group: "me" | "admin"; label: string; about: string }[] = [
   { id: "general", group: "me", label: t("通用"), about: t("界面主题、语言和版本。") },
   { id: "edit", group: "me", label: t("剪辑习惯"), about: t("你平时下手多重，每个节目都按这个来。") },
+  { id: "keys", group: "me", label: t("快捷键"), about: t("剪辑和审阅时用的键，改成你顺手的。") },
   { id: "projects", group: "me", label: t("我的节目"), about: t("你建的和受邀加入的节目。") },
   { id: "plan", group: "me", label: t("套餐与用量"), about: t("你的套餐、用了多少，以及各套餐的区别。") },
   { id: "account", group: "me", label: t("账号与安全"), about: t("登录、密码、两步验证和登录过的设备。") },
@@ -178,6 +180,7 @@ export function SettingsView() {
             </>
           )}
           {cur.id === "edit" && <HabitsCard />}
+          {cur.id === "keys" && <ShortcutsCard />}
           {cur.id === "projects" && <SpacesCard />}
           {cur.id === "plan" && st && <PlanCard />}
           {cur.id === "account" && st && <SecurityCard st={st} setSt={auth.setSt} />}

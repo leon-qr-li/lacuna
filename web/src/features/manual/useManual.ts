@@ -3,6 +3,7 @@ import type { Episode } from "../../api";
 import type { Player } from "../../usePlayer";
 import { t } from "../../i18n";
 import { manualApi } from "./api";
+import { matches } from "../shortcuts/keys";
 
 /** A selected stretch of the timeline (seconds). `from` says where it was made (its bar shows there);
  *  `speakers`: the hosts whose words were selected in the transcript (all hosts for a waveform drag). */
@@ -78,18 +79,18 @@ export function useManual(ep: Episode | null, player: Player, run: (p: Promise<E
     }
   }, [player.time, player.ref]);
 
-  // Ctrl + X (⌘ + X) cuts the selection from every track (Leon 2026-10-20: closer to the hand than Delete, which
+  // Ctrl + X (⌘ + X) cuts the selection from every track (the keys are the person's own, features/shortcuts) (Leon 2026-10-20: closer to the hand than Delete, which
   // still works too), Esc drops it
   useEffect(() => {
     if (!sel) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || e.altKey) return;
-      const mod = e.ctrlKey || e.metaKey;
-      if ((mod && e.key.toLowerCase() === "x") || (!mod && (e.key === "Delete" || e.key === "Backspace"))) {
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement).isContentEditable) return;
+      if (matches(e, "cut")) {
+        // 设置 → 快捷键 (default Ctrl+X and Delete / Backspace)
         e.preventDefault();
         void cut(null);
-      } else if (!mod && e.key === "Escape") setSel(null);
+      } else if (e.key === "Escape" && !e.ctrlKey && !e.metaKey && !e.altKey) setSel(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

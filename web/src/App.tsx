@@ -34,6 +34,7 @@ import { useReadOnly } from "./features/listen-only/state";
 import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
 import { MenuNav } from "./features/mobile/MenuNav";
+import { comboOf, hit as hitKey, useShortcuts } from "./features/shortcuts/keys";
 import { GAP_ADDED_EVENT, canUndoAdded, forgetAdded, undoAdded } from "./features/gaps/lastAdd";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
@@ -227,23 +228,28 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
     );
 
   const manual = useManual(ep, player, run); // the selection of 手动剪辑 (timeline + transcript)
+  useShortcuts(); // the person's own keys, loaded once
 
   // global keys: space play/pause and arrows (listen mode), ctrl/cmd+z undo
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
-      const typing = tag === "INPUT" || tag === "TEXTAREA";
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !typing) {
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement).isContentEditable;
+      if (typing) return;
+      // the person's own keys (设置 → 快捷键, features/shortcuts)
+      const ur = hitKey(e, ["undo", "redo"] as const);
+      if (ur) {
         e.preventDefault();
-        void (e.shiftKey ? redo() : undo());
+        void (ur === "redo" ? redo() : undo());
         return;
       }
-      if (typing || mode !== "listen" || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === " " && tag !== "BUTTON") {
+      if (mode !== "listen") return;
+      const a = hitKey(e, ["play", "back", "fwd"] as const);
+      if (a === "play" && !(comboOf(e) === "Space" && tag === "BUTTON")) {
         e.preventDefault();
         player.toggle();
-      } else if (e.key === "ArrowLeft") player.skip(-5);
-      else if (e.key === "ArrowRight") player.skip(5);
+      } else if (a === "back") player.skip(-5);
+      else if (a === "fwd") player.skip(5);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
