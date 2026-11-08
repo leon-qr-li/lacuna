@@ -80,14 +80,19 @@ def test_both_languages_carry_the_current_version_and_the_same_sections(doc):
         assert not re.search(r"claude|anthropic", text, re.I), "users never see the AI vendor"
     heads = [len(re.findall(r"^## ", t, re.M)) for t in (zh, en)]
     assert heads[0] == heads[1] > 5
-    assert len(TBD.findall(zh)) == len(TBD.findall(en)) > 0, "every placeholder is in both languages"
+    assert not TBD.findall(zh) and not TBD.findall(en), "the beta version has no placeholders left"
 
 
 def test_what_the_documents_must_say():
     terms_zh, terms_en = (DOCS / "terms.zh.md").read_text(encoding="utf-8"), (DOCS / "terms.en.md").read_text(encoding="utf-8")
     privacy_zh, privacy_en = (DOCS / "privacy.zh.md").read_text(encoding="utf-8"), (DOCS / "privacy.en.md").read_text(encoding="utf-8")
     assert "请只上传你有权使用的音乐" in terms_zh and "only upload music you have the right to use" in terms_en
-    assert "DMCA" in terms_zh and "DMCA" in terms_en and "designated agent" in terms_en
+    assert "DMCA" in terms_zh and "DMCA" in terms_en
+    for text in (terms_zh, terms_en, privacy_zh, privacy_en):
+        assert "support@lacunastudio.app" in text                      # a contact that works without an account
+        assert "公司" in text or "company" in text                     # operated by the founder until a company exists
+    assert "以英文版为准" in terms_zh and "English version prevails" in terms_en
+    assert "声纹" in privacy_zh and "voiceprints" in privacy_en
     for text in (privacy_zh, privacy_en):
         assert "60" in text and "13" in text      # deleted shows/accounts erased in 60 days; usage records 13 months
     assert "从不发给任何 AI 服务" in privacy_zh and "never sent to any AI service" in privacy_en

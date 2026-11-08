@@ -22,8 +22,8 @@ test("the terms and the privacy policy open without signing in, in both language
   await page.goto("/legal/terms");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("LACUNA 用户条款");
   await expect(page.getByText("请只上传你有权使用的音乐。")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "7. 版权投诉（DMCA）" })).toBeVisible();
-  await expect(page.locator(".legal-tbd").first()).toContainText("待定"); // what the lawyer's version fills in
+  await expect(page.getByRole("heading", { name: "7. 版权投诉" })).toBeVisible();
+  await expect(page.locator(".legal-tbd")).toHaveCount(0); // the beta version has no placeholders left
   await page.getByRole("link", { name: "隐私政策" }).click();
   await expect(page).toHaveURL(/\/legal\/privacy$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("LACUNA 隐私政策");
