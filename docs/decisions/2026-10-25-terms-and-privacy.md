@@ -38,3 +38,6 @@ name a company registered in British Columbia, BC law + federal Canadian law, co
 says data operated from Canada and stored in the US may be accessible to US authorities (PIPEDA transparency). Entity
 name/address, DMCA agent, emails, SCCs, EU/UK representative and prevailing language stay open. `VERSION` not bumped:
 still a pre-beta draft agreed only by Leon and Pei; bump it with the lawyer's version.
+
+Update 2026-11-08 (beta version, `VERSION` 2026-11-08, Leon: 「polish 一下，上线就行」, no lawyer yet): every
+placeholder is filled so the pages read as finished. See `docs/decisions/2026-11-08-beta-terms-and-privacy.md`.

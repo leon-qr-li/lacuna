@@ -10,7 +10,7 @@ company entity); a typo fix doesn't need it. tests/app/test_legal.py checks ever
 """
 from __future__ import annotations
 
-VERSION = "2026-10-25"
+VERSION = "2026-11-08"
 
 
 def record(version: str | None, now: float) -> dict:
