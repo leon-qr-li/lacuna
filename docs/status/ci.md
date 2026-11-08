@@ -24,3 +24,13 @@ Remaining time is mostly per-job setup on Windows (~70 s: checkout, Python, uv, 
 Playwright cache restore) and each shard's three backends starting (~20 s).
 
 Open: if a shard becomes much slower than the other as specs are added, rebalance (Playwright shards by file).
+
+## 2026-11-08: flaky `project_archive.spec.ts` fixed
+
+CI 2026-10-31 (run 41167399076, PR #238) failed `节目设置 is on the show's home…` twice in a row:
+- 1st attempt: deleting the show you are in sets `#/` and reloads the page; the test's next
+  `page.goto("/#/settings/members")` sometimes ran while that reload was in flight ("interrupted by another
+  navigation"). The test now waits for the reload's `load` event before moving on.
+- Retry: `_test/reset` forgets accounts, not shows, so the first attempt's 试播 was still in the 回收区 and
+  the retry found two (strict-mode violation). The spec now starts from leon's main show alone
+  (`onlyMainShow`) and names its test show uniquely per run. `--repeat-each 5` passes locally.
