@@ -35,7 +35,16 @@ jobs:
         run: python3 deploy/ci.py registry-collect
       - name: Install restic
         if: steps.ready.outputs.go == 'true'
-        run: sudo apt-get install -y -q restic
+        # From restic's own GitHub release (pinned + checksum): the runner's Ubuntu
+        # mirrors sometimes fail DNS (2026-11-11), and github.com is reachable then.
+        run: |
+          v=0.18.1
+          curl -fsSL --retry 3 -o /tmp/restic.bz2 \
+            "https://github.com/restic/restic/releases/download/v$v/restic_${v}_linux_amd64.bz2"
+          echo "680838f19d67151adba227e1570cdd8af12c19cf1735783ed1ba928bc41f363d  /tmp/restic.bz2" | sha256sum -c -
+          bunzip2 -c /tmp/restic.bz2 | sudo tee /usr/local/bin/restic >/dev/null
+          sudo chmod +x /usr/local/bin/restic
+          restic version
       - name: Backup credentials
         if: steps.ready.outputs.go == 'true'
         run: python3 deploy/ci.py r2-env
