@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import logging
 import os
 import re
 import subprocess
@@ -432,7 +433,7 @@ class ClaudeEditorAdapter:
 
     def propose(self, ctx: ChatContext) -> Proposal:
         if not self.available:
-            return Proposal(tr("还没接上 AI（没有 AI 密钥），AI 制作人暂时不可用。"))
+            return Proposal(tr("LACUNA 暂时用不了，请稍后再试。"))
         t0 = time.monotonic()
         try:
             resp = self._call(ctx)
@@ -479,32 +480,24 @@ class ClaudeEditorAdapter:
 
 def error_message(e: Exception, tail: str | None = None) -> str:
     """A short explanation of an API failure, in the interface language. `tail` defaults to
-    "nothing was changed"; pass "" to leave it off or another sentence to replace it."""
+    "nothing was changed"; pass "" to leave it off or another sentence to replace it.
+
+    Users only learn whether to wait or to tell us (batch 7, decision 2026-10-25-copy-sweep):
+    keys, status codes and billing are ours to fix, so the details go to the server log."""
     try:
         import anthropic
     except ImportError:
         anthropic = None
     tail = tr("，这次没有改动。") if tail is None else tail
-    if anthropic is None:
-        return tr("调用 AI 服务失败（{name}）", name=type(e).__name__) + tail
-    if isinstance(e, anthropic.APITimeoutError):
-        return tr("AI 服务太久没有回应（超时）") + tail
-    if isinstance(e, anthropic.APIConnectionError):
-        return tr("连不上 AI 服务（网络问题）") + tail
-    if isinstance(e, anthropic.AuthenticationError):
-        return tr("API key 无效或已被撤销（401），请在 Console 检查 key") + tail
-    if isinstance(e, anthropic.PermissionDeniedError):
-        return tr("这个 API key 没有调用权限（403）") + tail
-    if isinstance(e, anthropic.RateLimitError):
-        return tr("请求太频繁，被限流了（429），等一会儿再说") + tail
-    if isinstance(e, anthropic.APIStatusError):
-        msg = str(getattr(e, "message", "") or e).lower()
-        if "credit" in msg or "billing" in msg or "balance" in msg:
-            return tr("API 额度用完了（或账单未开通），请在 Console 的 Billing 查看") + tail
-        if e.status_code in (500, 502, 503, 504, 529):
-            return tr("AI 服务暂时繁忙（{status_code}），稍后再试", status_code=e.status_code) + tail
-        return tr("AI 服务返回错误（{status_code}）", status_code=e.status_code) + tail
-    return tr("调用 AI 服务失败（{name}）", name=type(e).__name__) + tail
+    logging.getLogger(__name__).warning("AI call failed: %s: %s", type(e).__name__, str(e)[:300])
+    busy = (TimeoutError, ConnectionError)
+    if anthropic is not None:
+        busy += (anthropic.APITimeoutError, anthropic.APIConnectionError, anthropic.RateLimitError)
+        if isinstance(e, anthropic.APIStatusError) and e.status_code in (500, 502, 503, 504, 529):
+            return tr("LACUNA 现在有点忙，请稍后再试") + tail
+    if isinstance(e, busy):
+        return tr("LACUNA 现在有点忙，请稍后再试") + tail
+    return tr("LACUNA 暂时用不了（请稍后再试，一直这样请点右上角「反馈」告诉我们）") + tail
 
 
 # ---------------------------------------------------------------------------- resolving ids

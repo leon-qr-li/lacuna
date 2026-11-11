@@ -7,6 +7,7 @@ import type { MusicView } from "./api";
 import { libraryApi } from "./api";
 import { fmt } from "../../api";
 import { t } from "../../i18n";
+import { GAPS_EVENT } from "../gaps/useGaps";
 
 const KEY = "lacuna.listenWithMusic";
 const EPS = 1e-4;
@@ -53,6 +54,12 @@ export function useMusicListen(id: string, refresh: string, raw: Player): MusicL
   const voiceUrl = useRef<string | null>(null);
   const want = useRef<number | null>(null); // voice time to resume at once the right stream is known
   const shown = useRef<string | null>(null);
+  const [gapRev, setGapRev] = useState(0); // a gap added or changed on the timeline: the mix changed
+  useEffect(() => {
+    const on = (e: Event) => (e as CustomEvent<{ id: string }>).detail.id === id && setGapRev((n) => n + 1);
+    window.addEventListener(GAPS_EVENT, on);
+    return () => window.removeEventListener(GAPS_EVENT, on);
+  }, [id]);
 
   useEffect(() => {
     let live = true;
@@ -63,9 +70,10 @@ export function useMusicListen(id: string, refresh: string, raw: Player): MusicL
     return () => {
       live = false;
     };
-  }, [id, refresh]);
+  }, [id, refresh, gapRev]);
 
-  const available = !!music && music.placements.some((p) => !p.missing && p.start_s != null);
+  // music, or only gaps (the time they open is heard in the mix)
+  const available = !!music && (music.placements.some((p) => !p.missing && p.start_s != null) || (music.gaps?.length ?? 0) > 0);
   const active = on && available;
   const ins: Inserts = useMemo(() => (active && music ? music.inserts ?? [] : []), [active, music]);
   const time = active ? toVoice(ins, raw.time) : raw.time;

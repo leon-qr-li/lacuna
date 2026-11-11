@@ -51,7 +51,7 @@ export function TermFixButton({
   if (!busy) return null;
   return (
     <span className="tf-chip" role="status" data-testid="term-fix-busy"
-      title={t("按节目设置和系统专有名词校对文字稿里听错的名字（只改文字，不动音频和剪辑）")}>
+      title={t("按节目设置和系统专有名词校对逐字稿里听错的名字（只改文字，不动音频和剪辑）")}>
       {t("正在校对专有名词…")}
     </span>
   );

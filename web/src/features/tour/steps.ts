@@ -131,7 +131,7 @@ export const STEPS: Step[] = [
   // 2 审阅改动
   { id: "rlist", ch: 2, mode: "review", side: "right", target: [".review-nav"],
     title: () => t("LACUNA 拿不准的 3 处"),
-    body: () => t("LACUNA 已经剪完了第一版。大部分改动它有把握，左边只列出它拿不准的 **3 处**，等你过目。停顿、口头禅这些小改动，整集试听时都能听到。") },
+    body: () => t("LACUNA 已经剪完了第一版。大部分改动它有把握，左边只列出它拿不准的 **3 处**，等你审阅。停顿、口头禅这些小改动，整集试听时都能听到。") },
   { id: "rab", ch: 2, mode: "review", side: "bottom", target: [".rv-act .ab-seg"],
     act: async (c) => {
       await hear(c, ".rv-act .ab-opt:nth-of-type(1)");
@@ -203,7 +203,7 @@ export const STEPS: Step[] = [
     },
     done: (c) => manual(c.ep, false) > Number(c.memo.n ?? 0),
     title: () => t("第二种：像改文档一样剪"),
-    body: (h) => t("在文字稿里选中一段字、删掉，对应的声音就剪掉了；删过的字显示删除线，点一下就能恢复。{a}说的「等一下，我喝口水」这句不要。按 **知道了**，LACUNA 替你选中这句，点 **删掉这段**。", h),
+    body: (h) => t("在逐字稿里选中一段字、删掉，对应的声音就剪掉了；删过的字显示删除线，点一下就能恢复。{a}说的「等一下，我喝口水」这句不要。按 **知道了**，LACUNA 替你选中这句，点 **删掉这段**。", h),
     hint: () => t("正在删…"),
     result: () => t("删掉了：这句变成删除线，时间线上也多了一条剪切线。") },
   { id: "dgap", ch: 3, mode: "listen", side: "bottom", target: [".ml .ml-body"],
@@ -223,7 +223,7 @@ export const STEPS: Step[] = [
     },
     done: (c) => manual(c.ep, false) > Number(c.memo.n ?? 0),
     title: () => t("第三种：没字的地方，在时间线上剪"),
-    body: () => t("每人一条轨道，**橙色竖线** 是剪切点。喝完水还有一段冷场（虚线框），没有字，文字稿里删不了。平时在轨道上 **按住鼠标** 拖选它，再点 **删掉这段**；咳嗽这种只有一个人的声音，可以 **只静音** 那个人。按 **知道了**，LACUNA 替你剪掉这段冷场。"),
+    body: () => t("每人一条轨道，**橙色竖线** 是剪切点。喝完水还有一段冷场（虚线框），没有字，逐字稿里删不了。平时在轨道上 **按住鼠标** 拖选它，再点 **删掉这段**；咳嗽这种只有一个人的声音，可以 **只静音** 那个人。按 **知道了**，LACUNA 替你剪掉这段冷场。"),
     hint: () => t("正在剪…"),
     result: () => t("剪好了。这三种剪法剪掉的，都能在这里随时恢复。") },
 
@@ -231,7 +231,7 @@ export const STEPS: Step[] = [
   { id: "vauto", ch: 4, mode: "levels", side: "bottom", target: [".levels-card"],
     act: (c) => tap('[data-tour="levels-auto"]').then(() => until(() => !q('[data-tour="levels-auto"][disabled]') || !c.alive())),
     title: () => t("一个大声，一个小声"),
-    body: (h) => t("{a}离麦克风近，比{b}响很多。尺子上白线是原始音量，彩色条是现在，绿线是目标。按 **知道了**，LACUNA 替你点 **统一两人音量**，两人都到绿线。", h),
+    body: (h) => t("{a}离麦克风近，比{b}响很多。尺子上白线是原始音量，彩色条是现在，绿线是目标。按 **知道了**，LACUNA 替你点 **统一主持人音量**，两人都到绿线。", h),
     hint: () => t("正在统一音量…") },
 
   // 5 配乐
@@ -288,7 +288,7 @@ export const STEPS: Step[] = [
     },
     done: () => !!q('[data-testid="publish-title"]') && !!q('[data-testid="show-notes"]'),
     title: () => t("发布资料"),
-    body: () => t("按 **知道了**，LACUNA 读剪好的文字稿，写这一集的标题、一句话简介和带时间戳的 show notes。"),
+    body: () => t("按 **知道了**，LACUNA 读剪好的逐字稿，写这一集的标题、一句话简介和带时间戳的 show notes。"),
     hint: () => t("LACUNA 正在写…"),
     result: () => t("写好了：标题、备选标题、简介和 show notes，点一下就能复制，和导出的音频一起贴到播客平台。剪辑再改，时间戳一键更新。") },
   { id: "pposter", ch: 7, mode: "poster", side: "bottom", target: ['[data-testid="poster-card"]', '[data-tour="poster-generate"]'],
@@ -296,7 +296,7 @@ export const STEPS: Step[] = [
       if (!q('[data-testid="poster-card"]')) await tap('[data-tour="poster-generate"]');
     },
     done: () => !!q('[data-testid="poster-card"]'),
-    title: () => t("海报"),
+    title: () => t("封面"),
     body: () => t("按 **知道了**，LACUNA 按标题和简介画几版方形封面。"),
     hint: () => t("LACUNA 正在画…"),
     result: () => t("挑一张就能用；不满意，说一句话让它改。示例就到这里，最后听一下剪前剪后的对比。") },

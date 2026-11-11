@@ -7,7 +7,7 @@ export const en: Dict = {
   "一次性 {n} 小时": "{n} h, once",
   "每月 {n} 小时": "{n} h a month",
   "我的套餐": "My plan",
-  "你的套餐由 LACUNA 免费提供。": "Your plan is on the house from LACUNA.",
+  "你的套餐由 LACUNA 免费提供。": "Your plan is free, provided by LACUNA.",
   "音频时长": "Audio",
   "节目数": "Shows",
   "最多 {n} 个": "up to {n}",

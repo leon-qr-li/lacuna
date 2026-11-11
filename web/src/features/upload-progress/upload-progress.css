@@ -1,0 +1,14 @@
+/* 配乐上传进度条 (Leon 2026-10-31) */
+.upr { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.upr li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 12px; align-items: center; font-size: 13px; }
+.upr-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.upm { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.upm-bar { position: relative; flex: 1; min-width: 60px; height: 6px; border-radius: 999px; background: var(--line-2); overflow: hidden; }
+.upm-bar > span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--accent); transition: width 0.2s linear; }
+.upm-bar.is-work > span { background: linear-gradient(90deg, var(--accent) 0 40%, var(--accent-mid) 50%, var(--accent) 60% 100%); background-size: 200% 100%; animation: upm-work 1.4s linear infinite; }
+.upm-words { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+@keyframes upm-work { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .upm-bar > span { transition: none; } .upm-bar.is-work > span { animation: none; } }
+@media (max-width: 640px) { .upr li { grid-template-columns: 1fr; gap: 2px; } .upm-words { white-space: normal; } }
+.lib-upload-row { display: inline-flex; align-items: center; gap: 12px; width: min(100%, 640px); }
+.lib-upload-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 0 1 auto; max-width: 50%; }

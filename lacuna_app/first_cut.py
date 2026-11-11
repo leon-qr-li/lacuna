@@ -311,7 +311,7 @@ class ClaudeFirstCut:
                 except Exception:   # noqa: BLE001 - it expires on its own
                     pass
                 return {}
-            progress(tr("AI 第一刀（省钱模式）：排队处理中，已等 {m} 分钟，通常 10–30 分钟", m=int(waited // 60)))
+            progress(tr("LACUNA 初剪（省钱模式）：排队处理中，已等 {m} 分钟，通常 10–30 分钟", m=int(waited // 60)))
             end = time.monotonic() + self.BATCH_POLL_S
             while time.monotonic() < end and not cancelled():
                 self._sleep(min(1.0, self.BATCH_POLL_S))
@@ -364,7 +364,7 @@ class ClaudeFirstCut:
         lock = threading.Lock()
 
         def report():
-            progress(len(results) / n, tr("AI 第一刀：已剪 {p0}/{n} 段（每段约 10 分钟录音）", p0=len(results), n=n))
+            progress(len(results) / n, tr("LACUNA 初剪：已剪 {p0}/{n} 段（每段约 10 分钟录音）", p0=len(results), n=n))
 
         def keep(k: int, ops: list[dict], notes: str, usage: dict):
             a, b = wins[k]
@@ -441,7 +441,7 @@ class RuleFirstCut:
     def run(self, doc: str, duration: float, tokens: dict[str, TrackTokens], episode: str,
             progress: Progress = lambda f, s: None, cache_dir: Path | None = None,
             cancelled: Callable[[], bool] = lambda: False, extra_rules: str = "") -> FirstCutResult:
-        progress(0.0, tr("规则第一刀（AI 没接上）：收紧停顿"))
+        progress(0.0, tr("规则初剪（AI 没接上）：收紧停顿"))
         words = sorted((t["start"], t["end"], tag) for tag, tr in tokens.items() for t in tr.toks)
         ops = []
         end, who = None, None
@@ -456,7 +456,7 @@ class RuleFirstCut:
                                               gap=f"{gap:.2f}", tgt=tgt), "confidence": 0.6})
             if end is None or e > end:
                 end, who = e, tag
-        progress(1.0, tr("规则第一刀完成"))
+        progress(1.0, tr("规则初剪完成"))
         return FirstCutResult({"episode": episode, "model": "rules (AI not connected): pause targets only",
                                "notes": tr("AI 没接上：只按学到的停顿目标收紧了停顿。"), "ops": ops},
                               {}, [tr("AI 没接上：只收紧了停顿。")])

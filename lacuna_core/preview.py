@@ -8,7 +8,9 @@ The window is rendered as fixed blocks on an absolute grid. Each block is cached
 """
 from __future__ import annotations
 
+import threading
 import time
+import weakref
 from collections import OrderedDict
 from dataclasses import dataclass
 
@@ -18,32 +20,84 @@ from .edl import Timeline
 from .render import Renderer
 
 
-class SegmentCache:
-    """In-memory LRU with a byte budget."""
+class SharedBudget:
+    """One byte budget over several `SegmentCache`s: when their total goes over it, the least recently used
+    block of any of them goes first. The server keeps one per process, so the preview caches of every
+    open episode in every show together stay under it (each cache alone also keeps its own limit)."""
 
-    def __init__(self, max_bytes: int = 256 << 20):
+    def __init__(self, max_bytes: int):
         self.max_bytes = max_bytes
+        self.bytes = 0
+        self.lock = threading.RLock()       # RLock: a cache let go mid-operation clears itself (__del__)
+        # (id of the cache, block key) -> the cache, weakly: an episode let go frees its blocks at once
+        self._order: OrderedDict[tuple[int, str], weakref.ref] = OrderedDict()
+
+
+class SegmentCache:
+    """In-memory LRU with a byte budget (and optionally a `SharedBudget` it counts against too)."""
+
+    def __init__(self, max_bytes: int = 256 << 20, shared: SharedBudget | None = None):
+        self.max_bytes = max_bytes
+        self.shared = shared
+        self._lock = shared.lock if shared is not None else threading.Lock()
         self._d: OrderedDict[str, np.ndarray] = OrderedDict()
         self.bytes = 0
         self.hits = self.misses = 0
 
     def get(self, key: str) -> np.ndarray | None:
-        v = self._d.get(key)
-        if v is None:
-            self.misses += 1
-            return None
-        self._d.move_to_end(key)
-        self.hits += 1
-        return v
+        with self._lock:
+            v = self._d.get(key)
+            if v is None:
+                self.misses += 1
+                return None
+            self._d.move_to_end(key)
+            if self.shared is not None:
+                self.shared._order.move_to_end((id(self), key))
+            self.hits += 1
+            return v
 
     def put(self, key: str, value: np.ndarray) -> None:
-        if key in self._d:
-            return
-        self._d[key] = value
-        self.bytes += value.nbytes
-        while self.bytes > self.max_bytes and self._d:
-            _, old = self._d.popitem(last=False)
-            self.bytes -= old.nbytes
+        with self._lock:
+            if key in self._d:
+                return
+            self._d[key] = value
+            self.bytes += value.nbytes
+            sh = self.shared
+            if sh is not None:
+                sh._order[(id(self), key)] = weakref.ref(self)
+                sh.bytes += value.nbytes
+            while self.bytes > self.max_bytes and self._d:
+                self._drop(next(iter(self._d)))
+            while sh is not None and sh.bytes > sh.max_bytes and sh._order:
+                (cid, k), ref = next(iter(sh._order.items()))
+                owner = ref()
+                if owner is None:       # not expected: a cache that goes away takes its blocks out first
+                    del sh._order[(cid, k)]
+                    sh.bytes = sum(c.bytes for r in {*sh._order.values()} if (c := r()) is not None)
+                else:
+                    owner._drop(k)
+
+    def _drop(self, key: str) -> None:
+        """Forget one block (caller holds the lock)."""
+        old = self._d.pop(key)
+        self.bytes -= old.nbytes
+        if self.shared is not None:
+            del self.shared._order[(id(self), key)]
+            self.shared.bytes -= old.nbytes
+
+    def clear(self) -> None:
+        with self._lock:
+            for k in list(self._d):
+                self._drop(k)
+
+    def __del__(self):
+        # an episode let go (evicted, deleted): its blocks stop counting against the shared budget
+        if getattr(self, "shared", None) is not None and self._d:
+            with self._lock:
+                for k, v in self._d.items():
+                    self.shared._order.pop((id(self), k), None)
+                    self.shared.bytes -= v.nbytes
+                self._d.clear()
 
     def __len__(self):
         return len(self._d)

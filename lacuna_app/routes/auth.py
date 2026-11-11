@@ -18,7 +18,7 @@ from ..auth import COOKIE, RANK, Auth, AuthError
 from ..i18n import speaking, tr
 
 # reachable without signing in: the sign-in screens, the host's health / version checks
-OPEN = {("GET", "/api/health"), ("GET", "/api/app"), ("GET", "/api/auth/status"), ("POST", "/api/auth/login"),
+OPEN = {("GET", "/api/health"), ("GET", "/api/health/perf"), ("GET", "/api/app"), ("GET", "/api/auth/status"), ("POST", "/api/auth/login"),
         ("POST", "/api/auth/register"), ("POST", "/api/auth/code"), ("POST", "/api/auth/reset"),
         ("POST", "/api/auth/2fa"), ("POST", "/api/auth/2fa/enroll"), ("POST", "/api/auth/invite"),
         ("POST", "/api/auth/logout"), ("POST", "/api/auth/_test/reset"), ("GET", "/api/auth/_test/outbox"),
@@ -29,7 +29,7 @@ OWNER_ONLY = {("POST", "/api/app/api-key")}
 
 def cloud_mode() -> bool:
     """`LACUNA_CLOUD=1`: the server runs on the internet (docs/decisions/2026-10-19-invites-roles-2fa.md)."""
-    return os.environ.get("LACUNA_CLOUD", "").strip().lower() in ("1", "true", "yes")
+    return cloudflare.enabled()
 
 
 def _cookie(raw: str) -> str | None:
@@ -290,8 +290,8 @@ def register(app, ctx) -> None:
         return {"name": auth.name(email)}
 
     @app.post("/api/auth/code")
-    def code(body: CodeBody):
-        run(lambda: auth.send_code(body.email, body.purpose))
+    def code(body: CodeBody, request: Request):
+        run(lambda: auth.send_code(body.email, body.purpose, ip(request)))
         return {"sent": True}
 
     @app.post("/api/auth/reset")
@@ -411,6 +411,8 @@ def register(app, ctx) -> None:
                 auth.users.clear()
                 auth.sessions.clear()
                 auth.codes.clear()
+                auth.code_sends.clear()
+                auth.code_burnt.clear()
                 auth.fails.clear()
                 auth.tickets.clear()
                 auth.invites.clear()

@@ -34,7 +34,7 @@ export interface MySpace {
 export interface ProjectPeople {
   id: string;
   name: string;
-  members: { email: string; role: SpaceRole }[];
+  members: { email: string; role: SpaceRole; name?: string | null }[];
   invites: { id: string; email: string; role: SpaceRole; exp: number }[];
   /** this person may send a sign-up link to someone without an account (site admins; show admins once
    *  「新成员需站长批准」 is off) */
@@ -64,7 +64,7 @@ export interface SpaceInfo {
   id: string;
   name: string;
   created: number;
-  members: { email: string; role: SpaceRole }[];
+  members: { email: string; role: SpaceRole; name?: string | null }[];
 }
 
 export interface Spaces {

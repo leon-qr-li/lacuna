@@ -10,6 +10,7 @@ import { PlayerBar } from "./components/PlayerBar";
 import { ReviewView } from "./components/ReviewView";
 import { EditLanes } from "./features/manual/EditLanes";
 import { TranscriptEdit } from "./features/manual/TranscriptEdit";
+import { usePositions } from "./features/positions/usePositions";
 import { useManual } from "./features/manual/useManual";
 import { navLinks, pages, tabs as allTabs } from "./features/registry";
 import { useShow } from "./features/show/api";
@@ -19,13 +20,22 @@ import { usePlayer } from "./usePlayer";
 import { MusicListenToggle, useMusicListen } from "./features/library/useMusicListen";
 import { t } from "./i18n";
 import { PageLoading } from "./features/loading/Loading";
+import { ErrorState } from "./features/states/States";
 import { openEpisode, type Restoring } from "./features/cold/restore";
 import { Home } from "./features/episodes/Home";
+import { FirstShow } from "./features/first-show/FirstShow";
+import { useProjects } from "./features/projects/api";
 import { ProjectCrumb } from "./features/projects/ProjectMenu";
 import { Presence } from "./features/coedit/Presence";
 import { useCoedit } from "./features/coedit/useCoedit";
+import { EpisodeTitle } from "./features/episode-name/EpisodeTitle";
+import { onRenamed } from "./features/episode-name/api";
+import { useReadOnly } from "./features/listen-only/state";
 import { CutPop, NextStep, SideTabs, readSideTab, writeSideTab } from "./features/workbench/Workbench";
 import type { SideTab } from "./features/workbench/Workbench";
+import { MenuNav } from "./features/mobile/MenuNav";
+import { comboOf, hit as hitKey, useShortcuts } from "./features/shortcuts/keys";
+import { GAP_ADDED_EVENT, canUndoAdded, forgetAdded, undoAdded } from "./features/gaps/lastAdd";
 
 // 整集试听 and 改动审阅 are built in; the other tabs come from src/features/*/index.tsx
 type Mode = string;
@@ -71,19 +81,22 @@ const writePref = (k: string, v: string) => {
 
 export default function App() {
   const { id, mode, page } = useRoute();
+  // in no show at all: every show page would be refused, so make the first one (settings still opens)
+  const sp = useProjects();
+  if (sp && !sp.current && page !== "settings") return <FirstShow />;
   if (page) return <PageScreen path={page} />;
   return id ? <EpisodeScreen key={id} id={id} mode={mode} /> : <Home nav={<Nav on="home" />} />;
 }
 
 function Nav({ on }: { on: NavLink["on"][number] }) {
   return (
-    <>
+    <MenuNav>
       {navLinks
         .filter((l) => l.on.includes(on))
         .map((l) => (
           <Fragment key={l.path}>{l.render()}</Fragment>
         ))}
-    </>
+    </MenuNav>
   );
 }
 
@@ -110,15 +123,23 @@ function PageScreen({ path }: { path: string }) {
 
 function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [ep, setEp] = useState<Episode | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [err, setErr] = useState<unknown>(null);
+  const [attempt, setAttempt] = useState(0);
+  const readOnly = useReadOnly() !== null; // 只听 members and archived shows can't rename
+  const setTitle = useCallback((v: { id: string; title: string }) => v.id === id && setEp((e) => (e ? { ...e, title: v.title } : e)), [id]);
+  useEffect(() => onRenamed(setTitle), [setTitle]); // a rename on 发布资料 shows in the top bar too
   // a toast; `undo` puts a small 撤销 button in it (after a bulk action: 全部通过 / 去掉 um/uh / 统一音量)
   const [toast, setToast] = useState<{ msg: string; undo?: boolean } | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const raw = usePlayer();
   const listen = useMusicListen(id, `${ep?.version ?? ""}|${mode}`, raw);
   const player = listen.player; // voice-cut time, also while listening with music
-  const [chatOpen, setChatOpen] = useState(() => readPref("lacuna.chat") !== "closed");
-  useEffect(() => writePref("lacuna.chat", chatOpen ? "open" : "closed"), [chatOpen]);
+  // narrower than 1280 the panel starts closed, so the editor has the room (batch 7, B26); only a click is remembered
+  const [chatOpen, setChatOpenRaw] = useState(() => window.innerWidth >= 1280 && readPref("lacuna.chat") !== "closed");
+  const setChatOpen = (v: boolean) => {
+    setChatOpenRaw(v);
+    writePref("lacuna.chat", v ? "open" : "closed");
+  };
   const [sideTab, setSideTab] = useState<SideTab>(readSideTab);
   useEffect(() => writeSideTab(sideTab), [sideTab]);
 
@@ -126,18 +147,20 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const [restoring, setRestoring] = useState<Restoring | null>(null);
   useEffect(() => {
     let alive = true;
+    setErr(null);
     openEpisode(() => api.episode(id), setRestoring, () => alive)
       .then((e) => alive && setEp(e))
-      .catch((e) => alive && setErr(String(e.message ?? e)))
+      .catch((e) => alive && setErr(e ?? new Error("")))
       .finally(() => alive && setRestoring(null));
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, attempt]);
 
+  const positions = usePositions(id, mode, player); // each page's own place, kept across refreshes (features/positions)
   // new edit version -> swap the stream, keeping the (server-mapped) position
   useEffect(() => {
-    if (ep) player.load(ep.audio_url, ep.playhead ?? player.time);
+    if (ep) player.load(ep.audio_url, ep.playhead ?? positions.resume() ?? player.time);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ep?.audio_url, ep?.playhead]);
 
@@ -152,6 +175,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       try {
         const next = await p;
         setEp(next);
+        forgetAdded(); // a newer change: Ctrl+Z now undoes that one, not the gap added before it
         if (msg) flash(typeof msg === "function" ? msg(next) : msg, opts);
         return true;
       } catch (e) {
@@ -162,6 +186,9 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
           return false;
         }
         flash(t("操作失败：{message}", { message: (e as Error).message }));
+        // the answer may be what was lost, not the change (Leon 2026-10-30: 删除这段 hung, and after a refresh
+        // the word was gone): show what the server has now
+        api.episode(id).then(setEp, () => undefined);
         return false;
       }
     },
@@ -170,8 +197,21 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const { others } = useCoedit(id, ep, setEp, flash);
   const show = useShow();
 
-  const undo = () => {
+  // 「已加入 15 秒间隙」 with 撤销 (features/gaps/lastAdd.ts: gaps are outside the episode's undo history)
+  useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; len: number }>).detail;
+      if (d.id === id) flash(t("已加入 {s} 秒间隙", { s: d.len }), { undo: true });
+    };
+    window.addEventListener(GAP_ADDED_EVENT, on);
+    return () => window.removeEventListener(GAP_ADDED_EVENT, on);
+  });
+  const undo = async () => {
     setToast(null);
+    if (await undoAdded(id)) {
+      flash(t("已撤销：加入间隙"));
+      return true;
+    }
     return ep?.can_undo && run(api.undo(id, player.time), t("已撤销：{undo_label}", { undo_label: ep.undo_label }));
   };
   const redo = () => ep?.can_redo && run(api.redo(id, player.time), t("已重做：{redo_label}", { redo_label: ep.redo_label }));
@@ -183,34 +223,57 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
   const approveAll = () =>
     run(
       api.reviewAll(id, "approve", player.time, undefined, ep?.rev),
-      (n) => t("已全部通过 {changed} 处，Ctrl+Z 可撤销", { changed: (n as Episode & { changed: number }).changed }),
+      (n) => t("已全部通过 {changed} 处，Ctrl+Z 可撤销", { changed: (n as Episode & { changed: number }).changed, n: (n as Episode & { changed: number }).changed }),
       { undo: true },
     );
 
   const manual = useManual(ep, player, run); // the selection of 手动剪辑 (timeline + transcript)
+  useShortcuts(); // the person's own keys, loaded once
 
   // global keys: space play/pause and arrows (listen mode), ctrl/cmd+z undo
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
-      const typing = tag === "INPUT" || tag === "TEXTAREA";
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !typing) {
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target as HTMLElement).isContentEditable;
+      if (typing) return;
+      // the person's own keys (设置 → 快捷键, features/shortcuts)
+      const ur = hitKey(e, ["undo", "redo"] as const);
+      if (ur) {
         e.preventDefault();
-        void (e.shiftKey ? redo() : undo());
+        void (ur === "redo" ? redo() : undo());
         return;
       }
-      if (typing || mode !== "listen" || e.ctrlKey || e.metaKey || e.altKey) return;
-      if (e.key === " " && tag !== "BUTTON") {
+      if (mode !== "listen") return;
+      const a = hitKey(e, ["play", "back", "fwd"] as const);
+      if (a === "play" && !(comboOf(e) === "Space" && tag === "BUTTON")) {
         e.preventDefault();
         player.toggle();
-      } else if (e.key === "ArrowLeft") player.skip(-5);
-      else if (e.key === "ArrowRight") player.skip(5);
+      } else if (a === "back") player.skip(-5);
+      else if (a === "fwd") player.skip(5);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  if (err) return <p className="error pad">{t("无法打开剧集：")}{err}</p>;
+  if (err)
+    return (
+      <div className="app">
+        <header className="topbar">
+          <a className="brand" href="#/">
+            LACUNA
+          </a>
+          <ProjectCrumb />
+          <span className="grow" />
+          <Nav on="episode" />
+        </header>
+        <ErrorState
+          title={t("这一集打不开")}
+          error={err}
+          onRetry={() => setAttempt((n) => n + 1)}
+          back={{ href: "#/", label: t("回首页") }}
+        />
+      </div>
+    );
 
   const pending = ep?.proposals[0]?.edit ?? null;
   const href = (m: Mode) => `#/ep/${encodeURIComponent(id)}/${m}`;
@@ -243,36 +306,38 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
         <span className="crumb-sep" aria-hidden="true">
           /
         </span>
-        <span className="ep-title">{ep?.title ?? "…"}</span>
+        <EpisodeTitle id={id} title={ep?.title} readOnly={readOnly} onRenamed={setTitle} />
         <span className="grow" />
         <Nav on="episode" />
       </header>
       <div className="ep-head">
         <div className="ep-head-row">
-          {ep && mode === "listen" && (
-            <a className="small muted ep-lessons-link" href={href("lessons")} data-testid="lessons-link">
-              {t("这一集 LACUNA 学到了什么？")}
-            </a>
-          )}
-          <Presence others={others} />
-          <span className="grow" />
-          {next && <NextStep href={href(next.mode)} label={next.label} />}
-        </div>
-        <nav aria-label={t("制作流程")} className="modes">
-          {steps.map((s, i) => (
-            <Fragment key={s.mode}>
-              {i > 0 && (
-                <span className="mode-sep">
-                  <Icon name="chev" size={14} />
-                </span>
-              )}
-              <a href={stepHref(s.mode)} aria-current={s.on ? "page" : undefined}>
-                {s.label}
-                {s.badge !== undefined && <span className={`mode-badge ${s.badge ? "" : "is-zero"}`}> · {s.badge}</span>}
+          <div className="ep-head-side">
+            {ep && mode === "listen" && (
+              <a className="small muted ep-lessons-link" href={href("lessons")} data-testid="lessons-link">
+                {t("这一集 LACUNA 学到了什么？")}
               </a>
-            </Fragment>
-          ))}
-        </nav>
+            )}
+            <Presence others={others} />
+          </div>
+          <nav aria-label={t("制作流程")} className="modes">
+            {steps.map((s, i) => (
+              <Fragment key={s.mode}>
+                {i > 0 && (
+                  <span className="mode-sep">
+                    <Icon name="chev" size={14} />
+                  </span>
+                )}
+                <a href={stepHref(s.mode)} aria-current={s.on ? "page" : undefined}>
+                  {s.label}
+                  {s.badge !== undefined && <span className={`mode-badge ${s.badge ? "" : "is-zero"}`}> · {s.badge}</span>}
+                </a>
+              </Fragment>
+            ))}
+          </nav>
+          {/* the slot stays when there is no next page, so the step bar never moves (batch 7, T1) */}
+          <div className="ep-head-side ep-head-end">{next && <NextStep href={href(next.mode)} label={next.label} />}</div>
+        </div>
         {curGroup && (
           <nav aria-label={GROUPS[curGroup] ?? curGroup} className="subtabs">
             {tabs
@@ -290,7 +355,7 @@ function EpisodeScreen({ id, mode }: { id: string; mode: Mode }) {
       {toast && (
         <div className={`toast ${toast.undo ? "toast-undo" : ""}`} role="status">
           {toast.msg}
-          {toast.undo && ep?.can_undo && (
+          {toast.undo && (ep?.can_undo || canUndoAdded(id)) && (
             <button type="button" className="toast-undo-btn" onClick={() => void undo()} data-testid="toast-undo">
               {t("撤销")}
             </button>

@@ -198,9 +198,9 @@ class Meter:
             else:
                 msg = tr("这一集 {need} 小时，本月额度只剩 {left} 小时。", need=_num(need), left=_num(left))
             if mine:
-                msg += " " + tr("可以在「设置 → 套餐与用量」里申请更多时长。")
+                msg += " " + tr("可以在「设置 → 套餐与用量」点「想要更多时长」。")
             else:
-                msg += " " + tr("用的是创建这个节目的人的额度，请让 TA 在「设置 → 套餐与用量」里申请更多时长。")
+                msg += " " + tr("用的是创建这个节目的人的额度，请让 TA 在「设置 → 套餐与用量」点「想要更多时长」。")
             raise QuotaError(msg)
 
     def _viewer_is(self, email: str) -> bool:

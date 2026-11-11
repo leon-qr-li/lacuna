@@ -1,0 +1,180 @@
+/* 用户动态 (web/src/admin/activity): the page's days and sessions, and the drawer's summary. Admin tokens only. */
+.a-act {
+  display: grid;
+  gap: 4px;
+}
+.a-act-day {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-3);
+  margin: 14px 0 8px;
+  letter-spacing: 0.02em;
+}
+.a-act-ses {
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.a-act-sh {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  align-items: baseline;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--side);
+}
+.a-act-sh b {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 13px;
+}
+.a-act-sh span {
+  color: var(--ink-3);
+  font-size: 12.5px;
+}
+.a-act-sh .show {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.a-act-row {
+  display: grid;
+  grid-template-columns: 48px 14px minmax(0, 1fr);
+  gap: 0 6px;
+  padding: 7px 14px;
+  align-items: start;
+  font-size: 13px;
+}
+.a-act-row + .a-act-row {
+  border-top: 1px solid var(--line);
+}
+.a-act-row time {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  padding-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.a-act-row .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  background: var(--line-2);
+}
+.a-act-row.ai .dot {
+  background: var(--acc);
+}
+.a-act-row.ok .dot {
+  background: var(--ok);
+}
+.a-act-row.bad {
+  background: var(--bad-soft);
+}
+.a-act-row.bad .dot {
+  background: var(--bad);
+}
+.a-act-row.bad .what {
+  color: var(--bad);
+}
+.a-act-row .what {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.a-act-row .what > .ep,
+.a-act-row .what > .x,
+.a-act-row .what > .a-pill {
+  margin-left: 8px;
+}
+.a-act-row .ep {
+  color: var(--ink-2);
+}
+.a-act-row .x {
+  display: inline-block;
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--sunk);
+  color: var(--ink-2);
+  border: 0;
+  border-radius: 4px;
+  padding: 0 6px;
+}
+button.x {
+  cursor: pointer;
+}
+button.x:hover,
+button.x[aria-expanded="true"] {
+  background: var(--line-2);
+}
+.a-act-row .d {
+  display: block;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.a-act-row .each {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.a-act-back {
+  color: var(--acc-ink);
+  text-decoration: none;
+}
+.a-act-back:hover {
+  text-decoration: underline;
+}
+.a-act-more {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 4px;
+}
+
+/* the drawer */
+.a-act-last {
+  display: grid;
+  gap: 2px;
+  background: var(--sunk);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.a-act-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.a-act-week div {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.a-act-week i {
+  display: block;
+  width: 100%;
+  height: 26px;
+  border-radius: 3px;
+  background: var(--sunk);
+  position: relative;
+  overflow: hidden;
+}
+.a-act-week i b {
+  position: absolute;
+  inset: auto 0 0 0;
+  background: var(--acc);
+  opacity: 0.85;
+}
+.a-act-mini .a-act-row {
+  padding: 5px 0;
+}
+.a-act-mini .a-act-row.bad {
+  padding-inline: 6px;
+  border-radius: 6px;
+}

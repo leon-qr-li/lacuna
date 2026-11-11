@@ -46,7 +46,7 @@ export function AccessPage({ me }: PageProps) {
             onChange={setTab}
             items={[
               { id: "trial", label: t("试用申请"), n: data.trials.length },
-              { id: "collab", label: t("搭档申请"), n: data.collabs.length },
+              { id: "collab", label: t("协作者申请"), n: data.collabs.length },
               { id: "pending", label: t("待接受的邀请"), n: data.invites.length },
               { id: "waitlist", label: t("等候名单"), n: data.waitlist.length },
               { id: "sources", label: t("来源") },
@@ -78,7 +78,7 @@ function Seats({ data, set, owner }: { data: AccessData; set: (d: AccessData) =>
   const { used, total } = data.seats;
   const src = data.sources.reduce((a, s) => ({ invited: a.invited + s.invited, joined: a.joined + s.joined }), { invited: 0, joined: 0 });
   const edit = async () => {
-    const v = await dialog({ title: t("beta 名额"), body: t("按节目算：一个新用户建的节目占一个名额，搭档不占。"), ok: t("保存"), input: { label: t("名额"), value: String(total) } });
+    const v = await dialog({ title: t("beta 名额"), body: t("按节目算：一个新用户建的节目占一个名额，协作者不占。"), ok: t("保存"), input: { label: t("名额"), value: String(total) } });
     if (!v || !/^\d+$/.test(v)) return;
     const out = await act(() => api<AccessData>("PUT", "/api/admin/access/seats", { value: Number(v) }), t("名额已保存"));
     if (out) set(out);
@@ -143,7 +143,7 @@ function Approval({ data, set, owner }: { data: AccessData; set: (d: AccessData)
   return (
     <div className="a-card a-strip a-mb">
       <b>{t("新成员需站长批准")}</b>
-      <span className="a-muted small">{t("beta 期间开着。关掉以后，节目管理员可以直接邀请搭档。关掉要输入确认。")}</span>
+      <span className="a-muted small">{t("beta 期间开着。关掉以后，节目管理员可以直接邀请协作者。关掉要输入确认。")}</span>
       <span className="spacer" />
       <Switch on={data.approval} onChange={flip} label={t("新成员需站长批准")} disabled={!owner} testid="approval" />
     </div>
@@ -164,7 +164,7 @@ function Trials({ rows, done, sources, waitlist }: { rows: AccessReq[]; done: (d
   return (
     <Card pad={false}>
       <div className="a-tw">
-        <table className="a-t a-t-cards">
+        <table className="a-t a-t-cards md">
           <thead>
             <tr>
               <th>{t("邮箱")}</th>
@@ -236,7 +236,7 @@ function Collabs({ rows, done }: { rows: AccessReq[]; done: (d: AccessData, what
   if (!rows.length)
     return (
       <Card>
-        <Empty icon="users" title={t("没有搭档申请")} sub={t("节目管理员想拉没账号的人进来时，申请会出现在这里。")} />
+        <Empty icon="users" title={t("没有协作者申请")} sub={t("节目管理员想拉没账号的人进来时，申请会出现在这里。")} />
       </Card>
     );
   const decide = async (r: AccessReq, action: "invite" | "dismiss") => {
@@ -246,7 +246,7 @@ function Collabs({ rows, done }: { rows: AccessReq[]; done: (d: AccessData, what
   return (
     <Card pad={false}>
       <div className="a-tw">
-        <table className="a-t a-t-cards">
+        <table className="a-t a-t-cards md">
           <thead>
             <tr>
               <th>{t("谁申请")}</th>
@@ -308,7 +308,7 @@ function Pending({ data, done, me }: { data: AccessData; done: (d: AccessData, w
   return (
     <Card pad={false}>
       <div className="a-tw">
-        <table className="a-t a-t-cards">
+        <table className="a-t a-t-cards md">
           <thead>
             <tr>
               <th>{t("邮箱")}</th>
@@ -427,7 +427,7 @@ function InviteModal({ data, owner, close, done }: { data: AccessData; owner: bo
         <div className="a-grid g2">
           <label className="a-lbl">
             {t("角色")}
-            <select className="a-inp" value={role} onChange={(e) => setRole(e.target.value as Role)}>
+            <select className="a-inp" value={role} onChange={(e) => setRole(e.target.value as Role)} data-testid="invite-role">
               <option value="member">{ROLE.member()}</option>
               {owner && <option value="admin">{ROLE.admin()}</option>}
             </select>
@@ -460,7 +460,18 @@ function InviteModal({ data, owner, close, done }: { data: AccessData; owner: bo
             </select>
           </label>
         </div>
-        <p className="a-muted small">{t("对方会收到注册链接，7 天内有效。注册后会有一个自己的新节目。")}</p>
+        {role === "admin" && (
+          <div className="a-alert warn small" data-testid="invite-admin-note">
+            <Icon name="shield" />
+            <span>
+              {t("对方会收到「管理员邀请」邮件。还要在 Cloudflare 把对方的邮箱加进后台的门禁名单，否则打不开后台：Zero Trust → Access → Applications → LACUNA admin → Policy。")}{" "}
+              <a href="https://one.dash.cloudflare.com/" target="_blank" rel="noreferrer">
+                {t("打开 Cloudflare")}
+              </a>
+            </span>
+          </div>
+        )}
+        <p className="a-muted small">{role === "admin" ? t("对方会收到注册链接，7 天内有效。注册后就是管理员，也会有一个自己的新节目。") : t("对方会收到注册链接，7 天内有效。注册后会有一个自己的新节目。")}</p>
         <div className="a-row end">
           <button type="button" className="a-btn" onClick={close}>
             {t("取消")}

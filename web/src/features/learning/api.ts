@@ -23,6 +23,8 @@ export type Action = "approve" | "reject" | "reset" | "delete";
 
 export interface LearningOverview {
   rules: LearnedRule[];
+  /** episode id → title, only on GET /api/learning (batch 7, B10) */
+  titles?: Record<string, string>;
   pending: number;
   stats: {
     episodes: string[];

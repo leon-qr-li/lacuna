@@ -23,3 +23,11 @@
 .home-title { display: flex; align-items: center; gap: 14px; }
 .home .home-sec { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 10px; } .home .home-sec h2.sub { margin: 0; font-size: 16px; font-weight: 650; color: var(--ink); }
 .ep-cover-img { object-fit: cover; background: var(--hover); box-shadow: 0 6px 16px rgb(0 0 0 / 0.18); }
+
+/* batch 7 (T3): a stripe on top of each tile for where the episode is */
+.ep-list .ep-item > a, .ep-list .ep-tile { position: relative; overflow: hidden; }
+.ep-stripe { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--line-2); }
+.ep-stripe-review { background: var(--warn); }
+.ep-stripe-reviewed { background: var(--ok); }
+.ep-stripe-exported { background: var(--grad); }
+.ep-stripe-error { background: var(--danger); }

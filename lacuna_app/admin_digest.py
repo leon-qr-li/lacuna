@@ -119,7 +119,7 @@ class Digest:
                                       tr("打开后台"), f"{self.origin}/", advice + " " + tr("同一件事一天只提醒一次，升级时马上再提醒。"),
                                       tr("容量 · CAPACITY"))
         elif a["kind"] == "backup":
-            lead = tr("超过 26 小时没有新的备份了。请看一下备份任务。")
+            lead = tr("超过 26 小时没有新的备份了。请看一下备份任务。") if a.get("at") else tr("还没有找到任何备份记录。请看一下备份任务。")
         else:
             lead = tr("最近 {n} 次导入都失败了。", n=a.get("n", 3))
         return notice_mail.render(tr("LACUNA 后台提醒"), lead, [], tr("打开后台"), f"{self.origin}/system",
@@ -129,7 +129,7 @@ class Digest:
         o = self.data.overview()
         t, k = o["todo"], o["kpi"]
         rows = [(tr("新反馈"), str(t["fb"])), (tr("加时长申请"), str(t["hours"])), (tr("试用申请"), str(t["trial"])),
-                (tr("搭档申请"), str(t["collab"])), (tr("账号总数"), f"{k['accounts']['value']}（+{k['accounts']['delta']}）"),
+                (tr("协作者申请"), str(t["collab"])), (tr("账号总数"), f"{k['accounts']['value']}（+{k['accounts']['delta']}）"),
                 (tr("周活跃"), str(k["wau"]["value"])), (tr("本周导出"), str(k["exports"]["value"])),
                 (tr("本月 AI 花费"), f"${k['ai']['value']:.2f} / ${k['ai']['budget']:.0f}"),
                 (tr("磁盘"), f"{round(k['disk']['value'] * 100)}%")]

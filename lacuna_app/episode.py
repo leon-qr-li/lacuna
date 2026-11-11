@@ -35,10 +35,11 @@ from lacuna_core import (EDLError, MediaRef, Previewer, Project, Renderer, Rende
                          apply_batch, validate)
 from lacuna_core.edl import SCHEMA_VERSION as PROJECT_SCHEMA
 from lacuna_core.edl import Op
+from lacuna_core.preview import SharedBudget
 from lacuna_core.refine import snap_cut
 
 from .words import join_words
-from . import analysis, cold, declip, room_tone, show
+from . import analysis, cold, declip, perf, room_tone, show
 from .audio import HEADER_BYTES, SAMPLE_BYTES, pcm16, wav_bytes, wav_header
 from .review import review_sort_key
 from .editor import ChatContext, EditorAdapter, Proposal, Utterance, Word
@@ -47,6 +48,10 @@ from .events import track
 from .i18n import N_, tr
 
 STATE_SCHEMA = 1
+# All episodes' listening caches together (every show on the server, one process): each episode may keep up
+# to 192 MB of rendered audio, and every show keeps its 3 last episodes open, so without a shared cap memory
+# grew ~200 MB per show listened through until the next restart, past the 7 GB container (batch 10 load test).
+PREVIEW_BUDGET = SharedBudget(1 << 30)
 APPLIED, RESTORED, PROPOSED, DISCARDED = "applied", "restored", "proposed", "discarded"
 
 CATEGORY_LABELS = {
@@ -191,7 +196,7 @@ class Episode:
     def __init__(self, ws: Workspace, episode_id: str):
         self.id = episode_id
         self.dir = ws.episode_dir(episode_id)
-        self.lock = threading.RLock()
+        self.lock = perf.TimedRLock()       # an RLock that notes long waits and holds (perf.py)
         self.meta = read_json(self.dir / META_FILE)
         st = read_json(self.dir / STATE_FILE)
         if st.get("schema") != STATE_SCHEMA:
@@ -298,7 +303,7 @@ class Episode:
                 raise MissingSources(tr("这一集的原始音轨不在服务器上，现在放不了声音。请在这一集页面顶上重新上传原始音轨。"))
             self._pool = SourcePool(self.media)
             self._previewer = Previewer(Renderer(self._pool, RenderSettings(channels=1)),
-                                        SegmentCache(192 << 20), block_s=2.0)
+                                        SegmentCache(192 << 20, PREVIEW_BUDGET), block_s=2.0)
         return self._previewer
 
     def missing_sources(self) -> list[dict]:
@@ -330,6 +335,13 @@ class Episode:
                 self.meta["raw_tracks"] = {k: (str(path) if v == old.path else v) for k, v in raw.items()}
                 atomic_write_json(self.dir / META_FILE, self.meta,
                                   protected=tuple(Path(m.path) for m in self.media.values()))
+
+    def set_title(self, title: str) -> None:
+        """Rename the episode (album naming, naming.py): only its title in episode.json changes."""
+        with self.lock:
+            self.meta["title"] = title
+            atomic_write_json(self.dir / META_FILE, self.meta,
+                              protected=tuple(Path(m.path) for m in self.media.values()))
 
     def render(self, enabled: frozenset[str], a: int, b: int) -> np.ndarray:
         with self.lock:

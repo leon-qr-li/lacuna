@@ -6,11 +6,11 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   await page.goto("/");
   await expect(page).toHaveURL(/#\/ep\/.+\/listen/, { timeout: 20_000 });
   await page.getByRole("link", { name: "发布", exact: true }).click(); // 发布 step → sub-tabs
-  await page.getByRole("link", { name: "海报", exact: true }).click();
+  await page.getByRole("link", { name: "封面", exact: true }).click();
   await expect(page).toHaveURL(/\/poster$/);
-  await expect(page.getByRole("heading", { name: "海报" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "封面" })).toBeVisible();
   await expect(page.getByTestId("poster-needs-pack")).toBeVisible();
-  await expect(page.getByRole("button", { name: "画 4 版海报" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "画 4 版封面" })).toBeDisabled();
 
   // the publish pack (phase 9) gives the title / blurb the cover is drawn from
   const ep = decodeURIComponent(/#\/ep\/([^/]+)/.exec(page.url())![1]);
@@ -22,7 +22,7 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   // included in the plan: no price anywhere, a few rounds per episode instead
   await expect(page.getByText("每集可以画 3 轮")).toBeVisible();
   await expect(page.locator("main.poster")).not.toContainText("$");
-  await page.getByRole("button", { name: "画 4 版海报" }).click();
+  await page.getByRole("button", { name: "画 4 版封面" }).click();
   await expect(page.getByTestId("poster-running")).toBeVisible();
   const cards = page.getByTestId("poster-card");
   await expect(cards).toHaveCount(4, { timeout: 15_000 });
@@ -86,6 +86,25 @@ test("cover: needs the publish pack → draw 4 versions → zoom → change one 
   await page.reload();
   await expect(page.getByTestId("poster-cover")).toBeVisible();
   await expect(page.getByTestId("poster-card")).toHaveCount(5);
+
+  // on the cloud server: no server folder or 打开文件夹, the cover downloads from the page instead (regression, batch 8)
+  // one status call fails on the way: that is not an answer, the page asks again (it showed the folder before)
+  let calls = 0;
+  await page.route("**/api/auth/status", async (route) => {
+    if (++calls === 3) return route.fulfill({ status: 502, body: "bad gateway" });
+    const res = await route.fetch();
+    await route.fulfill({ response: res, json: { ...(await res.json()), cloud: true } });
+  });
+  await page.reload();
+  const cloudCover = page.getByTestId("poster-cover");
+  await expect(cloudCover).toContainText("各个播客平台都能用");
+  await expect(cloudCover).not.toContainText("cover.png");
+  await expect(cloudCover.getByRole("button", { name: "打开文件夹" })).toHaveCount(0);
+  await expect(cloudCover.locator(".mono")).toHaveCount(0);
+  const dl = page.getByTestId("poster-download");
+  const jpg = await page.request.get((await dl.getAttribute("href"))!);
+  expect(jpg.headers()["content-type"]).toBe("image/jpeg");
+  await page.unroute("**/api/auth/status");
 
   // the home page's episode tile now shows the chosen cover instead of the letter
   await page.goto("/#/");

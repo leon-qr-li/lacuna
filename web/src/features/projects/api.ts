@@ -44,7 +44,7 @@ export function useProjects(): Spaces | null | undefined {
 
 /** Everything on screen belongs to the project you were in: open the new one's 剧集 fresh. Tracks still
  *  uploading would stop (they belong to this show), so that asks first. */
-export async function openProject(id: string) {
+export async function openProject(id: string, to = "#/") {
   if (
     uploading().length &&
     !(await confirmDialog({
@@ -55,7 +55,7 @@ export async function openProject(id: string) {
   )
     return;
   await spacesApi.switchTo(id);
-  window.location.hash = "#/";
+  window.location.hash = to;
   window.location.reload();
 }
 

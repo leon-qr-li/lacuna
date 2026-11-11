@@ -41,6 +41,7 @@ from lacuna_core.media import resample_filter
 
 from .store import PathError, Workspace, atomic_write_json, inside, read_json, now_iso as _now
 from . import show
+from .cloud import server_path
 from .i18n import AI_NAME_RULE, N_, lang, tr
 
 SCHEMA = 1
@@ -399,6 +400,24 @@ class Library:
             self.save(doc)
             return a
 
+    def set_credit(self, asset_id: str, credit: dict, source: str, sources: list[str]) -> dict:
+        """A credit the editor ticked in a lookup's list (credit_fix.py): stored as confirmed."""
+        with self.lock:
+            doc = self.load()
+            a = next((x for x in doc["assets"] if x["id"] == asset_id), None)
+            if a is None:
+                raise KeyError(asset_id)
+            c = {}
+            for k in CREDIT_FIELDS:
+                v = credit.get(k)
+                if k == "year":
+                    c[k] = int(v) if isinstance(v, int) or str(v or "").strip().isdigit() else None
+                else:
+                    c[k] = (str(v).strip() or None) if v is not None else None
+            a["credit"] = c | {"status": CONFIRMED, "source": source, "sources": sources[:5], "checked_at": _now()}
+            self.save(doc)
+            return a
+
     def remove(self, asset_id: str) -> None:
         """Take an asset out of the library: its file moves to _removed/ (nothing is deleted)."""
         with self.lock:
@@ -590,7 +609,7 @@ class Library:
         albums = [{"id": a["id"], "name": a["name"]} for a in Albums(self.ws).albums()]
         return {"assets": sorted(assets, key=lambda a: a["added_at"], reverse=True), "series": self.series(),
                 "albums": albums, "album": album,
-                "folder": str(self.dir), "kinds": {k: tr(v) for k, v in KINDS.items()}, "kind_roles": ROLE_FOR_KIND}
+                "folder": server_path(self.dir), "kinds": {k: tr(v) for k, v in KINDS.items()}, "kind_roles": ROLE_FOR_KIND}
 
 
 # ===================================================================== credit lookup (Claude + web search)

@@ -5,7 +5,8 @@ import { useCallback, useMemo, useState } from "react";
 import { api } from "../api";
 import type { PageProps } from "../Shell";
 import { t } from "../i18n";
-import { FB_STATUS, ROLE, eventName, planName, sourceName } from "../labels";
+import { DrawerActivity } from "../activity/Activity";
+import { FB_STATUS, ROLE, SHOW_ROLE, planName, sourceName } from "../labels";
 import type { Me, Note, PlanLimits, UserDetail, UserRow } from "../types";
 import { Avatar, Card, Chips, Drawer, Empty, Loading, PageHead, Pill, Who, act, ago, dialog, fmtBytes, fmtDate, fmtNum, fmtTime, fmtUsd, isDemo, toast, useData } from "../ui";
 
@@ -142,6 +143,8 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
       </Drawer>
     );
   const u = d.user;
+  // what the server lets you change: only accounts ranked below you (the owner: everyone else; an admin: members)
+  const below = !self && (owner ? u.role !== "owner" : u.role === "member");
   const mail = async () => {
     const subject = await dialog({ title: t("发邮件给 {who}", { who: u.name || u.email }), ok: t("下一步"), input: { label: t("主题"), value: t("关于你的 LACUNA 账号") } });
     if (!subject) return;
@@ -269,7 +272,7 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
                     {s.sample && <span className="a-muted small"> · {t("示例")}</span>}
                     {s.archived && <span className="a-muted small"> · {t("已归档")}</span>}
                   </td>
-                  <td className="a-muted">{s.role}</td>
+                  <td className="a-muted">{SHOW_ROLE[s.role]?.() ?? s.role}</td>
                   <td className="n">{t("{n} 集", { n: s.episodes ?? 0 })}</td>
                   <td>
                     <OpenShow sid={s.id} />
@@ -282,24 +285,8 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
           <p className="a-muted small">{t("没有节目")}</p>
         )}
       </section>
+      <DrawerActivity email={u.email} rows={d.activity} />
       <UserNotes email={u.email} notes={d.notes} />
-      <section>
-        <h4>{t("活动记录")}</h4>
-        {d.activity.length ? (
-          <div className="a-tl">
-            {d.activity.slice(0, 30).map((a, i) => (
-              <div key={i}>
-                <time>{fmtTime(a.ts)}</time>
-                {eventName(a.ev)}
-                {a.show ? ` · ${a.show}` : ""}
-                {a.ep ? ` · ${a.ep}` : ""}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="a-muted small">{t("还没有活动")}</p>
-        )}
-      </section>
       <section>
         <h4>{t("在哪些设备登录着")}</h4>
         {d.sessions.length ? (
@@ -308,8 +295,12 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
               {d.sessions.map((s, i) => (
                 <tr key={i}>
                   <td>{s.device}</td>
-                  <td className="a-muted">{t("最近 {t}", { t: ago(s.seen) })}</td>
-                  <td className="a-muted">{t("登录于 {d}", { d: fmtDate(s.created) })}</td>
+                  {/* one cell, two lines: three columns ran off a phone in English (batch 9) */}
+                  <td className="a-muted">
+                    {t("最近 {t}", { t: ago(s.seen) })}
+                    <br />
+                    {t("登录于 {d}", { d: fmtDate(s.created) })}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -359,22 +350,22 @@ export function UserDrawer({ email, me, plans, close, changed }: { email: string
               {t("加时长")}
             </button>
           )}
-          {!self && u.twofa && (
+          {below && u.twofa && (
             <button type="button" className="a-btn" onClick={() => update({ reset_2fa: true }, t("两步验证已重置"))}>
               {t("重置两步验证")}
             </button>
           )}
-          {!self && (
+          {below && (
             <button type="button" className="a-btn" onClick={endSessions}>
               {t("退出对方所有登录")}
             </button>
           )}
-          {!self && u.role !== "owner" && (
+          {below && (
             <button type="button" className="a-btn" onClick={() => update({ disabled: !u.disabled }, u.disabled ? t("已恢复使用") : t("已停用"))} data-testid="user-disable">
               {u.disabled ? t("恢复使用") : t("停用")}
             </button>
           )}
-          {!self && u.role !== "owner" && (
+          {below && (
             <button type="button" className="a-btn danger" onClick={remove} data-testid="user-delete">
               {t("删除账号")}
             </button>

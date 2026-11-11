@@ -1,11 +1,12 @@
 /* 导出 step (phase 8) */
-.export-step { width: 100%; max-width: 1120px; margin: 0 auto; padding: 24px 28px 60px; }
+.export-step { width: 100%; max-width: var(--w-work); margin: 0 auto; padding: 24px 28px 60px; }
 .export-inline { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
 @media (max-width: 900px) { .export-inline { grid-template-columns: minmax(0, 1fr); } }
 .xmain { display: flex; flex-direction: column; gap: 16px; padding: 24px 26px; }
 .xmain h2 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
 .xmain p { margin: 0; }
-.xfmts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.xfmts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.xfmt { min-width: 0; }
 .xfmt { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; border-radius: 16px; border: 2px solid var(--line-2); background: var(--solid); cursor: pointer; }
 .xfmt input { position: absolute; opacity: 0; pointer-events: none; }
 .xfmt.is-on { border-color: var(--accent); background: var(--accent-soft); }
@@ -14,6 +15,8 @@
 .xfmt-top b { font-size: 17px; }
 .xfmt.is-on .chip { background: var(--accent); color: #fff; }
 .xstart { min-height: 48px; font-size: 15px; background: var(--grad); border: 0; color: #fff; }
+/* keep the gradient and white text on hover (the plain primary hover was pale grey in dark, batch 7 B14) */
+.xstart:hover:not(:disabled) { background: var(--grad); color: #fff; opacity: 0.9; }
 .xdl { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--hover); }
 .xdl .export-result { display: flex; flex-direction: column; gap: 8px; }
 .xdl .export-files { list-style: none; margin: 0; padding: 0; }

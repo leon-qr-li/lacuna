@@ -53,3 +53,6 @@
 
 /* during the tour the black playhead would hide the orange cut lines it talks about */
 body:has([data-testid="tour"]) .ml-head-line { display: none; }
+/* below 1180px the top bar has no free middle (the title, or the logo on a phone): the pill sits at the bottom */
+@media (max-width: 1180px) { .tour-pill { top: auto; bottom: 14px; } }
+.tour-play .mono { white-space: nowrap; }

@@ -26,6 +26,7 @@ def register(app, ctx) -> None:
     @app.post("/api/episodes/{episode_id}/export")
     def start_export(episode_id: str, body: ExportBody):
         ep = get(episode_id)
+        ep.previewer      # recordings missing: a clear 409 now, not a raw error once the export has started
         try:
             return {"job": exporter.start(ep, body.formats, body.mp3_kbps, body.channels)}
         except ExportBusy as e:

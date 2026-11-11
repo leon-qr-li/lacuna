@@ -12,7 +12,7 @@ from lacuna_app.editor import MockEditorAdapter
 from lacuna_app.episode import APPLIED, Episode, create_episode
 from lacuna_app.learning import decisions
 from lacuna_app.library import Library
-from lacuna_app.music import BG_DB, EpisodeMusic
+from lacuna_app.music import BED_BG_DB, BG_DB, EpisodeMusic
 from lacuna_app.store import Workspace
 from lacuna_core import MediaRef, Project, add_source_clip, new_timeline
 from lacuna_core.master import LoudnessMeter
@@ -322,7 +322,7 @@ def test_music_is_levelled_on_the_part_that_plays(tmp_path):
     m.update(item["id"], gain_db=-4.0)
     tl, _, _ = m.mix()
     clip = next(c for t in tl.tracks if t.name.startswith("♪") for c in t.clips)
-    assert clip.gain_db == pytest.approx(item["level_db"] - 4.0 - BG_DB, abs=0.05)   # a bed is background: BG_DB under
+    assert clip.gain_db == pytest.approx(item["level_db"] - 4.0 - BED_BG_DB, abs=0.05)   # a bed is background: BED_BG_DB under
 
 
 def test_music_level_falls_back_to_the_library_value(tmp_path):

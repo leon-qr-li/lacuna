@@ -3,7 +3,7 @@ import { AlbumCover } from "./Cover";
 import { albumHref, type AlbumsView } from "./api";
 
 /** 项目首页: the albums as a row of covers (each opens its album page), and 「＋ 新专辑」. */
-export function AlbumRow({ view, onNew }: { view: AlbumsView; onNew: () => void }) {
+export function AlbumRow({ view, onNew }: { view: AlbumsView; onNew?: () => void }) {
   return (
     <ul className="alb-row" aria-label={t("专辑")} data-testid="album-row">
       {view.albums.map((a) => {
@@ -21,11 +21,13 @@ export function AlbumRow({ view, onNew }: { view: AlbumsView; onNew: () => void 
           </li>
         );
       })}
-      <li>
-        <button type="button" className="alb-tile alb-tile-new" onClick={onNew} data-testid="album-new">
-          {t("＋ 新专辑")}
-        </button>
-      </li>
+      {onNew && (
+        <li>
+          <button type="button" className="alb-tile alb-tile-new" onClick={onNew} data-testid="album-new">
+            {t("＋ 新专辑")}
+          </button>
+        </li>
+      )}
     </ul>
   );
 }

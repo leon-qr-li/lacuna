@@ -162,7 +162,7 @@ export function RecoveryCodes({ codes, email, onDone, doneLabel }: {
           <li key={c}>{c}</li>
         ))}
       </ul>
-      <div className="row gap">
+      <div className="row gap8">
         <button
           type="button"
           className="btn btn-outline btn-small"

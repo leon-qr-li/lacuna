@@ -4,6 +4,8 @@ import { PageLoading } from "../loading/Loading";
 import { confirmDialog } from "../dialog/Dialog";
 import { EpisodeCard } from "./EpisodeCard";
 import { episodesApi, type ArchivedItem } from "./api";
+import { EmptyState } from "../states/States";
+import { useReadOnly } from "../listen-only/state";
 
 const mb = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${Math.max(Math.round(b / 1e6), 0)} MB`);
 
@@ -13,6 +15,7 @@ export function ArchiveView() {
   const [err, setErr] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const ro = useReadOnly() !== null; // 只听 or an archived show: no 恢复 / 永久删除 (the server refuses them)
   const load = useCallback(() => {
     episodesApi
       .archived()
@@ -32,9 +35,9 @@ export function ArchiveView() {
     const ok = await confirmDialog({
       title: t("永久删除「{title}」？", { title: e.title }),
       message:
-        t("会删掉这一集的剪辑、对话记录、发布资料、封面、导入时复制进 App 的音频，以及只属于这一集的素材。这一步不能撤销。") +
+        t("会删掉这一集的剪辑、对话记录、发布资料、封面、上传的原始音轨，以及只属于这一集的素材。这一步不能撤销。") +
         "\n" +
-        t("学到的习惯和规则都会保留；公共素材和别的剧集也在用的素材留着；导出的成品（exports 文件夹）和你电脑上原来的录音文件不会动。"),
+        t("学到的习惯和规则都会保留，公共素材和别的剧集也在用的素材也留着。你电脑上原来的录音文件不受影响。删除前请先下载需要的导出成品。"),
       confirmLabel: t("永久删除"),
       danger: true,
     });
@@ -67,7 +70,19 @@ export function ArchiveView() {
         </p>
       )}
       {err && <p className="error">{err}</p>}
-      {list?.length === 0 && <p className="muted">{t("没有归档的剧集。")}</p>}
+      {list?.length === 0 && (
+        <EmptyState
+          icon="▢"
+          title={t("没有归档的剧集")}
+          text={t("归档的剧集会放在这里，随时可以恢复。")}
+          action={
+            <a className="btn btn-outline btn-small linkbtn" href="#/">
+              {t("回首页")}
+            </a>
+          }
+          testid="archive-empty"
+        />
+      )}
       <ul className="ep-list">
         {list?.map((e) => (
           <EpisodeCard
@@ -76,6 +91,7 @@ export function ArchiveView() {
             extra={
               <>
                 <span className="muted small">{t("归档于 {at}", { at: fmtDateTime(e.archived_at) })}</span>
+                {!ro && (
                 <span className="ep-tile-actions">
                   <button type="button" className="btn btn-outline btn-small" onClick={() => void restore(e)}>
                     {t("恢复")}
@@ -84,6 +100,7 @@ export function ArchiveView() {
                     {t("永久删除")}
                   </button>
                 </span>
+                )}
               </>
             }
           />

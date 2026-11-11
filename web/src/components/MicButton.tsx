@@ -102,7 +102,7 @@ export function MicButton({ available, note, disabled, onStart, onText, onError,
       ? t("语音输入暂不可用：{p0}", { p0: note ?? "" })
       : state === "recording"
         ? t("再点一下结束，识别成文字")
-        : t("点一下开始说话（在本机识别，声音不上传）");
+        : t("点一下开始说话（在 LACUNA 服务器上识别，不发给第三方）");
   const label =
     state === "recording"
       ? `● ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`

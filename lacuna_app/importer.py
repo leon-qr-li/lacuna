@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextvars
 import json
+import re
 import threading
 import time
 import traceback
@@ -42,8 +43,10 @@ from .i18n import N_, tr
 AUDIO_EXT = {".wav", ".flac", ".aif", ".aiff", ".mp3", ".m4a", ".ogg", ".opus", ".aac"}
 LEGACY_HOSTS = (("L", "Leon"), ("P", "Pei"))      # jobs from before the show profile
 JOB_FILE = "job.json"
+INVISIBLE = re.compile(r"[\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]")
+MIN_TRACK_S = 1          # a 0-second track would fail deep inside the analysis with a raw error
 ASR_SHARE = 0.68
-STEP_LABELS = {"models": N_("准备识别模型"), "features": N_("分析停顿、语速和重叠"), "first_cut": N_("AI 第一刀"),
+STEP_LABELS = {"models": N_("准备识别模型"), "features": N_("分析停顿、语速和重叠"), "first_cut": N_("LACUNA 初剪"),
                "episode": N_("生成审阅")}
 
 
@@ -111,6 +114,8 @@ class Importer:
         self.hear_backend: Callable[[dict], Callable] | None = None
         # proofreads the show's names in the recognised text (transcript_fix.py); None = the real one
         self.term_fixer: Any = None
+        # checks the other proper nouns (films, people ...) in the recognised text (name_check.py); None = the real one
+        self.name_checker: Any = None
         self._lock = threading.Lock()
         self._usage_lock = threading.Lock()
         self._gate = gate                       # None = the server's one queue (import_queue.GATE)
@@ -144,7 +149,7 @@ class Importer:
             if job.get("hidden"):
                 continue
             if job.get("state") in ("queued", "running"):
-                job.update(state="interrupted", error=tr("App 在导入途中关闭了，点「继续」从断点接着做。"))
+                job.update(state="interrupted", error=tr("导入中途停了，点「继续」从断点接着做。"))
             self.jobs[job["id"]] = job
 
     def _save(self, job: dict) -> None:
@@ -200,6 +205,8 @@ class Importer:
         `language`: what the hosts speak (asr.LANGUAGES); None = the show's language."""
         try:
             check_id(episode_id)
+            if INVISIBLE.search(episode_id):  # "EP​1" would sit next to "EP1" looking the same
+                raise PathError(episode_id)
         except PathError:
             raise ImportError_(tr("剧集编号不能含 \\ / : * ? \" < > | 等字符"))
         if episode_id in self.ws.episode_ids():
@@ -219,6 +226,8 @@ class Importer:
         tracks = {tag: check_track(p) for (tag, _), p in zip(hosts, paths)}
         seen: dict[str, str] = {}
         for tag, name in hosts:
+            if tracks[tag]["duration"] is not None and tracks[tag]["duration"] < MIN_TRACK_S:
+                raise ImportError_(tr("{name} 的分轨太短（不到 {s} 秒），换一个文件", name=name, s=MIN_TRACK_S))
             other = seen.get(tracks[tag]["path"])
             if other:
                 raise ImportError_(tr("{a} 和 {b} 选了同一个文件", a=other, b=name))
@@ -436,6 +445,7 @@ class Importer:
                     audio16[tag] = asr_mod.decode_16k(job["tracks"][tag]["path"])
             profile = show_mod.load(self.ws.root)
             self._fix_terms(job, d, asr, hosts)
+            self._check_names(job, d, asr, hosts)
             hear = None
             if lang == "en":
                 if self.hear_backend is not None:
@@ -475,7 +485,7 @@ class Importer:
                 fc.batch = bool(self.batch_on and self.batch_on())
             duration = max(a["audio_s"] for a in asr.values())
             extra = learning.prompt_rules(self.ws)      # rules Leon approved on 「学到的规则」 ("" if none)
-            self._progress(job, "first_cut", 0.0, tr("AI 第一刀") if fc.name == "claude" else tr("规则第一刀（AI 没接上）"))
+            self._progress(job, "first_cut", 0.0, tr("LACUNA 初剪") if fc.name == "claude" else tr("规则初剪（AI 没接上）"))
             try:
                 res = fc.run(doc, duration, tokens, job["id"],
                              progress=lambda f, s: self._progress(job, "first_cut", f, s),
@@ -486,7 +496,7 @@ class Importer:
                 if isinstance(e, FirstCutError):
                     if job["id"] in self._cancel:
                         raise Cancelled()
-                    raise ImportError_(tr("AI 第一刀没做完：{e}。已剪好的段落都存着，点「继续」接着剪。", e=e))
+                    raise ImportError_(tr("LACUNA 初剪没做完：{e}。已剪好的段落都存着，点「继续」接着剪。", e=e))
                 raise
             ops_doc = res.ops_doc
             atomic_write_json(ops_p, ops_doc)
@@ -508,6 +518,7 @@ class Importer:
                 "imported_at": now(), "language": lang, "raw_tracks": {name: job["tracks"][tag]["path"] for tag, name in hosts}}
         create_episode(self.ws, job["id"], meta, project, edits, transcript)
         self._mark_checked(job, d)
+        self._keep_name_check(job, d)
         self._level(job["id"])          # not cancellable: the episode exists now
         self._default_music(job["id"])
         cons = sum(e.consequential for e in edits)
@@ -537,6 +548,43 @@ class Importer:
         tf.write_back(asr, lines, done)
         if done:
             self._done_step(job, "terms", {"fixes": tf.summary(done)})
+
+    def _check_names(self, job: dict, d: Path, asr: dict[str, dict], hosts: list[tuple[str, str]]) -> None:
+        """Film titles, people and other proper nouns mis-heard by the recognisers, fixed in `asr` in place
+        (name_check.py, on by default). The checked answer is kept in ``name_fixes.json`` (a resumed import
+        asks once); what changed goes to the episode when it is made (`_keep_name_check`)."""
+        from . import name_check as nc
+        from . import transcript_fix as tf
+        p = d / nc.IMPORT_FILE
+        lines = tf.lines_from_asr(asr, dict(hosts))
+        if p.is_file():
+            fixes = [f for f in read_json(p).get("fixes", []) if isinstance(f, dict)]
+        elif not nc.enabled(self.ws.root):
+            return
+        else:
+            checker = self.name_checker if self.name_checker is not None else nc.NameChecker()
+            if not checker.available:
+                return
+            self._progress(job, "features", 0.05, tr("核对片名、人名等专有名词"))
+            fixes = checker.propose(lines, self.ws.root, job.get("title") or "",
+                                    on_usage=lambda u: self._log_usage(job["id"], u))
+        done = tf.apply(lines, fixes)
+        tf.write_back(asr, lines, done)
+        rows = nc.record(done, fixes, lines)
+        atomic_write_json(p, {"fixes": fixes, "rows": rows})
+        if rows:
+            self._done_step(job, "names", {"fixes": [{k: r[k] for k in ("wrong", "right", "count")} for r in rows]})
+
+    def _keep_name_check(self, job: dict, d: Path) -> None:
+        """The new episode lists what the proper-noun check changed (routes/name_check.py)."""
+        from . import name_check as nc
+        try:
+            rows = read_json(d / nc.IMPORT_FILE).get("rows") or []
+        except (OSError, ValueError):
+            return
+        if rows:
+            from .store import atomic_write_json as write
+            write(self.ws.episode_dir(job["id"]) / nc.EPISODE_FILE, {"rows": rows, "at": now()})
 
     def _mark_checked(self, job: dict, d: Path) -> None:
         """The new episode's transcript was proofread with this glossary (no second pass when it opens)."""

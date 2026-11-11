@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { bare, formatTitle, type Naming } from "../album-naming/api";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import type { EpisodeListItem, ImportJob } from "../../api";
 import { api, fmt } from "../../api";
 import { t } from "../../i18n";
@@ -33,7 +34,7 @@ function steps(j: ImportJob): [string, number, string][] {
     ["models", 0.04, t("准备识别模型")],
     ...hosts.map(([tag, name]): [string, number, string] => [`asr_${tag}`, 0.68 / hosts.length, t("识别 {name} 的分轨", { name })]),
     ["features", 0.04, t("分析停顿、语速和重叠")],
-    ["first_cut", 0.2, t("AI 第一刀")],
+    ["first_cut", 0.2, t("LACUNA 初剪")],
     ["episode", 0.04, t("生成审阅")],
   ];
 }
@@ -62,13 +63,14 @@ const hasFiles = (e: DragEvent | React.DragEvent) => Array.from(e.dataTransfer?.
 const tooMany = (n: number) => t("这个节目有 {n} 位主持人，只用了前 {n} 条分轨（每个节目最多 4 位主持人，每人一条）。", { n });
 
 /** The import form. What is in it (and the uploads) lives in draft.ts, so it survives a visit to another page. */
-function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; name: string }[]; onStarted: () => void }) {
+function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; name: string; naming?: Naming | null }[]; onStarted: () => void }) {
   const { hosts, slots, id, title, language, album } = d;
   const [over, setOver] = useState<Who | "all" | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inputs = useRef<Record<string, HTMLInputElement | null>>({});
   const many = hosts.length > 1;
+  const naming = albums.find((a) => a.id === album)?.naming ?? null; // the album's episode naming (features/album-naming)
   const names = hostList({ hosts } as Show);
   useEffect(() => {
     formOnScreen(true);
@@ -152,8 +154,8 @@ function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; n
           <input value={id} onChange={(e) => patch({ id: e.target.value })} data-testid="import-id" />
         </label>
         <label>
-          {t("标题（可不填）")}
-          <input value={title} onChange={(e) => patch({ title: e.target.value })} placeholder={`${id} · …`} data-testid="import-title" />
+          {t("这一集叫什么")}
+          <input value={title} onChange={(e) => patch({ title: e.target.value })} placeholder={t("想好了就填，没想好可以空着")} data-testid="import-title" />
         </label>
         <label>
           {t("这一集说的语言")}
@@ -177,6 +179,16 @@ function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; n
               ))}
             </select>
           </label>
+        )}
+        {naming && (
+          <p className="small muted import-naming" data-testid="import-naming">
+            {t("这一集会叫：{title}", { title: formatTitle(naming, id.trim(), bare(id.trim(), title, naming)) })}
+          </p>
+        )}
+        {!title.trim() && (
+          <p className="small muted import-naming" data-testid="import-name-later">
+            {t("不填也行：剪完到「发布」那一步，LACUNA 会给你几个名字挑，随时也能改。")}
+          </p>
         )}
       </div>
       <div className={`lib-drop import-drop${over === "all" ? " lib-drop-active" : ""}`} data-testid="import-drop">
@@ -254,7 +266,7 @@ function NewImport({ d, albums, onStarted }: { d: Draft; albums: { id: string; n
       </div>
       <TrackNote />
       <p className="muted small">
-        {t("原始录音只读，只在 LACUNA 的服务器上处理，不交给第三方；AI 只看文字稿和停顿等数字，拿不到录音。关掉页面不影响进度。")}
+        {t("原始录音只读，只在 LACUNA 的服务器上处理，不交给第三方；AI 只看逐字稿和停顿等数字，拿不到录音。关掉页面不影响进度。")}
       </p>
       {d.note && <p className="error small">{d.note}</p>}
       {err && <p className="error small">{err}</p>}
@@ -302,8 +314,8 @@ function JobRow({ j, toReview, onChange }: { j: ImportJobView; toReview: number;
       {j.state === "done" && j.result && (
         <p className="small">
           {j.result.engine === "rules"
-            ? t("AI 第一刀（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: toReview })
-            : t("AI 第一刀：{edits} 处改动，{review} 处需要你过目。", { edits: j.result.edits, review: toReview })}
+            ? t("LACUNA 初剪（没连上 AI，只收紧了停顿）：{edits} 处改动，{review} 处需要你审阅。", { edits: j.result.edits, review: toReview })
+            : t("LACUNA 初剪：{edits} 处改动，{review} 处需要你审阅。", { edits: j.result.edits, review: toReview })}
         </p>
       )}
       {j.error && j.state !== "done" && (
@@ -349,12 +361,18 @@ export function ImportPanel({
   onOpen,
   albums = [],
   album = "",
+  actions,
+  readOnly = false,
 }: {
   /** the 剧集 list, for each finished import's review progress */
   episodes: EpisodeListItem[] | null;
   /** the project's albums: the form offers to put the new episode in one (`album`: picked at first) */
-  albums?: { id: string; name: string }[];
+  albums?: { id: string; name: string; naming?: Naming | null }[];
   album?: string;
+  /** the home page's other buttons, in one row after 导入新一集 (batch 7, T3) */
+  actions?: ReactNode;
+  /** a 只听 member or an archived show: no 导入新一集 (the server would refuse it) */
+  readOnly?: boolean;
   onEpisodesChanged: () => void;
   onOpen: (id: string) => void;
 }) {
@@ -410,6 +428,7 @@ export function ImportPanel({
     const drop = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
+      if (readOnly) return;
       const files = Array.from(e.dataTransfer?.files ?? []);
       if (!files.length || !hosts.length) return;
       openForm();
@@ -426,12 +445,17 @@ export function ImportPanel({
 
   return (
     <div className="imports">
-      {!d && (
-        <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
-          {t("导入新一集")}
-        </button>
+      {((!d && !readOnly) || actions) && (
+        <div className="row gap8 wrap import-actions">
+          {!d && !readOnly && (
+            <button type="button" className="btn btn-primary" onClick={openForm} disabled={!hosts.length}>
+              {t("导入新一集")}
+            </button>
+          )}
+          {actions}
+        </div>
       )}
-      {d && hosts.length > 0 && <NewImport d={d} albums={albums} onStarted={() => void refresh()} />}
+      {d && !readOnly && hosts.length > 0 && <NewImport d={d} albums={albums} onStarted={() => void refresh()} />}
       {!!shown.length && (
         <section aria-label={t("导入任务")}>
           <h2 className="sub">{t("导入任务")}</h2>

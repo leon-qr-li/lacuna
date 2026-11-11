@@ -12,6 +12,10 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { SpeedButton } from "../review-speed/SpeedButton";
 import { useRate } from "../review-speed/speed";
+import { GapBanner, StripGaps } from "../gaps/Gaps";
+import { gapsApi } from "../gaps/api";
+import { AutoBed } from "../autobed/AutoBed";
+import { CreditFix } from "../credit-fix/CreditFix";
 
 const SKIP_S = 5;
 const shortLabel = (t: string, max = 44) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t);
@@ -165,6 +169,7 @@ function MusicStrip({ m, now, previewing, onListen, onSeek }: {
       }}
     >
       <div className="mstrip-voice" />
+      <StripGaps list={m.gaps} total={total} />
       {placed.map((p) => {
         const left = (100 * p.start_s!) / total;
         const width = Math.max(1.2, (100 * ((p.end_s ?? p.start_s!) - p.start_s!)) / total);
@@ -243,6 +248,11 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     if (albumName) setScope("album");
   }, [albumName]);
 
+  // 一键修复曲名: the list and the BGM credits show the new names
+  const fixed = (n: number) => {
+    load();
+    setMsg(n ? t("已更新 {n} 首的曲名和作者", { n }) : t("没有改动曲名"));
+  };
   const run = async (p: Promise<Music>, done?: string): Promise<boolean> => {
     try {
       const before = new Set(m?.placements.map((x) => x.id));
@@ -344,6 +354,12 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     />
   );
   const taken = m.placements.map((x) => x.role);
+  const usedRoles: Record<string, string[]> = {};
+  for (const p of m.placements) {
+    const r = p.in_gap ? t("在间隙里") : p.role_label;
+    if (!usedRoles[p.asset_id]?.includes(r)) (usedRoles[p.asset_id] ??= []).push(r);
+  }
+  const firstEmptyGap = (m.gaps ?? []).findIndex((g) => !g.filled_by) + 1;
   const ends = m.placements.some((p) => p.role === "intro" || p.role === "outro");
   const saveDefaults = () => {
     if (scope === "album" && albumName)
@@ -354,7 +370,7 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
     <main className="home music music-b">
       <header className="music-hero">
         <div className="grow">
-          <h1>{t("配乐")}</h1>
+          <h1 className="step-title">{t("配乐")}</h1>
           <p className="muted small">
             <span className="mono">
               {t("人声剪辑 {voice} → 成品 {final}", { voice: fmt(m.voice_duration), final: fmt(m.duration) })}
@@ -375,8 +391,12 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
           <MusicLibrary
             assets={assets}
             taken={taken}
+            used={usedRoles}
+            gapNo={firstEmptyGap}
+            onGap={(asset_id) => void run(gapsApi.place(id, { asset_id }), t("已放进间隙，可以点「试听这一处」"))}
             now={now}
             upload={upload}
+            fix={<CreditFix episode={id} small onApplied={fixed} testId="credit-fix-list" />}
             onPauseOthers={() => {
               onPauseMain();
               mixRef.current?.pause();
@@ -426,6 +446,8 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
               )}
             </div>
           )}
+          <GapBanner list={m.gaps} onFill={() => void run(gapsApi.fill(id))} />
+          <AutoBed id={id} version={`${m.mix_version}:${m.draft?.id ?? ""}:${m.placements.length}`} onRun={(p) => void run(p)} />
           {msg && <p className="small note-line" data-testid="music-msg">{msg}</p>}
           {m.draft && (
             <DraftCard
@@ -477,9 +499,9 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
                 seekMix(at, true);
               }}
             />
+            {/* no browser controls: the row below is the player (batch 7, B8) */}
             <audio
               ref={mixRef}
-              controls
               preload="none"
               src={m.mix_url}
               data-testid="mix-audio"
@@ -499,6 +521,18 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
               onSeeked={(e) => setNow(e.currentTarget.currentTime)}
             />
             <div className="row gap8 wrap mix-controls">
+              <button
+                type="button"
+                className="btn btn-small btn-primary mix-play"
+                onClick={() => {
+                  const a = mixRef.current;
+                  if (a) void (a.paused ? a.play().catch(() => undefined) : a.pause());
+                }}
+                aria-label={playing ? t("暂停") : t("播放")}
+                data-testid="mix-play"
+              >
+                {playing ? "❚❚" : "▶"}
+              </button>
               <button type="button" className="btn btn-small btn-outline" onClick={() => skip(-SKIP_S)} aria-label={t("后退 5 秒")}>
                 {t("−5 秒")}
               </button>
@@ -522,6 +556,8 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
                 onOpen={() => setSel(sel === p.id ? null : p.id)}
                 onMore={setMore}
                 taken={m.placements.filter((x) => x.id !== p.id).map((x) => x.role)}
+                gapOpen={firstEmptyGap > 0}
+                onGap={() => run(gapsApi.place(id, { pid: p.id }), t("已放进间隙，可以点「试听这一处」"))}
                 previewing={playing && preview === p.id}
                 onPreview={() => listen(p)}
                 onSave={(patch, done) => run(libraryApi.updatePlacement(id, p.id, patch), done ?? t("已保存"))}
@@ -538,7 +574,10 @@ export function MusicView({ id, onPauseMain }: { id: string; onPauseMain: () => 
             </>
           )}
           <div className="card" data-tour="music-credits">
-            <h2>{t("BGM 署名（show notes 会用）")}</h2>
+            <div className="row gap8 wrap music-credits-head">
+              <h2 className="grow">{t("BGM 署名（show notes 会用）")}</h2>
+              <CreditFix episode={id} small onApplied={fixed} />
+            </div>
             {m.credits.length === 0 ? (
               <p className="muted small">{t("BGM：未设置")}</p>
             ) : (

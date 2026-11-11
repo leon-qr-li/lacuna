@@ -150,7 +150,7 @@ def ai_failure(e: Exception) -> str:
         return tr("LACUNA 没有给出结果")
     if type(e).__module__.startswith("anthropic"):
         return error_message(e, tail="")
-    return tr("AI 服务出了点问题")
+    return tr("LACUNA 暂时出了点问题")
 
 
 def _hid(*parts: str) -> str:

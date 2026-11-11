@@ -1,0 +1,18 @@
+/* 导入时核对专有名词 (lacuna_app/name_check.py) */
+.nc { position: relative; display: inline-flex; margin-left: auto; }
+.nc ~ .tf-chip, .nc ~ .fl { margin-left: 0; }
+.nc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px; border: 1px solid var(--line-2);
+  background: var(--ok-soft); color: var(--ok); font: 600 12.5px/1.4 var(--sans); cursor: pointer; white-space: nowrap; }
+.nc-chip b { font-variant-numeric: tabular-nums; }
+.nc-chip:hover, .nc-chip[aria-expanded="true"] { border-color: var(--ok); }
+.nc-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: min(380px, calc(100vw - 32px)); max-height: min(440px, 70vh); overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--solid); box-shadow: var(--shadow-pop); }
+.nc-head { display: flex; flex-direction: column; gap: 2px; }
+.nc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.nc-list li { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: var(--solid-2); border: 1px solid var(--line); }
+.nc-list li.is-kept { opacity: 0.7; }
+.nc-pair { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.nc-wrong { color: var(--ink-3); text-decoration: line-through; }
+.nc-list li.is-kept .nc-wrong { text-decoration: none; color: var(--ink); }
+.nc-why { overflow-wrap: anywhere; }
+.nc-actions { display: flex; align-items: center; gap: 8px; }

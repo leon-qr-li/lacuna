@@ -309,7 +309,7 @@ def test_adapter_selection_and_claude_stub(monkeypatch):
     claude = ClaudeEditorAdapter()
     assert not claude.available
     ctx = ChatContext("停顿短一点", 12.0, 60.0, [], None)
-    assert "AI 密钥" in claude.propose(ctx).message              # no network call
+    assert "暂时用不了" in claude.propose(ctx).message          # no network call
     req = ClaudeEditorAdapter(api_key="test").build_request(ctx)
     assert req["model"] == "claude-opus-5-5" and req["tools"][0]["name"] == "propose_edit"
     assert "停顿短一点" in req["messages"][0]["content"]

@@ -257,7 +257,7 @@ class Converter:
             title = self._title(ai_cat, cat, tags, dur, self.text(tags, a, b))
             if kind == "keep_flag":
                 return self._edit(oid, ops, cat, "AI 建议（未删）· " + title,  # i18n-ignore
-                                  tr("AI 没有删这段，留给你决定。") + reason, conf, sp, ai_cat,
+                                  tr("LACUNA 没有删这段，留给你决定。") + reason, conf, sp, ai_cat,
                                   status=RESTORED, review=True)
             host = self.names[tags[0]] if len(tags) == 1 else self.host(tags, a, b)
             return self._edit(oid, ops, cat, title, reason, conf, sp, ai_cat, host=host)

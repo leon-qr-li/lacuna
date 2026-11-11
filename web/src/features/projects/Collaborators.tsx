@@ -60,7 +60,7 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
     <div className="prj-collab" data-testid="collaborators">
       {manage && noSeats && (
         <p className="card small" data-testid="invite-upgrade">
-          {t("免费体验不能邀请协作者。升级到基础版后可以邀请 2 位搭档一起剪。")}
+          {t("免费体验不能邀请协作者。升级到基础版后可以邀请 2 位协作者一起剪。")}
         </p>
       )}
       {manage && !noSeats && (
@@ -113,11 +113,12 @@ export function Collaborators({ id, me, manage }: { id: string; me: string | nul
         {p.members.map((m) => (
           <li key={m.email} data-testid="collaborator">
             <span className="prj-avatar" aria-hidden="true">
-              {m.email.slice(0, 1).toUpperCase()}
+              {(m.name || m.email).slice(0, 1).toUpperCase()}
             </span>
             <span className="prj-who">
-              {m.email}
+              {m.name || m.email}
               {m.email === me && <span className="muted">{t("（你）")}</span>}
+              {m.name && <span className="prj-mail muted small">{m.email}</span>}
             </span>
             {manage && m.email !== me ? (
               <>

@@ -11,6 +11,7 @@ import { RememberButton, type Ask } from "../features/learning/RememberButton";
 import { RememberCard } from "../features/lessons/RememberCard";
 import type { RememberDraft, RememberReply } from "../features/lessons/api";
 import { ChatCollapse } from "../features/chat-dock/ChatDock";
+import { useReadOnly } from "../features/listen-only/state";
 
 interface Msg {
   id: number;
@@ -39,14 +40,16 @@ interface Props {
 let nextId = 1;
 
 export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, alt }: Props) {
+  const why = useReadOnly();
+  const ro = why !== null;
   const [msgs, setMsgs] = useState<Msg[]>(() => [
     {
       id: nextId++,
       role: "ai",
       text:
         (ep.demo
-          ? t("第一刀（演示）做好了：{raw} → {cut}。", { raw: fmt(ep.raw_duration), cut: fmt(ep.duration) })
-          : t("第一刀做好了：{raw} → {cut}。", { raw: fmt(ep.raw_duration), cut: fmt(ep.duration) })) +
+          ? t("初剪（演示）做好了：{raw} → {cut}。", { raw: fmt(ep.raw_duration), cut: fmt(ep.duration) })
+          : t("初剪做好了：{raw} → {cut}。", { raw: fmt(ep.raw_duration), cut: fmt(ep.duration) })) +
         t("有 {n} 处删得比较多或者动了插话，排在「改动审阅」最前面。", { n: ep.pending_review }) +
         t("听到哪里不对，暂停后直接跟我说。"),
     },
@@ -158,9 +161,9 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, 
   );
 
   return (
-    <section className="chat" aria-label={t("AI 制作人对话")}>
+    <section className="chat" aria-label={t("LACUNA 对话")}>
       <div className="chat-head">
-        {tabs ? tabs(badge) : <h2 className="chat-title">{t("AI 制作人")} {badge}</h2>}
+        {tabs ? tabs(badge) : <h2 className="chat-title">{t("LACUNA")} {badge}</h2>}
         {onCollapse && <ChatCollapse onClick={onCollapse} />}
       </div>
       {alt}
@@ -176,7 +179,7 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, 
             ))}
             {m.usage && (
               <div className="meta muted small mono" data-testid="usage">
-                LACUNA · {t("{s} 秒 · ≈${cost}", { s: m.usage.seconds.toFixed(1), cost: m.usage.cost_usd.toFixed(3) })}
+                LACUNA · {t("{s} 秒", { s: m.usage.seconds.toFixed(1) })}
               </div>
             )}
             {m.remember && <RememberCard epId={ep.id} draft={m.remember} onPauseMain={onPauseMain} />}
@@ -197,9 +200,9 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, 
       </div>
       <form className="chat-form" onSubmit={send} style={alt ? { display: "none" } : undefined}>
         <label htmlFor="say" className="sr-only">
-          {t("对 AI 制作人说（锚定在当前播放位置）")}
+          {t("对 LACUNA 说（从当前播放位置开始）")}
         </label>
-        <GrowText id="say" ref={input} value={text} placeholder={hint} onChange={setText} autoComplete="off" />
+        <GrowText id="say" ref={input} value={text} placeholder={why === "archived" ? t("这个节目已归档，只能查看。恢复后才能修改。") : why ? t("只听成员不能让 LACUNA 修改这一集") : hint} onChange={setText} autoComplete="off" disabled={ro} />
         <div className="chat-form-row">
           <span className="at-chip mono" title={t("指令锚定在当前播放位置")}>
             @ {fmt(time)}
@@ -217,8 +220,8 @@ export function ChatPanel({ ep, time, onEpisode, onPauseMain, onCollapse, tabs, 
             onError={(msg) => push({ role: "ai", text: msg })}
             context={() => ({ episode: ep.id, at: time, where: "chat" })}
           />
-          <RememberButton epId={ep.id} disabled={busy || !text.trim()} onSend={run} />
-          <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>
+          <RememberButton epId={ep.id} disabled={ro || busy || !text.trim()} onSend={run} />
+          <button type="submit" className="btn btn-primary" disabled={ro || busy || !text.trim()}>
             {t("发送")}
           </button>
         </div>

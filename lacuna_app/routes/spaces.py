@@ -30,7 +30,7 @@ from .auth import _cookie
 SPACE_COOKIE = "lacuna_space"
 # answered by the main app whatever the workspace: sign-in, workspaces, app version / updates / AI key
 GLOBAL = ("/api/auth/", "/api/spaces", "/api/app", "/api/health", "/api/habits", "/api/access-requests", "/api/plan",
-          "/api/site/", "/api/onboarding",
+          "/api/site/", "/api/onboarding", "/api/shortcuts",
           "/api/feedback")
 # services bound to one workspace folder: each workspace builds its own
 WS_BOUND = {"auth", "spaces", "importer", "exporter", "publisher", "posters", "library", "learning", "chat_asks",
@@ -354,7 +354,7 @@ def register(app, ctx) -> None:
             raise HTTPException(404, tr("没有这个节目"))
         return {"id": sid, "name": spaces.title(sid), "support_until": spaces.support_until(sid),
                 "plan": plan_of(spaces.creator(sid)), "collaborators": spaces.collaborators(sid),
-                "members": [{"email": e, "role": r} for e, r in sorted(s["members"].items())],
+                "members": [{"email": e, "role": r, "name": auth.name(e)} for e, r in sorted(s["members"].items())],
                 "invites": [{"id": i["id"], "email": i["email"], "role": i.get("space_role") or "editor",
                              "exp": i["exp"]} for i in auth.list_invites() if i.get("space") == sid],
                 "can_invite_new": False}
@@ -492,7 +492,7 @@ def register(app, ctx) -> None:
         if sid not in spaces.spaces:
             raise HTTPException(404, tr("没有这个节目"))
         if not may_delete(email, sid):
-            raise HTTPException(403, tr("只有节目的创建者或站长能永久删除节目"))
+            raise HTTPException(403, tr("只有节目的创建者或 LACUNA 团队能永久删除节目"))
         if not spaces.archived(sid):
             raise HTTPException(409, tr("先把节目归档，才能永久删除"))
         if body.confirm.strip() != spaces.title(sid):

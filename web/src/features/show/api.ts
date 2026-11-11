@@ -57,6 +57,8 @@ export interface Show {
   publish: { ximalaya: boolean; album: string; platforms?: Platform[]; auto_wish?: AutoPublish[] };
   /** 专有名词 of this project: hints for the transcript's proofreading (lacuna_app/transcript_fix.py) */
   terms?: string[];
+  /** 导入时核对专有名词 (lacuna_app/name_check.py); on unless turned off */
+  name_check?: boolean;
   legacy: boolean;
   needs_setup: boolean;
   colors: HostColor[];
@@ -69,7 +71,7 @@ export interface Show {
   rev?: number;
 }
 
-export type ShowInput = Pick<Show, "show_name" | "about" | "language" | "footer" | "hosts" | "publish" | "terms" | "rev">;
+export type ShowInput = Pick<Show, "show_name" | "about" | "language" | "footer" | "hosts" | "publish" | "terms" | "name_check" | "rev">;
 
 export const showApi = {
   get: () => req<Show>("GET", "/api/show"),

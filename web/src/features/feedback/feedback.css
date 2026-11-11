@@ -104,9 +104,9 @@
 .fb-new { font-size: 11px; font-weight: 700; color: #fff; background: var(--danger); border-radius: 999px; padding: 0 7px; }
 .fb-adopted { margin: 0; color: var(--ok); font-weight: 600; }
 .fb-legend { margin: 0; }
-.fb-page { max-width: 760px; margin: 0 auto; padding: 28px 20px; }
+.fb-page { width: 100%; max-width: var(--w-read); margin: 0 auto; padding: 28px 28px 60px; }
 .fb-page-head { align-items: center; margin-bottom: 16px; }
-.fb-page-head h1 { margin: 0; font-size: 22px; }
+.fb-page-head h1 { margin: 0; }
 
 /* 「告诉我们」 next to an error */
 .fb-tellus {
@@ -127,6 +127,8 @@
   background: var(--solid); color: var(--ink); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop);
   animation: fb-in 0.2s ease-out;
 }
+/* while the card is up, the page can scroll everything out from under it (batch 7, B15) */
+body:has(.fb-prompt-host) main { padding-bottom: 380px; }
 .fb-prompt h3 { margin: 0; font-size: 17px; }
 .fb-prompt-foot { display: flex; align-items: center; gap: 8px; }
 .fb-prompt-thanks { margin: 0; font-weight: 600; color: var(--ok); }

@@ -275,12 +275,12 @@ def test_chat_no_change_and_plain_text_answers(ws):
 
 
 @pytest.mark.parametrize("exc, words", [
-    (api_error(anthropic.AuthenticationError, 401), "401"),
-    (api_error(anthropic.RateLimitError, 429), "429"),
-    (api_error(anthropic.BadRequestError, 400, "Your credit balance is too low"), "额度"),
-    (api_error(anthropic.InternalServerError, 529), "繁忙"),
-    (anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com")), "网络"),
-    (RuntimeError("boom"), "RuntimeError"),
+    (api_error(anthropic.AuthenticationError, 401), "暂时用不了"),
+    (api_error(anthropic.RateLimitError, 429), "有点忙"),
+    (api_error(anthropic.BadRequestError, 400, "Your credit balance is too low"), "暂时用不了"),
+    (api_error(anthropic.InternalServerError, 529), "有点忙"),
+    (anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com")), "有点忙"),
+    (RuntimeError("boom"), "暂时用不了"),
 ])
 def test_api_failures_change_nothing(ws, exc, words):
     def boom(sc):
@@ -291,6 +291,7 @@ def test_api_failures_change_nothing(ws, exc, words):
     assert r.status_code == 200
     r = r.json()
     assert r["proposal"] is None and words in r["reply"] and "没有改动" in r["reply"]
+    assert not any(w in r["reply"] for w in ("401", "429", "529", "Console", "API", "RuntimeError"))  # details stay in the log
     s = client.get(EP).json()
     assert s["version"] == s0["version"] and len(s["edits"]) == len(s0["edits"])
 

@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "管理协作者": "Manage collaborators",
   "节目": "Show",
   "现在在：{name}（{role}）": "Now in: {name} ({role})",
   "剧集、素材库和学到的规则都属于节目，只有它的成员能看到。管理员：管成员、改节目设置、归档和永久删除；剪辑师：导入和所有剪辑工作；只听：只能试听和查看。":

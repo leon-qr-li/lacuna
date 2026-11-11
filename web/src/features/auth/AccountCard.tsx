@@ -4,7 +4,7 @@ import { CodeInput, RecoveryCodes, SecondFactor, TwoStepQR } from "./TwoStep";
 import { confirmDialog } from "../dialog/Dialog";
 import { spacesApi, type SpaceInfo } from "../spaces/api";
 import { BusyLabel } from "../loading/Loading";
-import { t } from "../../i18n";
+import { fmtDateTime, t } from "../../i18n";
 import { InviteForm } from "./InviteForm";
 import { NewMembersSwitch } from "./NewMembers";
 import { withLegalLinks } from "../legal/Legal";
@@ -19,7 +19,7 @@ const KEY_SOURCE: Record<string, string> = {
 };
 
 /** site roles (decision 2026-10-21-roles); a show's own roles are SPACE_ROLE */
-export const ROLE: Record<Role, string> = { owner: t("站长"), admin: t("站点管理员"), member: t("用户") };
+export const ROLE: Record<Role, string> = { owner: t("站长"), admin: t("管理员"), member: t("用户") };
 /** lacuna_app/plans.py */
 export const PLAN: Record<PlanId, string> = { trial: t("免费体验"), basic: t("基础版"), pro: t("专业版") };
 const RANK: Record<Role, number> = { member: 1, admin: 2, owner: 3 };
@@ -53,7 +53,7 @@ function Note({ msg }: { msg: Msg }) {
   ) : null;
 }
 
-const when = (s: number | null) => (s ? new Date(s * 1000).toLocaleString() : "—");
+const when = (s: number | null) => (s ? fmtDateTime(s * 1000) : "—");
 
 /** "Chrome · Windows" from a user agent. */
 function device(agent: string): string {
@@ -123,7 +123,7 @@ function NameRow({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => void
             setName(e.target.value);
             setSaved(false);
           }}
-          placeholder={t("搭档和邀请邮件里会显示这个名字")}
+          placeholder={t("协作者和邀请邮件里会显示这个名字")}
         />
       </label>
       <button type="button" className="btn btn-outline btn-small" disabled={!name.trim() || name.trim() === (st.name ?? "")} onClick={() => void save()}>
@@ -204,11 +204,11 @@ function TwoStepRow({ st, setSt }: { st: AuthStatus; setSt: (s: AuthStatus) => v
         title={t("两步验证")}
         help={
           st.require_2fa
-            ? t("登录时除了密码，还要手机验证器 App 上的 6 位数字。云端版每个账号都必须开。")
+            ? t("登录时除了密码，还要手机验证器 App 上的 6 位数字。每个账号都必须开。")
             : t("登录时除了密码，还要手机验证器 App 上的 6 位数字。这台电脑上可选，上云后必须开。")
         }
       >
-        <span className={st.twofa ? "badge badge-confirmed" : "badge badge-unknown"} data-testid="twostep-state">
+        <span className={st.twofa ? "badge badge-good" : "badge badge-unknown"} data-testid="twostep-state">
           {st.twofa ? t("已开启") : t("没开启")}
         </span>
       </Row>
@@ -415,7 +415,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
         <h2>{t("成员与邀请")}</h2>
       </div>
       <p className="muted small">
-        {t("LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。站点管理员能邀请和管理用户、改套餐；只有站长能设站点管理员、改 AI 密钥和邮件设置。")}
+        {t("LACUNA 目前仅限邀请。邀请链接绑定邮箱，7 天内有效，只能用一次。管理员能邀请和管理用户、改套餐；只有站长能设管理员、改 AI 密钥和邮件设置。")}
       </p>
       <InviteForm
         grantable={grantable}
@@ -464,7 +464,7 @@ export function MembersCard({ me, role }: { me: string; role: Role }) {
                   <strong>{a.email}</strong>
                   {a.kind === "collab" ? (
                     <span className="muted small" data-testid="collab-request">
-                      {t("搭档申请：{by} 邀请 TA 加入「{show}」", { by: a.by ?? "", show: a.show })} · {when(a.created)}
+                      {t("协作者申请：{by} 邀请 TA 加入「{show}」", { by: a.by ?? "", show: a.show })} · {when(a.created)}
                     </span>
                   ) : (
                     <span className="muted small">{[a.show, when(a.created)].filter(Boolean).join(" · ")}</span>

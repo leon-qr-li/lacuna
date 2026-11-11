@@ -1,6 +1,7 @@
 import type { Dict } from "../../i18n";
 
 export const en: Dict = {
+  "不用音乐": "None",
   "{email} 已经加进来了": "{email} has been added",
   "邀请已经发到 {email}": "Invite sent to {email}",
   "没能发邮件，把下面的链接发给 {email}": "Couldn't send the email; send {email} the link below",
@@ -17,24 +18,19 @@ export const en: Dict = {
   "节目名": "Show name",
   "建好节目": "Create show",
   "我的节目": "My shows",
-  "所有节目": "All shows",
   "节目设置": "Show settings",
   "＋ 新节目": "+ New show",
   "基本信息": "Basics",
   "主持人": "Hosts",
   "片头片尾": "Intro & outro",
   "正在打开节目设置…": "Opening show settings…",
-  "这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和海报都按这里来。":
+  "这个节目的名字、主持人和默认做法。导入、LACUNA 剪辑、show notes 和封面都按这里来。":
     "This show's name, hosts and defaults. Imports, LACUNA's editing, show notes and covers follow them.",
   "新导入的剧集自动带上。专辑可以设自己的片头片尾，覆盖这里的。":
     "New imports get them automatically. An album can set its own intro and outro, which replace these.",
   "现在用自己的片头片尾的专辑：{names}": "Albums with their own intro or outro: {names}",
   "素材库里还没有音乐。": "No music in the library yet.",
   "去素材库添加": "Add some in Library",
-  "没有登录账号时不需要邀请协作。": "Without accounts there is no one to invite.",
-  "邀请协作「{name}」": "Invite collaborators to “{name}”",
-  "只能邀请到节目这一层。对方剪的时候用对方自己的剪辑习惯。":
-    "Invites are to a whole show. Collaborators edit with their own editing habits.",
   "今天": "today",
   "正在打开节目…": "Opening shows…",
   "{n} 个专辑": { one: "{n} album", other: "{n} albums" },
@@ -80,11 +76,11 @@ export const en: Dict = {
   "节目的名字、图片、语言、介绍和专有名词。": "The show's name, picture, language, description and proper nouns.",
   "每位主持人一条分轨，最多 4 位。": "One track per host, up to 4.",
   "新剧集默认用的片头片尾。": "The intro and outro new episodes get by default.",
-  "show notes 和发布资料的默认做法。": "How show notes and the publishing pack are done by default.",
+  "show notes 和发布资料的默认做法。": "How show notes and the publish pack are done by default.",
   "谁能看、谁能剪这个节目。": "Who can view and who can edit this show.",
   "剪辑师": "Editor",
   "角色能做什么": "What each role can do",
-  "试听、看剧集和文稿": "Listen, view episodes and transcripts",
+  "试听、看剧集和逐字稿": "Listen, view episodes and transcripts",
   "导入、剪辑、导出": "Import, edit, export",
   "邀请和移出协作者": "Invite and remove collaborators",
   "改节目设置": "Change show settings",
@@ -103,8 +99,8 @@ export const en: Dict = {
     "Sent to the LACUNA team for approval. Once approved, {email} gets the invite automatically",
   "{email} 已经收到 LACUNA 的邀请，注册后会直接加入这个节目":
     "{email} already has an invite to LACUNA and will join this show on signing up",
-  "免费体验不能邀请协作者。升级到基础版后可以邀请 2 位搭档一起剪。":
-    "The free trial can't invite collaborators. Upgrade to Basic to edit with up to 2 co-hosts.",
+  "免费体验不能邀请协作者。升级到基础版后可以邀请 2 位协作者一起剪。":
+    "The free trial can't invite collaborators. Upgrade to Basic to edit with up to 2 collaborators.",
   "还没有 LACUNA 账号的人，邀请会先交给 LACUNA 团队批准。":
     "During the beta, inviting someone without a LACUNA account needs LACUNA's approval first.",
   "{role} · 等 LACUNA 批准":

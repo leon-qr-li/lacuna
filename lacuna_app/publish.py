@@ -20,6 +20,7 @@ Corrected names go to ``<workspace>/names.json`` and are applied to the next epi
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 import threading
@@ -31,6 +32,7 @@ from typing import Any, Callable
 
 from .words import join_words
 from . import show
+from .cloud import server_path
 from .editor import ClaudeEditorAdapter, error_message, find_api_key, sdk_installed
 from .episode import Episode, to_base, to_tl
 from .store import PUBLISH_FILE, Workspace, atomic_write_json, inside, read_json, now_iso
@@ -385,8 +387,8 @@ def clean(data: dict, segs: list[Segment]) -> tuple[dict, list[str]]:
         if entries:
             sections.append({"heading": _s(sec.get("heading"), 200) or "（未命名）", "entries": entries})  # i18n-ignore
     sections.sort(key=lambda sec: sec["entries"][0]["base_s"])
-    if dropped:
-        notes.append(tr("有 {dropped} 条时间轴引用了不存在的段落，已丢掉。", dropped=dropped))
+    if dropped:    # an internal slip of the model: logged, not shown to the user (batch 7)
+        logging.getLogger(__name__).info("publish: dropped %d timeline entries citing missing segments", dropped)
     names = []
     for n in data.get("names_to_check") or []:
         heard, sug = _s(n.get("heard"), 100), _s(n.get("suggested"), 100)
@@ -611,7 +613,7 @@ class Publisher:
             return dict(j) if j else None
 
     def start(self, ep: Episode, wait: bool = False) -> dict:
-        job = {"state": "running", "stage": tr("读成品转写"), "started": time.time(), "finished": None, "error": None}
+        job = {"state": "running", "stage": tr("读成品逐字稿"), "started": time.time(), "finished": None, "error": None}
         with self._lock:
             if (self.jobs.get(ep.id) or {}).get("state") == "running":
                 raise PublishBusy(tr("这一集的发布资料正在生成"))
@@ -641,7 +643,7 @@ class Publisher:
     def generate(self, ep: Episode, stage: Callable[[str], None] = lambda s: None) -> dict:
         segs = segments(ep)
         if not segs:
-            raise PublishError(tr("这一集没有转写，写不了 show notes"))
+            raise PublishError(tr("这一集没有逐字稿，写不了 show notes"))
         music = music_info(self.ws, ep)
         names = load_names(self.ws)
         with ep.lock:
@@ -654,8 +656,19 @@ class Publisher:
         if out.usage:
             self.on_usage(ep.id, out.usage)
         draft, notes = clean(out.data, segs)
+        from . import name_check   # names put back as heard after the import's check stay as heard
+        keep = name_check.kept(self.ws.root)
+        draft["names"] = [n for n in draft["names"] if not name_check.is_kept(keep, n["heard"], n["suggested"])]
         if not draft["sections"]:
             raise PublishError(tr("时间轴是空的（引用的段落都对不上），请再生成一次"))
+        # LACUNA's titles stay listed as they came (the publish page's pick list); an episode the user already
+        # named keeps that name as the title (episode_name.py)
+        draft["suggested"] = list(dict.fromkeys(t for t in [draft["title"], *draft["alt_titles"]] if t))
+        from . import episode_name
+        own = episode_name.view(self.ws, ep)["short"] if out.adapter != "sample" else ""   # the tour's sample keeps its own
+        if own:
+            draft["title"] = own
+            draft["alt_titles"] = [t for t in draft["suggested"] if t != own]
         old = self.load(ep)
         pack = {"schema": PUBLISH_SCHEMA, "episode": ep.id,
                 "generated_at": now_iso(), "level": (old or {}).get("level") or DEFAULT_LEVEL,
@@ -740,6 +753,8 @@ class Publisher:
                 for k in ("title", "blurb", "intro"):
                     d[k] = apply_names(d[k], fix)
                 d["alt_titles"] = [apply_names(t, fix) for t in d["alt_titles"]]
+                if "suggested" in d:
+                    d["suggested"] = [apply_names(t, fix) for t in d["suggested"]]
                 for sec in d["sections"]:
                     sec["heading"] = apply_names(sec["heading"], fix)
                     for e in sec["entries"]:
@@ -754,6 +769,10 @@ class Publisher:
                 self._layout(ep, pack, music_info(self.ws, ep), keep_text=True)
                 add_name(self.ws, n["heard"], n["suggested"])
                 n["state"] = "applied"
+                from . import episode_name    # the episode's own name gets the same fix
+                own = episode_name.view(self.ws, ep)["name"]
+                if own and apply_names(own, fix) != own:
+                    episode_name.rename(self.ws, ep, apply_names(own, fix))
             else:
                 n["state"] = "ignored"
             self.save(ep, pack)
@@ -795,13 +814,14 @@ class Publisher:
             with ep.lock:
                 pack = self.load(ep)
                 self.save(ep, pack)
-        out: dict = {"pack": None, "job": job, "notes_path": str(self.notes_path(ep.id))}
+        out: dict = {"pack": None, "job": job, "notes_path": server_path(self.notes_path(ep.id))}
         if pack is None:
             return out
         music = music_info(self.ws, ep)
         d = pack["draft"]
         out["pack"] = {
             "title": d["title"], "alt_titles": d["alt_titles"], "blurb": d["blurb"],
+            "suggested": d.get("suggested") or list(dict.fromkeys(t for t in [d["title"], *d["alt_titles"]] if t)),
             "markdown": pack["markdown"], "edited": pack["edited"], "chapters": pack["chapters"],
             "names": [{k: n[k] for k in ("heard", "suggested", "why", "state")} for n in d["names"]],
             "stale": pack["version"] != ep.version_key() or music.credits != pack.get("music")

@@ -1,0 +1,9 @@
+/* 自动铺底 card on the 配乐 page */
+.autobed { display: flex; flex-direction: column; gap: 8px; }
+.autobed-list { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; border-top: 1px solid var(--border); }
+.autobed-list li { padding: 6px 2px; border-bottom: 1px solid var(--border); }
+.autobed-list li.is-used { opacity: 0.6; }
+.autobed-list label { cursor: pointer; align-items: center; }
+.autobed-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.autobed-banner { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.autobed p { margin: 0; }

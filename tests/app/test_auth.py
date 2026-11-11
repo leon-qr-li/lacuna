@@ -143,10 +143,37 @@ def test_code_cooldown_and_tries(tmp_path, mailer):
     with pytest.raises(AuthError, match="过期"):        # the code is gone after 5 tries
         a.reset("leon@example.com", last_code(mailer), "new password 123")
     clock.t += 61
+    with pytest.raises(AuthError, match="分钟后再试") as e:     # no new code for an hour after a burnt one
+        a.send_code("leon@example.com", "reset")
+    assert e.value.status == 429
+    clock.t += 3600
     a.send_code("leon@example.com", "reset")
     clock.t += 601
     with pytest.raises(AuthError, match="过期"):
         a.reset("leon@example.com", last_code(mailer), "new password 123")
+
+
+def test_reset_codes_per_day_and_per_address(tmp_path, mailer):
+    clock = Clock()
+    a = Auth(tmp_path, mailer, clock=clock)
+    a.register_first("leon@example.com", PW, None, True)
+    for _ in range(5):
+        a.send_code("leon@example.com", "reset")
+        clock.t += 61
+    with pytest.raises(AuthError, match="明天") as e:
+        a.send_code("leon@example.com", "reset")
+    assert e.value.status == 429
+    clock.t += 86400
+    a.send_code("leon@example.com", "reset")
+    # one address asking for many codes is stopped, whether the emails have accounts or not
+    for i in range(20):
+        a.send_code(f"who{i}@example.com", "reset", ip="203.0.113.9")
+    with pytest.raises(AuthError, match="太频繁") as e:
+        a.send_code("someone@example.com", "reset", ip="203.0.113.9")
+    assert e.value.status == 429
+    a.send_code("someone@example.com", "reset", ip="203.0.113.10")
+    clock.t += 3601
+    a.send_code("someone@example.com", "reset", ip="203.0.113.9")
 
 
 def test_forgot_password_flow(client, mailer):
@@ -186,8 +213,8 @@ def test_settings_endpoints(client, mailer, monkeypatch):
     assert client.post("/api/auth/test-mail").json() == {"sent": True, "to": "leon@example.com"}
     assert mailer.outbox[-1]["to"] == "leon@example.com"
     assert client.post("/api/auth/config", json={"sender": "no address"}).status_code == 400
-    st = client.post("/api/auth/config", json={"sender": "LACUNA <hi@lacuna.fm>"}).json()
-    assert st["mail"]["sender"] == "LACUNA <hi@lacuna.fm>"
+    st = client.post("/api/auth/config", json={"sender": "LACUNA <hi@example.com>"}).json()
+    assert st["mail"]["sender"] == "LACUNA <hi@example.com>"
     assert client.post("/api/auth/resend-key", json={"key": "sk-ant-wrong"}).status_code == 400
     saved = {}
     monkeypatch.setattr("lacuna_app.auth.save_secret", lambda n, v: saved.setdefault(n, v) and "file")

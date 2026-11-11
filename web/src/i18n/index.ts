@@ -48,8 +48,15 @@ export function t(zh: string, params?: Params): string {
   return fill(Number(params?.n) === 1 ? e.one : e.other, params);
 }
 
-/** Date + time in the interface language. */
-export const fmtDateTime = (d: string | number | Date) => new Date(d).toLocaleString(locale);
+/** Date + time in the interface language: 「2026年10月25日 06:56」 / "Oct 25, 2026, 6:56 AM" (batch 7, B6). */
+export const fmtDateTime = (d: string | number | Date) =>
+  new Date(d).toLocaleString(locale, lang === "en"
+    ? { year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }
+    : { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+
+/** Date only: 「2026年10月25日」 / "Oct 25, 2026". */
+export const fmtDate = (d: string | number | Date) =>
+  new Date(d).toLocaleDateString(locale, { year: "numeric", month: lang === "en" ? "short" : "long", day: "numeric" });
 
 export function setLang(l: Lang): void {
   try {

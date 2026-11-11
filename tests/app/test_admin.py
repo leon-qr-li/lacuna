@@ -87,6 +87,16 @@ def test_every_admin_answer_carries_strict_security_headers(tmp_path):
     assert c.get("/api/admin/overview").headers["cache-control"] == "no-store"
 
 
+def test_the_main_site_carries_the_basic_security_headers(tmp_path):
+    """batch 8, S4: no sniffing, never framed by another site, a short referrer; nothing else restricted"""
+    app, main, _ = setup(tmp_path)
+    for r in (main.get("/"), main.get("/api/app"), main.get("/api/nothing-here")):
+        h = r.headers
+        assert h["x-content-type-options"] == "nosniff" and h["x-frame-options"] == "DENY"
+        assert h["content-security-policy"] == "frame-ancestors 'none'"
+        assert h["referrer-policy"] == "strict-origin-when-cross-origin"
+
+
 # ------------------------------------------------------------------ who gets in
 def test_only_staff_with_a_password_and_a_fresh_code_get_in(tmp_path):
     app, main, mailer = setup(tmp_path)
@@ -210,6 +220,9 @@ def test_owner_only_actions_refuse_an_admin(tmp_path):
             ("put", "/api/admin/settings/staff/kim@example.com", {"role": "admin"})):
         r = getattr(sam, method)(path, json=body, headers=WRITE)
         assert r.status_code == 403, (path, r.text)
+    # nor sign the owner out everywhere (batch 8, S3), while a member below them they can
+    assert sam.post(f"/api/admin/users/{OWNER}/sessions/end", headers=WRITE).status_code == 403
+    assert sam.post("/api/admin/users/kim@example.com/sessions/end", headers=WRITE).status_code == 200
     # an admin can still do the everyday work
     assert sam.put("/api/admin/settings/notice", json={"on": False, "zh": "", "en": "", "until": None},
                    headers=WRITE).status_code == 200
@@ -302,6 +315,24 @@ def test_invites_from_the_admin(tmp_path):
     assert any(i["email"] == "new@example.com" and i["source"] == "xiaoyuzhou" for i in r.json()["invites"])
 
 
+
+def test_inviting_an_admin_sends_the_admin_invite_with_the_sign_up_link(tmp_path):
+    """Leon 2026-10-26: invite as 管理员 → design C with 接受邀请 (the sign-up link) and the admin's address"""
+    app, main, mailer = setup(tmp_path)
+    c = sign_in(app)
+    r = c.post("/api/admin/invites", json={"email": "pei@example.com", "role": "admin", "source": "friend",
+                                           "plan": "basic", "lang": "zh"}, headers=WRITE)
+    assert r.status_code == 200, r.text
+    m = mailer.outbox[-1]
+    assert m["to"] == "pei@example.com" and "邀请你成为 LACUNA 管理员" in m["subject"]
+    assert r.json()["link"] in m["text"] and "http://admin.localhost" in m["text"] and "接受邀请" in m["html"]
+    assert "开始之前，三步" in m["text"] and "7 天内有效" in m["text"]
+    # a member invite keeps the usual invitation
+    c.post("/api/admin/invites", json={"email": "new@example.com", "role": "member", "source": "friend",
+                                       "plan": "basic", "lang": "zh"}, headers=WRITE)
+    assert "管理员" not in mailer.outbox[-1]["subject"]
+
+
 # ------------------------------------------------------------------ main-site pieces
 def test_more_hours_request_is_approved_in_the_admin_and_mailed(tmp_path):
     app, main, mailer = setup(tmp_path)
@@ -379,3 +410,45 @@ def test_the_ai_budget_warning_defaults_to_500_for_the_quality_first_models(tmp_
     c = sign_in(app)
     assert c.get("/api/admin/ai").json()["budget"] == 500
     assert c.get("/api/admin/settings").json()["budget"] == 500
+
+
+def test_no_backup_on_record_is_an_alert_in_the_cloud(tmp_path, monkeypatch):
+    """Regression (batch 8): the cloud admin said 「系统正常」 while 上次备份 read 「没找到」."""
+    from lacuna_app import admin_metrics
+    monkeypatch.setattr(admin_metrics, "BACKUP_MARK", tmp_path / "no-backup.json")
+    app, main, _ = setup(tmp_path)
+    c = sign_in(app)
+    assert not [a for a in c.get("/api/admin/system").json()["alerts"] if a["kind"] == "backup"]   # a checkout
+    monkeypatch.setattr(admin_metrics, "cloud_server", lambda: True)
+    assert {"level": "warn", "kind": "backup", "at": None} in c.get("/api/admin/system").json()["alerts"]
+
+
+def test_making_someone_an_admin_mails_them_the_admin_invite(tmp_path):
+    """design C 「权限对照卡」 (Leon 2026-10-26): what the role allows, and the links to the admin and the site"""
+    app, main, mailer = setup(tmp_path)
+    join(app, main)
+    turn_on_2fa(app, MEMBER)
+    leon = sign_in(app)
+    step_up(app, leon)
+    before = len(mailer.outbox)
+    assert leon.put(f"/api/admin/settings/staff/{MEMBER}", json={"role": "admin"}, headers=WRITE).status_code == 200
+    m = mailer.outbox[before:]
+    assert len(m) == 1 and m[0]["to"] == MEMBER and "Leon 邀请你成为 LACUNA 管理员" in m[0]["subject"]
+    assert "http://admin.localhost" in m[0]["text"] and "只有站长能做" in m[0]["text"] and "任命管理员" in m[0]["text"]
+    assert "http://localhost" in m[0]["text"].split("admin.localhost", 1)[1]
+    # already an admin: no second mail; made a member and an admin again: a new one
+    assert leon.put(f"/api/admin/settings/staff/{MEMBER}", json={"role": "admin"}, headers=WRITE).status_code == 200
+    assert len(mailer.outbox) == before + 1
+    leon.put(f"/api/admin/settings/staff/{MEMBER}", json={"role": "member"}, headers=WRITE)
+    leon.post(f"/api/admin/users/{MEMBER}", json={"role": "admin"}, headers=WRITE)
+    assert len(mailer.outbox) == before + 2
+
+
+def test_the_admin_invite_mail_in_english():
+    from lacuna_app import admin_invite_mail
+    from lacuna_app.i18n import speaking
+    with speaking("en"):
+        m = admin_invite_mail.render("leon@example.com", "https://admin.example.com", "https://example.com", "Leon")
+    assert m["subject"] == "Leon invited you to be a LACUNA admin"
+    assert "Only the owner can" in m["html"] and "https://admin.example.com" in m["html"]
+    assert not any("一" <= ch <= "鿿" for ch in m["text"])

@@ -12,9 +12,9 @@ test("learning: candidate rule from review decisions → 采用 → in force, su
   await expect(page).toHaveURL(/#\/learning/);
   await expect(page.getByRole("heading", { name: "学到的规则" })).toBeVisible();
   const rule = page.getByTestId("rule").filter({ hasText: "Pei的口误" });
-  await expect(rule).toContainText("AI 删多了，以后少删");
+  await expect(rule).toContainText("LACUNA 删多了，以后少删");
   await expect(rule).toContainText("待你确认");
-  await expect(rule).toContainText("下一集 AI 第一刀会照这条剪");
+  await expect(rule).toContainText("下一集 LACUNA 初剪会照这条剪");
   await rule.getByText(/看例子/).click();
   await expect(rule).toContainText("对这也就就");
 

@@ -1,0 +1,43 @@
+/* 逐字稿搜索 (features/transcript-search): a pill the size of the chips beside it on 逐字稿剪辑 */
+:root {
+  --ts-hit: #ffe9a3;
+  --ts-cur: #ffc94a;
+  --ts-cur-ink: #3d2a00;
+}
+[data-theme="dark"] {
+  --ts-hit: rgb(255 205 80 / 0.22);
+  --ts-cur: #f2b632;
+  --ts-cur-ink: #1b1400;
+}
+.ts { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; height: 26px; box-sizing: border-box; padding: 0 4px 0 9px;
+  border-radius: 999px; border: 1px solid var(--line-2); background: var(--solid); color: var(--ink-2); transition: border-color 0.15s, box-shadow 0.15s; }
+.ts ~ .nc, .ts ~ .tf-chip, .ts ~ .fl { margin-left: 0; }
+.ts:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+.ts-ico { width: 13px; height: 13px; flex: none; fill: none; stroke: var(--ink-3); stroke-width: 1.7; stroke-linecap: round; }
+.ts:focus-within .ts-ico { stroke: var(--accent-ink); }
+.ts .ts-in { width: 84px; min-width: 0; border: 0; outline: 0; background: none; padding: 0 2px 0 5px; height: 24px; color: var(--ink);
+  font: 500 12.5px/1 var(--sans); transition: width 0.18s ease; appearance: none; }
+.ts .ts-in::-webkit-search-cancel-button { display: none; }
+.ts .ts-in::placeholder { color: var(--ink-3); }
+.ts:focus-within .ts-in, .ts.has-q .ts-in { width: 112px; }
+.ts-n { min-width: 26px; padding: 0 4px; font-size: 11.5px; color: var(--ink-3); text-align: center; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ts-n.is-none { color: var(--danger); }
+.ts-b { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--ink-2); cursor: pointer; }
+.ts-b svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ts-b:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
+.ts-b:disabled { opacity: 0.35; cursor: default; }
+.ts-b:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* in the transcript */
+.ml-w.ts-hit, .ml-gone.ts-hit { background: var(--ts-hit); border-radius: 3px; }
+.ml-w.ts-cur, .ml-gone.ts-cur { background: var(--ts-cur); color: var(--ts-cur-ink); border-radius: 3px; }
+.ml-w.ts-cur.is-sel { box-shadow: inset 0 -2px 0 var(--accent); }
+/* on the ruler */
+.ts-tick { position: absolute; bottom: 1px; height: 7px; width: 4px; margin-left: -2px; padding: 0; border: 0; border-radius: 2px; background: var(--ts-cur);
+  opacity: 0.75; cursor: pointer; z-index: 1; }
+.ts-tick.is-gone { opacity: 0.4; }
+.ts-tick.is-cur { opacity: 1; height: 9px; box-shadow: 0 0 0 1.5px var(--solid); }
+.ts-tick:hover { opacity: 1; }
+@media (max-width: 720px) {
+  .ts { margin-left: 0; order: 9; flex: 1 1 100%; }
+  .ts .ts-in, .ts:focus-within .ts-in, .ts.has-q .ts-in { width: auto; flex: 1; }
+}

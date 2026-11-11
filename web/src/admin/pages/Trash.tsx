@@ -51,7 +51,7 @@ export function TrashPage({ me }: PageProps) {
           ) : (
             <Card pad={false}>
               <div className="a-tw">
-                <table className="a-t a-t-cards">
+                <table className="a-t a-t-cards md">
                   <thead>
                     <tr>
                       <th>{t("类型")}</th>

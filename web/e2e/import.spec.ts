@@ -76,7 +76,7 @@ test("import: drag both tracks in → progress with time left → straight into 
   const job = page.getByTestId("import-job");
   await expect(job).toHaveAttribute("data-state", /queued|running/);
   await expect(job.getByRole("progressbar")).toBeVisible();
-  await expect(page.getByTestId("import-stage")).toContainText("AI 第一刀");
+  await expect(page.getByTestId("import-stage")).toContainText("LACUNA 初剪");
   await expect(page.getByTestId("import-stage")).toContainText("每段约 10 分钟录音");
   await expect(page.getByTestId("import-progress-left")).toBeVisible();      // the server's estimate
   await expect(page.getByRole("button", { name: "导入新一集" })).toBeEnabled(); // another one would wait its turn
@@ -94,7 +94,7 @@ test("import: drag both tracks in → progress with time left → straight into 
   // back home (no auto-redirect): the episode card says what is left; the finished task card is gone (H8)
   await page.locator("a.brand").click();
   await expect(page.locator(".ep-list")).toContainText("EP001 · 导入测试");
-  await expect(page.locator(".ep-list")).toContainText("2 处待过目");
+  await expect(page.locator(".ep-list")).toContainText("2 处待审阅");
   await expect(page.getByTestId("import-job")).toHaveCount(0);
   await page.locator(".ep-list a").filter({ hasText: "EP001" }).first().click();
   await page.getByRole("link", { name: /审阅改动/ }).click();
@@ -108,12 +108,13 @@ test("import: drag both tracks in → progress with time left → straight into 
   await page.keyboard.press("k");
   await expect(page.getByTestId("review-progress")).toContainText("已看 2 / 2");
   await page.locator("a.brand").click();
-  await expect(page.locator(".ep-list")).toContainText("都过目了");
+  await expect(page.locator(".ep-list")).toContainText("都审阅完了");
   await expect(page.getByRole("heading", { name: "导入任务" })).toHaveCount(0);
 });
 
 test("import: a file dropped anywhere on 剧集 opens the form; a slot takes a drop of its own", async ({ page }) => {
   await page.goto("/#/");
+  await expect(page.getByText("导入 Leon 和 Pei 的分轨")).toBeVisible(); // the hosts are loaded, so a drop has slots to fill
   await dropFiles(page, page.locator("main.home"), [LEON]);
   await expect(page.getByTestId("import-leon")).toHaveText("Leon.wav");
   await expect(page.getByTestId("import-pei")).toHaveText("还没选");
@@ -168,7 +169,7 @@ test("archive the imported episode, then delete it for good", async ({ page }) =
   await row.getByRole("button", { name: "永久删除" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "永久删除" }).click();
   await expect(page.getByRole("status").filter({ hasText: "已永久删除" })).toContainText("学到的习惯都还在");
-  await expect(page.getByText("没有归档的剧集。")).toBeVisible();
+  await expect(page.getByTestId("archive-empty")).toBeVisible();
   expect((await page.request.get("/api/episodes/EP001")).status()).toBe(404);
   // the id is free again: the next import suggests EP001 and starts from scratch
   await page.goto("/#/");

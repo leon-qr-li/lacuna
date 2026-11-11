@@ -77,7 +77,7 @@ def register(app, ctx) -> None:
             eps = sorted(e for e, x in doc["episodes"].items() if x == a["id"] and e in live)
             rows.append({"id": a["id"], "name": a["name"], "about": a.get("about") or "", "created": a["created"],
                          "cover_url": f"/api/albums/{a['id']}/cover?v={a['cover']}" if a.get("cover") else None,
-                         "episodes": eps, **music(a)})
+                         "episodes": eps, "naming": a.get("naming"), **music(a)})
         return {"albums": rows, "episodes": {e: x for e, x in doc["episodes"].items() if e in live},
                 "project": music(doc["project"])}
 
@@ -89,7 +89,7 @@ def register(app, ctx) -> None:
     def create_album(body: AlbumBody):
         live = set(ctx.ws.episode_ids())
         if any(e not in live for e in body.episodes):
-            raise HTTPException(404, "no such episode")
+            raise HTTPException(404, tr("这一集不存在，可能已经删除了"))
         a = run(lambda: albums.create(body.name, body.about, pick(body.intro) or None, pick(body.outro) or None,
                                       body.episodes))
         return view() | {"created": a["id"]}
@@ -139,6 +139,6 @@ def register(app, ctx) -> None:
         except PathError:
             raise HTTPException(400, "invalid episode id")
         if episode_id not in ctx.ws.episode_ids():
-            raise HTTPException(404, "no such episode")
+            raise HTTPException(404, tr("这一集不存在，可能已经删除了"))
         run(lambda: albums.assign(episode_id, body.album))
         return view()

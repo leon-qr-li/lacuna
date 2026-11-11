@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
 from .. import ximalaya
+from ..cloud import server_path
 from ..publish import episode_label
 from ..store import inside
 from .publish import publisher_of
@@ -34,7 +35,7 @@ def register(app, ctx) -> None:
             traceback.print_exc()
             styles = ximalaya.build(pack["markdown"], episode_label(ep.id))
             notes.append(tr("设计图没画出来，「图文」这一版先用纯文字。"))
-        return {"styles": styles, "dir": str(folder(ep.id)), "stale": pack["stale"], "notes": notes}
+        return {"styles": styles, "dir": server_path(folder(ep.id)), "stale": pack["stale"], "notes": notes}
 
     @app.get("/api/episodes/{episode_id}/publish/ximalaya/{name}")
     def ximalaya_image(episode_id: str, name: str):

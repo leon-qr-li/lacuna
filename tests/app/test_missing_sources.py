@@ -56,6 +56,12 @@ def test_missing_recordings_are_listed_and_fail_clearly(moved):
         r = c.get(url)
         assert r.status_code == 409, url
         assert "原始音轨" in r.json()["detail"]
+    # export and the music mix too, before anything starts (regression, batch 8)
+    r = c.post(f"{EP}/export", json={"formats": ["wav"]})
+    assert r.status_code == 409 and "原始音轨" in r.json()["detail"]
+    assert c.get(f"{EP}/export").json().get("job") is None
+    r = c.get(f"{EP}/mix/whatever.wav")
+    assert r.status_code == 409 and "原始音轨" in r.json()["detail"]
 
 
 def test_upload_brings_the_sound_back(moved):

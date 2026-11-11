@@ -13,7 +13,7 @@ export const en: Dict = {
   "切换播放速度 1× / 1.25× / 1.5× / 2×": "Switch speed 1× / 1.25× / 1.5× / 2×",
   "显示 / 隐藏这张快捷键表": "Show / hide this card",
   "在输入框里打字时快捷键不生效。": "Shortcuts are off while you type in a box.",
-  "已过目 {done} / {n}": "Reviewed {done} / {n}",
+  "已审阅 {done} / {n}": "Reviewed {done} / {n}",
   "快捷键：空格播放，← / → 上一处下一处，K 保留，R 恢复原话，A / B 切换原始与剪后，S 倍速，? 看全部。": "Shortcuts: Space play, ← / → previous / next, K keep, R restore, A / B original / cut, S speed, ? for all.",
   "上一处（←）": "Previous (←)",
   "下一处（→）": "Next (→)",

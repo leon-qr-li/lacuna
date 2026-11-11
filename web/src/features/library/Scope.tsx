@@ -1,6 +1,7 @@
 // Library scopes (decisions library-scopes, projects-albums): 整个项目 = every episode, 某个专辑 = every
 // episode of the listed albums, 只这一集 = the listed episodes. The file is stored once; membership is
 // metadata on the asset.
+import { UploadRows, useUploadRows } from "../upload-progress/UploadProgress";
 import { useRef, useState } from "react";
 import type { AlbumRef, Asset, EpisodeRef, ScopeAction } from "./api";
 import { libraryApi } from "./api";
@@ -188,13 +189,16 @@ export function EpisodeUpload({ id, kinds, onAdded }: { id: string; kinds: Recor
   const input = useRef<HTMLInputElement>(null);
   const [kind, setKind] = useState("other");
   const [busy, setBusy] = useState(false);
+  const up = useUploadRows();
   const add = async (files: File[]) => {
     setBusy(true);
+    up.start(files);
     const done: string[] = [];
     let last: Asset | undefined;
-    for (const f of files) {
+    for (const [i, f] of files.entries()) {
       try {
-        const r = await libraryApi.uploadAsset(f, kind, "", id);
+        const r = await libraryApi.uploadAsset(f, kind, "", id, "", up.track(i));
+        up.patch(i, { state: "done" });
         last = r.asset;
         done.push(
           r.duplicate && r.asset.shared
@@ -202,6 +206,7 @@ export function EpisodeUpload({ id, kinds, onAdded }: { id: string; kinds: Recor
             : t("已加到这一集：{name}", { name: r.asset.name }),
         );
       } catch (e) {
+        up.patch(i, { state: "error" });
         done.push(t("没加进去：{name}", { name: f.name }) + `（${(e as Error).message}）`);
       }
     }
@@ -221,6 +226,7 @@ export function EpisodeUpload({ id, kinds, onAdded }: { id: string; kinds: Recor
         ))}
       </select>
       <span className="small muted">{t("只属于这一集；在素材库可以改成整个专辑或整个节目都能用。")}</span>
+      <UploadRows rows={up.rows} />
       <input
         ref={input}
         type="file"

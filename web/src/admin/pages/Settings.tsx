@@ -260,7 +260,7 @@ function Staff({ s, set, owner, me }: { s: SettingsData; set: (d: SettingsData) 
             </tbody>
           </table>
         </div>
-        <p className="a-muted small a-pad">{t("现在只有站长能进后台（门禁名单上只有你）。")}</p>
+        {s.staff.length === 1 && <p className="a-muted small a-pad">{t("现在只有站长能进后台（门禁名单上只有你）。")}</p>}
       </Card>
       <Card title={t("安全规则（已定）")} pad={false}>
         <table className="a-t">
@@ -296,7 +296,7 @@ function Staff({ s, set, owner, me }: { s: SettingsData; set: (d: SettingsData) 
                 </td>
                 <td className="n">
                   {x.current ? (
-                    <Pill tone="acc">{t("本机")}</Pill>
+                    <Pill tone="acc">{t("这台设备")}</Pill>
                   ) : (
                     <button type="button" className="a-btn sm" onClick={() => endSession(x.id)}>
                       {t("退出")}

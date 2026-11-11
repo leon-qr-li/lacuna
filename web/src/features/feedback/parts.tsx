@@ -89,7 +89,7 @@ export function ShowQuestions({ value, onChange }: { value: ShowAnswers; onChang
   return (
     <fieldset className="fb-showq" data-testid="show-questions">
       <legend>
-        <b>{t("让我们更了解你的节目")}</b> <span className="small muted">{t("可跳过 · 只有站长能看到")}</span>
+        <b>{t("让我们更了解你的节目")}</b> <span className="small muted">{t("可跳过 · 只有 LACUNA 团队能看到")}</span>
       </legend>
       {row("region", t("你和你的听众主要在哪？"), REGIONS)}
       {row("editing", t("你现在怎么剪辑？"), EDITING)}

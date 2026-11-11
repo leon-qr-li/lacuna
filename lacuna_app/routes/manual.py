@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
 from .. import manual
+from ..events import note
 from .episodes import PlayheadBody
 
 
@@ -41,4 +42,5 @@ def register(app, ctx) -> None:
         if body.end <= body.start:
             raise HTTPException(422, "end must be after start")
         ep = get(episode_id)
+        note(seconds=round(body.end - body.start, 1))
         return mutate(ep, body.playhead, lambda: {"edit_id": manual.cut(ep, body.start, body.end, body.track)})

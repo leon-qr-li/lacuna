@@ -10,8 +10,14 @@ import { range, useChunks } from "./chunks";
 import { fmtTenths, SelBar } from "./SelBar";
 import { FillerButton } from "../fillers/FillerButton";
 import { TermFixButton } from "../transcript-fix/TermFixButton";
+import { NameCheck } from "../name-check/NameCheck";
 import { transcriptRev } from "../transcript-fix/api";
 import type { Manual } from "./useManual";
+import { TranscriptGap } from "../gaps/Gaps";
+import { useGaps } from "../gaps/useGaps";
+import type { Gap } from "../gaps/api";
+import { TranscriptSearch } from "../transcript-search/TranscriptSearch";
+import { hitOf, useFound } from "../transcript-search/api";
 
 const TEXT_SELECT_EVENT = "lacuna:text-select";
 /** Select the words between a and b (timeline seconds) as if dragged across: the sample tour does this. */
@@ -85,6 +91,13 @@ export function TranscriptEdit({
     return out;
   }, [chunks]);
   const audible = useMemo(() => lines.flatMap((ln) => ln.words.filter((w) => !w.gone).map((w) => ({ ...w, speaker: ln.speaker }))), [lines]);
+  // 逐字稿搜索: the words of each place found, the one jumped to stronger
+  const found = useFound();
+  const hitClass = (speaker: string, ws: W[]) => {
+    if (!found.hits.length) return "";
+    const is = ws.map((w) => hitOf(found.hits, speaker, w.a, w.b));
+    return is.includes(found.cur) && found.cur >= 0 ? "ts-cur" : is.some((i) => i >= 0) ? "ts-hit" : "";
+  };
   const picked = (w: W) => !!sel && !w.gone && (w.a + w.b) / 2 >= sel.a && (w.a + w.b) / 2 < sel.b;
 
   const select = (a: W, b: W) => {
@@ -147,21 +160,42 @@ export function TranscriptEdit({
   const titleOf = (eid: string) => ep.edits.find((x) => x.id === eid)?.title ?? "";
   const idx = (name: string) => Math.max(0, ep.tracks.findIndex((tr) => tr.name === name)) % 6;
 
+  // 间隙 between lines (docs/decisions/2026-10-30-edit-gaps.md): a gap shows before the first line that starts at or
+  // after it; between two lines without one, a 「＋」 on hover adds one in the pause between them
+  const gaps = useGaps(ep.id, ep.version);
+  const lastEnd = (ln: L) => Math.max(...ln.words.map((w) => w.b));
+  const gapsBefore = useMemo(() => {
+    const out = new Map<number, Gap[]>();
+    if (!lines.length) return out;
+    const lo = lines[0].start;
+    for (const g of gaps.gaps) {
+      if (g.voice_s < lo - 0.05) continue;
+      const i = lines.findIndex((ln, k) => k > 0 && ln.start >= g.voice_s - 0.05);
+      if (i < 0) continue;
+      out.set(i, [...(out.get(i) ?? []), g]);
+    }
+    return out;
+  }, [gaps.gaps, lines]);
+
   return (
-    <section className="card ml-tx-card" aria-label={t("文字稿剪辑")} data-testid="transcript-edit">
+    <section className="card ml-tx-card" aria-label={t("逐字稿剪辑")} data-testid="transcript-edit">
       <div className="card-head">
-        <h2>{t("文字稿剪辑")}</h2>
+        <h2>{t("逐字稿剪辑")}</h2>
         <span className="muted small">{t("选中文字 → 删掉；删过的显示删除线，点一下可恢复")}</span>
+        <TranscriptSearch ep={ep} time={time} player={player} />
+        <NameCheck ep={ep} time={time} player={player} run={run} />
         <TermFixButton ep={ep} time={time} run={run} />
         <FillerButton ep={ep} time={time} player={player} run={run} />
       </div>
       {!ep.has_transcript ? (
-        <p className="muted">{t("这一集没有文字稿，可以在上面的时间线上拖选来剪。")}</p>
+        <p className="muted">{t("这一集没有逐字稿，可以在上面的时间线上拖选来剪。")}</p>
       ) : (
         <div className="ml-tx" ref={box} data-testid="ml-tx">
-          {lines.length === 0 && <p className="muted small">{chunks.size ? t("这一段没有人说话") : t("正在读文字稿…")}</p>}
+          {lines.length === 0 && <p className="muted small">{chunks.size ? t("这一段没有人说话") : t("正在读逐字稿…")}</p>}
           {lines.map((ln, i) => (
-            <div key={ln.words[0].key} className={`ml-line ${i === nowLine ? "is-now" : ""}`} data-line={i}>
+            <Fragment key={ln.words[0].key}>
+            {i > 0 && <TranscriptGap here={gapsBefore.get(i) ?? []} gaps={gaps} at={(lastEnd(lines[i - 1]) + ln.start) / 2} />}
+            <div className={`ml-line ${i === nowLine ? "is-now" : ""}`} data-line={i}>
               <button type="button" className="ml-t mono" onClick={() => player.seek(ln.start)}>
                 {fmtTenths(ln.start)}
               </button>
@@ -172,7 +206,7 @@ export function TranscriptEdit({
                     <Fragment key={p.words[0].key}>
                     {gap(ln.words, p.words[0])}
                     <s
-                      className="ml-gone"
+                      className={`ml-gone ${hitClass(ln.speaker, p.words)}`}
                       role="button"
                       tabIndex={0}
                       title={t("{title} · 点一下恢复", { title: titleOf(p.gone) })}
@@ -188,7 +222,7 @@ export function TranscriptEdit({
                       <Fragment key={w.key}>
                       {gap(ln.words, w)}
                       <span
-                        className={`ml-w ${picked(w) ? "is-sel" : ""} ${time >= w.a && time < w.b ? "is-now" : ""}`}
+                        className={`ml-w ${picked(w) ? "is-sel" : ""} ${time >= w.a && time < w.b ? "is-now" : ""} ${hitClass(ln.speaker, [w])}`}
                         onPointerDown={wordDown(w)}
                         onPointerEnter={wordEnter(w)}
                       >
@@ -200,6 +234,7 @@ export function TranscriptEdit({
                 )}
               </span>
             </div>
+            </Fragment>
           ))}
         </div>
       )}

@@ -6,6 +6,7 @@ import { BusyLabel } from "../loading/Loading";
 import { currentTheme, setTheme } from "../theme/theme";
 import { lang, langChosen, setLang, t } from "../../i18n";
 import { AgreeBox, withLegalLinks } from "../legal/Legal";
+import { ThemeGlyph } from "../theme/Glyph";
 
 type View =
   | { v: "login" }
@@ -32,7 +33,7 @@ export function dropInvite() {
 
 /** Sign in (password, then the two-step code), the owner's first account, sign-up from an invite link,
  *  reset password, two-step setup and recovery codes (design B: brand panel left, form right). */
-export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () => void }) {
+export function AuthScreen({ status, onDone, expired = false }: { status: AuthStatus; onDone: () => void; expired?: boolean }) {
   const [view, setView] = useState<View>(() => {
     const token = inviteToken();
     if (token) return { v: "invite", token };
@@ -50,7 +51,7 @@ export function AuthScreen({ status, onDone }: { status: AuthStatus; onDone: () 
     if (inviteToken()) dropInvite();
     setView({ v });
   };
-  const p = { status, email, setEmail, go, next };
+  const p = { status, email, setEmail, go, next, expired };
   return (
     <div className="auth">
       <aside className="auth-art" aria-hidden="true">
@@ -114,7 +115,7 @@ function Corner() {
       </button>
       <button
         type="button"
-        className="btn btn-outline btn-small"
+        className="btn btn-outline btn-small auth-theme"
         aria-label={theme === "dark" ? t("浅色") : t("深色")}
         onClick={() => {
           const next = theme === "dark" ? "light" : "dark";
@@ -122,7 +123,7 @@ function Corner() {
           setT(next);
         }}
       >
-        {theme === "dark" ? "☀" : "☾"}
+        <ThemeGlyph theme={theme} />
       </button>
     </div>
   );
@@ -211,6 +212,8 @@ interface FormProps {
   setEmail: (s: string) => void;
   go: (v: "login" | "forgot" | "ask") => void;
   next: (s: Step, who: string) => void;
+  /** the session ran out while the app was open (a 401): say so instead of a plain welcome */
+  expired?: boolean;
 }
 
 /** Runs `fn`, keeping the button busy and showing its error under the form. */
@@ -256,7 +259,7 @@ function Err({ err }: { err: string | null }) {
   ) : null;
 }
 
-function Login({ status, email, setEmail, go, next }: FormProps) {
+function Login({ status, email, setEmail, go, next, expired }: FormProps) {
   const [pw, setPw] = useState("");
   const [remember, setRemember] = useState(true);
   const [human, setHuman] = useState<string | null>(null);
@@ -275,7 +278,13 @@ function Login({ status, email, setEmail, go, next }: FormProps) {
   return (
     <form onSubmit={submit}>
       <h1>{t("欢迎回来")}</h1>
-      <p className="auth-sub">{t("登录 LACUNA Studio，继续剪你的节目。")}</p>
+      {expired ? (
+        <p className="auth-sub" role="status" data-testid="auth-expired">
+          {t("登录已过期，请重新登录。")}
+        </p>
+      ) : (
+        <p className="auth-sub">{t("登录 LACUNA，继续剪你的节目。")}</p>
+      )}
       <EmailField email={email} setEmail={setEmail} autoFocus />
       <Password value={pw} onChange={setPw} label={t("密码")} autoComplete="current-password" testid="auth-password" />
       <div className="auth-row">
@@ -327,7 +336,7 @@ function checkNew(pw: string, pw2: string): string | null {
 /** 你的名字 (new-user batch Q12): what collaborators and invite emails show instead of the email. */
 function NameField({ name, setName, autoFocus }: { name: string; setName: (v: string) => void; autoFocus?: boolean }) {
   return (
-    <Field label={t("你的名字")} hint={t("搭档和邀请邮件里会显示这个名字")}>
+    <Field label={t("你的名字")} hint={t("协作者和邀请邮件里会显示这个名字")}>
       <span className="auth-input">
         <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} autoComplete="name" autoFocus={autoFocus} data-testid="auth-name" required />
       </span>

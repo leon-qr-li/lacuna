@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { EpisodeListItem } from "../../api";
 import { t } from "../../i18n";
 import { EpisodeCard } from "../episodes/EpisodeCard";
+import { RenameButton } from "../episode-name/RenameButton";
 import { episodesApi } from "../episodes/api";
 import { ImportPanel } from "../import/ImportPanel";
 import { libraryApi, type Asset, type LibraryView } from "../library/api";
@@ -9,7 +10,10 @@ import { BusyLabel, EpisodeListSkeleton } from "../loading/Loading";
 import { AlbumDialog } from "./AlbumDialog";
 import { AlbumCover } from "./Cover";
 import { MoveToAlbum } from "./MoveToAlbum";
+import { UploadRows, useUploadRows } from "../upload-progress/UploadProgress";
 import { useAlbums, type Album, type AlbumsView, type DefaultTrack } from "./api";
+import { EmptyState } from "../states/States";
+import { useReadOnly } from "../listen-only/state";
 
 const albumId = () => decodeURIComponent(/^#\/album\/([^/?]+)/.exec(window.location.hash)?.[1] ?? "");
 
@@ -30,6 +34,7 @@ export function AlbumPage() {
   const [list, setList] = useState<EpisodeListItem[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ edit: boolean; preset?: string } | null>(null);
+  const ro = useReadOnly() !== null; // 只听 or an archived show: nothing here can be changed
   const loadEpisodes = useCallback(() => {
     episodesApi
       .episodes()
@@ -61,17 +66,24 @@ export function AlbumPage() {
   const eps = list.filter((e) => view.episodes[e.id] === album.id);
   return (
     <main className="home alb-page" data-testid="album-page">
-      <AlbumStrip album={album} view={view} onEdit={() => setDialog({ edit: true })} />
-      <ImportPanel episodes={list} onEpisodesChanged={reload} onOpen={open} albums={view.albums} album={album.id} />
+      <AlbumStrip album={album} view={view} onEdit={ro ? undefined : () => setDialog({ edit: true })} />
+      <ImportPanel episodes={list} onEpisodesChanged={reload} onOpen={open} albums={view.albums} album={album.id} readOnly={ro} />
       <h2 className="sub">{t("这个专辑的剧集")}</h2>
-      {!eps.length && <p className="muted">{t("专辑里还没有剧集。导入新一集，或者在剧集卡片上点「移到专辑」。")}</p>}
+      {!eps.length && <EmptyState icon="♪" title={t("专辑里还没有剧集")} text={t("专辑里还没有剧集。导入新一集，或者在剧集卡片上点「移到专辑」。")} testid="album-empty" />}
       <ul className="ep-list">
         {eps.map((e) => (
           <EpisodeCard
             key={e.id}
             e={e}
             href={`#/ep/${encodeURIComponent(e.id)}/listen`}
-            actions={<MoveToAlbum episode={e.id} title={e.title} view={view} onMoved={albums.set} onNew={() => setDialog({ edit: false, preset: e.id })} />}
+            actions={
+              ro ? undefined : (
+                <>
+                  <MoveToAlbum episode={e.id} title={e.title} view={view} onMoved={albums.set} onNew={() => setDialog({ edit: false, preset: e.id })} />
+                  <RenameButton id={e.id} title={e.title} onRenamed={() => loadEpisodes()} />
+                </>
+              )
+            }
           />
         ))}
       </ul>
@@ -85,6 +97,7 @@ export function AlbumPage() {
           onSaved={(v, r) => {
             setDialog(null);
             albums.set(v);
+            loadEpisodes(); // album naming may have renamed its episodes
             if (r.deleted) window.location.hash = "#/";
           }}
         />
@@ -94,7 +107,7 @@ export function AlbumPage() {
 }
 
 /** The album's header: cover, name, episode count, and where its opener / ending come from. */
-export function AlbumStrip({ album, view, onEdit }: { album: Album; view: AlbumsView; onEdit: () => void }) {
+export function AlbumStrip({ album, view, onEdit }: { album: Album; view: AlbumsView; onEdit?: () => void }) {
   const slot = (label: string, own: DefaultTrack | null, project: DefaultTrack | null) => {
     const name = (own ?? project)?.name;
     return (
@@ -119,15 +132,18 @@ export function AlbumStrip({ album, view, onEdit }: { album: Album; view: Albums
         {slot(t("默认片头"), album.intro, view.project.intro)}
         {slot(t("默认片尾"), album.outro, view.project.outro)}
       </div>
-      <button type="button" className="btn btn-outline alb-edit" onClick={onEdit} data-testid="album-settings">
-        {t("专辑设置")}
-      </button>
+      {onEdit && (
+        <button type="button" className="btn btn-outline alb-edit" onClick={onEdit} data-testid="album-settings">
+          {t("专辑设置")}
+        </button>
+      )}
     </section>
   );
 }
 
 /** 这个专辑的素材: what only this album's episodes use, and an upload that files new media under it. */
 function AlbumShelf({ album }: { album: Album }) {
+  const ro = useReadOnly() !== null;
   const [lib, setLib] = useState<LibraryView | null>(null);
   const [kind, setKind] = useState("other");
   const [busy, setBusy] = useState(false);
@@ -141,18 +157,22 @@ function AlbumShelf({ album }: { album: Album }) {
   }, []);
   useEffect(load, [load]);
   const mine: Asset[] = lib?.assets.filter((a) => a.albums?.includes(album.id)) ?? [];
+  const up = useUploadRows();
   const add = async (files: File[]) => {
     setBusy(true);
+    up.start(files);
     const done: string[] = [];
-    for (const f of files) {
+    for (const [i, f] of files.entries()) {
       try {
-        const r = await libraryApi.uploadAsset(f, kind, "", "", album.id);
+        const r = await libraryApi.uploadAsset(f, kind, "", "", album.id, up.track(i));
+        up.patch(i, { state: "done" });
         done.push(
           r.duplicate && r.asset.shared
             ? t("素材库里已经有这首（整个节目都能用）：{name}", { name: r.asset.name })
             : t("已加到这个专辑：{name}", { name: r.asset.name }),
         );
       } catch (e) {
+        up.patch(i, { state: "error" });
         done.push(t("没加进去：{name}", { name: f.name }) + `（${(e as Error).message}）`);
       }
     }
@@ -182,7 +202,7 @@ function AlbumShelf({ album }: { album: Album }) {
         <p className="muted small">{t("还没有只给这个专辑用的素材；整个节目的素材这里的剧集都能用。")}</p>
       )}
       <div className="row gap8 wrap">
-        <button type="button" className="btn btn-outline" disabled={busy || !lib} onClick={() => input.current?.click()} data-testid="album-upload">
+        <button type="button" className="btn btn-outline" disabled={busy || !lib || ro} onClick={() => input.current?.click()} data-testid="album-upload">
           <BusyLabel busy={busy} label={t("给这个专辑添加素材")} busyLabel={t("正在加入…")} />
         </button>
         <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label={t("上传的文件当作")}>
@@ -206,6 +226,7 @@ function AlbumShelf({ album }: { album: Album }) {
           }}
         />
       </div>
+      <UploadRows rows={up.rows} />
       {msg && (
         <p className="small muted" role="status">
           {msg}

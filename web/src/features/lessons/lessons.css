@@ -17,8 +17,7 @@
 .talkbox .talkbox-row .btn { white-space: nowrap; }
 
 /* 本集学到的规则 step */
-.lessons { width: 100%; max-width: 880px; margin: 0 auto; padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 14px; }
-.lessons-head h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+.lessons { width: 100%; max-width: var(--w-read); margin: 0 auto; padding: 24px 28px 60px; display: flex; flex-direction: column; gap: 14px; }
 .lessons-head p { margin: 0 0 4px; line-height: 1.7; }
 .lessons-bar { align-items: center; }
 .lessons-bar .btn { white-space: nowrap; }

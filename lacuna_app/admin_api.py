@@ -28,7 +28,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from . import ai_settings, cloud, notice_mail, plans, retention, system_terms
+from . import admin_invite_mail, ai_settings, cloud, notice_mail, plans, retention, system_terms
+from .admin_activity import Activity
 from .admin_metrics import AI_BUDGET, AdminData
 from .admin_store import AdminStore
 from .appinfo import current_version
@@ -37,6 +38,7 @@ from .editor import find_api_key
 from .feedback import KINDS, STATUSES, Feedback, FeedbackError, reply_mail
 from .i18n import set_request_lang, reset_request_lang, speaking, tr
 from .spaces import Spaces
+from .speedtest import SpeedTest
 from .trash import TrashError
 
 COOKIE = "lacuna_admin"
@@ -214,6 +216,7 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         m = getattr(main_app.state, "meter", None)
         return m if m is not None and m.on else None
     data: AdminData = ctx.provide("admin_data", lambda: AdminData(auth, spaces, fb, store, ctx.ws.root, main_app.state))
+    activity = Activity(data, store)
     secure = bool(auth.cloud)
     cookie = _cookie_name(secure)
     app = FastAPI(title="LACUNA admin", docs_url=None, redoc_url=None, openapi_url=None)
@@ -292,6 +295,12 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
             go()
         else:
             threading.Thread(target=go, name=f"admin-{what}-mail", daemon=True).start()
+
+    def made_admin(s: dict, u: dict, req: Request) -> None:
+        """The 管理员邀请 mail, design C (Leon 2026-10-26): what the role allows, the admin's and the site's links."""
+        with speaking(u.get("lang") or "zh"):
+            m = admin_invite_mail.render(s["email"], admin_origin(req), main_origin(req), auth.name(s["email"]))
+        mail(u["email"], m, "admin invite")
 
     def owner_email() -> str | None:
         return next((e for e, u in auth.users.items() if u["role"] == "owner"), None)
@@ -539,29 +548,41 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
 
     @app.get("/api/admin/users/{email}")
     def user(email: str, req: Request):
-        who(req)
+        s = who(req)
         u = user_or_404(email)
         e = u["email"]
+        activity.looked(s["email"], e)
         row = next((r for r in data.users() if r["email"] == e), {})
         sessions = sorted(({"created": v["created"], "seen": v.get("seen", v["created"]),
                             "device": notice_mail.device_label(v.get("agent", ""))}
                            for v in auth.sessions.values() if v["email"] == e and v["exp"] > auth.now()),
                           key=lambda x: -x["seen"])
-        return {"user": row, "shows": spaces.mine(e, detail=True), "activity": data.user_activity(e),
+        return {"user": row, "shows": spaces.mine(e, detail=True), "activity": activity.latest(e, 200),
                 "sessions": sessions, "devices": len(u.get("devices") or []), "notes": store.notes(f"user:{e}"),
                 "hours": store.hour_requests(email=e), "feedback": [f for f in fb.all() if f["email"] == e][:20],
                 "bonus_hours": sum(float(x.get("granted") or 0) for x in store.hour_requests(email=e) if x["status"] == "approved"),
                 "admin_sessions": [x | {"agent": notice_mail.device_label(x.get("agent", ""))} for x in store.sessions(e)]}
 
+    @app.get("/api/admin/users/{email}/activity")
+    def user_activity(email: str, req: Request, before: float | None = None, days: int = 7):
+        """用户动态: one window of the account's events, newest first (lacuna_app/admin_activity.py)."""
+        s = who(req)
+        u = user_or_404(email)
+        activity.looked(s["email"], u["email"])
+        head = {"email": u["email"], "name": u.get("name"), "role": u["role"], "plan": u.get("plan") or plans.DEFAULT}
+        return {"user": head} | activity.window(u["email"], before, days)
+
     @app.post("/api/admin/users/{email}")
     def update_user(email: str, body: UserBody, req: Request):
         u = user_or_404(email)
         s = need(req, owner=body.role is not None, stepup=True)
+        was = u["role"]
         run(lambda: auth.update_user(s["email"], u["email"], body.role, body.disabled, body.reset_2fa, body.plan))
-        if body.disabled:
-            store.end_for(u["email"])
-        if body.role == "member":
-            store.end_for(u["email"])
+        if body.role == "admin" and was != "admin":
+            made_admin(s, u, req)
+        if body.disabled or body.reset_2fa or body.role == "member":
+            # a stopped account, a lost phone, no longer staff: their admin sign-ins end too (batch 9)
+            store.end_for(u["email"], keep=s["hash"])
         store.audit(s["email"], "user.update", u["email"], role=body.role, plan=body.plan, disabled=body.disabled,
                     reset_2fa=body.reset_2fa)
         return user(u["email"], req)
@@ -629,8 +650,11 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
     def end_user_sessions(email: str, req: Request):
         u = user_or_404(email)
         s = need(req, stepup=True)
+        if u["email"] != s["email"]:      # like every other change to an account: only people ranked below you
+            run(lambda: auth._manage(s["email"], u["email"]))
         with auth.lock:
             auth._end_all(u["email"])
+        store.end_for(u["email"], keep=s["hash"])      # and their admin sign-ins (yours stays open)
         store.audit(s["email"], "user.sessions.end", u["email"])
         return user(u["email"], req)
 
@@ -677,7 +701,7 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         extra = dict(where)
         if plan:
             extra["plan"] = plan
-        out = run(lambda: auth.invite(actor, email, role, main_origin(req), extra, lang))
+        out = run(lambda: auth.invite(actor, email, role, main_origin(req), extra, lang, admin_url=admin_origin(req)))
         grant = getattr(main_app.state, "grant_access", None)
         if grant:
             grant(out["email"], True)
@@ -851,6 +875,8 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
                 rec = spaces.trash.user(tid)
             except TrashError:
                 raise HTTPException(404, tr("回收区里没有这个账号"))
+            if rec["user"].get("role") in ("owner", "admin") and s["role"] != "owner":
+                raise HTTPException(403, tr("只有站长能恢复管理员的账号"))     # appointing admins is the owner's
             run(lambda: auth.restore_user(rec["user"]))
             for sid, role in (rec.get("shows") or {}).items():
                 if sid in spaces.spaces and not spaces.sample(sid):
@@ -920,6 +946,31 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
         store.audit(s["email"], "storage.retention", "", **changes)
         return storage_view()
 
+    def bucket():
+        cold = getattr(main_app.state, "cold", None)
+        return cold.bucket if cold is not None and cold.on else None
+
+    speed = SpeedTest(bucket, ctx.ws.root / ".speedtest")
+
+    @app.get("/api/admin/storage/speed")
+    def speed_view(req: Request):
+        """测速 (batch 7, S1): the last server ↔ cloud storage test, or the one running."""
+        need(req, owner=True)
+        return speed.view()
+
+    @app.post("/api/admin/storage/speed")
+    def speed_start(req: Request):
+        """Send a 200 MB test file to the cloud storage and back, then delete it. Owner only; not on staging."""
+        s = need(req, owner=True)
+        if cloud.staging():
+            raise HTTPException(409, tr("staging 站点不测速，请在正式站测。"))
+        try:
+            out = speed.start()
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+        store.audit(s["email"], "storage.speedtest", "")
+        return out
+
     @app.put("/api/admin/ai")
     def ai_switches(body: AiBody, req: Request):
         """AI 省钱: the first cut through the Batch API (half price, imports slower); off by default."""
@@ -982,9 +1033,12 @@ def build(ctx, main_app, web_dist: Path) -> FastAPI:
     def staff_role(email: str, body: RoleBody, req: Request):
         u = user_or_404(email)
         s = need(req, owner=True, stepup=True)
+        was = u["role"]
         run(lambda: auth.update_user(s["email"], u["email"], role=body.role))
         if body.role == "member":
             store.end_for(u["email"])
+        if body.role == "admin" and was != "admin":
+            made_admin(s, u, req)
         store.audit(s["email"], "staff.role", u["email"], role=body.role)
         return settings_view(s)
 

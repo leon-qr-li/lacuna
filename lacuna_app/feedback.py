@@ -16,6 +16,7 @@ until it is answered.
 from __future__ import annotations
 
 import base64
+import io
 import re
 import secrets
 import time
@@ -52,7 +53,21 @@ EDITING = ("self", "hired", "none", "new")
 SAVED = ("none", "half", "1-2h", "2h+", "never")
 PMF = ("very", "somewhat", "not")
 IMPORTANCE = ("nice", "need", "fine")
+MAX_SHOT_PIXELS = 40_000_000     # a 6K screen is 20 M; a small file can claim far more and fill the memory when decoded
 SHOT_RX = re.compile(r"^data:image/(png|jpeg);base64,")
+
+
+def real_image(raw: bytes, fmt: str) -> bool:
+    """The bytes decode as a picture of that format (not just a header in front of anything)."""
+    from PIL import Image
+    try:
+        with Image.open(io.BytesIO(raw)) as im:
+            if im.format != fmt or im.size[0] * im.size[1] > MAX_SHOT_PIXELS:
+                return False
+            im.load()
+        return True
+    except Exception:      # noqa: BLE001 - whatever Pillow can't read is not a screenshot
+        return False
 
 
 class FeedbackError(ValueError):
@@ -127,6 +142,8 @@ class Feedback:
             raise FeedbackError(tr("截图格式不对")) from None
         if len(raw) > MAX_SHOT:
             raise FeedbackError(tr("截图太大了"))
+        if not real_image(raw, "JPEG" if m.group(1) == "jpeg" else "PNG"):    # batch 8, S5
+            raise FeedbackError(tr("截图格式不对"))
         self.dir.mkdir(parents=True, exist_ok=True)
         (self.dir / f"{fid}.{'jpg' if m.group(1) == 'jpeg' else 'png'}").write_bytes(raw)
         return True
@@ -328,9 +345,9 @@ def reply_mail(item: dict, link: str) -> dict:
     rows = [(tr("你的反馈"), said), (tr("提交时间"), when), (tr("状态"), status_name(item["status"]))]
     last = (item.get("replies") or [{}])[-1].get("text")
     if last:
-        rows.append((tr("站长回复"), last))
+        rows.append((tr("LACUNA 团队回复"), last))
     lead = tr("你的反馈有新的进展。谢谢你帮 LACUNA 变得更好。")
     if item.get("adopted"):
-        lead += tr("你的建议被采纳了，本月送你 {n} 小时剪辑时长。", n=item.get("bonus_hours") or ADOPT_HOURS)
+        lead += tr("你的建议被采纳了，本月多给你 {n} 小时音频额度。", n=item.get("bonus_hours") or ADOPT_HOURS)
     return notice_mail.render(tr("你的 LACUNA 反馈有回复了"), lead, rows, tr("查看我的反馈"), link,
                               tr("不用回复这封邮件。想补充什么，在 LACUNA 右上角点「反馈」。"), tr("反馈 · FEEDBACK"))

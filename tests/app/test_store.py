@@ -73,3 +73,16 @@ def test_permission_error_is_not_retried_elsewhere(tmp_path, monkeypatch):
     with pytest.raises(PermissionError):
         store._retry_windows(denied)
     assert calls == [1]
+
+
+def test_an_episode_left_with_only_its_bak_files_is_still_an_episode(tmp_path):
+    # a crash between atomic_write_json's two renames leaves state.json.bak only (regression, batch 8):
+    # the episode must stay listed, so its id isn't reused and its recordings aren't pruned
+    from lacuna_app.store import Workspace
+    ws = Workspace(tmp_path / "ws").ensure()
+    d = ws.episodes_dir / "EP001"
+    d.mkdir()
+    (d / "episode.json").write_text("{}", encoding="utf-8")
+    (d / "state.json.bak").write_text("{}", encoding="utf-8")
+    (ws.episodes_dir / "junk").mkdir()
+    assert ws.episode_ids() == ["EP001"]

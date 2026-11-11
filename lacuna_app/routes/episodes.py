@@ -9,6 +9,7 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..audio import parse_range
+from ..cloud import server_path
 from ..dictation import Dictation
 from ..editor import editor_status
 from ..chat_learning import remember_text
@@ -53,7 +54,7 @@ def register(app, ctx) -> None:
 
     @app.get("/api/health")
     def health():
-        return {"ok": True, "workspace": str(ws.root)} | editor_status(adapter) | dictation.status()
+        return {"ok": True, "workspace": server_path(ws.root)} | editor_status(adapter) | dictation.status()
 
     def poster_url(eid: str) -> str | None:
         """The chosen cover's preview (routes/poster.py) for the episode's tile, or None (no cover chosen)."""
@@ -66,10 +67,18 @@ def register(app, ctx) -> None:
         except Exception:        # noqa: BLE001 - a bad poster file only costs the tile its picture
             return None
 
+    def exported(eid: str) -> bool:
+        """Whether the episode was ever exported: the tile's status stripe (batch 7, T3)."""
+        try:
+            return any((ws.root / "exports" / eid).glob("*.json"))
+        except OSError:
+            return False
+
     @app.get("/api/episodes")
     def list_episodes():
         hidden = archive_of(ctx).archived()     # archived episodes live on the 已归档 page
-        rows = [r | {"poster": poster_url(r["id"])} for r in index.rows() if r["id"] not in hidden]
+        rows = [r | {"poster": poster_url(r["id"]), "exported": exported(r["id"])}
+                for r in index.rows() if r["id"] not in hidden]
         return {"episodes": rows, "archived": len(hidden)} | editor_status(adapter)
 
     @app.get("/api/episodes/{episode_id}")

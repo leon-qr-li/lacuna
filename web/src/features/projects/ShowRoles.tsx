@@ -4,7 +4,7 @@ import { spacesApi, type ProjectPeople } from "../spaces/api";
 
 /** What each show role may do (decision 2026-10-21-roles; enforced in lacuna_app/routes/spaces.py). */
 const MATRIX: { what: string; admin: boolean; editor: boolean; viewer: boolean }[] = [
-  { what: t("试听、看剧集和文稿"), admin: true, editor: true, viewer: true },
+  { what: t("试听、看剧集和逐字稿"), admin: true, editor: true, viewer: true },
   { what: t("导入、剪辑、导出"), admin: true, editor: true, viewer: false },
   { what: t("邀请和移出协作者"), admin: true, editor: false, viewer: false },
   { what: t("改节目设置"), admin: true, editor: false, viewer: false },

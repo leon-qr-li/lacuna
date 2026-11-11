@@ -7,6 +7,8 @@
     python deploy/provision.py deploy-token  # (re)make the deploy check's Access service token, sealed for GitHub
     python deploy/provision.py mail-plan     # the email sending domain in Resend + its DNS: show only
     python deploy/provision.py mail-domain   # add the domain to Resend, its DNS records to Cloudflare, verify
+    python deploy/provision.py http3-check   # only: show the site's HTTP/3 (QUIC) setting
+    python deploy/provision.py http3-off     # only: turn HTTP/3 off (decision 2026-10-30-http3-off)
 
 Run by .github/workflows/provision.yml with the repo's secrets in the environment:
 DIGITALOCEAN_TOKEN, CLOUDFLARE_API_TOKEN, ACCESS_EMAILS, BACKUP_PASSWORD, ANTHROPIC_API_KEY, RESEND_API_KEY.
@@ -177,6 +179,17 @@ class Cloudflare:
         _ = self.account
         return self._zone
 
+    def http3(self, off: bool) -> str:
+        """The zone's HTTP/3 (QUIC) setting; `off` turns it off. Browsers then speak HTTP/2 to the site: a QUIC
+        connection that Cloudflare dropped while the page sat open made actions fail ("Failed to fetch") or hang
+        until a refresh, and the refresh itself wait 20-60 s (net::ERR_QUIC_PROTOCOL_ERROR, Leon 2026-10-30)."""
+        now = (self.r("GET", f"/zones/{self.zone}/settings/http3") or {}).get("value")
+        log(f"HTTP/3 on {self.domain}: {now}")
+        if off and now != "off":
+            now = (self.r("PATCH", f"/zones/{self.zone}/settings/http3", {"value": "off"}) or {}).get("value")
+            log(f"HTTP/3 on {self.domain} now: {now}")
+        return str(now)
+
     def team_domain(self) -> str:
         try:
             org = self.r("GET", f"/accounts/{self.account}/access/organizations")
@@ -310,7 +323,11 @@ class Cloudflare:
         an 8-hour session, no service tokens, and never opened by the site door. Returns its audience tag
         (CF_ADMIN_ACCESS_AUD)."""
         a = self.account
-        owner_only = self.policy(ADMIN_POLICY, {"decision": "allow", "include": [{"email": {"email": owner}}],
+        # admins the owner added by hand in Cloudflare (the 加管理员 / invite-as-admin note) stay on the list
+        pols = self.r("GET", f"/accounts/{a}/access/policies") or []
+        old = next((x for x in pols if x.get("name") == ADMIN_POLICY), None) or {}
+        kept = [r for r in old.get("include") or [] if (r.get("email") or {}).get("email", "").lower() not in ("", owner.lower())]
+        owner_only = self.policy(ADMIN_POLICY, {"decision": "allow", "include": [{"email": {"email": owner}}, *kept],
                                                 "session_duration": "8h"}, apply)
         apps = self.r("GET", f"/accounts/{a}/access/apps") or []
         app = next((x for x in apps if x.get("domain") == self.admin), None)
@@ -838,7 +855,8 @@ def run(mode: str, cf: Cloudflare, do: DigitalOcean, door: str | None = None) ->
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     mode = argv[0] if argv else "plan"
-    if mode not in ("plan", "apply", "recreate", "close-version-door", "deploy-token", "mail-domain", "mail-plan"):
+    if mode not in ("plan", "apply", "recreate", "close-version-door", "deploy-token", "mail-domain", "mail-plan",
+                    "http3-check", "http3-off"):
         print(__doc__)
         return 2
     try:
@@ -847,6 +865,11 @@ def main(argv: list[str] | None = None) -> int:
             # only the old public version address (decision 2026-10-25-withdraw-public-version), patiently
             cf.http.RETRY_WAITS = (5, 15, 45, 90, 180, 300)
             cf.close_version_door(True)
+            log("done")
+            return 0
+        if mode in ("http3-check", "http3-off"):
+            # only the zone's HTTP/3 switch (decision 2026-10-30-http3-off)
+            cf.http3(mode == "http3-off")
             log("done")
             return 0
         if mode == "deploy-token":

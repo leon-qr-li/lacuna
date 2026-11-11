@@ -89,7 +89,11 @@ def test_before_sign_in_app_info_is_version_only(client, keys):
     code = totp.code_at(r.json()["secret"], int(time.time() // totp.STEP))
     assert client.post("/api/auth/2fa/enroll", json={"ticket": r.json()["ticket"], "code": code}, headers=h).status_code == 200
     signed_in = client.get("/api/app", headers=h).json()
-    assert "workspace" in signed_in and "busy" in signed_in and signed_in["cloud"] is True
+    assert signed_in["cloud"] is True
+    # other shows' running work and the server's folder are for the host's updater only (batch 8, S2)
+    assert signed_in["workspace"] == "" and signed_in["busy"] == []
+    host = TestClient(client.app, base_url="https://testserver", client=("127.0.0.1", 50000))
+    assert host.get("/api/app").json()["workspace"] == str(client.app.state.workspace.root)
     stranger = TestClient(client.app, base_url="https://testserver")
     for path in ("/api/app", "/api/health"):
         info = stranger.get(path, headers=h).json()
@@ -124,8 +128,23 @@ def test_a_fresh_cloud_server_answers_only_the_sign_up_screen(client, keys):
 def test_desktop_only_actions_are_gone(client, keys, monkeypatch):
     h = owner_signed_in(client, keys, monkeypatch)
     for path in ("/api/app/update/check", "/api/app/update/prepare", "/api/app/update/apply", "/api/app/api-key",
-                 "/api/auth/resend-key", "/api/episodes/EP001/exports/open", "/api/library/open"):
+                 "/api/auth/resend-key", "/api/episodes/EP001/exports/open", "/api/library/open",
+                 "/api/episodes/EP001/upload/save-cover"):
         assert client.post(path, json={"key": "sk-x"}, headers=h).status_code == 404, path
+
+
+def test_signed_in_answers_name_no_server_folder(client, keys, monkeypatch):
+    """a signed-in browser learns nothing of the server's folders (batch 11, S1)"""
+    h = owner_signed_in(client, keys, monkeypatch)
+    root = str(client.app.state.workspace.root)
+    health = client.get("/api/health", headers=h).json()
+    assert health["workspace"] == ""
+    app_info = client.get("/api/app", headers=h).json()
+    assert app_info["ffmpeg"] in ("ffmpeg", None) and app_info["ffprobe"] in ("ffprobe", None)
+    assert client.get("/api/library", headers=h).json()["folder"] == ""
+    for path in ("/api/health", "/api/app", "/api/library"):
+        assert root not in client.get(path, headers=h).text, path
+    assert cloud.server_path(client.app.state.workspace.root) == ""
 
 
 def test_import_reads_only_uploaded_tracks(client, keys, tmp_path, monkeypatch):
@@ -214,3 +233,12 @@ def test_owner_signs_up_first_without_setup_code(client, keys, monkeypatch):
     assert r.status_code == 200 and r.json()["step"] == "enroll"           # two-step sign-in still required
     assert client.get("/api/auth/status", headers=leon).json()["email"] is None
     assert not (client.app.state.workspace.root / "auth" / "setup-code.txt").exists()
+
+
+def test_one_test_for_cloud_mode(monkeypatch):
+    """batch 8, S6: sign-in, the admin alerts and the Access check all read LACUNA_CLOUD the same way"""
+    from lacuna_app import admin_metrics
+    from lacuna_app.routes import auth as auth_routes
+    for value, on in (("1", True), ("true", True), ("YES", True), ("0", False), ("", False)):
+        monkeypatch.setenv("LACUNA_CLOUD", value)
+        assert cloud.enabled() is on and auth_routes.cloud_mode() is on and admin_metrics.cloud_server() is on, value

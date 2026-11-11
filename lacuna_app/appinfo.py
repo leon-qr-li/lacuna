@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import shutil
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+from fastapi import Request
 from pydantic import BaseModel, Field
 
 APP_ROOT = Path(__file__).resolve().parent.parent      # the image's /app (or the git checkout)
@@ -21,6 +23,15 @@ def current_version(app_root: Path = APP_ROOT) -> str:
         return (app_root / "VERSION").read_text(encoding="utf-8").strip() or "dev"
     except OSError:
         return "dev"
+
+
+def release_date(app_root: Path = APP_ROOT) -> str | None:
+    """The version people see: the day this build was made ("2026.10.25", from VERSION's time, written at
+    docker build). The commit stays in `version` for the admin area and feedback (batch 7, B17)."""
+    try:
+        return datetime.fromtimestamp((app_root / "VERSION").stat().st_mtime, tz=timezone.utc).strftime("%Y.%m.%d")
+    except OSError:
+        return None
 
 
 # ---------------------------------------------------------------------------- environment
@@ -45,16 +56,22 @@ def register(app, workspace: Path, busy: Callable[[], list[str]],
     from fastapi import HTTPException
 
     from . import editor
-    from .cloud import enabled as cloud_enabled, staging
+    from .cloud import LOOPBACK, enabled as cloud_enabled, staging
 
-    def info() -> dict:
-        return {"version": current_version(), "platform": platform_name(), "workspace": str(workspace),
-                "key": key_status(), "models": models_ready(), "busy": busy(),
-                "cloud": cloud_enabled(), "staging": staging()} | ffmpeg_status()
+    def info(server_side: bool) -> dict:
+        # on the shared server only the host's updater (loopback) sees the busy list and the folder: they name
+        # other people's episodes and the server's paths (batch 8, S2)
+        return {"version": current_version(), "release": release_date(), "platform": platform_name(),
+                "workspace": str(workspace) if server_side else "",
+                "key": key_status(), "models": models_ready(), "busy": busy() if server_side else [],
+                "cloud": cloud_enabled(), "staging": staging()} | {
+                    # found or not, without where (batch 11, S1)
+                    k: v if server_side else (k if v else None) for k, v in ffmpeg_status().items()}
 
     @app.get("/api/app")
-    def app_info():
-        return info()
+    def app_info(request: Request):
+        client = request.client.host if request.client else None
+        return info(not cloud_enabled() or client in LOOPBACK)
 
     @app.post("/api/app/api-key")
     def set_key(body: KeyBody):

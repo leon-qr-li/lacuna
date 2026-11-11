@@ -2,12 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { GrowText } from "../../components/GrowText";
 import type { AlbumRef, Asset, Credit, CreditStatus, EpisodeRef, LibraryView as Lib } from "./api";
 import { fmt } from "../../api";
+import type { RequestError } from "../../api";
 import { libraryApi } from "./api";
 import { t } from "../../i18n";
 import { BusyLabel, PageLoading } from "../loading/Loading";
 import { confirmDialog } from "../dialog/Dialog";
 import { inScope, ScopeActions, ScopeBadge, ScopeFilter, ScopeTarget } from "./Scope";
 import { useCloud } from "../auth/cloud";
+import { CreditFix } from "../credit-fix/CreditFix";
+import { UploadMeter, useUploadRows, type UploadRow } from "../upload-progress/UploadProgress";
 
 export const CREDIT_LABEL: Record<CreditStatus, string> = {
   confirmed: t("已确认"),
@@ -24,7 +27,7 @@ const FIELDS: { key: keyof Credit; label: string }[] = [
   { key: "year", label: t("年份") },
 ];
 
-type Upload = { name: string; state: "busy" | "done" | "dup" | "error"; msg?: string };
+type Upload = UploadRow;
 
 const ACCEPT = ".mp3,.wav,.flac,.m4a,.aac,.ogg,.opus,.aif,.aiff,.wma,audio/*";
 
@@ -204,11 +207,25 @@ function AssetRow({ a, kinds, eps, albums, onChange, onRemoved, claude }: { a: A
           onClick={async () => {
             const ok = await confirmDialog({
               title: t("移出素材库"),
-              message: t("把「{name}」移出素材库？文件会放进素材库的 _removed 文件夹，不会删除。", { name: a.name }),
+              message: t("把「{name}」移出素材库？移出后素材库里就看不到它了。", { name: a.name }),
               confirmLabel: t("移出"),
               danger: true,
             });
-            if (ok) void libraryApi.removeAsset(a.id).then(onRemoved);
+            if (!ok) return;
+            try {
+              await libraryApi.removeAsset(a.id);
+            } catch (e) {
+              if ((e as RequestError).status !== 409) throw e;
+              const again = await confirmDialog({
+                title: t("移出素材库"),
+                message: (e as Error).message,
+                confirmLabel: t("仍然移出"),
+                danger: true,
+              });
+              if (!again) return;
+              await libraryApi.removeAsset(a.id, true);
+            }
+            onRemoved();
           }}
         >
           {t("移出素材库")}
@@ -251,7 +268,8 @@ export function LibraryView() {
   const cloud = useCloud();
   const [lib, setLib] = useState<Lib | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [uploads, setUploads] = useState<Upload[]>([]);
+  const up = useUploadRows();
+  const uploads: Upload[] = up.rows;
   const [dragging, setDragging] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
@@ -268,18 +286,14 @@ export function LibraryView() {
     const album = target.startsWith("al:") ? target.slice(3) : "";
     const episode = album ? "" : target;
     setNote(null);
-    setUploads(files.map((f) => ({ name: f.name, state: "busy" })));
+    up.start(files);
     for (const [i, f] of files.entries()) {
-      let u: Upload;
       try {
-        const r = await libraryApi.uploadAsset(f, kind, "", episode, album);
-        u = r.duplicate
-          ? { name: f.name, state: "dup", msg: t("素材库里已经有这首（{name}）", { name: r.asset.name }) }
-          : { name: f.name, state: "done" };
+        const r = await libraryApi.uploadAsset(f, kind, "", episode, album, up.track(i));
+        up.patch(i, r.duplicate ? { state: "dup", msg: t("素材库里已经有这首（{name}）", { name: r.asset.name }) } : { state: "done", f: 1 });
       } catch (e) {
-        u = { name: f.name, state: "error", msg: (e as Error).message };
+        up.patch(i, { state: "error", msg: (e as Error).message });
       }
-      setUploads((us) => us.map((x, j) => (j === i ? u : x)));
     }
     load();
   };
@@ -313,6 +327,7 @@ export function LibraryView() {
     >
       <div className="row gap8 wrap">
         <h1 className="grow">{t("素材库")}</h1>
+        <CreditFix onApplied={(n) => (load(), setNote(n ? t("已更新 {n} 首的曲名和作者", { n }) : t("没有改动曲名")))} />
         {cloud === false && (
           <>
             <button
@@ -338,8 +353,13 @@ export function LibraryView() {
         <ul className="lib-uploads small" data-testid="uploads">
           {uploads.map((u, i) => (
             <li key={i} className={u.state === "error" ? "error" : ""}>
-              {u.state === "busy"
-                ? <BusyLabel busy label={t("正在加入：{name}", u)} />
+              {u.state === "wait" || u.state === "send" || u.state === "work"
+                ? (
+                  <span className="lib-upload-row">
+                    <span className="lib-upload-name">{t("正在加入：{name}", u)}</span>
+                    <UploadMeter r={u} />
+                  </span>
+                )
                 : u.state === "error"
                   ? t("没加进去：{name}", u)
                   : u.state === "dup"
@@ -355,7 +375,7 @@ export function LibraryView() {
           {t("文件会复制到素材库文件夹")} <span className="mono">{lib.folder}</span>{t("，原文件不动。音乐只在这台电脑上，查曲名时只把文件名、标签和你的备注发给 LACUNA。")}
         </p>
       )}
-      {cloud && <p className="muted small">{t("音乐保存在 LACUNA 的服务器上，原文件不动。查曲名时只把文件名、标签和你的备注发给 LACUNA 的 AI。")}</p>}
+      {cloud && <p className="muted small">{t("音乐保存在 LACUNA 的服务器上，原文件不动。查曲名时只把文件名、标签和你的备注发给 LACUNA。")}</p>}
       {note && <p className="small">{note}</p>}
       {lib.assets.length === 0 && <p className="muted">{t("素材库还是空的。把片头、配乐或台词片段拖进来就行。")}</p>}
       {lib.assets.length > 0 && <ScopeFilter eps={lib.episodes} albums={lib.albums} value={filter} onChange={setFilter} />}

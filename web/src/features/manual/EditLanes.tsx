@@ -8,7 +8,13 @@ import type { WaveTile } from "./api";
 import { range, useChunks } from "./chunks";
 import { LaneMenu } from "./LaneMenu";
 import { MIN_SEL } from "./useManual";
+import { keyLabel as keyLabelOf, keyText, keysOf, matches, useShortcuts } from "../shortcuts/keys";
+import { CustomizeLink } from "../shortcuts/Link";
 import type { Manual } from "./useManual";
+import { GapAddMenu, GapCard, GapMark } from "../gaps/Gaps";
+import { useGaps } from "../gaps/useGaps";
+import { useListenOnly } from "../listen-only/state";
+import { SearchTicks } from "../transcript-search/TranscriptSearch";
 import "./manual.css";
 
 const ZOOM_KEY = "lacuna.manual.span";
@@ -94,16 +100,20 @@ function Wave({ index, name, tiles, t0, span }: { index: number; name: string; t
 
 /** The "?" next to the title: what each action does, one line each (Leon 2026-10-20 wording). */
 function Help() {
+  useShortcuts(); // the person's own keys (设置 → 快捷键)
+  const k = (id: Parameters<typeof keyText>[0]) => keyText(id) || t("未设置");
+  const cut = keysOfText("cut") || t("未设置");
   const rows: [string, string][] = [
     [t("单击轨道"), t("播放头跳到那里，同时取消选中")],
     [t("按住鼠标拖动"), t("选一段")],
     [t("拖选区的边"), t("调整选区")],
-    ["Ctrl + X", t("删掉选中的一段")],
-    [t("空格"), t("播放 / 暂停（有选中时只放选中段）")],
+    [cut, t("删掉选中的一段")],
+    [k("play"), t("播放 / 暂停（有选中时只放选中段）")],
     ["Esc", t("取消选中")],
     [t("Ctrl + 滚轮"), t("放大 / 缩小")],
     [t("拖刻度条，或按住空格拖"), t("左右移动时间线")],
-    ["Ctrl + Z", t("撤销")],
+    [k("undo"), t("撤销")],
+    [t("右键空白处，或按 {k}", { k: k("gap") }), t("加入间隙（右键：在点的位置；{k}：在播放头）", { k: k("gap") })],
   ];
   return (
     <span className="ml-help">
@@ -111,16 +121,22 @@ function Help() {
         ?
       </button>
       <span className="ml-help-tip" role="tooltip" id="ml-help-tip">
-        {rows.map(([k, v]) => (
-          <span key={k} className="ml-help-row">
+        {rows.map(([k, v], i) => (
+          <span key={i} className="ml-help-row">
             <span className="ml-help-k">{k}</span>
             <span>{v}</span>
           </span>
         ))}
+        <span className="ml-help-foot">
+          <CustomizeLink />
+        </span>
       </span>
     </span>
   );
 }
+
+/** Every key of an action, "Ctrl+X / Delete". */
+const keysOfText = (id: Parameters<typeof keysOf>[0]) => keysOf(id).map((c) => keyLabelOf(c)).join(" / ");
 
 /**
  * The timeline of 整集试听 with manual editing: each host's real waveform, smooth zoom, pan, and drag to select a
@@ -150,6 +166,12 @@ export function EditLanes({
 }) {
   const { sel, setSel } = m;
   const d = ep.duration;
+  const gaps = useGaps(ep.id, ep.version);
+  // 间隙 (docs/decisions/2026-10-30-edit-gaps.md): right-click away from the selection opens 「在此处加入间隙」;
+  // a gap's mark opens its card (length, 删掉)
+  const [gapMenu, setGapMenu] = useState<{ at: number; left: number; top: number } | null>(null);
+  const [gapPop, setGapPop] = useState<{ id: string; left: number; top: number } | null>(null);
+  const gapBox = useRef<HTMLDivElement | null>(null);
   // The window stays where it is: a click only moves the playhead (Leon 2026-10-20, "我不要居中"). It moves when
   // the user pans (drag the ruler, Space + drag or middle-drag on a lane, the wheel), zooms (Ctrl + wheel, around
   // the pointer), when playback runs off the right edge (it turns a page), or when a jump lands outside it.
@@ -269,7 +291,7 @@ export function EditLanes({
       const tap = !space.current.panned;
       space.current = null;
       setHand(false);
-      if (tap) player.toggle();
+      if (tap && keysOf("play").includes("Space")) player.toggle(); // Space is still the play key
     };
     window.addEventListener("keydown", down, true);
     window.addEventListener("keyup", up, true);
@@ -287,8 +309,11 @@ export function EditLanes({
     }
   }, [span]);
 
-  const tiles = useChunks<WaveTile>(ep.version, range(Math.floor(t0 / TILE_S), Math.floor(Math.min(t1, d) / TILE_S)), (k) =>
+  // the next page too: playback turns the page at the right edge, and its waveform is then already here
+  // (Leon 2026-10-30: past 40:20 the lanes stayed empty for a while)
+  const tiles = useChunks<WaveTile>(ep.version, range(Math.floor(t0 / TILE_S), Math.floor(Math.min(t1 + span, d) / TILE_S)), (k) =>
     manualApi.wave(ep.id, ep.version, k),
+    true,
   );
 
   const x = (s: number) => `${(100 * (s - t0)) / span}%`;
@@ -371,13 +396,54 @@ export function EditLanes({
       setMenuOpen(true);
     }
   };
-  /** right-click on the tracks: the selection's menu when the pointer is on the selection */
+  /** right-click on the tracks: the selection's menu when the pointer is on the selection, else 「在此处加入间隙」 */
   const context = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     const r = e.currentTarget.getBoundingClientRect();
     const s = at(e.clientX, r);
-    if (sel?.from === "lanes" && s >= sel.a - 0.05 && s <= sel.b + 0.05) setMenuOpen(true);
+    if (sel?.from === "lanes" && s >= sel.a - 0.05 && s <= sel.b + 0.05) return setMenuOpen(true);
+    if (!card.current) return;
+    const c = card.current.getBoundingClientRect();
+    setGapPop(null);
+    setGapMenu({ at: s, left: Math.max(8, Math.min(c.width - 256, e.clientX - c.left)), top: e.clientY - c.top + 4 });
   };
+  const openGap = (g: { id: string }, el: HTMLElement) => {
+    if (!card.current) return;
+    const c = card.current.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    setGapMenu(null);
+    setGapPop((p) => (p?.id === g.id ? null : { id: g.id, left: Math.max(8, Math.min(c.width - 272, r.left - c.left - 132)), top: r.bottom - c.top + 6 }));
+  };
+  // a click elsewhere or Esc closes the gap menu / card; the gap key (Shift+G) adds a gap at the playhead
+  useEffect(() => {
+    if (!gapMenu && !gapPop) return;
+    const away = (e: PointerEvent) => !gapBox.current?.contains(e.target as Node) && (setGapMenu(null), setGapPop(null));
+    const key = (e: KeyboardEvent) => e.key === "Escape" && (setGapMenu(null), setGapPop(null));
+    window.addEventListener("pointerdown", away);
+    window.addEventListener("keydown", key);
+    return () => {
+      window.removeEventListener("pointerdown", away);
+      window.removeEventListener("keydown", key);
+    };
+  }, [gapMenu, gapPop]);
+  const timeRef = useRef(time);
+  timeRef.current = time;
+  const addGap = useRef(gaps.add);
+  addGap.current = gaps.add;
+  const ro = useRef(false);
+  ro.current = useListenOnly();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag) || (e.target as HTMLElement).isContentEditable) return;
+      // 设置 → 快捷键, default Shift+G (Leon 2026-11-02: a bare G added gaps by mistake)
+      if (e.repeat || ro.current || !matches(e, "gap")) return;
+      e.preventDefault();
+      void addGap.current(timeRef.current);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const lanesSel = sel?.from === "lanes" ? sel : null;
   useEffect(() => {
@@ -447,6 +513,7 @@ export function EditLanes({
               {tick(s, step)}
             </span>
           ))}
+          <SearchTicks t0={t0} span={span} player={player} />
         </div>
       </div>
       {ep.tracks.map((tr, i) => (
@@ -494,10 +561,25 @@ export function EditLanes({
                 data-b={sel.b.toFixed(2)}
               />
             )}
+            {gaps.gaps
+              .filter((g) => g.voice_s >= t0 && g.voice_s <= t1)
+              .map((g) => (
+                <GapMark key={g.id} g={g} left={x(g.voice_s)} label={i === 0} onOpen={openGap} />
+              ))}
             {time >= t0 && time <= t1 && <div className="ml-head-line" style={{ left: x(time) }} />}
           </div>
         </div>
       ))}
+      {gapMenu && <GapAddMenu ref={gapBox} left={gapMenu.left} top={gapMenu.top} gaps={gaps} at={gapMenu.at} onClose={() => setGapMenu(null)} />}
+      {gapPop &&
+        (() => {
+          const g = gaps.gaps.find((x) => x.id === gapPop.id);
+          return g ? (
+            <div ref={gapBox} className="gap-pop" style={{ left: gapPop.left, top: gapPop.top }} onPointerDown={(e) => e.stopPropagation()}>
+              <GapCard g={g} gaps={gaps} onDone={() => setGapPop(null)} />
+            </div>
+          ) : null;
+        })()}
       {menuOpen && lanesSel && <LaneMenu ref={menu} ep={ep} m={m} left={menuAt?.left ?? 0} top={menuAt?.top ?? 0} hidden={!menuAt} />}
       {bottom}
       {pop && popover && (() => {

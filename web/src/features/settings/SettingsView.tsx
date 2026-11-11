@@ -12,6 +12,7 @@ import { t } from "../../i18n";
 import { PageLoading } from "../loading/Loading";
 import { OnboardingCard } from "../onboarding/OnboardingCard";
 import { TrashCard } from "../trash/TrashCard";
+import { ShortcutsCard } from "../shortcuts/ShortcutsCard";
 
 const KEY_SOURCE: Record<string, string> = {
   env: t("环境变量"),
@@ -30,16 +31,17 @@ export function SettingsLink() {
   );
 }
 
-type Section = "general" | "edit" | "projects" | "plan" | "account" | "members" | "mail" | "ai";
+type Section = "general" | "edit" | "keys" | "projects" | "plan" | "account" | "members" | "mail" | "ai";
 const SECTIONS: { id: Section; group: "me" | "admin"; label: string; about: string }[] = [
   { id: "general", group: "me", label: t("通用"), about: t("界面主题、语言和版本。") },
   { id: "edit", group: "me", label: t("剪辑习惯"), about: t("你平时下手多重，每个节目都按这个来。") },
+  { id: "keys", group: "me", label: t("快捷键"), about: t("剪辑和审阅时用的键，改成你顺手的。") },
   { id: "projects", group: "me", label: t("我的节目"), about: t("你建的和受邀加入的节目。") },
   { id: "plan", group: "me", label: t("套餐与用量"), about: t("你的套餐、用了多少，以及各套餐的区别。") },
   { id: "account", group: "me", label: t("账号与安全"), about: t("登录、密码、两步验证和登录过的设备。") },
   { id: "members", group: "admin", label: t("成员与邀请"), about: t("邀请新账号、管理成员角色。") },
   { id: "mail", group: "admin", label: t("邮件发件人"), about: t("邀请邮件和验证码从哪个地址发出。") },
-  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有节目的文字稿都按它校对的专有名词。") },
+  { id: "ai", group: "admin", label: t("AI 与专有名词"), about: t("AI 密钥，以及所有节目的逐字稿都按它校对的专有名词。") },
 ];
 const sectionFromHash = (): Section => {
   const m = /^#\/settings\/([\w-]+)/.exec(window.location.hash)?.[1];
@@ -158,8 +160,8 @@ export function SettingsView() {
               <section className="card" aria-label={t("版本")}>
                 <div className="card-head">
                   <h2>{t("版本")}</h2>
-                  <span className="badge" data-testid="app-version">
-                    {info.cloud ? info.version.slice(0, 7) : info.version === "dev" ? t("开发版") : info.version}
+                  <span className="badge" data-testid="app-version" title={info.version === "dev" ? undefined : info.version.slice(0, 7)}>
+                    {info.version === "dev" ? t("开发版") : info.release ?? info.version.slice(0, 7)}
                   </span>
                 </div>
                 {info.cloud && <p className="muted small" data-testid="cloud-auto-update">{t("新版本测试通过后会自动上线，不用手动更新。")}</p>}
@@ -178,6 +180,7 @@ export function SettingsView() {
             </>
           )}
           {cur.id === "edit" && <HabitsCard />}
+          {cur.id === "keys" && <ShortcutsCard />}
           {cur.id === "projects" && <SpacesCard />}
           {cur.id === "plan" && st && <PlanCard />}
           {cur.id === "account" && st && <SecurityCard st={st} setSt={auth.setSt} />}
@@ -202,7 +205,7 @@ export function SettingsView() {
                         ? t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上（钥匙串），不会显示出来。")
                         : t("AI 第一刀、聊天修改、发布资料要用它。只保存在这台电脑上，不会显示出来。")}
                     </p>
-                    <div className="row gap">
+                    <div className="row gap8">
                       <input
                         className="grow"
                         type="password"

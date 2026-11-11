@@ -1,6 +1,6 @@
 """Cloud mode: LACUNA on the DigitalOcean server behind Cloudflare Tunnel + Access (decision cloud-deploy).
 
-Off unless ``LACUNA_CLOUD=1``; a local development checkout never sees any of this. When on:
+Off unless ``LACUNA_CLOUD=1`` (or true / yes, ``enabled()``); a local development checkout never sees any of this. When on:
 
 * Every request must carry a valid Cloudflare Access token (``Cf-Access-Jwt-Assertion``, RS256, signed
   by the team's keys, our application's audience). Cloudflare Access is the first door (invite list +
@@ -44,6 +44,7 @@ BLOCKED = [
     ("POST", re.compile(r"^/api/auth/resend-key$")),
     ("POST", re.compile(r"^/api/episodes/[^/]+/exports/open$")),
     ("POST", re.compile(r"^/api/library/open$")),
+    ("POST", re.compile(r"^/api/episodes/[^/]+/upload/save-cover$")),   # the browser download is the copy
 ]
 # answered with the version only until the visitor has signed in to the app
 PUBLIC_INFO = {"/api/app", "/api/health"}
@@ -54,7 +55,16 @@ class CloudConfigError(RuntimeError):
 
 
 def enabled() -> bool:
-    return os.environ.get("LACUNA_CLOUD") == "1"
+    """The one test for cloud mode, used everywhere (sign-in, admin alerts, this middleware): LACUNA_CLOUD set
+    to 1 / true / yes. Anything that turns cloud mode on fails closed (Access settings required)."""
+    return os.environ.get("LACUNA_CLOUD", "").strip().lower() in ("1", "true", "yes")
+
+
+def server_path(p) -> str:
+    """A folder or file on this machine as an answer may name it: the path in a development checkout, where the
+    page shows it; "" on the shared server, where it would only tell a signed-in browser the server's layout
+    (batch 11, S1)."""
+    return "" if enabled() else str(p)
 
 
 def access_required() -> bool:

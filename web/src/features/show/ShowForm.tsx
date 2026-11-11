@@ -16,9 +16,9 @@ const COLOR_LABELS: Record<HostColor, string> = {
   pink: t("粉"),
 };
 const ADJUST_LABELS: Record<CutAdjust, string> = {
-  more: t("比我平时更狠"),
+  more: t("比我平时多剪"),
   same: t("和我平时一样"),
-  less: t("比我平时更松"),
+  less: t("比我平时少剪"),
 };
 const ADJUSTS: CutAdjust[] = ["more", "same", "less"];
 
@@ -64,6 +64,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
   const [wish, setWish] = useState<AutoPublish[]>(show.publish.auto_wish ?? []);
   // 专有名词: one per line (or comma separated); hints for the transcript's proofreading, the audio wins
   const [terms, setTerms] = useState((show.terms ?? []).join("\n"));
+  const [nameCheck, setNameCheck] = useState(show.name_check !== false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -80,6 +81,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
     setAlbum(s.publish.album);
     setWish(s.publish.auto_wish ?? []);
     setTerms((s.terms ?? []).join("\n"));
+    setNameCheck(s.name_check !== false);
     setRev(s.rev);
   };
 
@@ -99,7 +101,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
         hosts,
         // where the show is published stays as stored (no picker since 自动发布 即将推出, 2026-10-23)
         publish: { ximalaya: show.publish.ximalaya, album, auto_wish: compact ? (show.publish.auto_wish ?? []) : wish },
-        ...(compact ? {} : { terms: splitTerms(terms) }),
+        ...(compact ? {} : { terms: splitTerms(terms), name_check: nameCheck }),
         rev,
       });
       setShow(s);
@@ -159,7 +161,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
         <label className="show-field">
           <span>{t("一句话介绍")}</span>
           <input value={about} maxLength={200} onChange={(e) => setAbout(e.target.value)} placeholder={t("比如：两个朋友的电影闲聊")} />
-          <small className="muted">{t("AI 剪辑、写 show notes 和画海报时会参考。")}</small>
+          <small className="muted">{t("LACUNA 剪辑、写 show notes 和画封面时会参考。")}</small>
         </label>
       )}
       {!compact && has("basic") && (
@@ -172,7 +174,16 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
             placeholder={t("一行一个，比如：王家卫、花样年华、PULSE")}
             data-testid="show-terms"
           />
-          <small className="muted">{t("节目里常说的人名、片名、栏目名。文字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。")}</small>
+          <small className="muted">{t("节目里常说的人名、片名、栏目名。逐字稿听错成发音相近的字时按这里改；以录音为准，发音不像的不会硬改。")}</small>
+        </label>
+      )}
+      {!compact && has("basic") && (
+        <label className="show-check" data-testid="show-name-check">
+          <input type="checkbox" checked={nameCheck} onChange={(e) => (setSaved(false), setNameCheck(e.target.checked))} />
+          <span>
+            {t("导入时自动核对片名、人名等专有名词")}
+            <small className="muted">{t("LACUNA 按聊的内容找出逐字稿里听错的名字（比如「落兰」→「诺兰」）并改好，审阅和整集试听里看到的就是对的。只改文字，不动音频和剪辑；每一处都能在逐字稿卡片上改回原样。")}</small>
+          </span>
         </label>
       )}
       {has("hosts") && (
@@ -234,7 +245,7 @@ export function ShowForm({ show, compact, onSaved, parts, extra }: { show: Show;
                       value={h.style}
                       maxLength={500}
                       onChange={(e) => edit(i, { style: e.target.value })}
-                      placeholder={t("给 AI 的剪辑要求（可不填），比如：保留她的口头禅，跑题的长段可以删")}
+                      placeholder={t("给 LACUNA 的剪辑要求（可不填），比如：保留她的口头禅，跑题的长段可以删")}
                       aria-label={t("{name} 的剪辑要求", { name: h.name || t("这位主持人") })}
                     />
                   </>

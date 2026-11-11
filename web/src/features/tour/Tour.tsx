@@ -82,7 +82,7 @@ export function Tour({ ep, mode, id, player }: { ep: Episode; mode: string; id: 
 /** After the tour: start it again (the sample goes back to the first cut). */
 function Restart() {
   const again = async () => {
-    if (!(await confirmDialog({ message: t("示例集会回到 LACUNA 第一刀刚做完的样子，你在里面做的改动都会清掉，然后从头开始教程。"), confirmLabel: t("重新开始") })))
+    if (!(await confirmDialog({ message: t("示例集会回到 LACUNA 初剪刚做完的样子，你在里面做的改动都会清掉，然后从头开始教程。"), confirmLabel: t("重新开始") })))
       return;
     const o = await onboardingApi.resetSample();
     window.location.hash = `#/ep/${encodeURIComponent(o.sample?.episode ?? "SAMPLE_01")}/review`;
@@ -269,7 +269,8 @@ function Pill({ ch, onExit }: { ch: number; onExit: () => void }) {
   const playing = usePlaying();
   return (
     <div className="tour-pill" data-testid="tour-pill">
-      <span>{t("示例教程 · 第 {n} 步，共 {total} 步", { n: ch, total: CHAPTERS })}</span>
+      {/* the step count is in the bubble only (batch 7, B19); the dots show where you are */}
+      <span>{t("示例教程")}</span>
       <span className="tour-dots" aria-hidden="true">
         {Array.from({ length: CHAPTERS }, (_, i) => (
           <i key={i} className={i + 1 < ch ? "is-done" : i + 1 === ch ? "is-now" : ""} />

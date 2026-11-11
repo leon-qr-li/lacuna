@@ -35,7 +35,7 @@ export function NewMembersSwitch() {
       </label>
       <p className="muted small">
         {on
-          ? t("开着（beta）：节目管理员邀请没有账号的人时，会先变成一条「搭档申请」，出现在下面的试用申请里，你批准后才发邀请。")
+          ? t("开着（beta）：节目管理员邀请没有账号的人时，会先变成一条「协作者申请」，出现在下面的试用申请里，你批准后才发邀请。")
           : t("已关掉：节目管理员可以直接邀请新人，人数按套餐限制。")}
       </p>
       {err && <p className="error small">{err}</p>}

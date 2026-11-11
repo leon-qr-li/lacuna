@@ -130,3 +130,37 @@ test("main site: the notice bar and maintenance set in the admin; 想要更多�
   expect((await pei.request.post("/api/imports", { data: {} })).status()).toBe(503);
   expect(await put("/api/admin/settings/maintenance", { on: false })).toBe(200);
 });
+
+test("inviting an admin: the dialog says to add them to Cloudflare, and they get the admin invitation", async ({ page, request }) => {
+  await signIn(page);
+  await page.goto(ADMIN + "/access");
+  await page.getByRole("button", { name: "发邀请" }).first().click();
+  const modal = page.getByTestId("invite-modal");
+  await modal.getByTestId("invite-email").fill("kim@example.com");
+  await expect(modal.getByTestId("invite-admin-note")).toHaveCount(0);
+  await modal.getByTestId("invite-role").selectOption("admin");
+  await expect(modal.getByTestId("invite-admin-note")).toContainText("Cloudflare");
+  if (process.env.ADMIN_SHOTS) {
+    // the new note re-checked: zh / en, light / dark, desktop / phone
+    for (const [lng, theme, w] of [["zh", "light", 1280], ["en", "dark", 1280], ["en", "light", 390], ["zh", "dark", 390]] as const) {
+      await page.evaluate(([l, th]) => { localStorage.setItem("lacuna.admin.lang", l); localStorage.setItem("lacuna.admin.theme", th); }, [lng, theme]);
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.reload();
+      await page.getByRole("button", { name: lng === "zh" ? "发邀请" : "Send invite" }).first().click();
+      await page.getByTestId("invite-role").selectOption("admin");
+      await page.screenshot({ path: `${process.env.ADMIN_SHOTS}/invite-admin-${lng}-${theme}-${w}.png` });
+    }
+    await page.evaluate(() => localStorage.clear());
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.reload();
+    await page.getByRole("button", { name: "发邀请" }).first().click();
+    await modal.getByTestId("invite-email").fill("kim@example.com");
+    await modal.getByTestId("invite-role").selectOption("admin");
+  }
+  await modal.getByTestId("invite-send").click();
+  await expect(modal).toHaveCount(0);
+  const all = (await (await request.get("/api/auth/_test/outbox")).json()).mails as { to: string; subject: string; text: string }[];
+  const m = all.filter((x) => x.to === "kim@example.com").at(-1)!;
+  expect(m.subject).toContain("邀请你成为 LACUNA 管理员");
+  expect(m.text).toContain("/invite/");
+});

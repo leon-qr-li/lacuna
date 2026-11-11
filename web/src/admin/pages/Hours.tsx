@@ -201,7 +201,7 @@ function Plans({ data, set, owner }: { data: HoursData; set: (d: HoursData) => v
               <th>{t("套餐")}</th>
               <th className="n">{t("每月小时")}</th>
               <th className="n">{t("节目")}</th>
-              <th className="n">{t("搭档人数")}</th>
+              <th className="n">{t("协作者人数")}</th>
             </tr>
           </thead>
           <tbody>

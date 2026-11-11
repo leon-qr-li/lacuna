@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { type APIRequestContext, expect, test } from "@playwright/test";
 
 // project picture / colour, archive and deleting for good (decision projects-archive-delete), on the
 // default server: Leon starts a project, gives it a picture, archives it (read-only, under 已归档) and
@@ -15,8 +15,24 @@ test.afterAll(async ({ request }) => {
   await request.post("/api/auth/_test/reset?skip_setup=true");
 });
 
+// The reset forgets accounts, not shows: a show leon@example.com made in an earlier run (CI's retry of a
+// failed attempt, --repeat-each) is still his after he signs up again, and a deleted one stays in the
+// 回收区. Start from his main show alone, so a retry checks the same thing as the first attempt.
+async function onlyMainShow(request: APIRequestContext) {
+  const { mine } = await (await request.get("/api/spaces")).json();
+  for (const m of mine as { id: string; name: string; archived?: boolean }[]) {
+    if (m.id === "main") {
+      if (m.archived) await request.post("/api/spaces/main/archive", { data: { archived: false } });
+      continue;
+    }
+    if (!m.archived) await request.post(`/api/spaces/${encodeURIComponent(m.id)}/archive`, { data: { archived: true } });
+    expect((await request.delete(`/api/spaces/${encodeURIComponent(m.id)}`, { data: { confirm: m.name } })).ok()).toBeTruthy();
+  }
+}
+
 test("a project gets a colour, a picture, is archived read-only, then deleted for good", async ({ page }) => {
   expect((await page.request.post("/api/auth/register", { data: { email: "leon@example.com", password: PW } })).ok()).toBeTruthy();
+  await onlyMainShow(page.request);
   await page.goto("/");
   await expect(page.getByTestId("project-menu")).toBeVisible();
   // a new project has its own solid colour, different from Leon's main project
@@ -65,6 +81,24 @@ test("a project gets a colour, a picture, is archived read-only, then deleted fo
 
   // restoring: archive Leon's main project from the API, restore it from 所有项目
   await page.request.post("/api/spaces/main/archive", { data: { archived: true } });
+  // an archived show's episode: what would change it is greyed out, as for a 只听 member (batch 9)
+  await page.goto(`/#/ep/${encodeURIComponent("EP_TEST_合成")}/review`);
+  await page.reload();
+  await expect(page.locator(".rv-act .btn").first()).toBeDisabled();
+  await expect(page.locator("#say")).toBeDisabled();
+  await expect(page.locator("#say")).toHaveAttribute("placeholder", "这个节目已归档，只能查看。恢复后才能修改。");
+  await expect(page.getByTestId("listen-only")).toHaveCount(0); // the 已归档 · 只读 tag says it already
+  // its home: the episodes, and none of what the server would refuse (import, 归档, 新专辑); no error card
+  // (a refused 归档 once read 「连不上 LACUNA」)
+  await page.goto("/#/");
+  await expect(page.locator(".ep-list li").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "导入新一集" })).toHaveCount(0);
+  await expect(page.locator(".ep-archive")).toHaveCount(0);
+  await expect(page.getByTestId("album-new")).toHaveCount(0);
+  await expect(page.getByTestId("error-state")).toHaveCount(0);
+  await page.goto("/#/archive");
+  await expect(page.locator(".ep-tile-actions")).toHaveCount(0);
+  await page.goto("/#/projects");
   await page.reload();
   await page.getByTestId("project-archive").getByTestId("project-restore").click();
   await expect(page.getByTestId("project-archive")).toHaveCount(0);
@@ -73,21 +107,24 @@ test("a project gets a colour, a picture, is archived read-only, then deleted fo
 
 test("节目设置 is on the show's home; archive then delete for good right there (Leon 2026-10-24)", async ({ page }) => {
   await page.request.post("/api/auth/login", { data: { email: "leon@example.com", password: PW } });
-  // one show: 所有节目 is still in the menu
+  await onlyMainShow(page.request);
+  // its own name each run: the 回收区 keeps what earlier runs deleted, for 60 days
+  const name = `试播${Date.now().toString(36).slice(-4)}`;
+  // one show: 我的节目 is still in the menu
   expect((await (await page.request.get("/api/spaces")).json()).mine).toHaveLength(1);
   await page.goto("/#/");
   await page.getByTestId("project-menu").click();
   await expect(page.getByTestId("project-all-link")).toBeVisible();
   await page.keyboard.press("Escape");
 
-  const made = await (await page.request.post("/api/spaces", { data: { name: "试播" } })).json();
+  const made = await (await page.request.post("/api/spaces", { data: { name } })).json();
   expect(made.current.id).toBe(made.created); // moved into it
   // set up (a new show's 首页 is the 建节目 form until then)
   const before = await (await page.request.get("/api/show")).json();
-  expect((await page.request.put("/api/show", { data: { ...before, show_name: "试播", hosts: [{ name: "Leon" }] } })).ok()).toBeTruthy();
+  expect((await page.request.put("/api/show", { data: { ...before, show_name: name, hosts: [{ name: "Leon" }] } })).ok()).toBeTruthy();
   await page.goto("/#/");
   await page.reload();
-  await expect(page.getByTestId("project-menu")).toHaveText(/试播/, { timeout: 20_000 });
+  await expect(page.getByTestId("project-menu")).toHaveText(new RegExp(name), { timeout: 20_000 });
   await page.getByTestId("home-project-settings").click();
   await expect(page).toHaveURL(/#\/project$/);
   await page.getByTestId("project-archive-btn").click();
@@ -95,18 +132,22 @@ test("节目设置 is on the show's home; archive then delete for good right the
   await page.getByTestId("project-readonly").getByTestId("project-settings-delete").click();
   const dlg = page.getByTestId("project-delete-dialog");
   await expect(dlg).toContainText("不能恢复");   // the 60 days are for LACUNA staff only
-  await dlg.getByTestId("project-delete-name").fill("试播");
+  await dlg.getByTestId("project-delete-name").fill(name);
+  // deleting the show you are in reloads the page on its 首页: wait for that reload, or the goto below
+  // races it ("navigation … is interrupted by another navigation to #/", CI 2026-10-31)
+  const reloaded = page.waitForEvent("load");
   await dlg.getByTestId("project-delete-confirm").click();
-  await expect.poll(async () => (await (await page.request.get("/api/spaces")).json()).mine.map((m: { name: string }) => m.name)).not.toContain("试播");
+  await reloaded;
+  await expect.poll(async () => (await (await page.request.get("/api/spaces")).json()).mine.map((m: { name: string }) => m.name)).not.toContain(name);
   await expect(page.locator("h1.home-title")).toBeVisible({ timeout: 20_000 });
   // kept 60 days: the site owner brings it back from the 回收区 (设置 → 成员与邀请)
   await page.goto("/#/settings/members");
   const trash = page.getByTestId("trash-card");
-  const item = trash.getByTestId("trash-item").filter({ hasText: "试播" });
+  const item = trash.getByTestId("trash-item").filter({ hasText: name });
   await expect(item).toContainText("还剩 59 天");
   await item.getByTestId("trash-restore").click();
   await page.getByTestId("dialog").getByRole("button", { name: "恢复", exact: true }).click();
   await expect(item).toHaveCount(0);
-  const back = (await (await page.request.get("/api/spaces")).json()).mine.find((m: { name: string }) => m.name === "试播");
+  const back = (await (await page.request.get("/api/spaces")).json()).mine.find((m: { name: string }) => m.name === name);
   expect(back.archived).toBeTruthy();
 });

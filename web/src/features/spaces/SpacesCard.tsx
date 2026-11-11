@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { spacesApi, type SpaceInfo, type SpaceRole, type Spaces } from "./api";
 import { authApi } from "../auth/api";
-import { confirmDialog } from "../dialog/Dialog";
 import { BusyLabel } from "../loading/Loading";
+import { openProject } from "../projects/api";
 import { t } from "../../i18n";
 
 export const SPACE_ROLE: Record<SpaceRole, string> = { admin: t("管理员"), editor: t("剪辑师"), viewer: t("只听") };
-const ROLES: SpaceRole[] = ["admin", "editor", "viewer"];
 
 /** 设置 → 工作区: where your episodes, library and learned rules live, and who shares them. */
 export function SpacesCard() {
@@ -80,8 +79,6 @@ function SpaceBlock({ s, current, busy, act }: {
   act: (name: string, fn: () => Promise<Spaces>) => void;
 }) {
   const [name, setName] = useState(s.name);
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<SpaceRole>("editor");
   return (
     <div className="space-block" data-testid={`space-${s.id}`}>
       <div className="space-title">
@@ -93,71 +90,29 @@ function SpaceBlock({ s, current, busy, act }: {
         )}
         {current && <span className="muted small">{t("当前")}</span>}
       </div>
+      {/* members are managed in one place, 节目设置 → 协作者 (batch 7, T10); here only who is in it */}
       <ul className="people-list">
         {s.members.map((m) => (
           <li key={m.email}>
             <div className="people-who">
               <strong>{m.email}</strong>
             </div>
-            {/* the show's only admin can't be removed or demoted (H4): a show always keeps one */}
-            {m.role === "admin" && s.members.filter((x) => x.role === "admin").length === 1 ? (
-              <div className="people-actions">
-                <span className="muted small" title={t("节目至少要留一个管理员")} data-testid="sole-admin">
-                  {SPACE_ROLE.admin}
-                </span>
-              </div>
-            ) : (
             <div className="people-actions">
-              <select
-                aria-label={t("{email} 在这个节目的角色", { email: m.email })}
-                value={m.role}
-                disabled={!!busy}
-                onChange={(e) => act("role", () => spacesApi.member(s.id, m.email, e.target.value as SpaceRole))}
-              >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {SPACE_ROLE[r]}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="btn btn-outline btn-small"
-                disabled={!!busy}
-                onClick={async () => {
-                  if (!(await confirmDialog({ message: t("把 {email} 移出「{name}」？对方就看不到这个节目了，已经做的内容留着。", { email: m.email, name: s.name }), confirmLabel: t("移出") }))) return;
-                  act("rm", () => spacesApi.member(s.id, m.email, null));
-                }}
-              >
-                {t("移出")}
-              </button>
+              <span className="muted small">{SPACE_ROLE[m.role]}</span>
             </div>
-            )}
           </li>
         ))}
       </ul>
-      <form
-        className="row gap8 account-wrap"
-        onSubmit={(e) => {
-          e.preventDefault();
-          act("add", async () => {
-            const r = await spacesApi.member(s.id, email.trim(), role);
-            setEmail("");
-            return r;
-          });
-        }}
-      >
-        <input className="grow" inputMode="email" placeholder={t("已有账号的邮箱")} aria-label={t("加成员的邮箱")} value={email} onChange={(e) => setEmail(e.target.value)} />
-        <select aria-label={t("角色")} value={role} onChange={(e) => setRole(e.target.value as SpaceRole)}>
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {SPACE_ROLE[r]}
-            </option>
-          ))}
-        </select>
-        <button className="btn btn-outline" disabled={!!busy || !email.trim()}>
-          {t("加进来")}
+      <div className="row gap8">
+        <button
+          type="button"
+          className="btn btn-outline btn-small"
+          onClick={() => (current ? (window.location.hash = "#/project/people") : void openProject(s.id, "#/project/people"))}
+          data-testid={`space-people-${s.id}`}
+        >
+          {t("管理协作者")}
         </button>
-      </form>
+      </div>
     </div>
   );
 }

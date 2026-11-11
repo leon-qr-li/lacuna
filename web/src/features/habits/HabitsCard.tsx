@@ -4,9 +4,9 @@ import type { CutLevel } from "../show/api";
 import { habitsApi } from "./api";
 
 const LEVELS: [CutLevel, string][] = [
-  ["gentle", t("轻剪")],
+  ["gentle", t("少剪")],
   ["normal", t("正常")],
-  ["firm", t("狠剪")],
+  ["firm", t("多剪")],
 ];
 
 /** 设置 → 剪辑习惯: the editor's 剪辑力度 (one for all their projects) and a way to 学到的规则. */
@@ -35,7 +35,7 @@ export function HabitsCard() {
       <div className="set-row">
         <div>
           <strong>{t("剪辑力度")}</strong>
-          <p className="muted small">{t("每位主持人还可以在节目设置里调得更狠或更松。")}</p>
+          <p className="muted small">{t("每位主持人还可以在节目设置里单独调成多剪或少剪。")}</p>
         </div>
         <div className="seg" role="radiogroup" aria-label={t("剪辑力度")}>
           {LEVELS.map(([v, label]) => (

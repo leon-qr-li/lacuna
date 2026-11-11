@@ -34,8 +34,11 @@
 .prj-tab:hover { color: var(--ink); }
 .prj-tab[aria-selected="true"] { background: var(--solid); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgb(0 0 0 / 0.08); }
 
-.prj-invite { display: grid; grid-template-columns: minmax(0, 1fr) 8rem auto; gap: 8px; align-items: center; }
-@media (max-width: 560px) { .prj-invite { grid-template-columns: 1fr 1fr; } .prj-invite input { grid-column: 1 / -1; } }
+/* email, role, mail language and 邀请 on one line; the email field takes what's left (batch 7, B11) */
+.prj-invite { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.prj-invite input { flex: 1 1 220px; min-width: 0; }
+.prj-invite select { flex: 0 0 auto; width: auto; }
+.prj-invite .btn { flex: 0 0 auto; }
 .prj-hint { margin: 10px 0 0; }
 .prj-link { width: 100%; box-sizing: border-box; margin-top: 8px; font-family: var(--mono, monospace); font-size: 12px; }
 .prj-collab h3 { margin: 20px 0 8px; }
@@ -45,6 +48,7 @@
 .prj-avatar { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: color-mix(in srgb, var(--leon) 16%, transparent); color: var(--ink); font-weight: 600; font-size: 13px; }
 .prj-pending .prj-avatar { background: var(--hover); color: var(--ink-3); }
 .prj-who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prj-mail { display: block; overflow: hidden; text-overflow: ellipsis; }
 .prj-role { color: var(--ink-2); font-size: 13px; }
 .prj-pending .prj-role { color: var(--ink-3); }
 
@@ -73,7 +77,8 @@
 .prj-matrix table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .prj-matrix th, .prj-matrix td { padding: 8px 10px; border-top: 1px solid var(--line); text-align: center; }
 .prj-matrix th:first-child, .prj-matrix td:first-child { text-align: left; }
-.prj-matrix th { font-weight: 600; color: var(--muted); border-top: 0; }
+.prj-matrix th { font-weight: 600; color: var(--muted); border-top: 0; white-space: nowrap; }
+@media (max-width: 480px) { .prj-matrix th, .prj-matrix td { padding: 8px 6px; } }
 .prj-matrix td { color: var(--muted); }
 .prj-matrix td.is-on { color: var(--accent); font-weight: 600; }
 .prj-support { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; }

@@ -14,3 +14,21 @@ test("a 401 from a library upload brings the sign-in check, like any other call"
   await expect.poll(() => checks, { timeout: 10_000 }).toBeGreaterThan(before);
   await page.unroute(/\/api\/library\/upload/);
 });
+
+// batch 8 regression: a session that runs out says so on the sign-in screen; signing out on purpose doesn't
+test("a session that ran out says so on the sign-in screen", async ({ page }) => {
+  let out = false;
+  await page.route("**/api/auth/status", async (route) => {
+    const res = await route.fetch();
+    const st = await res.json();
+    await route.fulfill({ response: res, json: { ...st, accounts: true, setup: false, email: out ? null : "leon@example.com" } });
+  });
+  await page.route(/\/api\/library\/upload/, (route) => route.fulfill({ status: 401, json: { detail: "not signed in" } }));
+  await page.goto("/#/library");
+  await expect(page.getByLabel("选择音乐文件")).toBeAttached();
+  out = true;
+  await page.getByLabel("选择音乐文件").setInputFiles({ name: "x.wav", mimeType: "audio/wav", buffer: Buffer.alloc(64) });
+  await expect(page.getByTestId("auth-expired")).toHaveText("登录已过期，请重新登录。");
+  await page.unroute(/\/api\/library\/upload/);
+  await page.unroute("**/api/auth/status");
+});

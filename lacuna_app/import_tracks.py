@@ -27,11 +27,20 @@ def tracks_dir(ws: Workspace) -> Path:
     return ws.root / TRACKS_DIR
 
 
+MAX_NAME_BYTES = 200
+
+
 def safe_name(name: str) -> str:
     n = "".join("_" if c in _BAD or ord(c) < 32 else c for c in Path(name.replace("\\", "/")).name).strip(" .")
     if not n:
         raise PathError("empty file name")
-    return n[:150]
+    stem, dot, ext = (n.rpartition(".") if "." in n else ("", "", n))
+    if not (stem and len(ext) <= 8):
+        stem, dot, ext = n, "", ""
+    # file systems allow 255 bytes per name (a Chinese character is 3): cut the name, never the type (".wav")
+    while len((stem + dot + ext).encode()) > MAX_NAME_BYTES:
+        stem = stem[:-1]
+    return stem.rstrip(" .") + dot + ext
 
 
 def new_target(ws: Workspace, name: str) -> Path:

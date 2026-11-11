@@ -286,6 +286,12 @@ def test_admin_site_lets_in_only_the_owner(api):
     env = dict(line.split("=", 1) for line in user_data(a)["/etc/lacuna/lacuna.env"].splitlines())
     assert env["LACUNA_ADMIN_HOST"] == provision.ADMIN_DOMAIN
     assert env["CF_ADMIN_ACCESS_AUD"] == app["aud"] != env["CF_ACCESS_AUD"]
+    # an admin the owner added by hand in Cloudflare stays on the list when Provision runs again (batch 8)
+    pol = next(p for p in a.policies if p["name"] == provision.ADMIN_POLICY)
+    pol["include"].append({"email": {"email": "pei@example.com"}})
+    run("apply")
+    pol = next(p for p in a.policies if p["name"] == provision.ADMIN_POLICY)
+    assert pol["include"] == [{"email": {"email": "leon@example.com"}}, {"email": {"email": "pei@example.com"}}]
 
 
 def test_registry_gc_keeps_the_site_and_staging_images(monkeypatch):
@@ -511,6 +517,28 @@ def test_ci_wait_live_reads_health_through_access_with_the_deploy_token(monkeypa
     ci.wait_live("abc")
 
 
+def test_ci_uptime_fails_only_when_the_site_stays_down(monkeypatch):
+    """batch 8, P3: the hourly outside check; GitHub mails the owner when the run fails"""
+    ci = _ci()
+    monkeypatch.setenv("CF_DEPLOY_CLIENT_ID", "cid.access")
+    monkeypatch.setenv("CF_DEPLOY_CLIENT_SECRET", "sec")
+    waits = []
+    monkeypatch.setattr(ci.time, "sleep", waits.append)
+    seen = []
+    answers = iter([(502, {}), (200, {"ok": True, "version": "abc"})])
+    monkeypatch.setattr(ci, "_get", lambda url, h: (seen.append((url, h)), next(answers))[1])
+    assert ci.main(["uptime"]) == 0
+    assert seen[-1] == (f"https://{provision.DOMAIN}/api/health",
+                        {"CF-Access-Client-Id": "cid.access", "CF-Access-Client-Secret": "sec"})
+    assert waits == [ci.UPTIME_WAIT]
+    monkeypatch.setattr(ci, "_get", lambda url, h: (0, {}))
+    with pytest.raises(provision.ProvisionError, match="is down"):
+        ci.uptime()
+    assert ci.main(["uptime"]) == 1
+    monkeypatch.delenv("CF_DEPLOY_CLIENT_SECRET")      # not provisioned yet: nothing to check, no failure
+    assert ci.main(["uptime"]) == 0
+
+
 def test_ci_wait_live_without_the_secret_uses_a_token_for_this_run(monkeypatch):
     ci = _ci()
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
@@ -721,3 +749,38 @@ def test_open_door_without_the_turnstile_permission_stops_before_the_server(api)
         run("recreate", door="open")
     assert a.droplets[0]["id"] == first
     assert [p["decision"] for p in _main_policies(a)] == ["allow", "non_identity"]
+
+
+def test_http3_off_turns_only_that_switch_off(capsys):
+    calls = []
+    state = {"value": "on"}
+
+    def cfh(method, path, body):
+        calls.append((method, path.split("?")[0]))
+        if path.startswith("/zones?name="):
+            return 200, {"success": True, "result": [{"id": "z1", "account": {"id": "a1"}}]}
+        if path == "/zones/z1/settings/http3":
+            if method == "PATCH":
+                assert body == {"value": "off"}
+                state["value"] = "off"
+            return 200, {"success": True, "result": {"id": "http3", "value": state["value"]}}
+        raise AssertionError(f"{method} {path}")
+
+    cf = provision.Cloudflare(FakeHttp(cfh))
+    assert cf.http3(False) == "on" and state["value"] == "on"     # check: changes nothing
+    assert cf.http3(True) == "off"
+    calls.clear()
+    assert cf.http3(True) == "off"                                # already off: no PATCH
+    assert ("PATCH", "/zones/z1/settings/http3") not in calls
+    assert "HTTP/3" in capsys.readouterr().out
+
+
+def test_ci_perf_prints_slow_routes_and_lock_holders():
+    ci = _ci()
+    text = ci.perf_text({"up_s": 600, "load1": 1.2, "threads_busy": 3, "in_flight": {},
+                         "slow": [{"at": 0, "route": "POST /api/episodes/{ep}/manual/cut", "status": 200, "ttfb": 12.3,
+                                   "lock_wait": 11.9, "holders": ["GET /api/episodes/{ep}/audio/{v}.wav"],
+                                   "threads_busy_at_start": 40, "load1": 3.9, "in_flight": {}}],
+                         "holds": [{"at": 0, "s": 2.1, "by": "GET /api/episodes/{ep}/audio/{v}.wav"}], "lags": []})
+    assert "12.30   11.90  POST /api/episodes/{ep}/manual/cut" in text
+    assert "held by ['GET /api/episodes/{ep}/audio/{v}.wav']" in text
