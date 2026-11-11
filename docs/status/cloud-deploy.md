@@ -73,3 +73,6 @@ cookie in cloud mode and call `cloud.access_allow(email)` / `access_revoke(email
   `CF_DEPLOY_CLIENT_*`). Audio bucket `lacuna-audio` + server / staging tokens, data volume 100 GB, staging
   hard-links audio instead of copying it (`lacuna-update` `seed`). Live after Provision apply + deploy-token +
   recreate (recreate needs Leon's typed 「重建服务器」).
+- 2026-11-11 the daily Backup check failed twice at "Install restic": the GitHub runner could not resolve the
+  Ubuntu package mirrors (apt DNS failure, nothing wrong with the backup). The check now downloads restic
+  0.18.1 from restic's GitHub release with a pinned SHA-256 instead of using apt.
